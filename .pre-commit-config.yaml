@@ -1,0 +1,42 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+exclude: |
+  (?x)(
+      ^docs/images/
+  )
+fail_fast: true
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        name: Trailing Whitespace
+      - id: end-of-file-fixer
+        name: Check End of Files
+      - id: check-added-large-files
+        name: Check For Any Large Added File
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.9.0.6
+    hooks:
+      - id: shellcheck
+        name: List Shell Scripts
+        args: ['-x', '--severity=error']
+  - repo: local
+    hooks:
+      # Formatters
+#
+#      - id: format-java
+#        name: Format Java Code
+#        language: system
+#        always_run: true
+#        pass_filenames: false
+#        entry: ./gradlew spotlessApply
+
+      # Tests
+
+      - id: java-build
+        name: Tests Java Projects
+        language: system
+        always_run: true
+        pass_filenames: false
+        entry: ./gradlew build
