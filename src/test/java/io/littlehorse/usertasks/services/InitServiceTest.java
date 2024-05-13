@@ -7,7 +7,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Map;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -26,11 +25,6 @@ class InitServiceTest {
     private InitService initService = new InitService();
 
     private final Set<String> fakeConfiguredTenants = Set.of("tenant-1", "tenant-2", "tenant-3");
-    private final Map<String, String> fakeOIDCProperties = Map.of("provider-name", "some-oidc-provider",
-            "client-id", "some-client-id",
-            "scope", "some-scope",
-            "issuer-uri", "http://someoidcurl");
-    private final String fakeAccessToken = "thisisanaccesstoken";
 
     @Test
     void isValidTenant_shouldReturnTrueWhenSetOfConfiguredTenantsContainsTenantId() {

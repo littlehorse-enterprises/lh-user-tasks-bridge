@@ -8,8 +8,9 @@ Backend component that serves as a proxy between User Tasks' UI component and Li
 
 The following software packages are needed to be installed:
 
-- [Java 21](https://www.oracle.com/mx/java/technologies/downloads/)
+- [Brew](https://brew.sh/)
 - [Docker](https://www.docker.com/)
+- [Java 21](https://www.oracle.com/mx/java/technologies/downloads/)
 
 Run the following commands to install pre-commit
 `brew install pre-commit`
@@ -35,7 +36,8 @@ Once Keycloak is up and running, you can access it through your browser on http:
 - Go to the **Clients** section and create a client with *client-id* as `user-tasks-test-client ` and keep default
   values for the other fields
 - Now, go to the **Users** section and add a user with username as `user-tasks-test-user`
-- Go to the **Credentials** tab in **Users** section and add a password as `1234`
+- Go to the **Credentials** tab in **Users** section and add a password as `1234` (Make sure that you uncheck
+  the `Temporary` field)
 
 Now, you will need an access token to be able to be granted authorized access into user-tasks endpoints.
 In order to fetch said token, you can use the following cURL as is from the terminal or you can import it
