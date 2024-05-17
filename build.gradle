@@ -22,6 +22,7 @@ dependencies {
 
 	implementation 'com.c4-soft.springaddons:spring-addons-starter-oidc:7.6.13'
 	implementation 'io.littlehorse:littlehorse-client:0.9.0'
+	implementation 'jakarta.validation:jakarta.validation-api:3.1.0-M2'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
 
