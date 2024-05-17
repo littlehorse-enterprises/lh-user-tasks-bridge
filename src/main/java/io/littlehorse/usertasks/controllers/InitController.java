@@ -23,9 +23,9 @@ public class InitController {
     @Autowired
     private TenantService tenantService;
 
-    @GetMapping("/{tenantId}/init")
+    @GetMapping("/{tenant_id}/init")
     public ResponseEntity<Object> initIntegrationForTenant(@RequestHeader("Authorization") String accessToken,
-                                                           @PathVariable String tenantId) {
+                                                           @PathVariable(name = "tenant_id") String tenantId) {
         try {
             if (!tenantService.isValidTenant(tenantId)) {
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND, String.format("TenantId: %s is not configured yet.", tenantId));
