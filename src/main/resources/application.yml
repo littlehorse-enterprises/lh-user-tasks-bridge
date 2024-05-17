@@ -10,17 +10,6 @@ spring:
   lifecycle:
     timeout-per-shutdown-phase: 30s
 
-tenants:
-  oidc-providers-config:
-    lh:
-      provider-name: keycloak
-      client-id: user-tasks-test-client
-      authorization-grant-type: authorization_code
-      scope: openid
-      issuer-uri: http://localhost:8888/realms/lh
-
-scheme: http
-origins: ${scheme}://localhost:3000
 keycloak-port: 8888
 keycloak-issuer: http://localhost:${keycloak-port}/realms/lh
 
@@ -34,9 +23,3 @@ com:
             authorities:
               - path: $.realm_access.roles
               - path: $.resource_access.*.roles
-#        resourceserver:
-#          permit-all:
-#            - "/actuator/health/readiness"
-#            - "/actuator/health/liveness"
-#            - "/v3/api-docs/**"
-#            - "/swagger-ui/**"

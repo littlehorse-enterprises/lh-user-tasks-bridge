@@ -15,6 +15,15 @@ The following software packages are needed to be installed:
 Run the following commands to install pre-commit
 `brew install pre-commit`
 
+### Set the following environment variables to let user-tasks service know where the LH Server is located
+
+ ```shell
+  export LHC_API_HOST=localhost
+  export LHC_API_PORT=2025
+  ```
+
+This is just an example, use the values that match your LittleHorse config
+
 ### Running user-tasks service locally
 
 First, you need to run Keycloak.
