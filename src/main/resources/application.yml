@@ -1,0 +1,25 @@
+server:
+  port: 8089
+  error:
+    include-message: always
+  ssl:
+    enabled: false
+spring:
+  application:
+    name: user-tasks
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
+keycloak-port: 8888
+keycloak-issuer: http://localhost:${keycloak-port}/realms/lh
+
+com:
+  c4-soft:
+    springaddons:
+      oidc:
+        ops:
+          - iss: ${keycloak-issuer}
+            username-claim: preferred_username
+            authorities:
+              - path: $.realm_access.roles
+              - path: $.resource_access.*.roles
