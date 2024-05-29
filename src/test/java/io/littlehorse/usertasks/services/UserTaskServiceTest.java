@@ -28,9 +28,11 @@ import java.util.UUID;
 import java.util.function.Predicate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -152,20 +154,17 @@ class UserTaskServiceTest {
     }
 
     @Test
-    void getMyTasks_shouldReturnUserTaskListWhenTasksAreFoundForAGivenUserAndCreatedTime() {
+    void getMyTasks_shouldReturnUserTaskListWhenTasksAreFoundForAGivenUserAndScheduledTimeIsAfterEarliestStartDate() {
         var userId = UUID.randomUUID().toString();
         var wfRunId = UUID.randomUUID().toString();
         var fiveDaysAgo = LocalDateTime.now().minusDays(5);
         var additionalFilters = UserTaskRequestFilter.builder()
-                .createdTime(Timestamp.newBuilder()
-                        .setSeconds(fiveDaysAgo.toEpochSecond(UTC_ZONE))
-                        .setNanos(fiveDaysAgo.getNano())
-                        .build())
+                .earliestStartDate(buildTimestamp(fiveDaysAgo))
                 .build();
         var searchRequest = SearchUserTaskRunRequest.newBuilder()
                 .setLimit(25)
                 .setUserId(userId)
-                .setEarliestStart(additionalFilters.getCreatedTime())
+                .setEarliestStart(additionalFilters.getEarliestStartDate())
                 .build();
 
         var foundUserTaskRunIdList = Set.of(buildFakeUserTaskRunId(wfRunId), buildFakeUserTaskRunId(wfRunId));
@@ -186,10 +185,112 @@ class UserTaskServiceTest {
         Set<SimpleUserTaskRunDTO> actualUserTaskDTOs = result.get().getUserTasks();
 
         assertTrue(actualUserTaskDTOs.stream().allMatch(hasMandatoryFieldsForAUser(userId)));
-        assertTrue(actualUserTaskDTOs.stream().allMatch(hasScheduleTimeAfterEarliestStart(fiveDaysAgo)));
+        assertTrue(actualUserTaskDTOs.stream().allMatch(hasScheduledTimeAfterEarliestStart(fiveDaysAgo)));
 
         verify(lhClient).searchUserTaskRun(searchRequest);
         verify(lhClient, times(2)).getUserTaskRun(any(UserTaskRunId.class));
+    }
+
+    @Test
+    void getMyTasks_shouldReturnUserTaskListWhenTasksAreFoundForAGivenUserAndScheduledTimeIsBeforeLatestStartDate() {
+        var userId = UUID.randomUUID().toString();
+        var wfRunId = UUID.randomUUID().toString();
+        var currentDate = LocalDateTime.now();
+        var additionalFilters = UserTaskRequestFilter.builder()
+                .latestStartDate(buildTimestamp(currentDate))
+                .build();
+        var searchRequest = SearchUserTaskRunRequest.newBuilder()
+                .setLimit(25)
+                .setUserId(userId)
+                .setLatestStart(additionalFilters.getLatestStartDate())
+                .build();
+
+        var foundUserTaskRunIdList = Set.of(buildFakeUserTaskRunId(wfRunId), buildFakeUserTaskRunId(wfRunId));
+
+        var listOfUserTasks = UserTaskRunIdList.newBuilder()
+                .addAllResults(foundUserTaskRunIdList)
+                .build();
+
+        var userTaskRun1 = buildFakeUserTaskRunWithCustomScheduledTime(userId, wfRunId, currentDate.minusHours(1L));
+        var userTaskRun2 = buildFakeUserTaskRunWithCustomScheduledTime(userId, wfRunId, currentDate.minusDays(5L));
+
+        when(lhClient.searchUserTaskRun(searchRequest)).thenReturn(listOfUserTasks);
+        when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun1, userTaskRun2);
+
+        Optional<UserTaskRunListDTO> result = userTaskService.getMyTasks(userId, null, additionalFilters, null);
+
+        assertTrue(result.isPresent());
+        Set<SimpleUserTaskRunDTO> actualUserTaskDTOs = result.get().getUserTasks();
+
+        assertTrue(actualUserTaskDTOs.stream().allMatch(hasMandatoryFieldsForAUser(userId)));
+        assertTrue(actualUserTaskDTOs.stream().allMatch(hasScheduledTimeBeforeLatestStart(currentDate)));
+
+        verify(lhClient).searchUserTaskRun(searchRequest);
+        verify(lhClient, times(2)).getUserTaskRun(any(UserTaskRunId.class));
+    }
+
+    @Test
+    void getMyTasks_shouldReturnUserTaskListWhenTasksAreFoundForAGivenUserAndScheduledTimeIsBetweenEarliestAndLatestStartDate() {
+        var userId = UUID.randomUUID().toString();
+        var wfRunId = UUID.randomUUID().toString();
+        var currentDate = LocalDateTime.now();
+        var lastTenDays = currentDate.minusDays(10L);
+        var additionalFilters = UserTaskRequestFilter.builder()
+                .earliestStartDate(buildTimestamp(lastTenDays))
+                .latestStartDate(buildTimestamp(currentDate))
+                .build();
+        var searchRequest = SearchUserTaskRunRequest.newBuilder()
+                .setLimit(25)
+                .setUserId(userId)
+                .setEarliestStart(additionalFilters.getEarliestStartDate())
+                .setLatestStart(additionalFilters.getLatestStartDate())
+                .build();
+
+        var foundUserTaskRunIdList = Set.of(buildFakeUserTaskRunId(wfRunId), buildFakeUserTaskRunId(wfRunId), buildFakeUserTaskRunId(wfRunId));
+
+        var listOfUserTasks = UserTaskRunIdList.newBuilder()
+                .addAllResults(foundUserTaskRunIdList)
+                .build();
+
+        var userTaskRun1 = buildFakeUserTaskRunWithCustomScheduledTime(userId, wfRunId, currentDate.minusHours(1L));
+        var userTaskRun2 = buildFakeUserTaskRunWithCustomScheduledTime(userId, wfRunId, currentDate.minusDays(5L));
+        var userTaskRun3 = buildFakeUserTaskRunWithCustomScheduledTime(userId, wfRunId, currentDate.minusDays(1L));
+
+        when(lhClient.searchUserTaskRun(searchRequest)).thenReturn(listOfUserTasks);
+        when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun1, userTaskRun2, userTaskRun3);
+
+        Optional<UserTaskRunListDTO> result = userTaskService.getMyTasks(userId, null, additionalFilters, null);
+
+        assertTrue(result.isPresent());
+        Set<SimpleUserTaskRunDTO> actualUserTaskDTOs = result.get().getUserTasks();
+
+        assertTrue(actualUserTaskDTOs.stream().allMatch(hasMandatoryFieldsForAUser(userId)));
+        assertTrue(actualUserTaskDTOs.stream().allMatch(hasScheduledTimeAfterEarliestStart(lastTenDays)));
+        assertTrue(actualUserTaskDTOs.stream().allMatch(hasScheduledTimeBeforeLatestStart(currentDate)));
+
+        verify(lhClient).searchUserTaskRun(searchRequest);
+        verify(lhClient, times(3)).getUserTaskRun(any(UserTaskRunId.class));
+    }
+
+    @Test
+    void getMyTasks_shouldThrowExceptionWhenEarliestStartDateIsNotBeforeLatestStartDate() {
+        var userId = UUID.randomUUID().toString();
+        var latestStartDate = LocalDateTime.now().minusDays(1L);
+        var earliestStartDate = latestStartDate.plusMinutes(1L);
+        var additionalFilters = UserTaskRequestFilter.builder()
+                .earliestStartDate(buildTimestamp(earliestStartDate))
+                .latestStartDate(buildTimestamp(latestStartDate))
+                .build();
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> userTaskService.getMyTasks(userId, null, additionalFilters, null));
+
+        var expectedExceptionMessage = "Wrong date range received";
+
+        assertEquals(expectedExceptionMessage, exception.getMessage());
+
+        verify(lhClient, never()).searchUserTaskRun(any());
+        verify(lhClient, never()).getUserTaskRun(any());
     }
 
     @Test
@@ -288,10 +389,7 @@ class UserTaskServiceTest {
                         .build())
                 .setUserId(userId)
                 .setStatus(UserTaskRunStatus.ASSIGNED)
-                .setScheduledTime(Timestamp.newBuilder()
-                        .setSeconds(LocalDateTime.now().toEpochSecond(UTC_ZONE))
-                        .setNanos(LocalDateTime.now().getNano())
-                        .build())
+                .setScheduledTime(buildTimestamp(LocalDateTime.now()))
                 .build();
     }
 
@@ -307,10 +405,7 @@ class UserTaskServiceTest {
                                                                     LocalDateTime customScheduledTime) {
         var userTaskRun = buildFakeUserTaskRun(userId, wfRunId);
         return UserTaskRun.newBuilder(userTaskRun)
-                .setScheduledTime(Timestamp.newBuilder()
-                        .setSeconds(customScheduledTime.toEpochSecond(UTC_ZONE))
-                        .setNanos(customScheduledTime.getNano())
-                        .build())
+                .setScheduledTime(buildTimestamp(customScheduledTime))
                 .build();
     }
 
@@ -320,6 +415,13 @@ class UserTaskServiceTest {
                 .setUserTaskDefId(UserTaskDefId.newBuilder()
                         .setName(taskDefName)
                         .build())
+                .build();
+    }
+
+    private Timestamp buildTimestamp(LocalDateTime currentDate) {
+        return Timestamp.newBuilder()
+                .setSeconds(currentDate.toEpochSecond(UTC_ZONE))
+                .setNanos(currentDate.getNano())
                 .build();
     }
 
@@ -335,7 +437,11 @@ class UserTaskServiceTest {
         return dto -> StringUtils.hasText(dto.getUserGroup()) && dto.getUserGroup().equalsIgnoreCase(userGroup);
     }
 
-    private Predicate<SimpleUserTaskRunDTO> hasScheduleTimeAfterEarliestStart(LocalDateTime earliestStartDate) {
+    private Predicate<SimpleUserTaskRunDTO> hasScheduledTimeAfterEarliestStart(LocalDateTime earliestStartDate) {
         return dto -> Objects.nonNull(dto.getScheduledTime()) && dto.getScheduledTime().isAfter(earliestStartDate);
+    }
+
+    private Predicate<SimpleUserTaskRunDTO> hasScheduledTimeBeforeLatestStart(LocalDateTime latestStartDate) {
+        return dto -> Objects.nonNull(dto.getScheduledTime()) && dto.getScheduledTime().isBefore(latestStartDate);
     }
 }

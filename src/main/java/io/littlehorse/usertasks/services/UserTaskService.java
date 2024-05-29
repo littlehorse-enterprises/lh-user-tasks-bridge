@@ -8,6 +8,8 @@ import io.littlehorse.usertasks.models.requests.StandardPagination;
 import io.littlehorse.usertasks.models.requests.UserTaskRequestFilter;
 import io.littlehorse.usertasks.models.responses.SimpleUserTaskRunDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskRunListDTO;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
@@ -18,8 +20,11 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 
+import static io.littlehorse.usertasks.util.DateUtil.isDateRangeValid;
+
 @Service
 public class UserTaskService {
+    private static final Logger log = LoggerFactory.getLogger(UserTaskService.class);
     private final LittleHorseGrpc.LittleHorseBlockingStub lhClient;
 
     UserTaskService(LittleHorseGrpc.LittleHorseBlockingStub lhClient) {
@@ -87,9 +92,12 @@ public class UserTaskService {
 
     private void addAdditionalFilters(@Nullable UserTaskRequestFilter additionalFilters, SearchUserTaskRunRequest.Builder builder) {
         if (Objects.nonNull(additionalFilters)) {
-            if (Objects.nonNull(additionalFilters.getCreatedTime())) {
-                //TODO: Validate whether we want to work only with earliest, or rather latest start.
-                builder.setEarliestStart(additionalFilters.getCreatedTime());
+            if (Objects.nonNull(additionalFilters.getEarliestStartDate())) {
+                builder.setEarliestStart(additionalFilters.getEarliestStartDate());
+            }
+
+            if (Objects.nonNull(additionalFilters.getLatestStartDate())) {
+                builder.setLatestStart(additionalFilters.getLatestStartDate());
             }
 
             if (Objects.nonNull(additionalFilters.getStatus())) {
@@ -98,6 +106,11 @@ public class UserTaskService {
 
             if (Objects.nonNull(additionalFilters.getType())) {
                 builder.setUserTaskDefName(additionalFilters.getType());
+            }
+
+            if (Objects.nonNull(additionalFilters.getEarliestStartDate()) && Objects.nonNull(additionalFilters.getLatestStartDate())
+                    && !isDateRangeValid(builder.getEarliestStart(), builder.getLatestStart())) {
+                throw new IllegalArgumentException("Wrong date range received");
             }
         }
     }

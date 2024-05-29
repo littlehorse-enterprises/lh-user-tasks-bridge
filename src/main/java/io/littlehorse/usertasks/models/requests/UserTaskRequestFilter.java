@@ -14,7 +14,9 @@ import org.springframework.lang.Nullable;
 @AllArgsConstructor
 public class UserTaskRequestFilter {
     @Nullable
-    private Timestamp createdTime;
+    private Timestamp earliestStartDate;
+    @Nullable
+    private Timestamp latestStartDate;
     @Nullable
     private UserTaskStatus status;
     @Nullable
