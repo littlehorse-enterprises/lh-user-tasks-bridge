@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 import java.util.Set;
 
 /**
- * {@code UserTaskListDTO} is a Data Transfer Object that contains a collection of {@code io.littlehorse.sdk.common.proto.UserTaskRun}
+ * {@code UserTaskRunListDTO} is a Data Transfer Object that contains a collection of {@code io.littlehorse.sdk.common.proto.UserTaskRun}
  *
  * @see io.littlehorse.sdk.common.proto.UserTaskRunList
  * @see io.littlehorse.sdk.common.proto.UserTaskRun
@@ -17,6 +17,6 @@ import java.util.Set;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserTaskListDTO {
-    private Set<SimpleUserTaskDTO> userTasks;
+public class UserTaskRunListDTO {
+    private Set<SimpleUserTaskRunDTO> userTasks;
 }

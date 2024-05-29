@@ -6,7 +6,6 @@ import io.littlehorse.sdk.common.proto.SearchTenantRequest;
 import io.littlehorse.sdk.common.proto.TenantId;
 import io.littlehorse.sdk.common.proto.TenantIdList;
 import io.littlehorse.usertasks.exceptions.NotFoundException;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 
@@ -14,9 +13,11 @@ import java.util.function.Predicate;
 
 @Service
 public class TenantService {
+    private final LittleHorseGrpc.LittleHorseBlockingStub lhClient;
 
-    @Autowired
-    private LittleHorseGrpc.LittleHorseBlockingStub lhClient;
+    TenantService(LittleHorseGrpc.LittleHorseBlockingStub lhClient) {
+        this.lhClient = lhClient;
+    }
 
     public boolean isValidTenant(@NonNull String tenantId) throws NotFoundException {
         var firstSearchResults = lhClient.searchTenant(SearchTenantRequest.newBuilder().build());

@@ -8,8 +8,6 @@ import io.littlehorse.sdk.common.proto.TenantIdList;
 import io.littlehorse.usertasks.exceptions.NotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.HashSet;
@@ -21,18 +19,16 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class TenantServiceTest {
+    private final LittleHorseGrpc.LittleHorseBlockingStub lhClient = mock();
 
-    @Mock
-    private LittleHorseGrpc.LittleHorseBlockingStub lhClient;
-
-    @InjectMocks
-    private final TenantService tenantService = new TenantService();
+    private final TenantService tenantService = new TenantService(lhClient);
 
     @Test
     void isValidTenant_shouldThrowExceptionWhenNoTenantsAreFound() throws NotFoundException {

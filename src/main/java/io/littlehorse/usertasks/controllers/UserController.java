@@ -1,8 +1,8 @@
 package io.littlehorse.usertasks.controllers;
 
 import io.littlehorse.usertasks.exceptions.NotFoundException;
-import io.littlehorse.usertasks.models.responses.SimpleUserTaskDTO;
-import io.littlehorse.usertasks.models.responses.UserTaskListDTO;
+import io.littlehorse.usertasks.models.responses.SimpleUserTaskRunDTO;
+import io.littlehorse.usertasks.models.responses.UserTaskRunListDTO;
 import io.littlehorse.usertasks.services.TenantService;
 import io.littlehorse.usertasks.util.UserTaskStatus;
 import lombok.extern.slf4j.Slf4j;
@@ -42,8 +42,8 @@ public class UserController {
 
     @GetMapping("/{tenant_id}/myTasks")
     @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<UserTaskListDTO> getMyTasks(@RequestHeader("Authorization") String accessToken,
-                                                      @PathVariable(name = "tenant_id") String tenantId) {
+    public ResponseEntity<UserTaskRunListDTO> getMyTasks(@RequestHeader("Authorization") String accessToken,
+                                                         @PathVariable(name = "tenant_id") String tenantId) {
         try {
             if (!tenantService.isValidTenant(tenantId)) {
                 return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.UNAUTHORIZED)).build();
@@ -58,11 +58,11 @@ public class UserController {
         return ResponseEntity.ok(mockResponse());
     }
 
-    private UserTaskListDTO mockResponse() {
-        Set<SimpleUserTaskDTO> mockUserTasksData = new HashSet<>();
+    private UserTaskRunListDTO mockResponse() {
+        Set<SimpleUserTaskRunDTO> mockUserTasksData = new HashSet<>();
 
         for (int i = 0; i < 10; i++) {
-            SimpleUserTaskDTO randomUserTask = SimpleUserTaskDTO.builder()
+            SimpleUserTaskRunDTO randomUserTask = SimpleUserTaskRunDTO.builder()
                     .id(UUID.randomUUID().toString())
                     .userTaskDefId(UUID.randomUUID().toString())
                     .userId(i % 2 != 0 ? UUID.randomUUID().toString() : null)
@@ -74,7 +74,7 @@ public class UserController {
             mockUserTasksData.add(randomUserTask);
         }
 
-        return UserTaskListDTO.builder()
+        return UserTaskRunListDTO.builder()
                 .userTasks(mockUserTasksData)
                 .build();
     }

@@ -17,7 +17,7 @@ public enum UserTaskStatus {
      * @param serverStatus {@code io.littlehorse.sdk.common.proto.UserTaskRunStatus} gotten from LittleHorse server
      * @return A custom representation of an {@code io.littlehorse.sdk.common.proto.UserTaskRunStatus}
      */
-    public static UserTaskStatus fromServer(UserTaskRunStatus serverStatus) {
+    public static UserTaskStatus fromServerStatus(UserTaskRunStatus serverStatus) {
         switch (serverStatus) {
             case UNASSIGNED -> {
                 return UNASSIGNED;
@@ -32,7 +32,26 @@ public enum UserTaskStatus {
                 return CANCELLED;
             }
 
-            default -> throw new UnsupportedOperationException("Unknown UserTaskRunStatus gotten from server");
+            default -> throw new IllegalArgumentException("Unknown UserTaskRunStatus gotten from server");
+        }
+    }
+
+    public UserTaskRunStatus toServerStatus() {
+        switch (this) {
+            case UNASSIGNED -> {
+                return UserTaskRunStatus.UNASSIGNED;
+            }
+            case ASSIGNED -> {
+                return UserTaskRunStatus.ASSIGNED;
+            }
+            case DONE -> {
+                return UserTaskRunStatus.DONE;
+            }
+            case CANCELLED -> {
+                return UserTaskRunStatus.CANCELLED;
+            }
+
+            default -> throw new IllegalArgumentException("No matching UserTaskRunStatus found");
         }
     }
 }
