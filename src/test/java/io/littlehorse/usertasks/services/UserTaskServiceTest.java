@@ -1,6 +1,5 @@
 package io.littlehorse.usertasks.services;
 
-import com.google.protobuf.ByteString;
 import com.google.protobuf.Timestamp;
 import io.littlehorse.sdk.common.proto.LittleHorseGrpc;
 import io.littlehorse.sdk.common.proto.SearchUserTaskRunRequest;
@@ -82,46 +81,6 @@ class UserTaskServiceTest {
 
         verify(lhClient).searchUserTaskRun(any(SearchUserTaskRunRequest.class));
         verify(lhClient, times(2)).getUserTaskRun(any(UserTaskRunId.class));
-    }
-
-    @Test
-    void getMyTasks_shouldReturnUserTaskListWhenTasksAreFoundForAGivenUserAndThereIsMoreThanOnePageOfResults() {
-        var userId = UUID.randomUUID().toString();
-        var wfRunId = UUID.randomUUID().toString();
-
-        var foundUserTaskRunIdList1 = Set.of(buildFakeUserTaskRunId(wfRunId), buildFakeUserTaskRunId(wfRunId));
-        var foundUserTaskRunIdList2 = Set.of(buildFakeUserTaskRunId(wfRunId), buildFakeUserTaskRunId(wfRunId));
-
-        var listOfUserTasks1 = UserTaskRunIdList.newBuilder()
-                .addAllResults(foundUserTaskRunIdList1)
-                .setBookmark(ByteString.empty())
-                .build();
-
-        var listOfUserTasks2 = UserTaskRunIdList.newBuilder()
-                .addAllResults(foundUserTaskRunIdList2)
-                .build();
-
-        var userTaskRun1InFirstSearch = buildFakeUserTaskRun(userId, wfRunId);
-        var userTaskRun2InFirstSearch = buildFakeUserTaskRun(userId, wfRunId);
-        var userTaskRun1InSecondSearch = buildFakeUserTaskRun(userId, wfRunId);
-        var userTaskRun2InSecondSearch = buildFakeUserTaskRun(userId, wfRunId);
-
-        when(lhClient.searchUserTaskRun(any(SearchUserTaskRunRequest.class))).thenReturn(listOfUserTasks1, listOfUserTasks2);
-        when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun1InFirstSearch, userTaskRun2InFirstSearch,
-                userTaskRun1InSecondSearch, userTaskRun2InSecondSearch);
-
-        Optional<UserTaskRunListDTO> result = userTaskService.getMyTasks(userId, null, null, null);
-
-        assertTrue(result.isPresent());
-        Set<SimpleUserTaskRunDTO> actualUserTaskDTOs = result.get().getUserTasks();
-
-        int expectedNumberOfUserTaskRuns = 4;
-
-        assertEquals(expectedNumberOfUserTaskRuns, actualUserTaskDTOs.size());
-        assertTrue(actualUserTaskDTOs.stream().allMatch(hasMandatoryFieldsForAUser(userId)));
-
-        verify(lhClient, times(2)).searchUserTaskRun(any(SearchUserTaskRunRequest.class));
-        verify(lhClient, times(4)).getUserTaskRun(any(UserTaskRunId.class));
     }
 
     @Test

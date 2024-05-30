@@ -8,6 +8,11 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.lang.Nullable;
 
+import java.time.LocalDateTime;
+import java.util.Objects;
+
+import static io.littlehorse.usertasks.util.DateUtil.localDateTimeToTimestamp;
+
 @Data
 @Builder
 @NoArgsConstructor
@@ -21,4 +26,24 @@ public class UserTaskRequestFilter {
     private UserTaskStatus status;
     @Nullable
     private String type;
+
+    public static UserTaskRequestFilter buildUserTaskRequestFilter(@Nullable LocalDateTime earliestStartDate,
+                                                                   @Nullable LocalDateTime latestStartDate,
+                                                                   @Nullable UserTaskStatus status,
+                                                                   @Nullable String type) {
+        var actualEarliestDate = Objects.nonNull(earliestStartDate)
+                ? localDateTimeToTimestamp(earliestStartDate)
+                : null;
+
+        var actualLatestDate = Objects.nonNull(latestStartDate)
+                ? localDateTimeToTimestamp(latestStartDate)
+                : null;
+
+        return UserTaskRequestFilter.builder()
+                .earliestStartDate(actualEarliestDate)
+                .latestStartDate(actualLatestDate)
+                .status(status)
+                .type(type)
+                .build();
+    }
 }
