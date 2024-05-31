@@ -1,6 +1,5 @@
 package io.littlehorse.usertasks.models.requests;
 
-import com.google.protobuf.ByteString;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,5 +13,5 @@ import org.springframework.lang.Nullable;
 public class StandardPagination {
     private int limit;
     @Nullable
-    private ByteString bookmark;
+    private byte[] bookmark;
 }

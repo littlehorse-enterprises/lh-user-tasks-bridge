@@ -1,6 +1,5 @@
 package io.littlehorse.usertasks.models.responses;
 
-import com.google.protobuf.ByteString;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,7 +9,8 @@ import org.springframework.lang.Nullable;
 import java.util.Set;
 
 /**
- * {@code UserTaskRunListDTO} is a Data Transfer Object that contains a collection of {@code io.littlehorse.sdk.common.proto.UserTaskRun}
+ * {@code UserTaskRunListDTO} is a Data Transfer Object that contains a Set of {@code io.littlehorse.sdk.common.proto.UserTaskRun}
+ * and a bookmark used for pagination purposes
  *
  * @see io.littlehorse.sdk.common.proto.UserTaskRunList
  * @see io.littlehorse.sdk.common.proto.UserTaskRun
@@ -22,5 +22,5 @@ import java.util.Set;
 public class UserTaskRunListDTO {
     private Set<SimpleUserTaskRunDTO> userTasks;
     @Nullable
-    private ByteString bookmark;
+    private String bookmark;
 }

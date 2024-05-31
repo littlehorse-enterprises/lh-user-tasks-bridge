@@ -12,6 +12,7 @@ import io.littlehorse.sdk.common.proto.WfRunId;
 import io.littlehorse.usertasks.models.requests.UserTaskRequestFilter;
 import io.littlehorse.usertasks.models.responses.SimpleUserTaskRunDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskRunListDTO;
+import io.littlehorse.usertasks.util.DateUtil;
 import io.littlehorse.usertasks.util.UserTaskStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,6 +39,7 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class UserTaskServiceTest {
+    public static final int RESULTS_LIMIT = 10;
     public final ZoneOffset UTC_ZONE = ZoneOffset.UTC;
     private final LittleHorseGrpc.LittleHorseBlockingStub lhClient = mock();
 
@@ -50,7 +52,8 @@ class UserTaskServiceTest {
 
         when(lhClient.searchUserTaskRun(any(SearchUserTaskRunRequest.class))).thenReturn(listOfUserTasks);
 
-        assertTrue(userTaskService.getMyTasks(userId, null, null, null).isEmpty());
+        assertTrue(userTaskService.getMyTasks(userId, null, null,
+                RESULTS_LIMIT, null).isEmpty());
 
         verify(lhClient).searchUserTaskRun(any(SearchUserTaskRunRequest.class));
     }
@@ -72,7 +75,8 @@ class UserTaskServiceTest {
         when(lhClient.searchUserTaskRun(any(SearchUserTaskRunRequest.class))).thenReturn(listOfUserTasks);
         when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun1, userTaskRun2);
 
-        Optional<UserTaskRunListDTO> result = userTaskService.getMyTasks(userId, null, null, null);
+        Optional<UserTaskRunListDTO> result = userTaskService.getMyTasks(userId, null, null,
+                RESULTS_LIMIT, null);
 
         assertTrue(result.isPresent());
         Set<SimpleUserTaskRunDTO> actualUserTaskDTOs = result.get().getUserTasks();
@@ -100,7 +104,8 @@ class UserTaskServiceTest {
         when(lhClient.searchUserTaskRun(any(SearchUserTaskRunRequest.class))).thenReturn(listOfUserTasks);
         when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun1);
 
-        Optional<UserTaskRunListDTO> result = userTaskService.getMyTasks(userId, myUserGroup, null, null);
+        Optional<UserTaskRunListDTO> result = userTaskService.getMyTasks(userId, myUserGroup, null,
+                RESULTS_LIMIT, null);
 
         assertTrue(result.isPresent());
         Set<SimpleUserTaskRunDTO> actualUserTaskDTOs = result.get().getUserTasks();
@@ -121,7 +126,7 @@ class UserTaskServiceTest {
                 .earliestStartDate(buildTimestamp(fiveDaysAgo))
                 .build();
         var searchRequest = SearchUserTaskRunRequest.newBuilder()
-                .setLimit(25)
+                .setLimit(RESULTS_LIMIT)
                 .setUserId(userId)
                 .setEarliestStart(additionalFilters.getEarliestStartDate())
                 .build();
@@ -138,7 +143,8 @@ class UserTaskServiceTest {
         when(lhClient.searchUserTaskRun(searchRequest)).thenReturn(listOfUserTasks);
         when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun1, userTaskRun2);
 
-        Optional<UserTaskRunListDTO> result = userTaskService.getMyTasks(userId, null, additionalFilters, null);
+        Optional<UserTaskRunListDTO> result = userTaskService.getMyTasks(userId, null, additionalFilters,
+                RESULTS_LIMIT, null);
 
         assertTrue(result.isPresent());
         Set<SimpleUserTaskRunDTO> actualUserTaskDTOs = result.get().getUserTasks();
@@ -159,7 +165,7 @@ class UserTaskServiceTest {
                 .latestStartDate(buildTimestamp(currentDate))
                 .build();
         var searchRequest = SearchUserTaskRunRequest.newBuilder()
-                .setLimit(25)
+                .setLimit(RESULTS_LIMIT)
                 .setUserId(userId)
                 .setLatestStart(additionalFilters.getLatestStartDate())
                 .build();
@@ -176,7 +182,8 @@ class UserTaskServiceTest {
         when(lhClient.searchUserTaskRun(searchRequest)).thenReturn(listOfUserTasks);
         when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun1, userTaskRun2);
 
-        Optional<UserTaskRunListDTO> result = userTaskService.getMyTasks(userId, null, additionalFilters, null);
+        Optional<UserTaskRunListDTO> result = userTaskService.getMyTasks(userId, null, additionalFilters,
+                RESULTS_LIMIT, null);
 
         assertTrue(result.isPresent());
         Set<SimpleUserTaskRunDTO> actualUserTaskDTOs = result.get().getUserTasks();
@@ -199,13 +206,14 @@ class UserTaskServiceTest {
                 .latestStartDate(buildTimestamp(currentDate))
                 .build();
         var searchRequest = SearchUserTaskRunRequest.newBuilder()
-                .setLimit(25)
+                .setLimit(RESULTS_LIMIT)
                 .setUserId(userId)
                 .setEarliestStart(additionalFilters.getEarliestStartDate())
                 .setLatestStart(additionalFilters.getLatestStartDate())
                 .build();
 
-        var foundUserTaskRunIdList = Set.of(buildFakeUserTaskRunId(wfRunId), buildFakeUserTaskRunId(wfRunId), buildFakeUserTaskRunId(wfRunId));
+        var foundUserTaskRunIdList = Set.of(buildFakeUserTaskRunId(wfRunId), buildFakeUserTaskRunId(wfRunId),
+                buildFakeUserTaskRunId(wfRunId));
 
         var listOfUserTasks = UserTaskRunIdList.newBuilder()
                 .addAllResults(foundUserTaskRunIdList)
@@ -218,7 +226,8 @@ class UserTaskServiceTest {
         when(lhClient.searchUserTaskRun(searchRequest)).thenReturn(listOfUserTasks);
         when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun1, userTaskRun2, userTaskRun3);
 
-        Optional<UserTaskRunListDTO> result = userTaskService.getMyTasks(userId, null, additionalFilters, null);
+        Optional<UserTaskRunListDTO> result = userTaskService.getMyTasks(userId, null, additionalFilters,
+                RESULTS_LIMIT, null);
 
         assertTrue(result.isPresent());
         Set<SimpleUserTaskRunDTO> actualUserTaskDTOs = result.get().getUserTasks();
@@ -242,7 +251,7 @@ class UserTaskServiceTest {
                 .build();
 
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> userTaskService.getMyTasks(userId, null, additionalFilters, null));
+                () -> userTaskService.getMyTasks(userId, null, additionalFilters, RESULTS_LIMIT, null));
 
         var expectedExceptionMessage = "Wrong date range received";
 
@@ -260,7 +269,7 @@ class UserTaskServiceTest {
                 .status(UserTaskStatus.ASSIGNED)
                 .build();
         var searchRequest = SearchUserTaskRunRequest.newBuilder()
-                .setLimit(25)
+                .setLimit(RESULTS_LIMIT)
                 .setUserId(userId)
                 .setStatus(UserTaskRunStatus.ASSIGNED)
                 .build();
@@ -277,7 +286,8 @@ class UserTaskServiceTest {
         when(lhClient.searchUserTaskRun(searchRequest)).thenReturn(listOfUserTasks);
         when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun1, userTaskRun2);
 
-        Optional<UserTaskRunListDTO> result = userTaskService.getMyTasks(userId, null, additionalFilters, null);
+        Optional<UserTaskRunListDTO> result = userTaskService.getMyTasks(userId, null, additionalFilters,
+                RESULTS_LIMIT, null);
 
         assertTrue(result.isPresent());
         Set<SimpleUserTaskRunDTO> actualUserTaskDTOs = result.get().getUserTasks();
@@ -297,7 +307,7 @@ class UserTaskServiceTest {
                 .type(type)
                 .build();
         var searchRequest = SearchUserTaskRunRequest.newBuilder()
-                .setLimit(25)
+                .setLimit(RESULTS_LIMIT)
                 .setUserId(userId)
                 .setUserTaskDefName(type)
                 .build();
@@ -314,13 +324,63 @@ class UserTaskServiceTest {
         when(lhClient.searchUserTaskRun(searchRequest)).thenReturn(listOfUserTasks);
         when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun1, userTaskRun2);
 
-        Optional<UserTaskRunListDTO> result = userTaskService.getMyTasks(userId, null, additionalFilters, null);
+        Optional<UserTaskRunListDTO> result = userTaskService.getMyTasks(userId, null, additionalFilters,
+                RESULTS_LIMIT, null);
 
         assertTrue(result.isPresent());
         Set<SimpleUserTaskRunDTO> actualUserTaskDTOs = result.get().getUserTasks();
 
         assertTrue(actualUserTaskDTOs.stream().allMatch(hasMandatoryFieldsForAUser(userId)));
         assertTrue(actualUserTaskDTOs.stream().allMatch(dto -> dto.getUserTaskDefId().equalsIgnoreCase(type)));
+
+        verify(lhClient).searchUserTaskRun(searchRequest);
+        verify(lhClient, times(2)).getUserTaskRun(any(UserTaskRunId.class));
+    }
+
+    @Test
+    void getMyTasks_shouldReturnUserTaskListWhenTasksAreFoundForAGivenUserAndTaskDefNameAndStatusAndDateRange() {
+        var userId = UUID.randomUUID().toString();
+        var wfRunId = UUID.randomUUID().toString();
+        var type = "my-custom-task-def";
+        var earliestDate = LocalDateTime.now().minusDays(5L);
+        var latestDate = earliestDate.plusDays(5L);
+        var additionalFilters = UserTaskRequestFilter.builder()
+                .type(type)
+                .status(UserTaskStatus.ASSIGNED)
+                .earliestStartDate(DateUtil.localDateTimeToTimestamp(earliestDate))
+                .latestStartDate(DateUtil.localDateTimeToTimestamp(latestDate))
+                .build();
+        var searchRequest = SearchUserTaskRunRequest.newBuilder()
+                .setLimit(RESULTS_LIMIT)
+                .setUserId(userId)
+                .setUserTaskDefName(type)
+                .setStatus(UserTaskRunStatus.ASSIGNED)
+                .setEarliestStart(DateUtil.localDateTimeToTimestamp(earliestDate))
+                .setLatestStart(DateUtil.localDateTimeToTimestamp(latestDate))
+                .build();
+
+        var foundUserTaskRunIdList = Set.of(buildFakeUserTaskRunId(wfRunId), buildFakeUserTaskRunId(wfRunId));
+
+        var listOfUserTasks = UserTaskRunIdList.newBuilder()
+                .addAllResults(foundUserTaskRunIdList)
+                .build();
+
+        var userTaskRun1 = buildFakeUserTaskRunWithCustomTaskDefNameAndCustomDateRange(userId, wfRunId, type, earliestDate.plusHours(4L));
+        var userTaskRun2 = buildFakeUserTaskRunWithCustomTaskDefNameAndCustomDateRange(userId, wfRunId, type, latestDate.minusHours(4L));
+
+        when(lhClient.searchUserTaskRun(searchRequest)).thenReturn(listOfUserTasks);
+        when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun1, userTaskRun2);
+
+        Optional<UserTaskRunListDTO> result = userTaskService.getMyTasks(userId, null, additionalFilters,
+                RESULTS_LIMIT, null);
+
+        assertTrue(result.isPresent());
+        Set<SimpleUserTaskRunDTO> actualUserTaskDTOs = result.get().getUserTasks();
+
+        assertTrue(actualUserTaskDTOs.stream().allMatch(hasMandatoryFieldsForAUser(userId)));
+        assertTrue(actualUserTaskDTOs.stream().allMatch(dto -> dto.getUserTaskDefId().equalsIgnoreCase(type)));
+        assertTrue(actualUserTaskDTOs.stream().allMatch(hasScheduledTimeAfterEarliestStart(earliestDate)));
+        assertTrue(actualUserTaskDTOs.stream().allMatch(hasScheduledTimeBeforeLatestStart(latestDate)));
 
         verify(lhClient).searchUserTaskRun(searchRequest);
         verify(lhClient, times(2)).getUserTaskRun(any(UserTaskRunId.class));
@@ -370,6 +430,17 @@ class UserTaskServiceTest {
 
     private UserTaskRun buildFakeUserTaskRunWithCustomTaskDefName(String userId, String wfRunId, String taskDefName) {
         var userTaskRun = buildFakeUserTaskRun(userId, wfRunId);
+        return UserTaskRun.newBuilder(userTaskRun)
+                .setUserTaskDefId(UserTaskDefId.newBuilder()
+                        .setName(taskDefName)
+                        .build())
+                .build();
+    }
+
+    private UserTaskRun buildFakeUserTaskRunWithCustomTaskDefNameAndCustomDateRange(String userId, String wfRunId,
+                                                                                    String taskDefName,
+                                                                                    LocalDateTime scheduledTime) {
+        var userTaskRun = buildFakeUserTaskRunWithCustomScheduledTime(userId, wfRunId, scheduledTime);
         return UserTaskRun.newBuilder(userTaskRun)
                 .setUserTaskDefId(UserTaskDefId.newBuilder()
                         .setName(taskDefName)

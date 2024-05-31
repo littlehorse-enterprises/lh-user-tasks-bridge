@@ -13,6 +13,9 @@ import java.util.Objects;
 
 import static io.littlehorse.usertasks.util.DateUtil.localDateTimeToTimestamp;
 
+/**
+ * Class that is used to easily map the allowed filters when searching UserTaskRuns
+ */
 @Data
 @Builder
 @NoArgsConstructor

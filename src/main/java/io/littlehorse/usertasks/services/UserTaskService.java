@@ -8,6 +8,7 @@ import io.littlehorse.usertasks.models.requests.StandardPagination;
 import io.littlehorse.usertasks.models.requests.UserTaskRequestFilter;
 import io.littlehorse.usertasks.models.responses.SimpleUserTaskRunDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskRunListDTO;
+import org.apache.tomcat.util.codec.binary.Base64;
 import org.springframework.lang.NonNull;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
@@ -28,10 +29,12 @@ public class UserTaskService {
     }
 
     public Optional<UserTaskRunListDTO> getMyTasks(@NonNull String userId, @Nullable String userGroup,
-                                                   @Nullable UserTaskRequestFilter additionalFilters, @Nullable ByteString bookmark) {
+                                                   @Nullable UserTaskRequestFilter additionalFilters,
+                                                   int limit,
+                                                   @Nullable byte[] bookmark) {
         var pagination = StandardPagination.builder()
                 .bookmark(bookmark)
-                .limit(25)
+                .limit(limit)
                 .build();
 
         var searchRequest = buildSearchUserTaskRunRequest(userId, userGroup, additionalFilters, pagination);
@@ -49,7 +52,9 @@ public class UserTaskService {
             });
 
             response.setUserTasks(setOfUserTasks);
-            response.setBookmark(searchResults.getBookmark());
+            response.setBookmark(searchResults.hasBookmark()
+                    ? Base64.encodeBase64String(searchResults.getBookmark().toByteArray())
+                    : null);
         }
 
         return response.getUserTasks().isEmpty()
@@ -68,7 +73,7 @@ public class UserTaskService {
         }
 
         if (Objects.nonNull(pagination.getBookmark())) {
-            builder.setBookmark(pagination.getBookmark());
+            builder.setBookmark(ByteString.copyFrom(pagination.getBookmark()));
         }
 
         builder.setLimit(pagination.getLimit());
@@ -91,7 +96,7 @@ public class UserTaskService {
                 builder.setStatus(additionalFilters.getStatus().toServerStatus());
             }
 
-            if (Objects.nonNull(additionalFilters.getType())) {
+            if (StringUtils.hasText(additionalFilters.getType())) {
                 builder.setUserTaskDefName(additionalFilters.getType());
             }
 

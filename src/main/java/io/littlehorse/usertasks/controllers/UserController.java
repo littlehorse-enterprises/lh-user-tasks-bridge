@@ -9,6 +9,7 @@ import io.littlehorse.usertasks.services.UserTaskService;
 import io.littlehorse.usertasks.util.TokenUtil;
 import io.littlehorse.usertasks.util.UserTaskStatus;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.tomcat.util.codec.binary.Base64;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 //TODO: This javadoc comment might be replaced later when OpenAPI/Swagger Specs gets introduced
 
@@ -55,7 +57,12 @@ public class UserController {
                                                              LocalDateTime latestStartDate,
                                                          @RequestParam(name = "status", required = false)
                                                              UserTaskStatus status,
-                                                         @RequestParam(name = "type", required = false) String type) {
+                                                         @RequestParam(name = "type", required = false)
+                                                             String type,
+                                                         @RequestParam(name = "limit")
+                                                             Integer limit,
+                                                         @RequestParam(name = "bookmark", required = false)
+                                                             String bookmark) {
         try {
             if (!tenantService.isValidTenant(tenantId)) {
                 return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.UNAUTHORIZED)).build();
@@ -65,7 +72,10 @@ public class UserController {
 
             var userIdFromToken = (String) tokenClaims.get(USER_ID_CLAIM);
             var additionalFilters = UserTaskRequestFilter.buildUserTaskRequestFilter(earliestStartDate, latestStartDate, status, type);
-            var optionalUserTasks = userTaskService.getMyTasks(userIdFromToken, null, additionalFilters, null);
+            var parsedBookmark = Objects.nonNull(bookmark) ? Base64.decodeBase64(bookmark) : null;
+
+            //TODO: User Group filter is pending
+            var optionalUserTasks = userTaskService.getMyTasks(userIdFromToken, null, additionalFilters, limit, parsedBookmark);
 
             return optionalUserTasks
                     .map(ResponseEntity::ok)

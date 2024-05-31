@@ -19,6 +19,7 @@ public class TenantService {
         this.lhClient = lhClient;
     }
 
+    //TODO: The way we ware verifying if a tenant is valid will probably change once we set production-ready OIDC configuration per tenant
     public boolean isValidTenant(@NonNull String tenantId) throws NotFoundException {
         var firstSearchResults = lhClient.searchTenant(SearchTenantRequest.newBuilder().build());
 
