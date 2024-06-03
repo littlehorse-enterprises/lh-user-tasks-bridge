@@ -1,0 +1,29 @@
+package io.littlehorse.usertasks.util;
+
+import com.google.protobuf.Timestamp;
+import org.springframework.lang.NonNull;
+
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+
+public class DateUtil {
+    private static final ZoneOffset UTC_ZONE = ZoneOffset.UTC;
+
+    public static boolean isDateRangeValid(@NonNull Timestamp earliestDate, @NonNull Timestamp latestDate) {
+        var parsedEarliestDate = timestampToLocalDateTime(earliestDate);
+        var parsedLatestDate = timestampToLocalDateTime(latestDate);
+
+        return parsedEarliestDate.isBefore(parsedLatestDate);
+    }
+
+    public static LocalDateTime timestampToLocalDateTime(@NonNull Timestamp date) {
+        return LocalDateTime.ofEpochSecond(date.getSeconds(), date.getNanos(), ZoneOffset.UTC);
+    }
+
+    public static Timestamp localDateTimeToTimestamp(LocalDateTime date) {
+        return Timestamp.newBuilder()
+                .setSeconds(date.toEpochSecond(UTC_ZONE))
+                .setNanos(date.getNano())
+                .build();
+    }
+}

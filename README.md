@@ -15,7 +15,20 @@ The following software packages are needed to be installed:
 Run the following commands to install pre-commit
 `brew install pre-commit`
 
-### Set the following environment variables to let user-tasks service know where the LH Server is located
+### Local LH Server
+
+In order to run User Tasks backend, you will need to have a LH Server running beforehand.
+You can run an LH server locally by following the instructions
+here: https://littlehorse.dev/docs/developer-guide/install
+
+Once your LH server is up and running, then you can create a tenant to work with, and to do that you can run
+the following command:
+
+ ```shell
+lhctl put tenant here-you-put-your-tenant-identifier
+  ```
+
+#### Set the following environment variables to let user-tasks service know where the LH Server is located
 
  ```shell
   export LHC_API_HOST=localhost
