@@ -1,6 +1,5 @@
 package io.littlehorse.usertasks.controllers;
 
-import io.littlehorse.usertasks.exceptions.NotFoundException;
 import io.littlehorse.usertasks.services.TenantService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -12,7 +11,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @CrossOrigin
@@ -29,12 +27,8 @@ public class InitController {
     @GetMapping("/{tenant_id}/init")
     public ResponseEntity<Object> initIntegrationForTenant(@RequestHeader("Authorization") String accessToken,
                                                            @PathVariable(name = "tenant_id") String tenantId) {
-        try {
-            if (!tenantService.isValidTenant(tenantId)) {
-                return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.UNAUTHORIZED)).build();
-            }
-        } catch (NotFoundException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
+        if (!tenantService.isValidTenant(tenantId)) {
+            return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.UNAUTHORIZED)).build();
         }
 
         log.info("Integration successfully initiated!");

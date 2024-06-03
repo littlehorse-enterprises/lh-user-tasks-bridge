@@ -80,8 +80,6 @@ public class UserController {
             return optionalUserTasks
                     .map(ResponseEntity::ok)
                     .orElseThrow(() -> new NotFoundException("No UserTasks found with given search criteria"));
-        } catch (NotFoundException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
         } catch (JsonProcessingException e) {
             log.error("Something went wrong when getting claims from token");
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e);
