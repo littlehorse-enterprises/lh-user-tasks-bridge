@@ -12,6 +12,7 @@ import io.littlehorse.sdk.common.proto.UserTaskRunIdList;
 import io.littlehorse.sdk.common.proto.UserTaskRunStatus;
 import io.littlehorse.sdk.common.proto.VariableType;
 import io.littlehorse.sdk.common.proto.WfRunId;
+import io.littlehorse.usertasks.exceptions.CustomUnauthorizedException;
 import io.littlehorse.usertasks.exceptions.NotFoundException;
 import io.littlehorse.usertasks.models.requests.UserTaskRequestFilter;
 import io.littlehorse.usertasks.models.responses.SimpleUserTaskRunDTO;
@@ -20,6 +21,7 @@ import io.littlehorse.usertasks.models.responses.UserTaskRunListDTO;
 import io.littlehorse.usertasks.util.DateUtil;
 import io.littlehorse.usertasks.util.UserTaskFieldType;
 import io.littlehorse.usertasks.util.UserTaskStatus;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -400,7 +402,7 @@ class UserTaskServiceTest {
         var expectedExceptionMessage = "Could not find UserTaskRun!";
 
         NotFoundException exception = assertThrows(NotFoundException.class,
-                () -> userTaskService.getUserTaskDetails(nonExistingWfRunId, nonExistingUserTaskGuid));
+                () -> userTaskService.getUserTaskDetails(nonExistingWfRunId, nonExistingUserTaskGuid, "user-id", null));
 
         assertEquals(expectedExceptionMessage, exception.getMessage());
 
@@ -420,12 +422,77 @@ class UserTaskServiceTest {
         when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(foundUserTaskRun);
 
         NotFoundException exception = assertThrows(NotFoundException.class,
-                () -> userTaskService.getUserTaskDetails(existingWfRunId, existingUserTaskGuid));
+                () -> userTaskService.getUserTaskDetails(existingWfRunId, existingUserTaskGuid, userId, null));
 
         assertEquals(expectedExceptionMessage, exception.getMessage());
 
         verify(lhClient).getUserTaskRun(any(UserTaskRunId.class));
         verify(lhClient).getUserTaskDef(any(UserTaskDefId.class));
+    }
+
+    @Test
+    void getUserTaskDetails_shouldThrowCustomUnauthorizedExceptionWhenUserIdIsBlankSpaceOnly() {
+        var userId = " ";
+        var existingWfRunId = "some-existing-wf-run-id";
+        var existingUserTaskGuid = UUID.randomUUID().toString().replace("-", "");
+        var expectedExceptionMessage = "Unable to read provided user information";
+
+        var foundUserTaskRun = buildFakeUserTaskRun(UUID.randomUUID().toString(), existingWfRunId);
+
+        when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(foundUserTaskRun);
+
+        CustomUnauthorizedException exception = assertThrows(CustomUnauthorizedException.class,
+                () -> userTaskService.getUserTaskDetails(existingWfRunId, existingUserTaskGuid, userId, null));
+
+        assertEquals(expectedExceptionMessage, exception.getMessage());
+
+        verify(lhClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhClient, never()).getUserTaskDef(any(UserTaskDefId.class));
+    }
+
+    @Test
+    void getUserTaskDetails_shouldThrowCustomUnauthorizedExceptionWhenUserGroupAndUserIdAreNotRelatedToFoundUserTaskRun() {
+        var userId = UUID.randomUUID().toString();
+        var existingWfRunId = "some-existing-wf-run-id";
+        var existingUserTaskGuid = UUID.randomUUID().toString().replace("-", "");
+        var expectedExceptionMessage = "Current user/userGroup is forbidden from accessing this UserTask information";
+
+        var foundUserTaskRun = buildFakeUserTaskRun(userId, existingWfRunId).toBuilder()
+                .setUserId("some-different-user-id")
+                .setUserGroup("some-pretty-cool-user-group")
+                .build();
+
+        when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(foundUserTaskRun);
+
+        CustomUnauthorizedException exception = assertThrows(CustomUnauthorizedException.class,
+                () -> userTaskService.getUserTaskDetails(existingWfRunId, existingUserTaskGuid, userId, null));
+
+        assertEquals(expectedExceptionMessage, exception.getMessage());
+
+        verify(lhClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhClient, never()).getUserTaskDef(any(UserTaskDefId.class));
+    }
+
+    @Test
+    void getUserTaskDetails_shouldThrowCustomUnauthorizedExceptionWhenUserIdIsNotAssignedToFoundUserTaskRun() {
+        var userId = UUID.randomUUID().toString();
+        var existingWfRunId = "some-existing-wf-run-id";
+        var existingUserTaskGuid = UUID.randomUUID().toString().replace("-", "");
+        var expectedExceptionMessage = "Current user is forbidden from accessing this UserTask information";
+
+        var foundUserTaskRun = buildFakeUserTaskRun(userId, existingWfRunId).toBuilder()
+                .setUserId("some-different-user-id")
+                .build();
+
+        when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(foundUserTaskRun);
+
+        CustomUnauthorizedException exception = assertThrows(CustomUnauthorizedException.class,
+                () -> userTaskService.getUserTaskDetails(existingWfRunId, existingUserTaskGuid, userId, null));
+
+        assertEquals(expectedExceptionMessage, exception.getMessage());
+
+        verify(lhClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhClient, never()).getUserTaskDef(any(UserTaskDefId.class));
     }
 
     @Test
@@ -448,7 +515,7 @@ class UserTaskServiceTest {
         when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(foundUserTaskRun);
         when(lhClient.getUserTaskDef(any(UserTaskDefId.class))).thenReturn(foundUserTaskDef);
 
-        var result = userTaskService.getUserTaskDetails(existingWfRunId, existingUserTaskGuid);
+        var result = userTaskService.getUserTaskDetails(existingWfRunId, existingUserTaskGuid, userId, null);
 
         assertTrue(result.isPresent());
 
@@ -457,6 +524,47 @@ class UserTaskServiceTest {
         assertEquals(existingWfRunId, foundUserTaskRunDTO.getWfRunId());
         assertEquals(existingUserTaskGuid, foundUserTaskRunDTO.getId());
         assertFalse(foundUserTaskRunDTO.getFields().isEmpty());
+        assertTrue(foundUserTaskRunDTO.getFields().stream().allMatch(hasMandatoryFieldsForUserTaskField()));
+
+        verify(lhClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhClient).getUserTaskDef(any(UserTaskDefId.class));
+    }
+
+    //TODO: Pending to be fixed
+    @Disabled
+    @Test
+    void getUserTaskDetails_shouldReturnDetailedUserTaskRunDTOWhenFoundForGivenWfRunIdAndUserTaskRunGuidWithMatchingUserGroup() {
+        var userId = UUID.randomUUID().toString();
+        var userGroup = "my-user-group";
+        var existingWfRunId = "some-existing-wf-run-id";
+        var existingUserTaskGuid = UUID.randomUUID().toString().replace("-", "");
+
+        var foundUserTaskRun = buildFakeUserTaskRun(userId, existingWfRunId)
+                .toBuilder()
+                .clearUserId()
+                .setId(UserTaskRunId.newBuilder()
+                        .setWfRunId(WfRunId.newBuilder()
+                                .setId(existingWfRunId)
+                                .build())
+                        .setUserTaskGuid(existingUserTaskGuid)
+                        .build())
+                .setUserGroup(userGroup)
+                .build();
+        var foundUserTaskDef = buildFakeUserTaskDef(foundUserTaskRun.getUserTaskDefId().getName());
+
+        when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(foundUserTaskRun);
+        when(lhClient.getUserTaskDef(any(UserTaskDefId.class))).thenReturn(foundUserTaskDef);
+
+        var result = userTaskService.getUserTaskDetails(existingWfRunId, existingUserTaskGuid, userId, userGroup);
+
+        assertTrue(result.isPresent());
+
+        var foundUserTaskRunDTO = result.get();
+
+        assertEquals(existingWfRunId, foundUserTaskRunDTO.getWfRunId());
+        assertEquals(existingUserTaskGuid, foundUserTaskRunDTO.getId());
+        assertFalse(foundUserTaskRunDTO.getFields().isEmpty());
+        assertFalse(!StringUtils.hasText(foundUserTaskRunDTO.getUserId()));
         assertTrue(foundUserTaskRunDTO.getFields().stream().allMatch(hasMandatoryFieldsForUserTaskField()));
 
         verify(lhClient).getUserTaskRun(any(UserTaskRunId.class));

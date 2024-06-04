@@ -6,6 +6,7 @@ import io.littlehorse.sdk.common.proto.SearchUserTaskRunRequest;
 import io.littlehorse.sdk.common.proto.UserTaskRun;
 import io.littlehorse.sdk.common.proto.UserTaskRunId;
 import io.littlehorse.sdk.common.proto.WfRunId;
+import io.littlehorse.usertasks.exceptions.CustomUnauthorizedException;
 import io.littlehorse.usertasks.exceptions.NotFoundException;
 import io.littlehorse.usertasks.models.requests.StandardPagination;
 import io.littlehorse.usertasks.models.requests.UserTaskRequestFilter;
@@ -66,7 +67,8 @@ public class UserTaskService {
                 : Optional.of(response);
     }
 
-    public Optional<DetailedUserTaskRunDTO> getUserTaskDetails(@NonNull String wfRunId, @NonNull String userTaskRunGuid) {
+    public Optional<DetailedUserTaskRunDTO> getUserTaskDetails(@NonNull String wfRunId, @NonNull String userTaskRunGuid,
+                                                               @NonNull String userId, @Nullable String userGroup) {
         var getUserTaskRunRequest = UserTaskRunId.newBuilder()
                 .setWfRunId(WfRunId.newBuilder()
                         .setId(wfRunId)
@@ -79,6 +81,8 @@ public class UserTaskService {
         if (!Objects.nonNull(userTaskRunResult)) {
             throw new NotFoundException("Could not find UserTaskRun!");
         }
+
+        validateIfUserIsAllowedToSeeUserTask(userId, userGroup, userTaskRunResult);
 
         var userTaskDefResult = lhClient.getUserTaskDef(userTaskRunResult.getUserTaskDefId());
 
@@ -133,6 +137,29 @@ public class UserTaskService {
                     && !isDateRangeValid(builder.getEarliestStart(), builder.getLatestStart())) {
                 //TODO: Map this to produce a BadRequest error response
                 throw new IllegalArgumentException("Wrong date range received");
+            }
+        }
+    }
+
+    private void validateIfUserIsAllowedToSeeUserTask(@NonNull String userId, @Nullable String userGroup, @NonNull UserTaskRun userTaskRun) {
+        if (!StringUtils.hasText(userId)) {
+            throw new CustomUnauthorizedException("Unable to read provided user information");
+        }
+
+        if (userTaskRun.hasUserGroup()) {
+            var hasNoMatchingUserGroup = !userTaskRun.getUserGroup().equalsIgnoreCase(userGroup);
+            var hasNoMatchingUserId = userTaskRun.hasUserId() && !userTaskRun.getUserId().equalsIgnoreCase(userId);
+
+            if (hasNoMatchingUserGroup && hasNoMatchingUserId) {
+                throw new CustomUnauthorizedException("Current user/userGroup is forbidden from accessing this UserTask information");
+            }
+        }
+
+        if (userTaskRun.hasUserId()) {
+            var hasNoMatchingUserId = !userTaskRun.getUserId().equalsIgnoreCase(userId);
+
+            if (hasNoMatchingUserId) {
+                throw new CustomUnauthorizedException("Current user is forbidden from accessing this UserTask information");
             }
         }
     }

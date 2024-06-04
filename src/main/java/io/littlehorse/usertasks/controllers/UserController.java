@@ -1,6 +1,7 @@
 package io.littlehorse.usertasks.controllers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.littlehorse.usertasks.exceptions.CustomUnauthorizedException;
 import io.littlehorse.usertasks.exceptions.NotFoundException;
 import io.littlehorse.usertasks.models.requests.UserTaskRequestFilter;
 import io.littlehorse.usertasks.models.responses.DetailedUserTaskRunDTO;
@@ -103,7 +104,11 @@ public class UserController {
                 return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.UNAUTHORIZED)).build();
             }
 
-            var optionalUserTaskDetail = userTaskService.getUserTaskDetails(wfRunId, userTaskRunGuid);
+            var tokenClaims = TokenUtil.getTokenClaims(accessToken);
+
+            var userIdFromToken = (String) tokenClaims.get(USER_ID_CLAIM);
+
+            var optionalUserTaskDetail = userTaskService.getUserTaskDetails(wfRunId, userTaskRunGuid, userIdFromToken, null);
 
             if (optionalUserTaskDetail.isEmpty()) {
                 return ResponseEntity.notFound().build();
@@ -112,6 +117,8 @@ public class UserController {
             return ResponseEntity.of(optionalUserTaskDetail);
         } catch (NotFoundException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
+        } catch (CustomUnauthorizedException e) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, e.getMessage(), e);
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e);
         }
