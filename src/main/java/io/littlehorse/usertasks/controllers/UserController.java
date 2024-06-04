@@ -110,6 +110,8 @@ public class UserController {
             }
 
             return ResponseEntity.of(optionalUserTaskDetail);
+        } catch (NotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e);
         }
