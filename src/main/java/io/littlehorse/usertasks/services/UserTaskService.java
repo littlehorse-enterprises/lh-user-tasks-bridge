@@ -4,8 +4,12 @@ import com.google.protobuf.ByteString;
 import io.littlehorse.sdk.common.proto.LittleHorseGrpc;
 import io.littlehorse.sdk.common.proto.SearchUserTaskRunRequest;
 import io.littlehorse.sdk.common.proto.UserTaskRun;
+import io.littlehorse.sdk.common.proto.UserTaskRunId;
+import io.littlehorse.sdk.common.proto.WfRunId;
+import io.littlehorse.usertasks.exceptions.NotFoundException;
 import io.littlehorse.usertasks.models.requests.StandardPagination;
 import io.littlehorse.usertasks.models.requests.UserTaskRequestFilter;
+import io.littlehorse.usertasks.models.responses.DetailedUserTaskRunDTO;
 import io.littlehorse.usertasks.models.responses.SimpleUserTaskRunDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskRunListDTO;
 import org.apache.tomcat.util.codec.binary.Base64;
@@ -60,6 +64,31 @@ public class UserTaskService {
         return response.getUserTasks().isEmpty()
                 ? Optional.empty()
                 : Optional.of(response);
+    }
+
+    public Optional<DetailedUserTaskRunDTO> getUserTaskDetails(@NonNull String wfRunId, @NonNull String userTaskRunGuid) {
+        var getUserTaskRunRequest = UserTaskRunId.newBuilder()
+                .setWfRunId(WfRunId.newBuilder()
+                        .setId(wfRunId)
+                        .build())
+                .setUserTaskGuid(userTaskRunGuid)
+                .build();
+
+        var userTaskRunResult = lhClient.getUserTaskRun(getUserTaskRunRequest);
+
+        if (!Objects.nonNull(userTaskRunResult)) {
+            throw new NotFoundException("Could not find UserTaskRun!");
+        }
+
+        var userTaskDefResult = lhClient.getUserTaskDef(userTaskRunResult.getUserTaskDefId());
+
+        if (!Objects.nonNull(userTaskDefResult)) {
+            throw new NotFoundException("Could not find associated UserTaskDef!");
+        }
+
+        var resultDto = DetailedUserTaskRunDTO.fromUserTaskRun(userTaskRunResult, userTaskDefResult);
+
+        return Optional.of(resultDto);
     }
 
     private SearchUserTaskRunRequest buildSearchUserTaskRunRequest(@NonNull String userId, @Nullable String userGroup,

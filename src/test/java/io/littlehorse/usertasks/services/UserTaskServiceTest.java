@@ -3,16 +3,22 @@ package io.littlehorse.usertasks.services;
 import com.google.protobuf.Timestamp;
 import io.littlehorse.sdk.common.proto.LittleHorseGrpc;
 import io.littlehorse.sdk.common.proto.SearchUserTaskRunRequest;
+import io.littlehorse.sdk.common.proto.UserTaskDef;
 import io.littlehorse.sdk.common.proto.UserTaskDefId;
+import io.littlehorse.sdk.common.proto.UserTaskField;
 import io.littlehorse.sdk.common.proto.UserTaskRun;
 import io.littlehorse.sdk.common.proto.UserTaskRunId;
 import io.littlehorse.sdk.common.proto.UserTaskRunIdList;
 import io.littlehorse.sdk.common.proto.UserTaskRunStatus;
+import io.littlehorse.sdk.common.proto.VariableType;
 import io.littlehorse.sdk.common.proto.WfRunId;
+import io.littlehorse.usertasks.exceptions.NotFoundException;
 import io.littlehorse.usertasks.models.requests.UserTaskRequestFilter;
 import io.littlehorse.usertasks.models.responses.SimpleUserTaskRunDTO;
+import io.littlehorse.usertasks.models.responses.UserTaskFieldDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskRunListDTO;
 import io.littlehorse.usertasks.util.DateUtil;
+import io.littlehorse.usertasks.util.UserTaskFieldType;
 import io.littlehorse.usertasks.util.UserTaskStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,6 +34,7 @@ import java.util.UUID;
 import java.util.function.Predicate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -386,6 +393,76 @@ class UserTaskServiceTest {
         verify(lhClient, times(2)).getUserTaskRun(any(UserTaskRunId.class));
     }
 
+    @Test
+    void getUserTaskDetails_shouldThrowNotFoundExceptionWhenNoUserTaskRunIsFoundGivenAWfRunIdAndUserTaskRunGuid() {
+        var nonExistingWfRunId = "some-fake-wf-run-id";
+        var nonExistingUserTaskGuid = UUID.randomUUID().toString().replace("-", "");
+        var expectedExceptionMessage = "Could not find UserTaskRun!";
+
+        NotFoundException exception = assertThrows(NotFoundException.class,
+                () -> userTaskService.getUserTaskDetails(nonExistingWfRunId, nonExistingUserTaskGuid));
+
+        assertEquals(expectedExceptionMessage, exception.getMessage());
+
+        verify(lhClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhClient, never()).getUserTaskDef(any(UserTaskDefId.class));
+    }
+
+    @Test
+    void getUserTaskDetails_shouldThrowNotFoundExceptionWhenNoUserTaskDefIsFoundForGivenUserTaskDefId() {
+        var userId = UUID.randomUUID().toString();
+        var existingWfRunId = "some-existing-wf-run-id";
+        var existingUserTaskGuid = UUID.randomUUID().toString().replace("-", "");
+        var expectedExceptionMessage = "Could not find associated UserTaskDef!";
+
+        var foundUserTaskRun = buildFakeUserTaskRun(userId, existingWfRunId);
+
+        when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(foundUserTaskRun);
+
+        NotFoundException exception = assertThrows(NotFoundException.class,
+                () -> userTaskService.getUserTaskDetails(existingWfRunId, existingUserTaskGuid));
+
+        assertEquals(expectedExceptionMessage, exception.getMessage());
+
+        verify(lhClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhClient).getUserTaskDef(any(UserTaskDefId.class));
+    }
+
+    @Test
+    void getUserTaskDetails_shouldReturnDetailedUserTaskRunDTOWhenFoundForGivenWfRunIdAndUserTaskRunGuid() {
+        var userId = UUID.randomUUID().toString();
+        var existingWfRunId = "some-existing-wf-run-id";
+        var existingUserTaskGuid = UUID.randomUUID().toString().replace("-", "");
+
+        var foundUserTaskRun = buildFakeUserTaskRun(userId, existingWfRunId)
+                .toBuilder()
+                .setId(UserTaskRunId.newBuilder()
+                        .setWfRunId(WfRunId.newBuilder()
+                                .setId(existingWfRunId)
+                                .build())
+                        .setUserTaskGuid(existingUserTaskGuid)
+                        .build())
+                .build();
+        var foundUserTaskDef = buildFakeUserTaskDef(foundUserTaskRun.getUserTaskDefId().getName());
+
+        when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(foundUserTaskRun);
+        when(lhClient.getUserTaskDef(any(UserTaskDefId.class))).thenReturn(foundUserTaskDef);
+
+        var result = userTaskService.getUserTaskDetails(existingWfRunId, existingUserTaskGuid);
+
+        assertTrue(result.isPresent());
+
+        var foundUserTaskRunDTO = result.get();
+
+        assertEquals(existingWfRunId, foundUserTaskRunDTO.getWfRunId());
+        assertEquals(existingUserTaskGuid, foundUserTaskRunDTO.getId());
+        assertFalse(foundUserTaskRunDTO.getFields().isEmpty());
+        assertTrue(foundUserTaskRunDTO.getFields().stream().allMatch(hasMandatoryFieldsForUserTaskField()));
+
+        verify(lhClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhClient).getUserTaskDef(any(UserTaskDefId.class));
+    }
+
     private UserTaskRunId buildFakeUserTaskRunId(String wfRunId) {
         return UserTaskRunId.newBuilder()
                 .setUserTaskGuid(UUID.randomUUID().toString())
@@ -455,6 +532,25 @@ class UserTaskServiceTest {
                 .build();
     }
 
+    private UserTaskDef buildFakeUserTaskDef(String userTaskDefId) {
+        return UserTaskDef.newBuilder()
+                .setName(userTaskDefId)
+                .addFields(buildFakeUserTaskField(VariableType.STR, "Requested by"))
+                .addFields(buildFakeUserTaskField(VariableType.STR, "Request"))
+                .addFields(buildFakeUserTaskField(VariableType.BOOL, "Approved"))
+                .build();
+    }
+
+    private UserTaskField buildFakeUserTaskField(VariableType type, String fieldName) {
+        return UserTaskField.newBuilder()
+                .setName(fieldName)
+                .setDisplayName(fieldName)
+                .setDescription("Random description")
+                .setType(type)
+                .setRequired(true)
+                .build();
+    }
+
     private Predicate<SimpleUserTaskRunDTO> hasMandatoryFieldsForAUser(String userId) {
         return dto -> StringUtils.hasText(dto.getId()) && StringUtils.hasText(dto.getWfRunId())
                 && StringUtils.hasText(dto.getUserTaskDefId())
@@ -473,5 +569,13 @@ class UserTaskServiceTest {
 
     private Predicate<SimpleUserTaskRunDTO> hasScheduledTimeBeforeLatestStart(LocalDateTime latestStartDate) {
         return dto -> Objects.nonNull(dto.getScheduledTime()) && dto.getScheduledTime().isBefore(latestStartDate);
+    }
+
+    private Predicate<UserTaskFieldDTO> hasMandatoryFieldsForUserTaskField() {
+        return userTaskFieldDTO -> StringUtils.hasText(userTaskFieldDTO.getName())
+                && StringUtils.hasText(userTaskFieldDTO.getDescription())
+                && StringUtils.hasText(userTaskFieldDTO.getDisplayName())
+                && Objects.nonNull(userTaskFieldDTO.getType())
+                && !userTaskFieldDTO.getType().equals(UserTaskFieldType.UNRECOGNIZED);
     }
 }
