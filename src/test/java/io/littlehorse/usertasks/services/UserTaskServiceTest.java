@@ -338,7 +338,7 @@ class UserTaskServiceTest {
         Set<SimpleUserTaskRunDTO> actualUserTaskDTOs = result.get().getUserTasks();
 
         assertTrue(actualUserTaskDTOs.stream().allMatch(hasMandatoryFieldsForAUser(userId)));
-        assertTrue(actualUserTaskDTOs.stream().allMatch(dto -> dto.getUserTaskDefId().equalsIgnoreCase(type)));
+        assertTrue(actualUserTaskDTOs.stream().allMatch(dto -> dto.getUserTaskDefName().equalsIgnoreCase(type)));
 
         verify(lhClient).searchUserTaskRun(searchRequest);
         verify(lhClient, times(2)).getUserTaskRun(any(UserTaskRunId.class));
@@ -385,7 +385,7 @@ class UserTaskServiceTest {
         Set<SimpleUserTaskRunDTO> actualUserTaskDTOs = result.get().getUserTasks();
 
         assertTrue(actualUserTaskDTOs.stream().allMatch(hasMandatoryFieldsForAUser(userId)));
-        assertTrue(actualUserTaskDTOs.stream().allMatch(dto -> dto.getUserTaskDefId().equalsIgnoreCase(type)));
+        assertTrue(actualUserTaskDTOs.stream().allMatch(dto -> dto.getUserTaskDefName().equalsIgnoreCase(type)));
         assertTrue(actualUserTaskDTOs.stream().allMatch(hasScheduledTimeAfterEarliestStart(earliestDate)));
         assertTrue(actualUserTaskDTOs.stream().allMatch(hasScheduledTimeBeforeLatestStart(latestDate)));
 
@@ -553,7 +553,7 @@ class UserTaskServiceTest {
 
     private Predicate<SimpleUserTaskRunDTO> hasMandatoryFieldsForAUser(String userId) {
         return dto -> StringUtils.hasText(dto.getId()) && StringUtils.hasText(dto.getWfRunId())
-                && StringUtils.hasText(dto.getUserTaskDefId())
+                && StringUtils.hasText(dto.getUserTaskDefName())
                 && StringUtils.hasText(dto.getUserId()) && dto.getUserId().equalsIgnoreCase(userId)
                 && Objects.nonNull(dto.getStatus()) && dto.getStatus() == UserTaskStatus.ASSIGNED
                 && Objects.nonNull(dto.getScheduledTime());

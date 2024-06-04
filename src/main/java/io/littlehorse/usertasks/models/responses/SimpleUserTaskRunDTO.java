@@ -30,7 +30,7 @@ public class SimpleUserTaskRunDTO {
     @NotBlank
     private String wfRunId;
     @NotBlank
-    private String userTaskDefId;
+    private String userTaskDefName;
     @Nullable
     private String userGroup;
     @Nullable
@@ -46,7 +46,7 @@ public class SimpleUserTaskRunDTO {
         return SimpleUserTaskRunDTO.builder()
                 .id(userTaskRun.getId().getUserTaskGuid())
                 .wfRunId(userTaskRun.getId().getWfRunId().getId())
-                .userTaskDefId(userTaskRun.getUserTaskDefId().getName())
+                .userTaskDefName(userTaskRun.getUserTaskDefId().getName())
                 .userId(userTaskRun.getUserId())
                 .userGroup(userTaskRun.getUserGroup())
                 .notes(userTaskRun.getNotes())
