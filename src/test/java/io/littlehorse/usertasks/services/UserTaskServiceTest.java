@@ -21,7 +21,6 @@ import io.littlehorse.usertasks.models.responses.UserTaskRunListDTO;
 import io.littlehorse.usertasks.util.DateUtil;
 import io.littlehorse.usertasks.util.UserTaskFieldType;
 import io.littlehorse.usertasks.util.UserTaskStatus;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -530,8 +529,6 @@ class UserTaskServiceTest {
         verify(lhClient).getUserTaskDef(any(UserTaskDefId.class));
     }
 
-    //TODO: Pending to be fixed
-    @Disabled
     @Test
     void getUserTaskDetails_shouldReturnDetailedUserTaskRunDTOWhenFoundForGivenWfRunIdAndUserTaskRunGuidWithMatchingUserGroup() {
         var userId = UUID.randomUUID().toString();
@@ -564,7 +561,46 @@ class UserTaskServiceTest {
         assertEquals(existingWfRunId, foundUserTaskRunDTO.getWfRunId());
         assertEquals(existingUserTaskGuid, foundUserTaskRunDTO.getId());
         assertFalse(foundUserTaskRunDTO.getFields().isEmpty());
-        assertFalse(!StringUtils.hasText(foundUserTaskRunDTO.getUserId()));
+        assertFalse(StringUtils.hasText(foundUserTaskRunDTO.getUserId()));
+        assertTrue(foundUserTaskRunDTO.getFields().stream().allMatch(hasMandatoryFieldsForUserTaskField()));
+
+        verify(lhClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhClient).getUserTaskDef(any(UserTaskDefId.class));
+    }
+
+    @Test
+    void getUserTaskDetails_shouldReturnDetailedUserTaskRunDTOWhenFoundForGivenWfRunIdAndUserTaskRunGuidWithMatchingUserIdButNoMatchingUserGroup() {
+        var userId = UUID.randomUUID().toString();
+        var setUserGroup = "my-user-group";
+        var requestUserGroup = "my-cool-user-group";
+        var existingWfRunId = "some-existing-wf-run-id";
+        var existingUserTaskGuid = UUID.randomUUID().toString().replace("-", "");
+
+        var foundUserTaskRun = buildFakeUserTaskRun(userId, existingWfRunId)
+                .toBuilder()
+                .setId(UserTaskRunId.newBuilder()
+                        .setWfRunId(WfRunId.newBuilder()
+                                .setId(existingWfRunId)
+                                .build())
+                        .setUserTaskGuid(existingUserTaskGuid)
+                        .build())
+                .setUserGroup(setUserGroup)
+                .build();
+        var foundUserTaskDef = buildFakeUserTaskDef(foundUserTaskRun.getUserTaskDefId().getName());
+
+        when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(foundUserTaskRun);
+        when(lhClient.getUserTaskDef(any(UserTaskDefId.class))).thenReturn(foundUserTaskDef);
+
+        var result = userTaskService.getUserTaskDetails(existingWfRunId, existingUserTaskGuid, userId, requestUserGroup);
+
+        assertTrue(result.isPresent());
+
+        var foundUserTaskRunDTO = result.get();
+
+        assertEquals(existingWfRunId, foundUserTaskRunDTO.getWfRunId());
+        assertEquals(existingUserTaskGuid, foundUserTaskRunDTO.getId());
+        assertFalse(foundUserTaskRunDTO.getFields().isEmpty());
+        assertEquals(userId, foundUserTaskRunDTO.getUserId());
         assertTrue(foundUserTaskRunDTO.getFields().stream().allMatch(hasMandatoryFieldsForUserTaskField()));
 
         verify(lhClient).getUserTaskRun(any(UserTaskRunId.class));
