@@ -1,6 +1,7 @@
 package io.littlehorse.usertasks.util;
 
 import io.littlehorse.sdk.common.proto.VariableType;
+import lombok.NonNull;
 
 /**
  * {@code UserTaskFieldType} is a utility {@code enum} that represents the different data types  that
@@ -18,7 +19,7 @@ public enum UserTaskFieldType {
      * @return A custom representation of an {@code io.littlehorse.sdk.common.proto.VariableType}
      * @see io.littlehorse.sdk.common.proto.VariableType
      */
-    public static UserTaskFieldType fromServerType(VariableType type) {
+    public static UserTaskFieldType fromServerType(@NonNull VariableType type) {
         switch (type) {
             case DOUBLE -> {
                 return DOUBLE;

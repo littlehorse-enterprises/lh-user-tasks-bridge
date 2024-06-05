@@ -2,10 +2,12 @@ package io.littlehorse.usertasks.models.responses;
 
 import io.littlehorse.sdk.common.proto.UserTaskField;
 import io.littlehorse.usertasks.util.UserTaskFieldType;
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 
 /**
  * {@code UserTaskFieldDTO} is a Data Transfer Object that contains information about a specific {@code io.littlehorse.sdk.common.proto.UserTaskField}
@@ -17,13 +19,16 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class UserTaskFieldDTO {
+    @NotBlank
     private String name;
+    @NotBlank
     private String displayName;
     private String description;
+    @NonNull
     private UserTaskFieldType type;
     private boolean required;
 
-    public static UserTaskFieldDTO fromServerUserTaskField(UserTaskField userTaskField) {
+    public static UserTaskFieldDTO fromServerUserTaskField(@NonNull UserTaskField userTaskField) {
         return UserTaskFieldDTO.builder()
                 .name(userTaskField.getName())
                 .displayName(userTaskField.getDisplayName())

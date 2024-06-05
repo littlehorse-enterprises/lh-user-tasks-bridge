@@ -13,9 +13,8 @@ import io.littlehorse.usertasks.models.requests.UserTaskRequestFilter;
 import io.littlehorse.usertasks.models.responses.DetailedUserTaskRunDTO;
 import io.littlehorse.usertasks.models.responses.SimpleUserTaskRunDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskRunListDTO;
+import lombok.NonNull;
 import org.apache.tomcat.util.codec.binary.Base64;
-import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -33,10 +32,10 @@ public class UserTaskService {
         this.lhClient = lhClient;
     }
 
-    public Optional<UserTaskRunListDTO> getMyTasks(@NonNull String userId, @Nullable String userGroup,
-                                                   @Nullable UserTaskRequestFilter additionalFilters,
+    public Optional<UserTaskRunListDTO> getMyTasks(@NonNull String userId, String userGroup,
+                                                   UserTaskRequestFilter additionalFilters,
                                                    int limit,
-                                                   @Nullable byte[] bookmark) {
+                                                   byte[] bookmark) {
         var pagination = StandardPagination.builder()
                 .bookmark(bookmark)
                 .limit(limit)
@@ -68,7 +67,7 @@ public class UserTaskService {
     }
 
     public Optional<DetailedUserTaskRunDTO> getUserTaskDetails(@NonNull String wfRunId, @NonNull String userTaskRunGuid,
-                                                               @NonNull String userId, @Nullable String userGroup) {
+                                                               @NonNull String userId, String userGroup) {
         var getUserTaskRunRequest = UserTaskRunId.newBuilder()
                 .setWfRunId(WfRunId.newBuilder()
                         .setId(wfRunId)
@@ -95,8 +94,8 @@ public class UserTaskService {
         return Optional.of(resultDto);
     }
 
-    private SearchUserTaskRunRequest buildSearchUserTaskRunRequest(@NonNull String userId, @Nullable String userGroup,
-                                                                   @Nullable UserTaskRequestFilter additionalFilters,
+    private SearchUserTaskRunRequest buildSearchUserTaskRunRequest(@NonNull String userId, String userGroup,
+                                                                   UserTaskRequestFilter additionalFilters,
                                                                    @NonNull StandardPagination pagination) {
         var builder = SearchUserTaskRunRequest.newBuilder();
         builder.setUserId(userId);
@@ -115,7 +114,7 @@ public class UserTaskService {
         return builder.build();
     }
 
-    private void addAdditionalFilters(@Nullable UserTaskRequestFilter additionalFilters, SearchUserTaskRunRequest.Builder builder) {
+    private void addAdditionalFilters(UserTaskRequestFilter additionalFilters, SearchUserTaskRunRequest.Builder builder) {
         if (Objects.nonNull(additionalFilters)) {
             if (Objects.nonNull(additionalFilters.getEarliestStartDate())) {
                 builder.setEarliestStart(additionalFilters.getEarliestStartDate());
@@ -141,7 +140,7 @@ public class UserTaskService {
         }
     }
 
-    private void validateIfUserIsAllowedToSeeUserTask(@NonNull String userId, @Nullable String userGroup, @NonNull UserTaskRun userTaskRun) {
+    private void validateIfUserIsAllowedToSeeUserTask(@NonNull String userId, String userGroup, @NonNull UserTaskRun userTaskRun) {
         if (!StringUtils.hasText(userId)) {
             throw new CustomUnauthorizedException("Unable to read provided user information");
         }

@@ -2,13 +2,12 @@ package io.littlehorse.usertasks.models.responses;
 
 import io.littlehorse.sdk.common.proto.UserTaskRun;
 import io.littlehorse.usertasks.util.UserTaskStatus;
-import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 
 import java.time.LocalDateTime;
 
@@ -31,18 +30,15 @@ public class SimpleUserTaskRunDTO {
     private String wfRunId;
     @NotBlank
     private String userTaskDefName;
-    @Nullable
     private String userGroup;
-    @Nullable
     private String userId;
-    @NotNull
+    @NonNull
     private UserTaskStatus status;
-    @Nullable
     private String notes;
-    @NotNull
+    @NonNull
     private LocalDateTime scheduledTime;
 
-    public static SimpleUserTaskRunDTO fromUserTaskRun(UserTaskRun userTaskRun) {
+    public static SimpleUserTaskRunDTO fromUserTaskRun(@NonNull UserTaskRun userTaskRun) {
         return SimpleUserTaskRunDTO.builder()
                 .id(userTaskRun.getId().getUserTaskGuid())
                 .wfRunId(userTaskRun.getId().getWfRunId().getId())

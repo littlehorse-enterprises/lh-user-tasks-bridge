@@ -1,7 +1,7 @@
 package io.littlehorse.usertasks.util;
 
 import com.google.protobuf.Timestamp;
-import org.springframework.lang.NonNull;
+import lombok.NonNull;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -20,7 +20,7 @@ public class DateUtil {
         return LocalDateTime.ofEpochSecond(date.getSeconds(), date.getNanos(), ZoneOffset.UTC);
     }
 
-    public static Timestamp localDateTimeToTimestamp(LocalDateTime date) {
+    public static Timestamp localDateTimeToTimestamp(@NonNull LocalDateTime date) {
         return Timestamp.newBuilder()
                 .setSeconds(date.toEpochSecond(UTC_ZONE))
                 .setNanos(date.getNano())
