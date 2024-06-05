@@ -1,8 +1,10 @@
 package io.littlehorse.usertasks.controllers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.littlehorse.usertasks.exceptions.CustomUnauthorizedException;
 import io.littlehorse.usertasks.exceptions.NotFoundException;
 import io.littlehorse.usertasks.models.requests.UserTaskRequestFilter;
+import io.littlehorse.usertasks.models.responses.DetailedUserTaskRunDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskRunListDTO;
 import io.littlehorse.usertasks.services.TenantService;
 import io.littlehorse.usertasks.services.UserTaskService;
@@ -80,9 +82,43 @@ public class UserController {
             return optionalUserTasks
                     .map(ResponseEntity::ok)
                     .orElseThrow(() -> new NotFoundException("No UserTasks found with given search criteria"));
+        } catch (NotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
         } catch (JsonProcessingException e) {
             log.error("Something went wrong when getting claims from token");
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e);
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e);
+        }
+    }
+
+    @GetMapping("/{tenant_id}/myTasks/{wf_run_id}/{user_task_guid}")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseEntity<DetailedUserTaskRunDTO> getUserTaskDetail(@RequestHeader("Authorization") String accessToken,
+                                                                    @PathVariable(name = "tenant_id") String tenantId,
+                                                                    @PathVariable(name = "wf_run_id") String wfRunId,
+                                                                    @PathVariable(name = "user_task_guid") String userTaskRunGuid) {
+
+        try {
+            if (!tenantService.isValidTenant(tenantId)) {
+                return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.UNAUTHORIZED)).build();
+            }
+
+            var tokenClaims = TokenUtil.getTokenClaims(accessToken);
+
+            var userIdFromToken = (String) tokenClaims.get(USER_ID_CLAIM);
+
+            var optionalUserTaskDetail = userTaskService.getUserTaskDetails(wfRunId, userTaskRunGuid, userIdFromToken, null);
+
+            if (optionalUserTaskDetail.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            return ResponseEntity.of(optionalUserTaskDetail);
+        } catch (NotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
+        } catch (CustomUnauthorizedException e) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, e.getMessage(), e);
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e);
         }

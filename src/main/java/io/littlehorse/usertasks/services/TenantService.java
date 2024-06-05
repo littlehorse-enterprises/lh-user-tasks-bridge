@@ -2,7 +2,7 @@ package io.littlehorse.usertasks.services;
 
 import io.littlehorse.sdk.common.proto.LittleHorseGrpc;
 import io.littlehorse.sdk.common.proto.TenantId;
-import org.springframework.lang.NonNull;
+import lombok.NonNull;
 import org.springframework.stereotype.Service;
 
 import java.util.Objects;

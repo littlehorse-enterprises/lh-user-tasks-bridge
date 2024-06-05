@@ -4,13 +4,17 @@ import com.google.protobuf.ByteString;
 import io.littlehorse.sdk.common.proto.LittleHorseGrpc;
 import io.littlehorse.sdk.common.proto.SearchUserTaskRunRequest;
 import io.littlehorse.sdk.common.proto.UserTaskRun;
+import io.littlehorse.sdk.common.proto.UserTaskRunId;
+import io.littlehorse.sdk.common.proto.WfRunId;
+import io.littlehorse.usertasks.exceptions.CustomUnauthorizedException;
+import io.littlehorse.usertasks.exceptions.NotFoundException;
 import io.littlehorse.usertasks.models.requests.StandardPagination;
 import io.littlehorse.usertasks.models.requests.UserTaskRequestFilter;
+import io.littlehorse.usertasks.models.responses.DetailedUserTaskRunDTO;
 import io.littlehorse.usertasks.models.responses.SimpleUserTaskRunDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskRunListDTO;
+import lombok.NonNull;
 import org.apache.tomcat.util.codec.binary.Base64;
-import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -28,10 +32,10 @@ public class UserTaskService {
         this.lhClient = lhClient;
     }
 
-    public Optional<UserTaskRunListDTO> getMyTasks(@NonNull String userId, @Nullable String userGroup,
-                                                   @Nullable UserTaskRequestFilter additionalFilters,
+    public Optional<UserTaskRunListDTO> getMyTasks(@NonNull String userId, String userGroup,
+                                                   UserTaskRequestFilter additionalFilters,
                                                    int limit,
-                                                   @Nullable byte[] bookmark) {
+                                                   byte[] bookmark) {
         var pagination = StandardPagination.builder()
                 .bookmark(bookmark)
                 .limit(limit)
@@ -62,8 +66,36 @@ public class UserTaskService {
                 : Optional.of(response);
     }
 
-    private SearchUserTaskRunRequest buildSearchUserTaskRunRequest(@NonNull String userId, @Nullable String userGroup,
-                                                                   @Nullable UserTaskRequestFilter additionalFilters,
+    public Optional<DetailedUserTaskRunDTO> getUserTaskDetails(@NonNull String wfRunId, @NonNull String userTaskRunGuid,
+                                                               @NonNull String userId, String userGroup) {
+        var getUserTaskRunRequest = UserTaskRunId.newBuilder()
+                .setWfRunId(WfRunId.newBuilder()
+                        .setId(wfRunId)
+                        .build())
+                .setUserTaskGuid(userTaskRunGuid)
+                .build();
+
+        var userTaskRunResult = lhClient.getUserTaskRun(getUserTaskRunRequest);
+
+        if (!Objects.nonNull(userTaskRunResult)) {
+            throw new NotFoundException("Could not find UserTaskRun!");
+        }
+
+        validateIfUserIsAllowedToSeeUserTask(userId, userGroup, userTaskRunResult);
+
+        var userTaskDefResult = lhClient.getUserTaskDef(userTaskRunResult.getUserTaskDefId());
+
+        if (!Objects.nonNull(userTaskDefResult)) {
+            throw new NotFoundException("Could not find associated UserTaskDef!");
+        }
+
+        var resultDto = DetailedUserTaskRunDTO.fromUserTaskRun(userTaskRunResult, userTaskDefResult);
+
+        return Optional.of(resultDto);
+    }
+
+    private SearchUserTaskRunRequest buildSearchUserTaskRunRequest(@NonNull String userId, String userGroup,
+                                                                   UserTaskRequestFilter additionalFilters,
                                                                    @NonNull StandardPagination pagination) {
         var builder = SearchUserTaskRunRequest.newBuilder();
         builder.setUserId(userId);
@@ -82,7 +114,7 @@ public class UserTaskService {
         return builder.build();
     }
 
-    private void addAdditionalFilters(@Nullable UserTaskRequestFilter additionalFilters, SearchUserTaskRunRequest.Builder builder) {
+    private void addAdditionalFilters(UserTaskRequestFilter additionalFilters, SearchUserTaskRunRequest.Builder builder) {
         if (Objects.nonNull(additionalFilters)) {
             if (Objects.nonNull(additionalFilters.getEarliestStartDate())) {
                 builder.setEarliestStart(additionalFilters.getEarliestStartDate());
@@ -104,6 +136,29 @@ public class UserTaskService {
                     && !isDateRangeValid(builder.getEarliestStart(), builder.getLatestStart())) {
                 //TODO: Map this to produce a BadRequest error response
                 throw new IllegalArgumentException("Wrong date range received");
+            }
+        }
+    }
+
+    private void validateIfUserIsAllowedToSeeUserTask(@NonNull String userId, String userGroup, @NonNull UserTaskRun userTaskRun) {
+        if (!StringUtils.hasText(userId)) {
+            throw new CustomUnauthorizedException("Unable to read provided user information");
+        }
+
+        if (userTaskRun.hasUserGroup()) {
+            var hasNoMatchingUserGroup = !userTaskRun.getUserGroup().equalsIgnoreCase(userGroup);
+            var hasNoMatchingUserId = userTaskRun.hasUserId() && !userTaskRun.getUserId().equalsIgnoreCase(userId);
+
+            if (hasNoMatchingUserGroup && hasNoMatchingUserId) {
+                throw new CustomUnauthorizedException("Current user/userGroup is forbidden from accessing this UserTask information");
+            }
+        }
+
+        if (userTaskRun.hasUserId()) {
+            var hasNoMatchingUserId = !userTaskRun.getUserId().equalsIgnoreCase(userId);
+
+            if (hasNoMatchingUserId) {
+                throw new CustomUnauthorizedException("Current user is forbidden from accessing this UserTask information");
             }
         }
     }

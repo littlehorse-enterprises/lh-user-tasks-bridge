@@ -4,7 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.lang.Nullable;
 
 import java.util.Set;
 
@@ -21,6 +20,5 @@ import java.util.Set;
 @AllArgsConstructor
 public class UserTaskRunListDTO {
     private Set<SimpleUserTaskRunDTO> userTasks;
-    @Nullable
     private String bookmark;
 }

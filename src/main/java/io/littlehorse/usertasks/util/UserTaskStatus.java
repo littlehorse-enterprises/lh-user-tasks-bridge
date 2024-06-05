@@ -1,6 +1,7 @@
 package io.littlehorse.usertasks.util;
 
 import io.littlehorse.sdk.common.proto.UserTaskRunStatus;
+import lombok.NonNull;
 
 /**
  * {@code UserTaskStatus} is a utility {@code enum} that represents the different statuses that
@@ -17,7 +18,7 @@ public enum UserTaskStatus {
      * @param serverStatus {@code io.littlehorse.sdk.common.proto.UserTaskRunStatus} gotten from LittleHorse server
      * @return A custom representation of an {@code io.littlehorse.sdk.common.proto.UserTaskRunStatus}
      */
-    public static UserTaskStatus fromServerStatus(UserTaskRunStatus serverStatus) {
+    public static UserTaskStatus fromServerStatus(@NonNull UserTaskRunStatus serverStatus) {
         switch (serverStatus) {
             case UNASSIGNED -> {
                 return UNASSIGNED;
