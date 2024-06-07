@@ -1,6 +1,7 @@
 package io.littlehorse.usertasks.services;
 
 import com.google.protobuf.ByteString;
+import io.littlehorse.sdk.common.proto.CompleteUserTaskRunRequest;
 import io.littlehorse.sdk.common.proto.LittleHorseGrpc;
 import io.littlehorse.sdk.common.proto.SearchUserTaskRunRequest;
 import io.littlehorse.sdk.common.proto.UserTaskRun;
@@ -8,12 +9,14 @@ import io.littlehorse.sdk.common.proto.UserTaskRunId;
 import io.littlehorse.sdk.common.proto.WfRunId;
 import io.littlehorse.usertasks.exceptions.CustomUnauthorizedException;
 import io.littlehorse.usertasks.exceptions.NotFoundException;
+import io.littlehorse.usertasks.models.requests.CompleteUserTaskRequest;
 import io.littlehorse.usertasks.models.requests.StandardPagination;
 import io.littlehorse.usertasks.models.requests.UserTaskRequestFilter;
 import io.littlehorse.usertasks.models.responses.DetailedUserTaskRunDTO;
 import io.littlehorse.usertasks.models.responses.SimpleUserTaskRunDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskRunListDTO;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.util.codec.binary.Base64;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -25,6 +28,7 @@ import java.util.Optional;
 import static io.littlehorse.usertasks.util.DateUtil.isDateRangeValid;
 
 @Service
+@Slf4j
 public class UserTaskService {
     private final LittleHorseGrpc.LittleHorseBlockingStub lhClient;
 
@@ -92,6 +96,29 @@ public class UserTaskService {
         var resultDto = DetailedUserTaskRunDTO.fromUserTaskRun(userTaskRunResult, userTaskDefResult);
 
         return Optional.of(resultDto);
+    }
+
+    public void completeUserTask(@NonNull String userIdFromToken, @NonNull CompleteUserTaskRequest request) {
+        try {
+            log.info("Completing UserTaskRun");
+
+            CompleteUserTaskRunRequest serverRequest = request.toServerRequest(userIdFromToken);
+            lhClient.completeUserTaskRun(serverRequest);
+
+            log.atInfo()
+                    .setMessage("UserTaskRun with wfRunId: {}, guid: {} was successfully completed")
+                    .addArgument(request.getWfRunId())
+                    .addArgument(request.getUserTaskRunGuid())
+                    .log();
+        } catch (Exception e) {
+            log.atError()
+                    .setMessage("Completion of UserTaskRun with wfRunId: {}, guid: {} failed")
+                    .addArgument(request.getWfRunId())
+                    .addArgument(request.getUserTaskRunGuid())
+                    .setCause(e)
+                    .log();
+            throw e;
+        }
     }
 
     private SearchUserTaskRunRequest buildSearchUserTaskRunRequest(@NonNull String userId, String userGroup,

@@ -1,6 +1,8 @@
 package io.littlehorse.usertasks.services;
 
+import com.google.protobuf.Empty;
 import com.google.protobuf.Timestamp;
+import io.littlehorse.sdk.common.proto.CompleteUserTaskRunRequest;
 import io.littlehorse.sdk.common.proto.LittleHorseGrpc;
 import io.littlehorse.sdk.common.proto.SearchUserTaskRunRequest;
 import io.littlehorse.sdk.common.proto.UserTaskDef;
@@ -14,6 +16,7 @@ import io.littlehorse.sdk.common.proto.VariableType;
 import io.littlehorse.sdk.common.proto.WfRunId;
 import io.littlehorse.usertasks.exceptions.CustomUnauthorizedException;
 import io.littlehorse.usertasks.exceptions.NotFoundException;
+import io.littlehorse.usertasks.models.requests.CompleteUserTaskRequest;
 import io.littlehorse.usertasks.models.requests.UserTaskRequestFilter;
 import io.littlehorse.usertasks.models.responses.SimpleUserTaskRunDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskFieldDTO;
@@ -28,6 +31,7 @@ import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -605,6 +609,24 @@ class UserTaskServiceTest {
 
         verify(lhClient).getUserTaskRun(any(UserTaskRunId.class));
         verify(lhClient).getUserTaskDef(any(UserTaskDefId.class));
+    }
+
+    @Test
+    void completeUserTask_shouldSucceedWhenServerDoesNotThrowAnException() {
+        var userId = "my-user-id";
+        var wfRunId = UUID.randomUUID().toString().replace("-", "");
+        var userTaskRunGuid = UUID.randomUUID().toString().replace("-", "");
+        var request = CompleteUserTaskRequest.builder()
+                .wfRunId(wfRunId)
+                .userTaskRunGuid(userTaskRunGuid)
+                .results(Map.of())
+                .build();
+
+        when(lhClient.completeUserTaskRun(any(CompleteUserTaskRunRequest.class))).thenReturn(Empty.getDefaultInstance());
+
+        userTaskService.completeUserTask(userId, request);
+
+        verify(lhClient).completeUserTaskRun(any(CompleteUserTaskRunRequest.class));
     }
 
     private UserTaskRunId buildFakeUserTaskRunId(String wfRunId) {

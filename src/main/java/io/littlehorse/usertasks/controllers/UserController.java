@@ -3,6 +3,8 @@ package io.littlehorse.usertasks.controllers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.littlehorse.usertasks.exceptions.CustomUnauthorizedException;
 import io.littlehorse.usertasks.exceptions.NotFoundException;
+import io.littlehorse.usertasks.models.common.UserTaskVariableValue;
+import io.littlehorse.usertasks.models.requests.CompleteUserTaskRequest;
 import io.littlehorse.usertasks.models.requests.UserTaskRequestFilter;
 import io.littlehorse.usertasks.models.responses.DetailedUserTaskRunDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskRunListDTO;
@@ -19,6 +21,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -26,6 +30,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.Objects;
 
 //TODO: This javadoc comment might be replaced later when OpenAPI/Swagger Specs gets introduced
@@ -49,7 +54,7 @@ public class UserController {
         this.userTaskService = userTaskService;
     }
 
-    @GetMapping("/{tenant_id}/myTasks")
+    @GetMapping("/{tenant_id}/tasks")
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<UserTaskRunListDTO> getMyTasks(@RequestHeader("Authorization") String accessToken,
                                                          @PathVariable(name = "tenant_id") String tenantId,
@@ -92,7 +97,7 @@ public class UserController {
         }
     }
 
-    @GetMapping("/{tenant_id}/myTasks/{wf_run_id}/{user_task_guid}")
+    @GetMapping("/{tenant_id}/tasks/{wf_run_id}/{user_task_guid}")
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<DetailedUserTaskRunDTO> getUserTaskDetail(@RequestHeader("Authorization") String accessToken,
                                                                     @PathVariable(name = "tenant_id") String tenantId,
@@ -122,5 +127,28 @@ public class UserController {
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e);
         }
+    }
+
+    @PostMapping("/{tenant_id}/tasks/{wf_run_id}/{user_task_guid}/result")
+    @ResponseStatus(HttpStatus.CREATED)
+    public void completeUserTask(@RequestHeader("Authorization") String accessToken,
+                                 @PathVariable(name = "tenant_id") String tenantId,
+                                 @PathVariable(name = "wf_run_id") String wfRunId,
+                                 @PathVariable(name = "user_task_guid") String userTaskRunGuid,
+                                 @RequestBody Map<String, UserTaskVariableValue> requestBody) throws JsonProcessingException {
+        if (!tenantService.isValidTenant(tenantId)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+
+        var tokenClaims = TokenUtil.getTokenClaims(accessToken);
+
+        var userIdFromToken = (String) tokenClaims.get(USER_ID_CLAIM);
+        CompleteUserTaskRequest request = CompleteUserTaskRequest.builder()
+                .wfRunId(wfRunId)
+                .userTaskRunGuid(userTaskRunGuid)
+                .results(requestBody)
+                .build();
+
+        userTaskService.completeUserTask(userIdFromToken, request);
     }
 }
