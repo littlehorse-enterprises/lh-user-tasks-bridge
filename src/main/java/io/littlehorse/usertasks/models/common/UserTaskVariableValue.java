@@ -1,5 +1,6 @@
 package io.littlehorse.usertasks.models.common;
 
+import io.littlehorse.sdk.common.proto.VariableType;
 import io.littlehorse.sdk.common.proto.VariableValue;
 import io.littlehorse.usertasks.util.UserTaskFieldType;
 import jakarta.validation.constraints.NotNull;
@@ -44,6 +45,32 @@ public class UserTaskVariableValue {
                         .build();
             }
             default -> throw new IllegalArgumentException("No matching VariableValue found");
+        }
+    }
+
+    public static UserTaskVariableValue fromServerType(VariableValue serverVariableValue) {
+        if (serverVariableValue.hasBool()) {
+            return UserTaskVariableValue.builder()
+                    .value(serverVariableValue.getBool())
+                    .type(UserTaskFieldType.fromServerType(VariableType.BOOL))
+                    .build();
+        } else if (serverVariableValue.hasDouble()) {
+            return UserTaskVariableValue.builder()
+                    .value(serverVariableValue.getDouble())
+                    .type(UserTaskFieldType.fromServerType(VariableType.DOUBLE))
+                    .build();
+        } else if (serverVariableValue.hasInt()) {
+            return UserTaskVariableValue.builder()
+                    .value(serverVariableValue.getInt())
+                    .type(UserTaskFieldType.fromServerType(VariableType.INT))
+                    .build();
+        } else if (serverVariableValue.hasStr()) {
+            return UserTaskVariableValue.builder()
+                    .value(serverVariableValue.getStr())
+                    .type(UserTaskFieldType.fromServerType(VariableType.STR))
+                    .build();
+        } else {
+            throw new IllegalArgumentException("Unknown VariableValue!");
         }
     }
 }

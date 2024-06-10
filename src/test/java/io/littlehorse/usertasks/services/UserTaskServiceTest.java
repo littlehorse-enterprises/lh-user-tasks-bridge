@@ -13,6 +13,7 @@ import io.littlehorse.sdk.common.proto.UserTaskRunId;
 import io.littlehorse.sdk.common.proto.UserTaskRunIdList;
 import io.littlehorse.sdk.common.proto.UserTaskRunStatus;
 import io.littlehorse.sdk.common.proto.VariableType;
+import io.littlehorse.sdk.common.proto.VariableValue;
 import io.littlehorse.sdk.common.proto.WfRunId;
 import io.littlehorse.usertasks.exceptions.CustomUnauthorizedException;
 import io.littlehorse.usertasks.exceptions.NotFoundException;
@@ -531,6 +532,54 @@ class UserTaskServiceTest {
         assertEquals(existingUserTaskGuid, foundUserTaskRunDTO.getId());
         assertFalse(foundUserTaskRunDTO.getFields().isEmpty());
         assertTrue(foundUserTaskRunDTO.getFields().stream().allMatch(hasMandatoryFieldsForUserTaskField()));
+
+        verify(lhClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhClient).getUserTaskDef(any(UserTaskDefId.class));
+    }
+
+    @Test
+    void getUserTaskDetails_shouldReturnDetailedUserTaskRunDTOWhenFoundForGivenWfRunIdAndUserTaskRunGuidAfterCompletion() {
+        var userId = UUID.randomUUID().toString();
+        var existingWfRunId = "some-existing-wf-run-id";
+        var existingUserTaskGuid = buildStringGuid();
+
+        var foundUserTaskRun = buildFakeUserTaskRun(userId, existingWfRunId)
+                .toBuilder()
+                .setId(UserTaskRunId.newBuilder()
+                        .setWfRunId(WfRunId.newBuilder()
+                                .setId(existingWfRunId)
+                                .build())
+                        .setUserTaskGuid(existingUserTaskGuid)
+                        .build())
+                .setStatus(UserTaskRunStatus.DONE)
+                .build();
+        var foundUserTaskDef = buildFakeUserTaskDef(foundUserTaskRun.getUserTaskDefId().getName());
+        var expectedResultsKeys = Set.of("Requested by", "Request", "Approved");
+        Map<String, VariableValue> expectedResultValues = Map.of(
+                "Requested by", VariableValue.newBuilder().setStr("Pedro").build(),
+                "Request", VariableValue.newBuilder().setStr("Something Pedro's needing").build(),
+                "Approved", VariableValue.newBuilder().setBool(true).build()
+        );
+
+        foundUserTaskRun = foundUserTaskRun.toBuilder()
+                .putAllResults(expectedResultValues)
+                .build();
+
+        when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(foundUserTaskRun);
+        when(lhClient.getUserTaskDef(any(UserTaskDefId.class))).thenReturn(foundUserTaskDef);
+
+        var result = userTaskService.getUserTaskDetails(existingWfRunId, existingUserTaskGuid, userId, null);
+
+        assertTrue(result.isPresent());
+
+        var foundUserTaskRunDTO = result.get();
+
+        assertEquals(existingWfRunId, foundUserTaskRunDTO.getWfRunId());
+        assertEquals(existingUserTaskGuid, foundUserTaskRunDTO.getId());
+        assertFalse(foundUserTaskRunDTO.getFields().isEmpty());
+        assertTrue(foundUserTaskRunDTO.getFields().stream().allMatch(hasMandatoryFieldsForUserTaskField()));
+        assertFalse(foundUserTaskRunDTO.getResults().isEmpty());
+        assertTrue(foundUserTaskRunDTO.getResults().keySet().containsAll(expectedResultsKeys));
 
         verify(lhClient).getUserTaskRun(any(UserTaskRunId.class));
         verify(lhClient).getUserTaskDef(any(UserTaskDefId.class));
