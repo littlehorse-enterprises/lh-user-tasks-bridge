@@ -2,6 +2,8 @@ package io.littlehorse.usertasks.models.responses;
 
 import io.littlehorse.sdk.common.proto.UserTaskDef;
 import io.littlehorse.sdk.common.proto.UserTaskRun;
+import io.littlehorse.sdk.common.proto.VariableValue;
+import io.littlehorse.usertasks.models.common.UserTaskVariableValue;
 import io.littlehorse.usertasks.util.UserTaskStatus;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
@@ -12,6 +14,8 @@ import lombok.NonNull;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import static io.littlehorse.usertasks.util.DateUtil.timestampToLocalDateTime;
 
@@ -42,7 +46,7 @@ public class DetailedUserTaskRunDTO {
     private LocalDateTime scheduledTime;
     @NonNull
     private List<UserTaskFieldDTO> fields;
-    //TODO: Pending to add "results" field
+    private Map<String, UserTaskVariableValue> results;
 
     public static DetailedUserTaskRunDTO fromUserTaskRun(@NonNull UserTaskRun userTaskRun, @NonNull UserTaskDef userTaskDef) {
         var fields = userTaskDef.getFieldsList().stream()
@@ -59,6 +63,12 @@ public class DetailedUserTaskRunDTO {
                 .status(UserTaskStatus.fromServerStatus(userTaskRun.getStatus()))
                 .scheduledTime(timestampToLocalDateTime(userTaskRun.getScheduledTime()))
                 .fields(fields)
+                .results(fromServerTypeResults(userTaskRun.getResultsMap()))
                 .build();
+    }
+
+    private static Map<String, UserTaskVariableValue> fromServerTypeResults(Map<String, VariableValue> serverResults) {
+        return serverResults.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, entry -> UserTaskVariableValue.fromServerType(entry.getValue())));
     }
 }
