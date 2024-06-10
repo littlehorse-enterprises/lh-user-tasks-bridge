@@ -130,7 +130,7 @@ public class UserController {
     }
 
     @PostMapping("/{tenant_id}/tasks/{wf_run_id}/{user_task_guid}/result")
-    @ResponseStatus(HttpStatus.CREATED)
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     public void completeUserTask(@RequestHeader("Authorization") String accessToken,
                                  @PathVariable(name = "tenant_id") String tenantId,
                                  @PathVariable(name = "wf_run_id") String wfRunId,

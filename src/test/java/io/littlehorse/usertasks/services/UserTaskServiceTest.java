@@ -16,6 +16,7 @@ import io.littlehorse.sdk.common.proto.VariableType;
 import io.littlehorse.sdk.common.proto.WfRunId;
 import io.littlehorse.usertasks.exceptions.CustomUnauthorizedException;
 import io.littlehorse.usertasks.exceptions.NotFoundException;
+import io.littlehorse.usertasks.models.common.UserTaskVariableValue;
 import io.littlehorse.usertasks.models.requests.CompleteUserTaskRequest;
 import io.littlehorse.usertasks.models.requests.UserTaskRequestFilter;
 import io.littlehorse.usertasks.models.responses.SimpleUserTaskRunDTO;
@@ -27,7 +28,9 @@ import io.littlehorse.usertasks.util.UserTaskStatus;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 import org.springframework.util.StringUtils;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -401,7 +404,7 @@ class UserTaskServiceTest {
     @Test
     void getUserTaskDetails_shouldThrowNotFoundExceptionWhenNoUserTaskRunIsFoundGivenAWfRunIdAndUserTaskRunGuid() {
         var nonExistingWfRunId = "some-fake-wf-run-id";
-        var nonExistingUserTaskGuid = UUID.randomUUID().toString().replace("-", "");
+        var nonExistingUserTaskGuid = buildStringGuid();
         var expectedExceptionMessage = "Could not find UserTaskRun!";
 
         NotFoundException exception = assertThrows(NotFoundException.class,
@@ -417,7 +420,7 @@ class UserTaskServiceTest {
     void getUserTaskDetails_shouldThrowNotFoundExceptionWhenNoUserTaskDefIsFoundForGivenUserTaskDefId() {
         var userId = UUID.randomUUID().toString();
         var existingWfRunId = "some-existing-wf-run-id";
-        var existingUserTaskGuid = UUID.randomUUID().toString().replace("-", "");
+        var existingUserTaskGuid = buildStringGuid();
         var expectedExceptionMessage = "Could not find associated UserTaskDef!";
 
         var foundUserTaskRun = buildFakeUserTaskRun(userId, existingWfRunId);
@@ -437,7 +440,7 @@ class UserTaskServiceTest {
     void getUserTaskDetails_shouldThrowCustomUnauthorizedExceptionWhenUserIdIsBlankSpaceOnly() {
         var userId = " ";
         var existingWfRunId = "some-existing-wf-run-id";
-        var existingUserTaskGuid = UUID.randomUUID().toString().replace("-", "");
+        var existingUserTaskGuid = buildStringGuid();
         var expectedExceptionMessage = "Unable to read provided user information";
 
         var foundUserTaskRun = buildFakeUserTaskRun(UUID.randomUUID().toString(), existingWfRunId);
@@ -457,7 +460,7 @@ class UserTaskServiceTest {
     void getUserTaskDetails_shouldThrowCustomUnauthorizedExceptionWhenUserGroupAndUserIdAreNotRelatedToFoundUserTaskRun() {
         var userId = UUID.randomUUID().toString();
         var existingWfRunId = "some-existing-wf-run-id";
-        var existingUserTaskGuid = UUID.randomUUID().toString().replace("-", "");
+        var existingUserTaskGuid = buildStringGuid();
         var expectedExceptionMessage = "Current user/userGroup is forbidden from accessing this UserTask information";
 
         var foundUserTaskRun = buildFakeUserTaskRun(userId, existingWfRunId).toBuilder()
@@ -480,7 +483,7 @@ class UserTaskServiceTest {
     void getUserTaskDetails_shouldThrowCustomUnauthorizedExceptionWhenUserIdIsNotAssignedToFoundUserTaskRun() {
         var userId = UUID.randomUUID().toString();
         var existingWfRunId = "some-existing-wf-run-id";
-        var existingUserTaskGuid = UUID.randomUUID().toString().replace("-", "");
+        var existingUserTaskGuid = buildStringGuid();
         var expectedExceptionMessage = "Current user is forbidden from accessing this UserTask information";
 
         var foundUserTaskRun = buildFakeUserTaskRun(userId, existingWfRunId).toBuilder()
@@ -502,7 +505,7 @@ class UserTaskServiceTest {
     void getUserTaskDetails_shouldReturnDetailedUserTaskRunDTOWhenFoundForGivenWfRunIdAndUserTaskRunGuid() {
         var userId = UUID.randomUUID().toString();
         var existingWfRunId = "some-existing-wf-run-id";
-        var existingUserTaskGuid = UUID.randomUUID().toString().replace("-", "");
+        var existingUserTaskGuid = buildStringGuid();
 
         var foundUserTaskRun = buildFakeUserTaskRun(userId, existingWfRunId)
                 .toBuilder()
@@ -538,7 +541,7 @@ class UserTaskServiceTest {
         var userId = UUID.randomUUID().toString();
         var userGroup = "my-user-group";
         var existingWfRunId = "some-existing-wf-run-id";
-        var existingUserTaskGuid = UUID.randomUUID().toString().replace("-", "");
+        var existingUserTaskGuid = buildStringGuid();
 
         var foundUserTaskRun = buildFakeUserTaskRun(userId, existingWfRunId)
                 .toBuilder()
@@ -578,7 +581,7 @@ class UserTaskServiceTest {
         var setUserGroup = "my-user-group";
         var requestUserGroup = "my-cool-user-group";
         var existingWfRunId = "some-existing-wf-run-id";
-        var existingUserTaskGuid = UUID.randomUUID().toString().replace("-", "");
+        var existingUserTaskGuid = buildStringGuid();
 
         var foundUserTaskRun = buildFakeUserTaskRun(userId, existingWfRunId)
                 .toBuilder()
@@ -614,19 +617,186 @@ class UserTaskServiceTest {
     @Test
     void completeUserTask_shouldSucceedWhenServerDoesNotThrowAnException() {
         var userId = "my-user-id";
-        var wfRunId = UUID.randomUUID().toString().replace("-", "");
-        var userTaskRunGuid = UUID.randomUUID().toString().replace("-", "");
+        var wfRunId = buildStringGuid();
+        var userTaskRunGuid = buildStringGuid();
+        var request = CompleteUserTaskRequest.builder()
+                .wfRunId(wfRunId)
+                .userTaskRunGuid(userTaskRunGuid)
+                .results(Map.of(
+                                "string-field", UserTaskVariableValue.builder()
+                                        .value("some-value")
+                                        .type(UserTaskFieldType.STRING)
+                                        .build(),
+                                "integer-field", UserTaskVariableValue.builder()
+                                        .value(1)
+                                        .type(UserTaskFieldType.INTEGER)
+                                        .build()
+                        )
+                ).build();
+
+        var userTaskRun = buildFakeUserTaskRun(userId, wfRunId);
+        var userTaskDef = buildFakeUserTaskDef(userTaskRun.getUserTaskDefId().getName());
+
+        when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun);
+        when(lhClient.getUserTaskDef(any(UserTaskDefId.class))).thenReturn(userTaskDef);
+        when(lhClient.completeUserTaskRun(any(CompleteUserTaskRunRequest.class))).thenReturn(Empty.getDefaultInstance());
+
+        userTaskService.completeUserTask(userId, request);
+
+        verify(lhClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhClient).getUserTaskDef(any(UserTaskDefId.class));
+        verify(lhClient).completeUserTaskRun(any(CompleteUserTaskRunRequest.class));
+    }
+
+    @Test
+    void completeUserTask_shouldThrowACustomUnauthorizedExceptionWhenUserTaskRunIsNotAssignedToRequestUserId() {
+        var userId = "my-user-id";
+        var wfRunId = buildStringGuid();
+        var userTaskRunGuid = buildStringGuid();
         var request = CompleteUserTaskRequest.builder()
                 .wfRunId(wfRunId)
                 .userTaskRunGuid(userTaskRunGuid)
                 .results(Map.of())
                 .build();
 
+        var doneUserTaskRun = buildFakeUserTaskRun(userId, wfRunId).toBuilder()
+                .setUserId("some-other-user-id")
+                .build();
+        var userTaskDef = buildFakeUserTaskDef(doneUserTaskRun.getUserTaskDefId().getName());
+
+        when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(doneUserTaskRun);
+        when(lhClient.getUserTaskDef(any(UserTaskDefId.class))).thenReturn(userTaskDef);
         when(lhClient.completeUserTaskRun(any(CompleteUserTaskRunRequest.class))).thenReturn(Empty.getDefaultInstance());
 
-        userTaskService.completeUserTask(userId, request);
+        CustomUnauthorizedException thrownException = assertThrows(CustomUnauthorizedException.class,
+                () -> userTaskService.completeUserTask(userId, request));
 
+        var expectedErrorMessage = "Current user is forbidden from accessing this UserTask information";
+
+        assertEquals(expectedErrorMessage, thrownException.getMessage());
+
+        verify(lhClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhClient, never()).getUserTaskDef(any(UserTaskDefId.class));
+        verify(lhClient, never()).completeUserTaskRun(any(CompleteUserTaskRunRequest.class));
+    }
+
+    @Test
+    void completeUserTask_shouldThrowAForbiddenExceptionWhenUserTaskRunHasStatusDone() {
+        var userId = "my-user-id";
+        var wfRunId = buildStringGuid();
+        var userTaskRunGuid = buildStringGuid();
+        var request = CompleteUserTaskRequest.builder()
+                .wfRunId(wfRunId)
+                .userTaskRunGuid(userTaskRunGuid)
+                .results(Map.of())
+                .build();
+
+        var doneUserTaskRun = buildFakeUserTaskRun(userId, wfRunId).toBuilder()
+                .setStatus(UserTaskRunStatus.DONE)
+                .build();
+        var userTaskDef = buildFakeUserTaskDef(doneUserTaskRun.getUserTaskDefId().getName());
+
+        when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(doneUserTaskRun);
+        when(lhClient.getUserTaskDef(any(UserTaskDefId.class))).thenReturn(userTaskDef);
+        when(lhClient.completeUserTaskRun(any(CompleteUserTaskRunRequest.class))).thenReturn(Empty.getDefaultInstance());
+
+        ResponseStatusException thrownException = assertThrows(ResponseStatusException.class,
+                () -> userTaskService.completeUserTask(userId, request));
+
+        int expectedHttpErrorCode = HttpStatus.FORBIDDEN.value();
+        var expectedErrorMessage = "The UserTask you are trying to complete is already DONE or CANCELLED";
+
+        assertEquals(expectedHttpErrorCode, thrownException.getBody().getStatus());
+        assertEquals(expectedErrorMessage, thrownException.getReason());
+
+        verify(lhClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhClient).getUserTaskDef(any(UserTaskDefId.class));
+        verify(lhClient, never()).completeUserTaskRun(any(CompleteUserTaskRunRequest.class));
+    }
+
+    @Test
+    void completeUserTask_shouldThrowAForbiddenExceptionWhenUserTaskRunHasStatusCancelled() {
+        var userId = "my-user-id";
+        var wfRunId = buildStringGuid();
+        var userTaskRunGuid = buildStringGuid();
+        var request = CompleteUserTaskRequest.builder()
+                .wfRunId(wfRunId)
+                .userTaskRunGuid(userTaskRunGuid)
+                .results(Map.of())
+                .build();
+
+        var cancelledUserTaskRun = buildFakeUserTaskRun(userId, wfRunId).toBuilder()
+                .setStatus(UserTaskRunStatus.CANCELLED)
+                .build();
+        var userTaskDef = buildFakeUserTaskDef(cancelledUserTaskRun.getUserTaskDefId().getName());
+
+        when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(cancelledUserTaskRun);
+        when(lhClient.getUserTaskDef(any(UserTaskDefId.class))).thenReturn(userTaskDef);
+        when(lhClient.completeUserTaskRun(any(CompleteUserTaskRunRequest.class))).thenReturn(Empty.getDefaultInstance());
+
+        ResponseStatusException thrownException = assertThrows(ResponseStatusException.class,
+                () -> userTaskService.completeUserTask(userId, request));
+
+        int expectedHttpErrorCode = HttpStatus.FORBIDDEN.value();
+        var expectedErrorMessage = "The UserTask you are trying to complete is already DONE or CANCELLED";
+
+        assertEquals(expectedHttpErrorCode, thrownException.getBody().getStatus());
+        assertEquals(expectedErrorMessage, thrownException.getReason());
+
+        verify(lhClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhClient).getUserTaskDef(any(UserTaskDefId.class));
+        verify(lhClient, never()).completeUserTaskRun(any(CompleteUserTaskRunRequest.class));
+    }
+
+    @Test
+    void completeUserTask_shouldThrowABadRequestExceptionWhenUserTaskRunHasStatusCancelled() {
+        var userId = "my-user-id";
+        var wfRunId = buildStringGuid();
+        var userTaskRunGuid = buildStringGuid();
+        var request = CompleteUserTaskRequest.builder()
+                .wfRunId(wfRunId)
+                .userTaskRunGuid(userTaskRunGuid)
+                .results(Map.of(
+                        "string-field", UserTaskVariableValue.builder()
+                                .value("some-value")
+                                .type(UserTaskFieldType.STRING)
+                                .build(),
+                        "integer-field", UserTaskVariableValue.builder()
+                                .value(1)
+                                .type(UserTaskFieldType.INTEGER)
+                                .build(),
+                        "not-defined-field", UserTaskVariableValue.builder()
+                                .value(true)
+                                .type(UserTaskFieldType.BOOLEAN)
+                                .build()
+                ))
+                .build();
+
+        var userTaskRun = buildFakeUserTaskRun(userId, wfRunId);
+        var userTaskDef = buildFakeUserTaskDef(userTaskRun.getUserTaskDefId().getName());
+        var expectedErrorMessage = "INVALID_ARGUMENT: Field [name = not-defined-field, type = BOOL] is not defined in UserTask " +
+                "schema or has different type";
+
+        when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun);
+        when(lhClient.getUserTaskDef(any(UserTaskDefId.class))).thenReturn(userTaskDef);
+        when(lhClient.completeUserTaskRun(any(CompleteUserTaskRunRequest.class)))
+                .thenThrow(new RuntimeException(expectedErrorMessage));
+
+        ResponseStatusException thrownException = assertThrows(ResponseStatusException.class,
+                () -> userTaskService.completeUserTask(userId, request));
+
+        int expectedHttpErrorCode = HttpStatus.BAD_REQUEST.value();
+
+        assertEquals(expectedHttpErrorCode, thrownException.getBody().getStatus());
+        assertEquals(expectedErrorMessage, thrownException.getReason());
+
+        verify(lhClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhClient).getUserTaskDef(any(UserTaskDefId.class));
         verify(lhClient).completeUserTaskRun(any(CompleteUserTaskRunRequest.class));
+    }
+
+    private static String buildStringGuid() {
+        return UUID.randomUUID().toString().replace("-", "");
     }
 
     private UserTaskRunId buildFakeUserTaskRunId(String wfRunId) {
