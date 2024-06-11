@@ -14,6 +14,7 @@ import io.littlehorse.usertasks.util.TokenUtil;
 import io.littlehorse.usertasks.util.UserTaskStatus;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.util.codec.binary.Base64;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -59,8 +60,10 @@ public class UserController {
     public ResponseEntity<UserTaskRunListDTO> getMyTasks(@RequestHeader("Authorization") String accessToken,
                                                          @PathVariable(name = "tenant_id") String tenantId,
                                                          @RequestParam(name = "earliest_start_date", required = false)
+                                                             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
                                                              LocalDateTime earliestStartDate,
                                                          @RequestParam(name = "latest_start_date", required = false)
+                                                             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
                                                              LocalDateTime latestStartDate,
                                                          @RequestParam(name = "status", required = false)
                                                              UserTaskStatus status,
