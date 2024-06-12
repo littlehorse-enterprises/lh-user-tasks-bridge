@@ -20,4 +20,4 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: user-tasks-api-jar
-          path: build/libs/user-tasks-api-*-all.jar
+          path: build/libs
