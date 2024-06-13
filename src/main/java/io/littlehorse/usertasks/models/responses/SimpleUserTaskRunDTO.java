@@ -3,6 +3,7 @@ package io.littlehorse.usertasks.models.responses;
 import io.littlehorse.sdk.common.proto.UserTaskRun;
 import io.littlehorse.usertasks.util.UserTaskStatus;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -32,10 +33,10 @@ public class SimpleUserTaskRunDTO {
     private String userTaskDefName;
     private String userGroup;
     private String userId;
-    @NonNull
+    @NotNull
     private UserTaskStatus status;
     private String notes;
-    @NonNull
+    @NotNull
     private LocalDateTime scheduledTime;
 
     public static SimpleUserTaskRunDTO fromUserTaskRun(@NonNull UserTaskRun userTaskRun) {

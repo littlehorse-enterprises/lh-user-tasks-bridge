@@ -12,6 +12,11 @@ import io.littlehorse.usertasks.services.TenantService;
 import io.littlehorse.usertasks.services.UserTaskService;
 import io.littlehorse.usertasks.util.TokenUtil;
 import io.littlehorse.usertasks.util.UserTaskStatus;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.util.codec.binary.Base64;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -55,6 +60,33 @@ public class UserController {
         this.userTaskService = userTaskService;
     }
 
+    @Operation(
+            summary = "Gets all UserTasks assigned to a user and/or userGroup that the user belongs to."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "List of unique UserTasks with some basic attributes. Optionally, it will retrieve a bookmark " +
+                            "field that is used for pagination purposes.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = UserTaskRunListDTO.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Tenant Id is not valid.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "No UserTasks were found for current user and/or given the search criteria.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            )
+    })
     @GetMapping("/{tenant_id}/tasks")
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<UserTaskRunListDTO> getMyTasks(@RequestHeader("Authorization") String accessToken,
@@ -91,12 +123,12 @@ public class UserController {
                     .map(ResponseEntity::ok)
                     .orElseThrow(() -> new NotFoundException("No UserTasks found with given search criteria"));
         } catch (NotFoundException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
+            return ResponseEntity.of(ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, e.getMessage())).build();
         } catch (JsonProcessingException e) {
             log.error("Something went wrong when getting claims from token");
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e);
+            return ResponseEntity.of(ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage())).build();
         } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e);
+            return ResponseEntity.of(ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage())).build();
         }
     }
 

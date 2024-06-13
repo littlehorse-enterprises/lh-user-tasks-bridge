@@ -6,6 +6,7 @@ import io.littlehorse.sdk.common.proto.VariableValue;
 import io.littlehorse.usertasks.models.common.UserTaskVariableValue;
 import io.littlehorse.usertasks.util.UserTaskStatus;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -39,12 +40,12 @@ public class DetailedUserTaskRunDTO {
     private String userTaskDefName;
     private String userGroup;
     private String userId;
-    @NonNull
+    @NotNull
     private UserTaskStatus status;
     private String notes;
-    @NonNull
+    @NotNull
     private LocalDateTime scheduledTime;
-    @NonNull
+    @NotNull
     private List<UserTaskFieldDTO> fields;
     private Map<String, UserTaskVariableValue> results;
 

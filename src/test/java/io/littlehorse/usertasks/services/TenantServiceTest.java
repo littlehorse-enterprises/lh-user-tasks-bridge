@@ -8,7 +8,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -28,6 +30,32 @@ class TenantServiceTest {
         when(lhClient.getTenant(any(TenantId.class))).thenReturn(null);
 
         assertFalse(tenantService.isValidTenant(tenantIdToValidate));
+
+        verify(lhClient).getTenant(any(TenantId.class));
+    }
+
+    @Test
+    void isValidTenant_shouldReturnFalseWhenServerAPIThrowsNotFoundException() throws NotFoundException {
+        var tenantIdToValidate = "someTenant";
+
+        when(lhClient.getTenant(any(TenantId.class)))
+                .thenThrow(new RuntimeException("NOT_FOUND: Could not find tenant " + tenantIdToValidate));
+
+        assertFalse(tenantService.isValidTenant(tenantIdToValidate));
+
+        verify(lhClient).getTenant(any(TenantId.class));
+    }
+
+    @Test
+    void isValidTenant_shouldReturnFalseWhenServerAPIThrowsAnExceptionDifferentFromNotFoundException() throws NotFoundException {
+        var tenantIdToValidate = "someTenant";
+        var expectedExceptionMessage = "ERROR: Some pretty weird issue on LH Server";
+
+        when(lhClient.getTenant(any(TenantId.class))).thenThrow(new RuntimeException(expectedExceptionMessage));
+
+        RuntimeException exception = assertThrows(RuntimeException.class, () -> tenantService.isValidTenant(tenantIdToValidate));
+
+        assertEquals(expectedExceptionMessage, exception.getMessage());
 
         verify(lhClient).getTenant(any(TenantId.class));
     }
