@@ -1,0 +1,23 @@
+name: tests-and-build
+run-name: Running Tests for branch ${{ github.ref_name }}
+on:
+  workflow_dispatch:
+  push:
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'corretto'
+
+      - name: Test and Build Artifact
+        run: ./gradlew build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: user-tasks-api-jar
+          path: build/libs
