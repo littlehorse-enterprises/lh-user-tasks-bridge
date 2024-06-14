@@ -17,6 +17,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.util.codec.binary.Base64;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -39,11 +40,10 @@ import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Objects;
 
-//TODO: This javadoc comment might be replaced later when OpenAPI/Swagger Specs gets introduced
-
-/**
- * {@code UserController} is a controller that exposes endpoints in charge of handling requests related to non-admin users
- */
+@Tag(
+        name = "User Controller",
+        description = "This is a controller that exposes endpoints in charge of handling requests related to non-admin users"
+)
 @RestController
 @CrossOrigin
 @PreAuthorize("isAuthenticated()")
