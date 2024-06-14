@@ -132,6 +132,34 @@ public class UserController {
         }
     }
 
+    @Operation(
+            summary = "Gets a UserTask's details, including its definition (UserTaskDef)."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "UserTask's details with fields defined in its UserTaskDef. Additionally, it may include " +
+                            "results (in case it is in DONE status).",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = DetailedUserTaskRunDTO.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Tenant Id is not valid. It could also be triggered when current user/userGroup does " +
+                            "not have permissions to see UserTask details.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "No UserTask/UserTaskDef data was found in LH Server using the given params.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            )
+    })
     @GetMapping("/{tenant_id}/tasks/{wf_run_id}/{user_task_guid}")
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<DetailedUserTaskRunDTO> getUserTaskDetail(@RequestHeader("Authorization") String accessToken,
@@ -156,14 +184,39 @@ public class UserController {
 
             return ResponseEntity.of(optionalUserTaskDetail);
         } catch (NotFoundException e) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage(), e);
+            return ResponseEntity.of(ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, e.getMessage())).build();
         } catch (CustomUnauthorizedException e) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, e.getMessage(), e);
+            return ResponseEntity.of(ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, e.getMessage())).build();
         } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage(), e);
+            return ResponseEntity.of(ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage())).build();
         }
     }
 
+    @Operation(
+            summary = "Completes a UserTask by making it transition to DONE status if the request is successfully processed in " +
+                    "LittleHorse Server."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "204",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Tenant Id is not valid. It could also be triggered when current user/userGroup does " +
+                            "not have permissions to complete the requested UserTask.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "No UserTask/UserTaskDef data was found in LH Server using the given params.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            )
+    })
     @PostMapping("/{tenant_id}/tasks/{wf_run_id}/{user_task_guid}/result")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void completeUserTask(@RequestHeader("Authorization") String accessToken,
