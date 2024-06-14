@@ -81,7 +81,7 @@ public class UserController {
             ),
             @ApiResponse(
                     responseCode = "404",
-                    description = "No UserTasks were found for current user and/or given the search criteria.",
+                    description = "No UserTasks were found for current user and/or given search criteria.",
                     content = {@Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ProblemDetail.class))}
