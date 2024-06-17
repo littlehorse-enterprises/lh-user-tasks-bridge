@@ -109,14 +109,6 @@
         ],
         "parameters": [
           {
-            "name": "Authorization",
-            "schema": {
-              "type": "string"
-            },
-            "in": "header",
-            "required": true
-          },
-          {
             "name": "tenant_id",
             "schema": {
               "type": "string"
@@ -224,14 +216,6 @@
           "User Controller"
         ],
         "parameters": [
-          {
-            "name": "Authorization",
-            "schema": {
-              "type": "string"
-            },
-            "in": "header",
-            "required": true
-          },
           {
             "name": "tenant_id",
             "schema": {
@@ -562,6 +546,9 @@
             },
             "description": "Tenant Id is not valid. It could also be triggered when current user/userGroup does not have permissions to cancel the requested UserTask."
           },
+          "403": {
+            "description": "Trying to cancel a UserTask that is already DONE or CANCELLED"
+          },
           "404": {
             "content": {
               "application/json": {
@@ -589,6 +576,779 @@
         },
         {
           "name": "user_task_guid",
+          "in": "path",
+          "required": true
+        }
+      ]
+    },
+    "/{tenant_id}/admin/tasks": {
+      "get": {
+        "tags": [
+          "Admin Controller"
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "required": true
+          },
+          {
+            "examples": {
+              "date-time-example": {
+                "value": "\"2024-06-01T23:59:59.999\""
+              }
+            },
+            "name": "earliest_start_date",
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            },
+            "in": "query",
+            "required": false
+          },
+          {
+            "examples": {
+              "date-time-example": {
+                "value": "\"2024-06-01T23:59:59.999\""
+              }
+            },
+            "name": "latest_start_date",
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            },
+            "in": "query",
+            "required": false
+          },
+          {
+            "examples": {
+              "user-task-run-status-example": {
+                "value": "\"UNASSIGNED\""
+              }
+            },
+            "name": "status",
+            "schema": {
+              "enum": [
+                "UNASSIGNED",
+                "ASSIGNED",
+                "DONE",
+                "CANCELLED"
+              ],
+              "type": "string"
+            },
+            "in": "query",
+            "required": false
+          },
+          {
+            "name": "type",
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "required": false
+          },
+          {
+            "examples": {
+              "int-example": {
+                "value": "5"
+              }
+            },
+            "name": "limit",
+            "schema": {
+              "format": "int32",
+              "type": "integer"
+            },
+            "in": "query",
+            "required": true
+          },
+          {
+            "name": "bookmark",
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "required": false
+          },
+          {
+            "name": "user_id",
+            "description": "",
+            "schema": {
+              "type": "string"
+            },
+            "in": "query"
+          },
+          {
+            "name": "user_group",
+            "description": "",
+            "schema": {
+              "type": "string"
+            },
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserTaskRunListDTO"
+                }
+              }
+            },
+            "description": "List of unique UserTasks with some basic attributes. Optionally, it will retrieve a bookmark field that is used for pagination purposes."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Tenant Id is not valid."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "No UserTasks were found for given search criteria."
+          }
+        },
+        "operationId": "getAllTasks",
+        "summary": "Gets all UserTasks from a specific tenant."
+      },
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "in": "path",
+          "required": true
+        }
+      ]
+    },
+    "/{tenant_id}/admin/taskTypes": {
+      "get": {
+        "tags": [
+          "Admin Controller"
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "required": true
+          },
+          {
+            "examples": {
+              "date-time-example": {
+                "value": "\"2024-06-01T23:59:59.999\""
+              }
+            },
+            "name": "earliest_start_date",
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            },
+            "in": "query",
+            "required": false
+          },
+          {
+            "examples": {
+              "date-time-example": {
+                "value": "\"2024-06-01T23:59:59.999\""
+              }
+            },
+            "name": "latest_start_date",
+            "schema": {
+              "format": "date-time",
+              "type": "string"
+            },
+            "in": "query",
+            "required": false
+          },
+          {
+            "examples": {
+              "user-task-run-status-example": {
+                "value": "\"UNASSIGNED\""
+              }
+            },
+            "name": "status",
+            "schema": {
+              "enum": [
+                "UNASSIGNED",
+                "ASSIGNED",
+                "DONE",
+                "CANCELLED"
+              ],
+              "type": "string"
+            },
+            "in": "query",
+            "required": false
+          },
+          {
+            "name": "type",
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "required": false
+          },
+          {
+            "examples": {
+              "int-example": {
+                "value": "5"
+              }
+            },
+            "name": "limit",
+            "schema": {
+              "format": "int32",
+              "type": "integer"
+            },
+            "in": "query",
+            "required": true
+          },
+          {
+            "name": "bookmark",
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "required": false
+          },
+          {
+            "name": "user_id",
+            "description": "",
+            "schema": {
+              "type": "string"
+            },
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserTaskDefDTO"
+                }
+              }
+            },
+            "description": "List of unique UserTaskDefs. Optionally, it will retrieve a bookmark field that is used for pagination purposes."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Tenant Id is not valid."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "No UserTasks were found for given search criteria."
+          }
+        },
+        "operationId": "getAllTaskDefs",
+        "summary": "Gets all UserTaskDefs from a specific tenant."
+      },
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "in": "path",
+          "required": true
+        }
+      ]
+    },
+    "/{tenant_id}/admin/tasks/{wf_run_id}/{user_task_guid}": {
+      "get": {
+        "tags": [
+          "Admin Controller"
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "wf_run_id",
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "user_task_guid",
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminDetailedUserTaskRunDTO"
+                }
+              }
+            },
+            "description": "UserTask's details with fields defined in its UserTaskDef and events. Additionally, it may include results (in case it is in DONE status)."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Tenant Id is not valid. It could also be triggered when current user/userGroup does not have permissions to see UserTask details."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "No UserTask/UserTaskDef data was found in LH Server for the given tenant and/or the given search criteria."
+          }
+        },
+        "operationId": "getUserTaskDetailForAdmin",
+        "summary": "Gets a UserTask's details, including its definition (UserTaskDef) and events."
+      },
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "in": "path",
+          "required": true
+        },
+        {
+          "name": "wf_run_id",
+          "in": "path",
+          "required": true
+        },
+        {
+          "name": "user_task_guid",
+          "in": "path",
+          "required": true
+        }
+      ]
+    },
+    "/{tenant_id}/admin/tasks/{wf_run_id}/{user_task_guid}/assign": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignationRequest"
+              },
+              "examples": {
+                "assignation-request-body-example": {
+                  "value": {
+                    "type": "USER_GROUP",
+                    "assignee": "some-user-group"
+                  }
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "tags": [
+          "Admin Controller"
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "wf_run_id",
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "user_task_guid",
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Tenant Id is not valid. It could also be triggered when given admin user does not have permissions to assign users/userGroups to the requested UserTask."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "No UserTaskRun data was found in LH Server using the given params."
+          }
+        },
+        "summary": "Assigns a User Task Run to a User or UserGroup."
+      }
+    },
+    "/{tenant_id}/admin/tasks/{wf_run_id}/{user_task_guid}/result": {
+      "post": {
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/UserTaskVariableValue"
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "tags": [
+          "Admin Controller"
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "wf_run_id",
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "user_task_guid",
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Tenant Id is not valid."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "No UserTask/UserTaskDef data was found in LH Server using the given params."
+          }
+        },
+        "operationId": "completeUserTaskAsAdmin",
+        "summary": "Completes a UserTask by making it transition to DONE status without verifying to whom the UserTaskRun is assigned to"
+      },
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "in": "path",
+          "required": true
+        },
+        {
+          "name": "wf_run_id",
+          "in": "path",
+          "required": true
+        },
+        {
+          "name": "user_task_guid",
+          "in": "path",
+          "required": true
+        }
+      ]
+    },
+    "/{tenant_id}/admin/tasks/{wf_run_id}/{user_task_guid}/cancel": {
+      "post": {
+        "tags": [
+          "Admin Controller"
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "wf_run_id",
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "required": true
+          },
+          {
+            "name": "user_task_guid",
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "required": true
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Tenant Id is not valid."
+          },
+          "403": {
+            "description": "Trying to cancel a UserTask that is already DONE or CANCELLED"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "No UserTask data was found in LH Server using the given params."
+          }
+        },
+        "operationId": "cancelUserTaskAsAdmin",
+        "summary": "Cancels a UserTask by making it transition to CANCELLED status without verifying to whom the UserTaskRun is assigned to"
+      },
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "in": "path",
+          "required": true
+        },
+        {
+          "name": "wf_run_id",
+          "in": "path",
+          "required": true
+        },
+        {
+          "name": "user_task_guid",
+          "in": "path",
+          "required": true
+        }
+      ]
+    },
+    "/{tenant_id}/admin/users": {
+      "get": {
+        "tags": [
+          "Admin Controller"
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "required": true
+          },
+          {
+            "examples": {
+              "int-example": {
+                "value": "5"
+              }
+            },
+            "name": "limit",
+            "schema": {
+              "format": "int32",
+              "type": "integer"
+            },
+            "in": "query",
+            "required": true
+          },
+          {
+            "name": "bookmark",
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of unique Users with some basic attributes. Optionally, it will retrieve a bookmark field that is used for pagination purposes."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Tenant Id is not valid."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "No Users were found for given tenant."
+          }
+        },
+        "operationId": "getAllUsers",
+        "summary": "Gets all Users from a specific tenant.",
+        "description": "************* THIS IS AN EXPERIMENTAL (NICE-TO-HAVE) FEATURE YET TO BE DISCUSSED *************"
+      },
+      "parameters": [
+        {
+          "name": "tenant_id",
+          "in": "path",
+          "required": true
+        }
+      ]
+    },
+    "/{tenant_id}/admin/userGroups": {
+      "get": {
+        "tags": [
+          "Admin Controller"
+        ],
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "required": true
+          },
+          {
+            "examples": {
+              "int-example": {
+                "value": "5"
+              }
+            },
+            "name": "limit",
+            "schema": {
+              "format": "int32",
+              "type": "integer"
+            },
+            "in": "query",
+            "required": true
+          },
+          {
+            "name": "bookmark",
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of unique UserGroups with some basic attributes. Optionally, it will retrieve a bookmark field that is used for pagination purposes."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "Tenant Id is not valid."
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description": "No UserGroups were found for given tenant."
+          }
+        },
+        "operationId": "getAllUserGroups",
+        "summary": "Gets all UserGroups from a specific tenant.",
+        "description": "************* THIS IS AN EXPERIMENTAL (NICE-TO-HAVE) FEATURE YET TO BE DISCUSSED *************"
+      },
+      "parameters": [
+        {
+          "name": "tenant_id",
           "in": "path",
           "required": true
         }
@@ -792,6 +1552,127 @@
             "type": "boolean"
           }
         }
+      },
+      "UserTaskDefDTO": {
+        "title": "Root Type for UserTaskDefDTO",
+        "description": "",
+        "required": [
+          "name",
+          "fields"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserTaskFieldDTO"
+            }
+          }
+        },
+        "example": {
+          "name": "some-name",
+          "description": "some-description",
+          "fields": [
+            {
+              "name": "some-name",
+              "displayName": "some-display-name",
+              "description": "some-description",
+              "type": "STRING",
+              "required": false
+            }
+          ]
+        }
+      },
+      "AdminDetailedUserTaskRunDTO": {
+        "required": [
+          "fields",
+          "id",
+          "scheduledTime",
+          "status",
+          "userTaskDefName",
+          "wfRunId",
+          "events"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "wfRunId": {
+            "type": "string"
+          },
+          "userTaskDefName": {
+            "type": "string"
+          },
+          "userGroup": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "UNASSIGNED",
+              "ASSIGNED",
+              "DONE",
+              "CANCELLED"
+            ],
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "scheduledTime": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/UserTaskFieldDTO"
+            }
+          },
+          "results": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/UserTaskVariableValue"
+            }
+          },
+          "events": {
+            "description": ""
+          }
+        }
+      },
+      "AssignationRequest": {
+        "title": "Root Type for AssignationRequest",
+        "description": "",
+        "required": [
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "type": {
+            "enum": [
+              "USER",
+              "USER_GROUP"
+            ],
+            "type": "string",
+            "example": "\"USER\""
+          },
+          "assignee": {
+            "type": "string"
+          }
+        },
+        "example": {
+          "type": "USER|USER_GROUP",
+          "assignee": "$user_id|$user_group"
+        }
       }
     }
   },
@@ -803,6 +1684,10 @@
     {
       "name": "User Controller",
       "description": "This is a controller that exposes endpoints in charge of handling requests related to non-admin users"
+    },
+    {
+      "name": "Admin Controller",
+      "description": "This is a controller that exposes endpoints in charge of handling requests related to Admin users"
     }
   ],
   "externalDocs": {
