@@ -38,7 +38,7 @@ public class WebSecurityConfiguration {
             throws Exception {
         http.authorizeHttpRequests(
                         auth -> auth
-                                .requestMatchers(HttpMethod.GET, "/v3/api-docs.yaml")// This will be used when open-api spec is in place
+                                .requestMatchers(HttpMethod.GET, new String[]{"/api-docs/**", "/swagger-ui/**"})// This will be used when open-api spec is in place
                                 .permitAll()
                                 .anyRequest()
                                 .authenticated())

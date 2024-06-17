@@ -94,3 +94,8 @@ curl --request GET \
   --url http://localhost:8089/lh/init \
   --header 'Authorization: Bearer replace-this-with-your-access-token'
 ```
+
+### Access Swagger UI
+
+In order to see OpenAPI Specs with Swagger UI, and after having UserTasks API running, you just need to go to your
+web browser and access the following URL: http://localhost:8089/swagger-ui/index.html

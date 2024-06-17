@@ -23,3 +23,7 @@ com:
             authorities:
               - path: $.realm_access.roles
               - path: $.resource_access.*.roles
+
+springdoc:
+  api-docs:
+    path: /api-docs
