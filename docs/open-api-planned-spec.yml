@@ -1653,7 +1653,8 @@
         "title": "Root Type for AssignationRequest",
         "description": "",
         "required": [
-          "type"
+          "type",
+          "assignee"
         ],
         "type": "object",
         "properties": {
