@@ -1,11 +1,16 @@
 package io.littlehorse.usertasks.services;
 
 import com.google.protobuf.ByteString;
+import io.littlehorse.sdk.common.auth.TenantMetadataProvider;
 import io.littlehorse.sdk.common.proto.CompleteUserTaskRunRequest;
 import io.littlehorse.sdk.common.proto.LittleHorseGrpc;
+import io.littlehorse.sdk.common.proto.SearchUserTaskDefRequest;
 import io.littlehorse.sdk.common.proto.SearchUserTaskRunRequest;
+import io.littlehorse.sdk.common.proto.UserTaskDefId;
+import io.littlehorse.sdk.common.proto.UserTaskDefIdList;
 import io.littlehorse.sdk.common.proto.UserTaskRun;
 import io.littlehorse.sdk.common.proto.UserTaskRunId;
+import io.littlehorse.sdk.common.proto.UserTaskRunIdList;
 import io.littlehorse.sdk.common.proto.UserTaskRunStatus;
 import io.littlehorse.sdk.common.proto.WfRunId;
 import io.littlehorse.usertasks.exceptions.CustomUnauthorizedException;
@@ -15,6 +20,7 @@ import io.littlehorse.usertasks.models.requests.StandardPagination;
 import io.littlehorse.usertasks.models.requests.UserTaskRequestFilter;
 import io.littlehorse.usertasks.models.responses.DetailedUserTaskRunDTO;
 import io.littlehorse.usertasks.models.responses.SimpleUserTaskRunDTO;
+import io.littlehorse.usertasks.models.responses.UserTaskDefListDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskRunListDTO;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -25,9 +31,11 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static io.littlehorse.usertasks.util.DateUtil.isDateRangeValid;
 
@@ -40,18 +48,22 @@ public class UserTaskService {
         this.lhClient = lhClient;
     }
 
-    public Optional<UserTaskRunListDTO> getMyTasks(@NonNull String userId, String userGroup,
-                                                   UserTaskRequestFilter additionalFilters,
-                                                   int limit,
-                                                   byte[] bookmark) {
+    public Optional<UserTaskRunListDTO> getTasks(String userId, String userGroup, UserTaskRequestFilter additionalFilters,
+                                                 int limit, byte[] bookmark, boolean isAdminRequest) {
+        if (!isAdminRequest && !StringUtils.hasText(userId)) {
+            throw new IllegalArgumentException("Cannot search UserTask without specifying a proper UserId");
+        }
+
         var pagination = StandardPagination.builder()
                 .bookmark(bookmark)
                 .limit(limit)
                 .build();
 
-        var searchRequest = buildSearchUserTaskRunRequest(userId, userGroup, additionalFilters, pagination);
-        var searchResults = lhClient.searchUserTaskRun(searchRequest);
-        var resultsIdList = searchResults.getResultsList();
+        SearchUserTaskRunRequest searchRequest;
+        searchRequest = buildSearchUserTaskRunRequest(userId, userGroup, additionalFilters, pagination);
+
+        UserTaskRunIdList searchResults = lhClient.searchUserTaskRun(searchRequest);
+        List<UserTaskRunId> resultsIdList = searchResults.getResultsList();
         var setOfUserTasks = new HashSet<SimpleUserTaskRunDTO>();
         var response = UserTaskRunListDTO.builder()
                 .userTasks(setOfUserTasks)
@@ -138,11 +150,42 @@ public class UserTaskService {
         }
     }
 
-    private SearchUserTaskRunRequest buildSearchUserTaskRunRequest(@NonNull String userId, String userGroup,
+    public UserTaskDefListDTO getAllUserTasksDef(@NonNull String tenantId, int limit, byte[] bookmark) {
+        LittleHorseGrpc.LittleHorseBlockingStub tenantClient = lhClient.withCallCredentials(new TenantMetadataProvider(tenantId));
+
+        SearchUserTaskDefRequest.Builder searchRequest = SearchUserTaskDefRequest.newBuilder()
+                .setLimit(limit);
+
+        if (Objects.nonNull(bookmark)) {
+            searchRequest.setBookmark(ByteString.copyFrom(bookmark));
+        }
+
+        UserTaskDefIdList searchResults = tenantClient.searchUserTaskDef(searchRequest.build());
+
+        if (searchResults.getResultsList().isEmpty()) {
+            throw new NotFoundException("No UserTaskDefs were found for given tenant");
+        }
+
+        Set<String> setOfUserTaskDefNames = searchResults.getResultsList().stream()
+                .map(UserTaskDefId::getName)
+                .collect(Collectors.toSet());
+
+        return UserTaskDefListDTO.builder()
+                .userTaskDefNames(setOfUserTaskDefNames)
+                .bookmark(searchResults.hasBookmark()
+                        ? Base64.encodeBase64String(searchResults.getBookmark().toByteArray())
+                        : null)
+                .build();
+    }
+
+    private SearchUserTaskRunRequest buildSearchUserTaskRunRequest(String userId, String userGroup,
                                                                    UserTaskRequestFilter additionalFilters,
                                                                    @NonNull StandardPagination pagination) {
         var builder = SearchUserTaskRunRequest.newBuilder();
-        builder.setUserId(userId);
+
+        if (StringUtils.hasText(userId)) {
+            builder.setUserId(userId);
+        }
 
         if (StringUtils.hasText(userGroup)) {
             builder.setUserGroup(userGroup);
