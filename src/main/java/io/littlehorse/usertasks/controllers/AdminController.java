@@ -159,7 +159,7 @@ public class AdminController {
                             schema = @Schema(implementation = ProblemDetail.class))}
             )
     })
-    @GetMapping("/{tenant_id}/admin/tasksDef")
+    @GetMapping("/{tenant_id}/admin/taskTypes")
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<UserTaskDefListDTO> getAllUserTasksDef(@PathVariable(name = "tenant_id") String tenantId,
                                                                  @RequestParam(name = "limit") Integer limit,
