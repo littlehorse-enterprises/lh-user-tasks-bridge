@@ -77,6 +77,12 @@ class UserTaskServiceTest {
     }
 
     @Test
+    void getTasks_shouldThrowNullPointerExceptionWhenTenantIdParamIsNull() {
+        assertThrows(NullPointerException.class,
+                () -> userTaskService.getTasks(null, null, null, null, 1, null, false));
+    }
+
+    @Test
     void getTasks_shouldThrowIllegalArgumentExceptionWhenUserIsNotAdminAndUserIdIsNull() {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
                 () -> userTaskService.getTasks(tenantId, null, null, null, 1, null, false));
@@ -470,6 +476,42 @@ class UserTaskServiceTest {
     }
 
     @Test
+    void getUserTaskDetails_shouldThrowNullPointerExceptionWhenWfRunIdParamIsNull() {
+        var nonExistingUserTaskGuid = buildStringGuid();
+
+        assertThrows(NullPointerException.class,
+                () -> userTaskService.getUserTaskDetails(null, nonExistingUserTaskGuid, tenantId, "user-id", null, false));
+
+        verify(lhTenantClient, never()).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient, never()).getUserTaskDef(any(UserTaskDefId.class));
+    }
+
+    @Test
+    void getUserTaskDetails_shouldThrowNullPointerExceptionWhenUserTaskGuidParamIsNull() {
+        var existingWfRunId = "some-existing-wf-run-id";
+
+        assertThrows(NullPointerException.class,
+                () -> userTaskService.getUserTaskDetails(existingWfRunId, null, tenantId, "user-id",
+                        null, false));
+
+        verify(lhTenantClient, never()).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient, never()).getUserTaskDef(any(UserTaskDefId.class));
+    }
+
+    @Test
+    void getUserTaskDetails_shouldThrowNullPointerExceptionWhenTenantIdParamIsNull() {
+        var existingWfRunId = "some-existing-wf-run-id";
+        var existingUserTaskGuid = buildStringGuid();
+
+        assertThrows(NullPointerException.class,
+                () -> userTaskService.getUserTaskDetails(existingWfRunId, existingUserTaskGuid, null, "user-id",
+                        null, false));
+
+        verify(lhTenantClient, never()).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient, never()).getUserTaskDef(any(UserTaskDefId.class));
+    }
+
+    @Test
     void getUserTaskDetails_shouldThrowNotFoundExceptionWhenNoUserTaskRunIsFoundGivenAWfRunIdAndUserTaskRunGuid() {
         var nonExistingWfRunId = "some-fake-wf-run-id";
         var nonExistingUserTaskGuid = buildStringGuid();
@@ -590,6 +632,41 @@ class UserTaskServiceTest {
         when(lhTenantClient.getUserTaskDef(any(UserTaskDefId.class))).thenReturn(foundUserTaskDef);
 
         var result = userTaskService.getUserTaskDetails(existingWfRunId, existingUserTaskGuid, tenantId, userId, null, false);
+
+        assertTrue(result.isPresent());
+
+        var foundUserTaskRunDTO = result.get();
+
+        assertEquals(existingWfRunId, foundUserTaskRunDTO.getWfRunId());
+        assertEquals(existingUserTaskGuid, foundUserTaskRunDTO.getId());
+        assertFalse(foundUserTaskRunDTO.getFields().isEmpty());
+        assertTrue(foundUserTaskRunDTO.getFields().stream().allMatch(hasMandatoryFieldsForUserTaskField()));
+
+        verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient).getUserTaskDef(any(UserTaskDefId.class));
+    }
+
+    @Test
+    void getUserTaskDetails_shouldReturnDetailedUserTaskRunDTOWhenFoundForGivenWfRunIdAndUserTaskRunGuidAsAnAdminUser() {
+        var userId = UUID.randomUUID().toString();
+        var existingWfRunId = "some-existing-wf-run-id";
+        var existingUserTaskGuid = buildStringGuid();
+
+        var foundUserTaskRun = buildFakeUserTaskRun(userId, existingWfRunId)
+                .toBuilder()
+                .setId(UserTaskRunId.newBuilder()
+                        .setWfRunId(WfRunId.newBuilder()
+                                .setId(existingWfRunId)
+                                .build())
+                        .setUserTaskGuid(existingUserTaskGuid)
+                        .build())
+                .build();
+        var foundUserTaskDef = buildFakeUserTaskDef(foundUserTaskRun.getUserTaskDefId().getName());
+
+        when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(foundUserTaskRun);
+        when(lhTenantClient.getUserTaskDef(any(UserTaskDefId.class))).thenReturn(foundUserTaskDef);
+
+        var result = userTaskService.getUserTaskDetails(existingWfRunId, existingUserTaskGuid, tenantId, userId, null, true);
 
         assertTrue(result.isPresent());
 
@@ -728,6 +805,43 @@ class UserTaskServiceTest {
 
         verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
         verify(lhTenantClient).getUserTaskDef(any(UserTaskDefId.class));
+    }
+
+    @Test
+    void completeUserTask_shouldThrowNullPointerExceptionWhenRequestParamIsNull() {
+        var userId = "my-user-id";
+        assertThrows(NullPointerException.class, () -> userTaskService.completeUserTask(userId, null, tenantId, false));
+
+        verify(lhTenantClient, never()).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient, never()).getUserTaskDef(any(UserTaskDefId.class));
+        verify(lhTenantClient, never()).completeUserTaskRun(any(CompleteUserTaskRunRequest.class));
+    }
+
+    @Test
+    void completeUserTask_shouldThrowNullPointerExceptionWhenTenantIdParamIsNull() {
+        var userId = "my-user-id";
+        var wfRunId = buildStringGuid();
+        var userTaskRunGuid = buildStringGuid();
+        var request = CompleteUserTaskRequest.builder()
+                .wfRunId(wfRunId)
+                .userTaskRunGuid(userTaskRunGuid)
+                .results(Map.of(
+                                "string-field", UserTaskVariableValue.builder()
+                                        .value("some-value")
+                                        .type(UserTaskFieldType.STRING)
+                                        .build(),
+                                "integer-field", UserTaskVariableValue.builder()
+                                        .value(1)
+                                        .type(UserTaskFieldType.INTEGER)
+                                        .build()
+                        )
+                ).build();
+
+        assertThrows(NullPointerException.class, () -> userTaskService.completeUserTask(userId, request, null, false));
+
+        verify(lhTenantClient, never()).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient, never()).getUserTaskDef(any(UserTaskDefId.class));
+        verify(lhTenantClient, never()).completeUserTaskRun(any(CompleteUserTaskRunRequest.class));
     }
 
     @Test
