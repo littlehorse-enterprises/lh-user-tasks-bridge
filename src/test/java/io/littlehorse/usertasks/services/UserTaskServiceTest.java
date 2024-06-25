@@ -31,6 +31,7 @@ import io.littlehorse.usertasks.util.DateUtil;
 import io.littlehorse.usertasks.util.UserTaskFieldType;
 import io.littlehorse.usertasks.util.UserTaskStatus;
 import org.apache.tomcat.util.codec.binary.Base64;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -65,14 +66,20 @@ class UserTaskServiceTest {
     private static final int RESULTS_LIMIT = 10;
     private final ZoneOffset UTC_ZONE = ZoneOffset.UTC;
     private final LittleHorseGrpc.LittleHorseBlockingStub lhClient = mock();
+    private final LittleHorseGrpc.LittleHorseBlockingStub lhTenantClient = mock();
     private final String tenantId = "my-tenant-id";
 
     private final UserTaskService userTaskService = new UserTaskService(lhClient);
 
+    @BeforeEach
+    void init() {
+        when(lhClient.withCallCredentials(any())).thenReturn(lhTenantClient);
+    }
+
     @Test
     void getTasks_shouldThrowIllegalArgumentExceptionWhenUserIsNotAdminAndUserIdIsNull() {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> userTaskService.getTasks(null, null, null, 1, null, false));
+                () -> userTaskService.getTasks(tenantId, null, null, null, 1, null, false));
 
         var expectedExceptionMessage = "Cannot search UserTask without specifying a proper UserId";
 
@@ -84,12 +91,12 @@ class UserTaskServiceTest {
         var userId = UUID.randomUUID().toString();
         var listOfUserTasks = UserTaskRunIdList.newBuilder().build();
 
-        when(lhClient.searchUserTaskRun(any(SearchUserTaskRunRequest.class))).thenReturn(listOfUserTasks);
+        when(lhTenantClient.searchUserTaskRun(any(SearchUserTaskRunRequest.class))).thenReturn(listOfUserTasks);
 
-        assertTrue(userTaskService.getTasks(userId, null, null,
+        assertTrue(userTaskService.getTasks(tenantId, userId, null, null,
                 RESULTS_LIMIT, null, false).isEmpty());
 
-        verify(lhClient).searchUserTaskRun(any(SearchUserTaskRunRequest.class));
+        verify(lhTenantClient).searchUserTaskRun(any(SearchUserTaskRunRequest.class));
     }
 
     @Test
@@ -97,12 +104,12 @@ class UserTaskServiceTest {
         var userId = UUID.randomUUID().toString();
         var listOfUserTasks = UserTaskRunIdList.newBuilder().build();
 
-        when(lhClient.searchUserTaskRun(any(SearchUserTaskRunRequest.class))).thenReturn(listOfUserTasks);
+        when(lhTenantClient.searchUserTaskRun(any(SearchUserTaskRunRequest.class))).thenReturn(listOfUserTasks);
 
-        assertTrue(userTaskService.getTasks(userId, null, null,
+        assertTrue(userTaskService.getTasks(tenantId, userId, null, null,
                 RESULTS_LIMIT, null, true).isEmpty());
 
-        verify(lhClient).searchUserTaskRun(any(SearchUserTaskRunRequest.class));
+        verify(lhTenantClient).searchUserTaskRun(any(SearchUserTaskRunRequest.class));
     }
 
     @Test
@@ -119,10 +126,10 @@ class UserTaskServiceTest {
         var userTaskRun1 = buildFakeUserTaskRun(userId, wfRunId);
         var userTaskRun2 = buildFakeUserTaskRun(userId, wfRunId);
 
-        when(lhClient.searchUserTaskRun(any(SearchUserTaskRunRequest.class))).thenReturn(listOfUserTasks);
-        when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun1, userTaskRun2);
+        when(lhTenantClient.searchUserTaskRun(any(SearchUserTaskRunRequest.class))).thenReturn(listOfUserTasks);
+        when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun1, userTaskRun2);
 
-        Optional<UserTaskRunListDTO> result = userTaskService.getTasks(userId, null, null,
+        Optional<UserTaskRunListDTO> result = userTaskService.getTasks(tenantId, userId, null, null,
                 RESULTS_LIMIT, null, false);
 
         assertTrue(result.isPresent());
@@ -130,8 +137,8 @@ class UserTaskServiceTest {
 
         assertTrue(actualUserTaskDTOs.stream().allMatch(hasMandatoryFieldsForAUser(userId)));
 
-        verify(lhClient).searchUserTaskRun(any(SearchUserTaskRunRequest.class));
-        verify(lhClient, times(2)).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient).searchUserTaskRun(any(SearchUserTaskRunRequest.class));
+        verify(lhTenantClient, times(2)).getUserTaskRun(any(UserTaskRunId.class));
     }
 
     @Test
@@ -148,10 +155,10 @@ class UserTaskServiceTest {
         var userTaskRun1 = buildFakeUserTaskRun(userId, wfRunId);
         var userTaskRun2 = buildFakeUserTaskRun(userId, wfRunId);
 
-        when(lhClient.searchUserTaskRun(any(SearchUserTaskRunRequest.class))).thenReturn(listOfUserTasks);
-        when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun1, userTaskRun2);
+        when(lhTenantClient.searchUserTaskRun(any(SearchUserTaskRunRequest.class))).thenReturn(listOfUserTasks);
+        when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun1, userTaskRun2);
 
-        Optional<UserTaskRunListDTO> result = userTaskService.getTasks(userId, null, null,
+        Optional<UserTaskRunListDTO> result = userTaskService.getTasks(tenantId, userId, null, null,
                 RESULTS_LIMIT, null, true);
 
         assertTrue(result.isPresent());
@@ -159,8 +166,8 @@ class UserTaskServiceTest {
 
         assertTrue(actualUserTaskDTOs.stream().allMatch(hasMandatoryFieldsForAUser(userId)));
 
-        verify(lhClient).searchUserTaskRun(any(SearchUserTaskRunRequest.class));
-        verify(lhClient, times(2)).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient).searchUserTaskRun(any(SearchUserTaskRunRequest.class));
+        verify(lhTenantClient, times(2)).getUserTaskRun(any(UserTaskRunId.class));
     }
 
     @Test
@@ -177,10 +184,10 @@ class UserTaskServiceTest {
 
         var userTaskRun1 = buildFakeUserTaskRunWithUserGroup(userId, wfRunId, myUserGroup);
 
-        when(lhClient.searchUserTaskRun(any(SearchUserTaskRunRequest.class))).thenReturn(listOfUserTasks);
-        when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun1);
+        when(lhTenantClient.searchUserTaskRun(any(SearchUserTaskRunRequest.class))).thenReturn(listOfUserTasks);
+        when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun1);
 
-        Optional<UserTaskRunListDTO> result = userTaskService.getTasks(userId, myUserGroup, null,
+        Optional<UserTaskRunListDTO> result = userTaskService.getTasks(tenantId, userId, myUserGroup, null,
                 RESULTS_LIMIT, null, false);
 
         assertTrue(result.isPresent());
@@ -189,8 +196,8 @@ class UserTaskServiceTest {
         assertTrue(actualUserTaskDTOs.stream().allMatch(hasMandatoryFieldsForAUser(userId)));
         assertTrue(actualUserTaskDTOs.stream().allMatch(hasUserGroup(myUserGroup)));
 
-        verify(lhClient).searchUserTaskRun(any(SearchUserTaskRunRequest.class));
-        verify(lhClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient).searchUserTaskRun(any(SearchUserTaskRunRequest.class));
+        verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
     }
 
     @Test
@@ -216,10 +223,10 @@ class UserTaskServiceTest {
         var userTaskRun1 = buildFakeUserTaskRunWithCustomScheduledTime(userId, wfRunId, fiveDaysAgo.plusHours(1L));
         var userTaskRun2 = buildFakeUserTaskRunWithCustomScheduledTime(userId, wfRunId, fiveDaysAgo.plusDays(5L));
 
-        when(lhClient.searchUserTaskRun(searchRequest)).thenReturn(listOfUserTasks);
-        when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun1, userTaskRun2);
+        when(lhTenantClient.searchUserTaskRun(searchRequest)).thenReturn(listOfUserTasks);
+        when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun1, userTaskRun2);
 
-        Optional<UserTaskRunListDTO> result = userTaskService.getTasks(userId, null, additionalFilters,
+        Optional<UserTaskRunListDTO> result = userTaskService.getTasks(tenantId, userId, null, additionalFilters,
                 RESULTS_LIMIT, null, false);
 
         assertTrue(result.isPresent());
@@ -228,8 +235,8 @@ class UserTaskServiceTest {
         assertTrue(actualUserTaskDTOs.stream().allMatch(hasMandatoryFieldsForAUser(userId)));
         assertTrue(actualUserTaskDTOs.stream().allMatch(hasScheduledTimeAfterEarliestStart(fiveDaysAgo)));
 
-        verify(lhClient).searchUserTaskRun(searchRequest);
-        verify(lhClient, times(2)).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient).searchUserTaskRun(searchRequest);
+        verify(lhTenantClient, times(2)).getUserTaskRun(any(UserTaskRunId.class));
     }
 
     @Test
@@ -255,10 +262,10 @@ class UserTaskServiceTest {
         var userTaskRun1 = buildFakeUserTaskRunWithCustomScheduledTime(userId, wfRunId, currentDate.minusHours(1L));
         var userTaskRun2 = buildFakeUserTaskRunWithCustomScheduledTime(userId, wfRunId, currentDate.minusDays(5L));
 
-        when(lhClient.searchUserTaskRun(searchRequest)).thenReturn(listOfUserTasks);
-        when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun1, userTaskRun2);
+        when(lhTenantClient.searchUserTaskRun(searchRequest)).thenReturn(listOfUserTasks);
+        when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun1, userTaskRun2);
 
-        Optional<UserTaskRunListDTO> result = userTaskService.getTasks(userId, null, additionalFilters,
+        Optional<UserTaskRunListDTO> result = userTaskService.getTasks(tenantId, userId, null, additionalFilters,
                 RESULTS_LIMIT, null, false);
 
         assertTrue(result.isPresent());
@@ -267,8 +274,8 @@ class UserTaskServiceTest {
         assertTrue(actualUserTaskDTOs.stream().allMatch(hasMandatoryFieldsForAUser(userId)));
         assertTrue(actualUserTaskDTOs.stream().allMatch(hasScheduledTimeBeforeLatestStart(currentDate)));
 
-        verify(lhClient).searchUserTaskRun(searchRequest);
-        verify(lhClient, times(2)).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient).searchUserTaskRun(searchRequest);
+        verify(lhTenantClient, times(2)).getUserTaskRun(any(UserTaskRunId.class));
     }
 
     @Test
@@ -299,10 +306,10 @@ class UserTaskServiceTest {
         var userTaskRun2 = buildFakeUserTaskRunWithCustomScheduledTime(userId, wfRunId, currentDate.minusDays(5L));
         var userTaskRun3 = buildFakeUserTaskRunWithCustomScheduledTime(userId, wfRunId, currentDate.minusDays(1L));
 
-        when(lhClient.searchUserTaskRun(searchRequest)).thenReturn(listOfUserTasks);
-        when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun1, userTaskRun2, userTaskRun3);
+        when(lhTenantClient.searchUserTaskRun(searchRequest)).thenReturn(listOfUserTasks);
+        when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun1, userTaskRun2, userTaskRun3);
 
-        Optional<UserTaskRunListDTO> result = userTaskService.getTasks(userId, null, additionalFilters,
+        Optional<UserTaskRunListDTO> result = userTaskService.getTasks(tenantId, userId, null, additionalFilters,
                 RESULTS_LIMIT, null, false);
 
         assertTrue(result.isPresent());
@@ -312,8 +319,8 @@ class UserTaskServiceTest {
         assertTrue(actualUserTaskDTOs.stream().allMatch(hasScheduledTimeAfterEarliestStart(lastTenDays)));
         assertTrue(actualUserTaskDTOs.stream().allMatch(hasScheduledTimeBeforeLatestStart(currentDate)));
 
-        verify(lhClient).searchUserTaskRun(searchRequest);
-        verify(lhClient, times(3)).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient).searchUserTaskRun(searchRequest);
+        verify(lhTenantClient, times(3)).getUserTaskRun(any(UserTaskRunId.class));
     }
 
     @Test
@@ -327,7 +334,7 @@ class UserTaskServiceTest {
                 .build();
 
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
-                () -> userTaskService.getTasks(userId, null, additionalFilters, RESULTS_LIMIT, null, false));
+                () -> userTaskService.getTasks(tenantId, userId, null, additionalFilters, RESULTS_LIMIT, null, false));
 
         var expectedExceptionMessage = "Wrong date range received";
 
@@ -359,10 +366,10 @@ class UserTaskServiceTest {
         var userTaskRun1 = buildFakeUserTaskRun(userId, wfRunId);
         var userTaskRun2 = buildFakeUserTaskRun(userId, wfRunId);
 
-        when(lhClient.searchUserTaskRun(searchRequest)).thenReturn(listOfUserTasks);
-        when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun1, userTaskRun2);
+        when(lhTenantClient.searchUserTaskRun(searchRequest)).thenReturn(listOfUserTasks);
+        when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun1, userTaskRun2);
 
-        Optional<UserTaskRunListDTO> result = userTaskService.getTasks(userId, null, additionalFilters,
+        Optional<UserTaskRunListDTO> result = userTaskService.getTasks(tenantId, userId, null, additionalFilters,
                 RESULTS_LIMIT, null, false);
 
         assertTrue(result.isPresent());
@@ -370,8 +377,8 @@ class UserTaskServiceTest {
 
         assertTrue(actualUserTaskDTOs.stream().allMatch(hasMandatoryFieldsForAUser(userId)));
 
-        verify(lhClient).searchUserTaskRun(searchRequest);
-        verify(lhClient, times(2)).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient).searchUserTaskRun(searchRequest);
+        verify(lhTenantClient, times(2)).getUserTaskRun(any(UserTaskRunId.class));
     }
 
     @Test
@@ -397,10 +404,10 @@ class UserTaskServiceTest {
         var userTaskRun1 = buildFakeUserTaskRunWithCustomTaskDefName(userId, wfRunId, type);
         var userTaskRun2 = buildFakeUserTaskRunWithCustomTaskDefName(userId, wfRunId, type);
 
-        when(lhClient.searchUserTaskRun(searchRequest)).thenReturn(listOfUserTasks);
-        when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun1, userTaskRun2);
+        when(lhTenantClient.searchUserTaskRun(searchRequest)).thenReturn(listOfUserTasks);
+        when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun1, userTaskRun2);
 
-        Optional<UserTaskRunListDTO> result = userTaskService.getTasks(userId, null, additionalFilters,
+        Optional<UserTaskRunListDTO> result = userTaskService.getTasks(tenantId, userId, null, additionalFilters,
                 RESULTS_LIMIT, null, false);
 
         assertTrue(result.isPresent());
@@ -409,8 +416,8 @@ class UserTaskServiceTest {
         assertTrue(actualUserTaskDTOs.stream().allMatch(hasMandatoryFieldsForAUser(userId)));
         assertTrue(actualUserTaskDTOs.stream().allMatch(dto -> dto.getUserTaskDefName().equalsIgnoreCase(type)));
 
-        verify(lhClient).searchUserTaskRun(searchRequest);
-        verify(lhClient, times(2)).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient).searchUserTaskRun(searchRequest);
+        verify(lhTenantClient, times(2)).getUserTaskRun(any(UserTaskRunId.class));
     }
 
     @Test
@@ -444,10 +451,10 @@ class UserTaskServiceTest {
         var userTaskRun1 = buildFakeUserTaskRunWithCustomTaskDefNameAndCustomDateRange(userId, wfRunId, type, earliestDate.plusHours(4L));
         var userTaskRun2 = buildFakeUserTaskRunWithCustomTaskDefNameAndCustomDateRange(userId, wfRunId, type, latestDate.minusHours(4L));
 
-        when(lhClient.searchUserTaskRun(searchRequest)).thenReturn(listOfUserTasks);
-        when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun1, userTaskRun2);
+        when(lhTenantClient.searchUserTaskRun(searchRequest)).thenReturn(listOfUserTasks);
+        when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun1, userTaskRun2);
 
-        Optional<UserTaskRunListDTO> result = userTaskService.getTasks(userId, null, additionalFilters,
+        Optional<UserTaskRunListDTO> result = userTaskService.getTasks(tenantId, userId, null, additionalFilters,
                 RESULTS_LIMIT, null, false);
 
         assertTrue(result.isPresent());
@@ -458,8 +465,8 @@ class UserTaskServiceTest {
         assertTrue(actualUserTaskDTOs.stream().allMatch(hasScheduledTimeAfterEarliestStart(earliestDate)));
         assertTrue(actualUserTaskDTOs.stream().allMatch(hasScheduledTimeBeforeLatestStart(latestDate)));
 
-        verify(lhClient).searchUserTaskRun(searchRequest);
-        verify(lhClient, times(2)).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient).searchUserTaskRun(searchRequest);
+        verify(lhTenantClient, times(2)).getUserTaskRun(any(UserTaskRunId.class));
     }
 
     @Test
@@ -469,12 +476,12 @@ class UserTaskServiceTest {
         var expectedExceptionMessage = "Could not find UserTaskRun!";
 
         NotFoundException exception = assertThrows(NotFoundException.class,
-                () -> userTaskService.getUserTaskDetails(nonExistingWfRunId, nonExistingUserTaskGuid, "user-id", null));
+                () -> userTaskService.getUserTaskDetails(nonExistingWfRunId, nonExistingUserTaskGuid, tenantId, "user-id", null, false));
 
         assertEquals(expectedExceptionMessage, exception.getMessage());
 
-        verify(lhClient).getUserTaskRun(any(UserTaskRunId.class));
-        verify(lhClient, never()).getUserTaskDef(any(UserTaskDefId.class));
+        verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient, never()).getUserTaskDef(any(UserTaskDefId.class));
     }
 
     @Test
@@ -486,15 +493,15 @@ class UserTaskServiceTest {
 
         var foundUserTaskRun = buildFakeUserTaskRun(userId, existingWfRunId);
 
-        when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(foundUserTaskRun);
+        when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(foundUserTaskRun);
 
         NotFoundException exception = assertThrows(NotFoundException.class,
-                () -> userTaskService.getUserTaskDetails(existingWfRunId, existingUserTaskGuid, userId, null));
+                () -> userTaskService.getUserTaskDetails(existingWfRunId, existingUserTaskGuid, tenantId, userId, null, false));
 
         assertEquals(expectedExceptionMessage, exception.getMessage());
 
-        verify(lhClient).getUserTaskRun(any(UserTaskRunId.class));
-        verify(lhClient).getUserTaskDef(any(UserTaskDefId.class));
+        verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient).getUserTaskDef(any(UserTaskDefId.class));
     }
 
     @Test
@@ -506,15 +513,15 @@ class UserTaskServiceTest {
 
         var foundUserTaskRun = buildFakeUserTaskRun(UUID.randomUUID().toString(), existingWfRunId);
 
-        when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(foundUserTaskRun);
+        when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(foundUserTaskRun);
 
         CustomUnauthorizedException exception = assertThrows(CustomUnauthorizedException.class,
-                () -> userTaskService.getUserTaskDetails(existingWfRunId, existingUserTaskGuid, userId, null));
+                () -> userTaskService.getUserTaskDetails(existingWfRunId, existingUserTaskGuid, tenantId, userId, null, false));
 
         assertEquals(expectedExceptionMessage, exception.getMessage());
 
-        verify(lhClient).getUserTaskRun(any(UserTaskRunId.class));
-        verify(lhClient, never()).getUserTaskDef(any(UserTaskDefId.class));
+        verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient, never()).getUserTaskDef(any(UserTaskDefId.class));
     }
 
     @Test
@@ -529,15 +536,15 @@ class UserTaskServiceTest {
                 .setUserGroup("some-pretty-cool-user-group")
                 .build();
 
-        when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(foundUserTaskRun);
+        when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(foundUserTaskRun);
 
         CustomUnauthorizedException exception = assertThrows(CustomUnauthorizedException.class,
-                () -> userTaskService.getUserTaskDetails(existingWfRunId, existingUserTaskGuid, userId, null));
+                () -> userTaskService.getUserTaskDetails(existingWfRunId, existingUserTaskGuid, tenantId, userId, null, false));
 
         assertEquals(expectedExceptionMessage, exception.getMessage());
 
-        verify(lhClient).getUserTaskRun(any(UserTaskRunId.class));
-        verify(lhClient, never()).getUserTaskDef(any(UserTaskDefId.class));
+        verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient, never()).getUserTaskDef(any(UserTaskDefId.class));
     }
 
     @Test
@@ -551,15 +558,15 @@ class UserTaskServiceTest {
                 .setUserId("some-different-user-id")
                 .build();
 
-        when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(foundUserTaskRun);
+        when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(foundUserTaskRun);
 
         CustomUnauthorizedException exception = assertThrows(CustomUnauthorizedException.class,
-                () -> userTaskService.getUserTaskDetails(existingWfRunId, existingUserTaskGuid, userId, null));
+                () -> userTaskService.getUserTaskDetails(existingWfRunId, existingUserTaskGuid, tenantId, userId, null, false));
 
         assertEquals(expectedExceptionMessage, exception.getMessage());
 
-        verify(lhClient).getUserTaskRun(any(UserTaskRunId.class));
-        verify(lhClient, never()).getUserTaskDef(any(UserTaskDefId.class));
+        verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient, never()).getUserTaskDef(any(UserTaskDefId.class));
     }
 
     @Test
@@ -579,10 +586,10 @@ class UserTaskServiceTest {
                 .build();
         var foundUserTaskDef = buildFakeUserTaskDef(foundUserTaskRun.getUserTaskDefId().getName());
 
-        when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(foundUserTaskRun);
-        when(lhClient.getUserTaskDef(any(UserTaskDefId.class))).thenReturn(foundUserTaskDef);
+        when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(foundUserTaskRun);
+        when(lhTenantClient.getUserTaskDef(any(UserTaskDefId.class))).thenReturn(foundUserTaskDef);
 
-        var result = userTaskService.getUserTaskDetails(existingWfRunId, existingUserTaskGuid, userId, null);
+        var result = userTaskService.getUserTaskDetails(existingWfRunId, existingUserTaskGuid, tenantId, userId, null, false);
 
         assertTrue(result.isPresent());
 
@@ -593,8 +600,8 @@ class UserTaskServiceTest {
         assertFalse(foundUserTaskRunDTO.getFields().isEmpty());
         assertTrue(foundUserTaskRunDTO.getFields().stream().allMatch(hasMandatoryFieldsForUserTaskField()));
 
-        verify(lhClient).getUserTaskRun(any(UserTaskRunId.class));
-        verify(lhClient).getUserTaskDef(any(UserTaskDefId.class));
+        verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient).getUserTaskDef(any(UserTaskDefId.class));
     }
 
     @Test
@@ -625,10 +632,10 @@ class UserTaskServiceTest {
                 .putAllResults(expectedResultValues)
                 .build();
 
-        when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(foundUserTaskRun);
-        when(lhClient.getUserTaskDef(any(UserTaskDefId.class))).thenReturn(foundUserTaskDef);
+        when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(foundUserTaskRun);
+        when(lhTenantClient.getUserTaskDef(any(UserTaskDefId.class))).thenReturn(foundUserTaskDef);
 
-        var result = userTaskService.getUserTaskDetails(existingWfRunId, existingUserTaskGuid, userId, null);
+        var result = userTaskService.getUserTaskDetails(existingWfRunId, existingUserTaskGuid, tenantId, userId, null, false);
 
         assertTrue(result.isPresent());
 
@@ -641,8 +648,8 @@ class UserTaskServiceTest {
         assertFalse(foundUserTaskRunDTO.getResults().isEmpty());
         assertTrue(foundUserTaskRunDTO.getResults().keySet().containsAll(expectedResultsKeys));
 
-        verify(lhClient).getUserTaskRun(any(UserTaskRunId.class));
-        verify(lhClient).getUserTaskDef(any(UserTaskDefId.class));
+        verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient).getUserTaskDef(any(UserTaskDefId.class));
     }
 
     @Test
@@ -665,10 +672,10 @@ class UserTaskServiceTest {
                 .build();
         var foundUserTaskDef = buildFakeUserTaskDef(foundUserTaskRun.getUserTaskDefId().getName());
 
-        when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(foundUserTaskRun);
-        when(lhClient.getUserTaskDef(any(UserTaskDefId.class))).thenReturn(foundUserTaskDef);
+        when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(foundUserTaskRun);
+        when(lhTenantClient.getUserTaskDef(any(UserTaskDefId.class))).thenReturn(foundUserTaskDef);
 
-        var result = userTaskService.getUserTaskDetails(existingWfRunId, existingUserTaskGuid, userId, userGroup);
+        var result = userTaskService.getUserTaskDetails(existingWfRunId, existingUserTaskGuid, tenantId, userId, userGroup, false);
 
         assertTrue(result.isPresent());
 
@@ -680,8 +687,8 @@ class UserTaskServiceTest {
         assertFalse(StringUtils.hasText(foundUserTaskRunDTO.getUserId()));
         assertTrue(foundUserTaskRunDTO.getFields().stream().allMatch(hasMandatoryFieldsForUserTaskField()));
 
-        verify(lhClient).getUserTaskRun(any(UserTaskRunId.class));
-        verify(lhClient).getUserTaskDef(any(UserTaskDefId.class));
+        verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient).getUserTaskDef(any(UserTaskDefId.class));
     }
 
     @Test
@@ -704,10 +711,10 @@ class UserTaskServiceTest {
                 .build();
         var foundUserTaskDef = buildFakeUserTaskDef(foundUserTaskRun.getUserTaskDefId().getName());
 
-        when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(foundUserTaskRun);
-        when(lhClient.getUserTaskDef(any(UserTaskDefId.class))).thenReturn(foundUserTaskDef);
+        when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(foundUserTaskRun);
+        when(lhTenantClient.getUserTaskDef(any(UserTaskDefId.class))).thenReturn(foundUserTaskDef);
 
-        var result = userTaskService.getUserTaskDetails(existingWfRunId, existingUserTaskGuid, userId, requestUserGroup);
+        var result = userTaskService.getUserTaskDetails(existingWfRunId, existingUserTaskGuid, tenantId, userId, requestUserGroup, false);
 
         assertTrue(result.isPresent());
 
@@ -719,8 +726,8 @@ class UserTaskServiceTest {
         assertEquals(userId, foundUserTaskRunDTO.getUserId());
         assertTrue(foundUserTaskRunDTO.getFields().stream().allMatch(hasMandatoryFieldsForUserTaskField()));
 
-        verify(lhClient).getUserTaskRun(any(UserTaskRunId.class));
-        verify(lhClient).getUserTaskDef(any(UserTaskDefId.class));
+        verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient).getUserTaskDef(any(UserTaskDefId.class));
     }
 
     @Test
@@ -746,15 +753,15 @@ class UserTaskServiceTest {
         var userTaskRun = buildFakeUserTaskRun(userId, wfRunId);
         var userTaskDef = buildFakeUserTaskDef(userTaskRun.getUserTaskDefId().getName());
 
-        when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun);
-        when(lhClient.getUserTaskDef(any(UserTaskDefId.class))).thenReturn(userTaskDef);
-        when(lhClient.completeUserTaskRun(any(CompleteUserTaskRunRequest.class))).thenReturn(Empty.getDefaultInstance());
+        when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun);
+        when(lhTenantClient.getUserTaskDef(any(UserTaskDefId.class))).thenReturn(userTaskDef);
+        when(lhTenantClient.completeUserTaskRun(any(CompleteUserTaskRunRequest.class))).thenReturn(Empty.getDefaultInstance());
 
-        userTaskService.completeUserTask(userId, request);
+        userTaskService.completeUserTask(userId, request, tenantId, false);
 
-        verify(lhClient).getUserTaskRun(any(UserTaskRunId.class));
-        verify(lhClient).getUserTaskDef(any(UserTaskDefId.class));
-        verify(lhClient).completeUserTaskRun(any(CompleteUserTaskRunRequest.class));
+        verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient).getUserTaskDef(any(UserTaskDefId.class));
+        verify(lhTenantClient).completeUserTaskRun(any(CompleteUserTaskRunRequest.class));
     }
 
     @Test
@@ -773,20 +780,20 @@ class UserTaskServiceTest {
                 .build();
         var userTaskDef = buildFakeUserTaskDef(doneUserTaskRun.getUserTaskDefId().getName());
 
-        when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(doneUserTaskRun);
-        when(lhClient.getUserTaskDef(any(UserTaskDefId.class))).thenReturn(userTaskDef);
-        when(lhClient.completeUserTaskRun(any(CompleteUserTaskRunRequest.class))).thenReturn(Empty.getDefaultInstance());
+        when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(doneUserTaskRun);
+        when(lhTenantClient.getUserTaskDef(any(UserTaskDefId.class))).thenReturn(userTaskDef);
+        when(lhTenantClient.completeUserTaskRun(any(CompleteUserTaskRunRequest.class))).thenReturn(Empty.getDefaultInstance());
 
         CustomUnauthorizedException thrownException = assertThrows(CustomUnauthorizedException.class,
-                () -> userTaskService.completeUserTask(userId, request));
+                () -> userTaskService.completeUserTask(userId, request, tenantId, false));
 
         var expectedErrorMessage = "Current user is forbidden from accessing this UserTask information";
 
         assertEquals(expectedErrorMessage, thrownException.getMessage());
 
-        verify(lhClient).getUserTaskRun(any(UserTaskRunId.class));
-        verify(lhClient, never()).getUserTaskDef(any(UserTaskDefId.class));
-        verify(lhClient, never()).completeUserTaskRun(any(CompleteUserTaskRunRequest.class));
+        verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient, never()).getUserTaskDef(any(UserTaskDefId.class));
+        verify(lhTenantClient, never()).completeUserTaskRun(any(CompleteUserTaskRunRequest.class));
     }
 
     @Test
@@ -805,12 +812,12 @@ class UserTaskServiceTest {
                 .build();
         var userTaskDef = buildFakeUserTaskDef(doneUserTaskRun.getUserTaskDefId().getName());
 
-        when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(doneUserTaskRun);
-        when(lhClient.getUserTaskDef(any(UserTaskDefId.class))).thenReturn(userTaskDef);
-        when(lhClient.completeUserTaskRun(any(CompleteUserTaskRunRequest.class))).thenReturn(Empty.getDefaultInstance());
+        when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(doneUserTaskRun);
+        when(lhTenantClient.getUserTaskDef(any(UserTaskDefId.class))).thenReturn(userTaskDef);
+        when(lhTenantClient.completeUserTaskRun(any(CompleteUserTaskRunRequest.class))).thenReturn(Empty.getDefaultInstance());
 
         ResponseStatusException thrownException = assertThrows(ResponseStatusException.class,
-                () -> userTaskService.completeUserTask(userId, request));
+                () -> userTaskService.completeUserTask(userId, request, tenantId, false));
 
         int expectedHttpErrorCode = HttpStatus.FORBIDDEN.value();
         var expectedErrorMessage = "The UserTask you are trying to complete is already DONE or CANCELLED";
@@ -818,9 +825,9 @@ class UserTaskServiceTest {
         assertEquals(expectedHttpErrorCode, thrownException.getBody().getStatus());
         assertEquals(expectedErrorMessage, thrownException.getReason());
 
-        verify(lhClient).getUserTaskRun(any(UserTaskRunId.class));
-        verify(lhClient).getUserTaskDef(any(UserTaskDefId.class));
-        verify(lhClient, never()).completeUserTaskRun(any(CompleteUserTaskRunRequest.class));
+        verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient).getUserTaskDef(any(UserTaskDefId.class));
+        verify(lhTenantClient, never()).completeUserTaskRun(any(CompleteUserTaskRunRequest.class));
     }
 
     @Test
@@ -839,12 +846,12 @@ class UserTaskServiceTest {
                 .build();
         var userTaskDef = buildFakeUserTaskDef(cancelledUserTaskRun.getUserTaskDefId().getName());
 
-        when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(cancelledUserTaskRun);
-        when(lhClient.getUserTaskDef(any(UserTaskDefId.class))).thenReturn(userTaskDef);
-        when(lhClient.completeUserTaskRun(any(CompleteUserTaskRunRequest.class))).thenReturn(Empty.getDefaultInstance());
+        when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(cancelledUserTaskRun);
+        when(lhTenantClient.getUserTaskDef(any(UserTaskDefId.class))).thenReturn(userTaskDef);
+        when(lhTenantClient.completeUserTaskRun(any(CompleteUserTaskRunRequest.class))).thenReturn(Empty.getDefaultInstance());
 
         ResponseStatusException thrownException = assertThrows(ResponseStatusException.class,
-                () -> userTaskService.completeUserTask(userId, request));
+                () -> userTaskService.completeUserTask(userId, request, tenantId, false));
 
         int expectedHttpErrorCode = HttpStatus.FORBIDDEN.value();
         var expectedErrorMessage = "The UserTask you are trying to complete is already DONE or CANCELLED";
@@ -852,9 +859,9 @@ class UserTaskServiceTest {
         assertEquals(expectedHttpErrorCode, thrownException.getBody().getStatus());
         assertEquals(expectedErrorMessage, thrownException.getReason());
 
-        verify(lhClient).getUserTaskRun(any(UserTaskRunId.class));
-        verify(lhClient).getUserTaskDef(any(UserTaskDefId.class));
-        verify(lhClient, never()).completeUserTaskRun(any(CompleteUserTaskRunRequest.class));
+        verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient).getUserTaskDef(any(UserTaskDefId.class));
+        verify(lhTenantClient, never()).completeUserTaskRun(any(CompleteUserTaskRunRequest.class));
     }
 
     @Test
@@ -886,22 +893,22 @@ class UserTaskServiceTest {
         var expectedErrorMessage = "INVALID_ARGUMENT: Field [name = not-defined-field, type = BOOL] is not defined in UserTask " +
                 "schema or has different type";
 
-        when(lhClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun);
-        when(lhClient.getUserTaskDef(any(UserTaskDefId.class))).thenReturn(userTaskDef);
-        when(lhClient.completeUserTaskRun(any(CompleteUserTaskRunRequest.class)))
+        when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun);
+        when(lhTenantClient.getUserTaskDef(any(UserTaskDefId.class))).thenReturn(userTaskDef);
+        when(lhTenantClient.completeUserTaskRun(any(CompleteUserTaskRunRequest.class)))
                 .thenThrow(new RuntimeException(expectedErrorMessage));
 
         ResponseStatusException thrownException = assertThrows(ResponseStatusException.class,
-                () -> userTaskService.completeUserTask(userId, request));
+                () -> userTaskService.completeUserTask(userId, request, tenantId, false));
 
         int expectedHttpErrorCode = HttpStatus.BAD_REQUEST.value();
 
         assertEquals(expectedHttpErrorCode, thrownException.getBody().getStatus());
         assertEquals(expectedErrorMessage, thrownException.getReason());
 
-        verify(lhClient).getUserTaskRun(any(UserTaskRunId.class));
-        verify(lhClient).getUserTaskDef(any(UserTaskDefId.class));
-        verify(lhClient).completeUserTaskRun(any(CompleteUserTaskRunRequest.class));
+        verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient).getUserTaskDef(any(UserTaskDefId.class));
+        verify(lhTenantClient).completeUserTaskRun(any(CompleteUserTaskRunRequest.class));
     }
 
     @Test
@@ -913,28 +920,23 @@ class UserTaskServiceTest {
                 .build();
         var expectedException = "No UserTaskDefs were found for given tenant";
 
-        LittleHorseGrpc.LittleHorseBlockingStub tenantLhClient = mock();
-
-        when(lhClient.withCallCredentials(any())).thenReturn(tenantLhClient);
-        when(tenantLhClient.searchUserTaskDef(any(SearchUserTaskDefRequest.class))).thenReturn(userTaskDefIdList);
+        when(lhTenantClient.searchUserTaskDef(any(SearchUserTaskDefRequest.class))).thenReturn(userTaskDefIdList);
 
         NotFoundException exception = assertThrows(NotFoundException.class,
                 () -> userTaskService.getAllUserTasksDef(tenantId, requestLimit, null));
 
         assertEquals(expectedException, exception.getMessage());
 
-        verify(tenantLhClient).searchUserTaskDef(any(SearchUserTaskDefRequest.class));
+        verify(lhTenantClient).searchUserTaskDef(any(SearchUserTaskDefRequest.class));
     }
 
     @Test
     void getUserTasksDef_shouldThrowNullPointerExceptionIfNoTenantIdParamIsPassedIn() {
         var requestLimit = 10;
 
-        LittleHorseGrpc.LittleHorseBlockingStub tenantLhClient = mock();
-
         assertThrows(NullPointerException.class, () -> userTaskService.getAllUserTasksDef(null, requestLimit, null));
 
-        verify(tenantLhClient, never()).searchUserTaskDef(any(SearchUserTaskDefRequest.class));
+        verify(lhTenantClient, never()).searchUserTaskDef(any(SearchUserTaskDefRequest.class));
     }
 
     @Test
@@ -958,17 +960,14 @@ class UserTaskServiceTest {
                 .addAllResults(List.of(userTaskDefId1, userTaskDefId2, userTaskDefId3))
                 .build();
 
-        LittleHorseGrpc.LittleHorseBlockingStub tenantLhClient = mock();
-
-        when(lhClient.withCallCredentials(any())).thenReturn(tenantLhClient);
-        when(tenantLhClient.searchUserTaskDef(any(SearchUserTaskDefRequest.class))).thenReturn(userTaskDefIdList);
+        when(lhTenantClient.searchUserTaskDef(any(SearchUserTaskDefRequest.class))).thenReturn(userTaskDefIdList);
 
         UserTaskDefListDTO result = userTaskService.getAllUserTasksDef(tenantId, requestLimit, null);
 
         assertFalse(result.getUserTaskDefNames().isEmpty());
         assertEquals(expectedQuantityOfUserTaskDefs, result.getUserTaskDefNames().size());
 
-        verify(tenantLhClient).searchUserTaskDef(any(SearchUserTaskDefRequest.class));
+        verify(lhTenantClient).searchUserTaskDef(any(SearchUserTaskDefRequest.class));
     }
 
     @Test
@@ -994,17 +993,14 @@ class UserTaskServiceTest {
                 .setBookmark(ByteString.copyFrom(requestBookmark))
                 .build();
 
-        LittleHorseGrpc.LittleHorseBlockingStub tenantLhClient = mock();
-
-        when(lhClient.withCallCredentials(any())).thenReturn(tenantLhClient);
-        when(tenantLhClient.searchUserTaskDef(searchRequest)).thenReturn(searchResult);
+        when(lhTenantClient.searchUserTaskDef(searchRequest)).thenReturn(searchResult);
 
         UserTaskDefListDTO result = userTaskService.getAllUserTasksDef(tenantId, requestLimit, requestBookmark);
 
         assertFalse(result.getUserTaskDefNames().isEmpty());
         assertEquals(expectedQuantityOfUserTaskDefs, result.getUserTaskDefNames().size());
 
-        verify(tenantLhClient).searchUserTaskDef(searchRequest);
+        verify(lhTenantClient).searchUserTaskDef(searchRequest);
     }
 
     private static String buildStringGuid() {
