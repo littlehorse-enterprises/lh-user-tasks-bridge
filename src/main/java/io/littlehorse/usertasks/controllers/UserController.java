@@ -117,7 +117,8 @@ public class UserController {
             var parsedBookmark = Objects.nonNull(bookmark) ? Base64.decodeBase64(bookmark) : null;
 
             //TODO: User Group filter is pending
-            var optionalUserTasks = userTaskService.getMyTasks(userIdFromToken, null, additionalFilters, limit, parsedBookmark);
+            var optionalUserTasks = userTaskService.getTasks(userIdFromToken, null, additionalFilters,
+                    limit, parsedBookmark, false);
 
             return optionalUserTasks
                     .map(ResponseEntity::ok)

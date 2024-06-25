@@ -748,61 +748,6 @@
           },
           {
             "examples": {
-              "date-time-example": {
-                "value": "\"2024-06-01T23:59:59.999\""
-              }
-            },
-            "name": "earliest_start_date",
-            "schema": {
-              "format": "date-time",
-              "type": "string"
-            },
-            "in": "query",
-            "required": false
-          },
-          {
-            "examples": {
-              "date-time-example": {
-                "value": "\"2024-06-01T23:59:59.999\""
-              }
-            },
-            "name": "latest_start_date",
-            "schema": {
-              "format": "date-time",
-              "type": "string"
-            },
-            "in": "query",
-            "required": false
-          },
-          {
-            "examples": {
-              "user-task-run-status-example": {
-                "value": "\"UNASSIGNED\""
-              }
-            },
-            "name": "status",
-            "schema": {
-              "enum": [
-                "UNASSIGNED",
-                "ASSIGNED",
-                "DONE",
-                "CANCELLED"
-              ],
-              "type": "string"
-            },
-            "in": "query",
-            "required": false
-          },
-          {
-            "name": "type",
-            "schema": {
-              "type": "string"
-            },
-            "in": "query",
-            "required": false
-          },
-          {
-            "examples": {
               "int-example": {
                 "value": "5"
               }
@@ -822,14 +767,6 @@
             },
             "in": "query",
             "required": false
-          },
-          {
-            "name": "user_id",
-            "description": "",
-            "schema": {
-              "type": "string"
-            },
-            "in": "query"
           }
         ],
         "responses": {
