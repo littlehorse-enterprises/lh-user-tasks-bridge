@@ -1,5 +1,6 @@
 package io.littlehorse.usertasks.models.responses;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import io.littlehorse.sdk.common.proto.UserTaskDef;
 import io.littlehorse.sdk.common.proto.UserTaskRun;
 import io.littlehorse.sdk.common.proto.VariableValue;
@@ -16,6 +17,7 @@ import lombok.NonNull;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static io.littlehorse.usertasks.util.DateUtil.timestampToLocalDateTime;
@@ -47,7 +49,10 @@ public class DetailedUserTaskRunDTO {
     private LocalDateTime scheduledTime;
     @NotNull
     private List<UserTaskFieldDTO> fields;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private Map<String, UserTaskVariableValue> results;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private Set<AuditEventDTO> events;
 
     public static DetailedUserTaskRunDTO fromUserTaskRun(@NonNull UserTaskRun userTaskRun, @NonNull UserTaskDef userTaskDef) {
         var fields = userTaskDef.getFieldsList().stream()

@@ -18,6 +18,7 @@ import io.littlehorse.usertasks.exceptions.NotFoundException;
 import io.littlehorse.usertasks.models.requests.CompleteUserTaskRequest;
 import io.littlehorse.usertasks.models.requests.StandardPagination;
 import io.littlehorse.usertasks.models.requests.UserTaskRequestFilter;
+import io.littlehorse.usertasks.models.responses.AuditEventDTO;
 import io.littlehorse.usertasks.models.responses.DetailedUserTaskRunDTO;
 import io.littlehorse.usertasks.models.responses.SimpleUserTaskRunDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskDefListDTO;
@@ -117,6 +118,17 @@ public class UserTaskService {
         }
 
         var resultDto = DetailedUserTaskRunDTO.fromUserTaskRun(userTaskRunResult, userTaskDefResult);
+
+        if (isAdminRequest) {
+            Set<AuditEventDTO> events = new HashSet<>();
+
+            userTaskRunResult.getEventsList().forEach(serverEvent -> {
+                AuditEventDTO event = AuditEventDTO.fromUserTaskEvent(serverEvent);
+                events.add(event);
+            });
+
+            resultDto.setEvents(events);
+        }
 
         return Optional.of(resultDto);
     }

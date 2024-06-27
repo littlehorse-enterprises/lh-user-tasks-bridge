@@ -10,6 +10,7 @@ import io.littlehorse.sdk.common.proto.SearchUserTaskRunRequest;
 import io.littlehorse.sdk.common.proto.UserTaskDef;
 import io.littlehorse.sdk.common.proto.UserTaskDefId;
 import io.littlehorse.sdk.common.proto.UserTaskDefIdList;
+import io.littlehorse.sdk.common.proto.UserTaskEvent;
 import io.littlehorse.sdk.common.proto.UserTaskField;
 import io.littlehorse.sdk.common.proto.UserTaskRun;
 import io.littlehorse.sdk.common.proto.UserTaskRunId;
@@ -52,6 +53,7 @@ import java.util.function.Predicate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -641,6 +643,7 @@ class UserTaskServiceTest {
         assertEquals(existingUserTaskGuid, foundUserTaskRunDTO.getId());
         assertFalse(foundUserTaskRunDTO.getFields().isEmpty());
         assertTrue(foundUserTaskRunDTO.getFields().stream().allMatch(hasMandatoryFieldsForUserTaskField()));
+        assertNull(foundUserTaskRunDTO.getEvents());
 
         verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
         verify(lhTenantClient).getUserTaskDef(any(UserTaskDefId.class));
@@ -660,6 +663,12 @@ class UserTaskServiceTest {
                                 .build())
                         .setUserTaskGuid(existingUserTaskGuid)
                         .build())
+                .addEvents(UserTaskEvent.newBuilder()
+                        .setAssigned(UserTaskEvent.UTEAssigned.newBuilder()
+                                .setNewUserId(userId)
+                                .build())
+                        .setTime(DateUtil.localDateTimeToTimestamp(LocalDateTime.now().minusHours(1L)))
+                        .build())
                 .build();
         var foundUserTaskDef = buildFakeUserTaskDef(foundUserTaskRun.getUserTaskDefId().getName());
 
@@ -676,6 +685,7 @@ class UserTaskServiceTest {
         assertEquals(existingUserTaskGuid, foundUserTaskRunDTO.getId());
         assertFalse(foundUserTaskRunDTO.getFields().isEmpty());
         assertTrue(foundUserTaskRunDTO.getFields().stream().allMatch(hasMandatoryFieldsForUserTaskField()));
+        assertFalse(foundUserTaskRunDTO.getEvents().isEmpty());
 
         verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
         verify(lhTenantClient).getUserTaskDef(any(UserTaskDefId.class));
@@ -722,6 +732,7 @@ class UserTaskServiceTest {
         assertEquals(existingUserTaskGuid, foundUserTaskRunDTO.getId());
         assertFalse(foundUserTaskRunDTO.getFields().isEmpty());
         assertTrue(foundUserTaskRunDTO.getFields().stream().allMatch(hasMandatoryFieldsForUserTaskField()));
+        assertNull(foundUserTaskRunDTO.getEvents());
         assertFalse(foundUserTaskRunDTO.getResults().isEmpty());
         assertTrue(foundUserTaskRunDTO.getResults().keySet().containsAll(expectedResultsKeys));
 
@@ -761,6 +772,7 @@ class UserTaskServiceTest {
         assertEquals(existingWfRunId, foundUserTaskRunDTO.getWfRunId());
         assertEquals(existingUserTaskGuid, foundUserTaskRunDTO.getId());
         assertFalse(foundUserTaskRunDTO.getFields().isEmpty());
+        assertNull(foundUserTaskRunDTO.getEvents());
         assertFalse(StringUtils.hasText(foundUserTaskRunDTO.getUserId()));
         assertTrue(foundUserTaskRunDTO.getFields().stream().allMatch(hasMandatoryFieldsForUserTaskField()));
 
@@ -800,6 +812,7 @@ class UserTaskServiceTest {
         assertEquals(existingWfRunId, foundUserTaskRunDTO.getWfRunId());
         assertEquals(existingUserTaskGuid, foundUserTaskRunDTO.getId());
         assertFalse(foundUserTaskRunDTO.getFields().isEmpty());
+        assertNull(foundUserTaskRunDTO.getEvents());
         assertEquals(userId, foundUserTaskRunDTO.getUserId());
         assertTrue(foundUserTaskRunDTO.getFields().stream().allMatch(hasMandatoryFieldsForUserTaskField()));
 

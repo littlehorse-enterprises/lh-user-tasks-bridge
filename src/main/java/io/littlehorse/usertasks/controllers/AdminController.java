@@ -240,7 +240,8 @@ public class AdminController {
         } catch (CustomUnauthorizedException e) {
             return ResponseEntity.of(ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, e.getMessage())).build();
         } catch (Exception e) {
-            return ResponseEntity.of(ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage())).build();
+            log.error(e.getMessage());
+            return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR)).build();
         }
     }
 }
