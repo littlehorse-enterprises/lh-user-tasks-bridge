@@ -117,7 +117,7 @@ public class UserController {
             var parsedBookmark = Objects.nonNull(bookmark) ? Base64.decodeBase64(bookmark) : null;
 
             //TODO: User Group filter is pending
-            var optionalUserTasks = userTaskService.getTasks(userIdFromToken, null, additionalFilters,
+            var optionalUserTasks = userTaskService.getTasks(tenantId, userIdFromToken, null, additionalFilters,
                     limit, parsedBookmark, false);
 
             return optionalUserTasks
@@ -127,9 +127,10 @@ public class UserController {
             return ResponseEntity.of(ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, e.getMessage())).build();
         } catch (JsonProcessingException e) {
             log.error("Something went wrong when getting claims from token");
-            return ResponseEntity.of(ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage())).build();
+            return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR)).build();
         } catch (Exception e) {
-            return ResponseEntity.of(ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage())).build();
+            log.error(e.getMessage());
+            return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR)).build();
         }
     }
 
@@ -177,7 +178,8 @@ public class UserController {
 
             var userIdFromToken = (String) tokenClaims.get(USER_ID_CLAIM);
 
-            var optionalUserTaskDetail = userTaskService.getUserTaskDetails(wfRunId, userTaskRunGuid, userIdFromToken, null);
+            var optionalUserTaskDetail = userTaskService.getUserTaskDetails(wfRunId, userTaskRunGuid, tenantId, userIdFromToken,
+                    null, false);
 
             if (optionalUserTaskDetail.isEmpty()) {
                 return ResponseEntity.notFound().build();
@@ -189,7 +191,8 @@ public class UserController {
         } catch (CustomUnauthorizedException e) {
             return ResponseEntity.of(ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, e.getMessage())).build();
         } catch (Exception e) {
-            return ResponseEntity.of(ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage())).build();
+            log.error(e.getMessage());
+            return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR)).build();
         }
     }
 
@@ -238,6 +241,6 @@ public class UserController {
                 .results(requestBody)
                 .build();
 
-        userTaskService.completeUserTask(userIdFromToken, request);
+        userTaskService.completeUserTask(userIdFromToken, request, tenantId, false);
     }
 }

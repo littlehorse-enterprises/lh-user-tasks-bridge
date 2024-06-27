@@ -18,6 +18,7 @@ import io.littlehorse.usertasks.exceptions.NotFoundException;
 import io.littlehorse.usertasks.models.requests.CompleteUserTaskRequest;
 import io.littlehorse.usertasks.models.requests.StandardPagination;
 import io.littlehorse.usertasks.models.requests.UserTaskRequestFilter;
+import io.littlehorse.usertasks.models.responses.AuditEventDTO;
 import io.littlehorse.usertasks.models.responses.DetailedUserTaskRunDTO;
 import io.littlehorse.usertasks.models.responses.SimpleUserTaskRunDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskDefListDTO;
@@ -48,7 +49,7 @@ public class UserTaskService {
         this.lhClient = lhClient;
     }
 
-    public Optional<UserTaskRunListDTO> getTasks(String userId, String userGroup, UserTaskRequestFilter additionalFilters,
+    public Optional<UserTaskRunListDTO> getTasks(@NonNull String tenantId, String userId, String userGroup, UserTaskRequestFilter additionalFilters,
                                                  int limit, byte[] bookmark, boolean isAdminRequest) {
         if (!isAdminRequest && !StringUtils.hasText(userId)) {
             throw new IllegalArgumentException("Cannot search UserTask without specifying a proper UserId");
@@ -62,7 +63,9 @@ public class UserTaskService {
         SearchUserTaskRunRequest searchRequest;
         searchRequest = buildSearchUserTaskRunRequest(userId, userGroup, additionalFilters, pagination);
 
-        UserTaskRunIdList searchResults = lhClient.searchUserTaskRun(searchRequest);
+        LittleHorseGrpc.LittleHorseBlockingStub tenantClient = lhClient.withCallCredentials(new TenantMetadataProvider(tenantId));
+
+        UserTaskRunIdList searchResults = tenantClient.searchUserTaskRun(searchRequest);
         List<UserTaskRunId> resultsIdList = searchResults.getResultsList();
         var setOfUserTasks = new HashSet<SimpleUserTaskRunDTO>();
         var response = UserTaskRunListDTO.builder()
@@ -71,7 +74,7 @@ public class UserTaskService {
 
         if (!resultsIdList.isEmpty()) {
             resultsIdList.forEach(userTaskRunId -> {
-                UserTaskRun userTaskRun = lhClient.getUserTaskRun(userTaskRunId);
+                UserTaskRun userTaskRun = tenantClient.getUserTaskRun(userTaskRunId);
                 setOfUserTasks.add(SimpleUserTaskRunDTO.fromUserTaskRun(userTaskRun));
             });
 
@@ -87,7 +90,8 @@ public class UserTaskService {
     }
 
     public Optional<DetailedUserTaskRunDTO> getUserTaskDetails(@NonNull String wfRunId, @NonNull String userTaskRunGuid,
-                                                               @NonNull String userId, String userGroup) {
+                                                               @NonNull String tenantId, String userId, String userGroup,
+                                                               boolean isAdminRequest) {
         var getUserTaskRunRequest = UserTaskRunId.newBuilder()
                 .setWfRunId(WfRunId.newBuilder()
                         .setId(wfRunId)
@@ -95,15 +99,19 @@ public class UserTaskService {
                 .setUserTaskGuid(userTaskRunGuid)
                 .build();
 
-        var userTaskRunResult = lhClient.getUserTaskRun(getUserTaskRunRequest);
+        LittleHorseGrpc.LittleHorseBlockingStub tenantClient = lhClient.withCallCredentials(new TenantMetadataProvider(tenantId));
+
+        var userTaskRunResult = tenantClient.getUserTaskRun(getUserTaskRunRequest);
 
         if (!Objects.nonNull(userTaskRunResult)) {
             throw new NotFoundException("Could not find UserTaskRun!");
         }
 
-        validateIfUserIsAllowedToSeeUserTask(userId, userGroup, userTaskRunResult);
+        if (!isAdminRequest) {
+            validateIfUserIsAllowedToSeeUserTask(userId, userGroup, userTaskRunResult);
+        }
 
-        var userTaskDefResult = lhClient.getUserTaskDef(userTaskRunResult.getUserTaskDefId());
+        var userTaskDefResult = tenantClient.getUserTaskDef(userTaskRunResult.getUserTaskDefId());
 
         if (!Objects.nonNull(userTaskDefResult)) {
             throw new NotFoundException("Could not find associated UserTaskDef!");
@@ -111,15 +119,27 @@ public class UserTaskService {
 
         var resultDto = DetailedUserTaskRunDTO.fromUserTaskRun(userTaskRunResult, userTaskDefResult);
 
+        if (isAdminRequest) {
+            Set<AuditEventDTO> events = new HashSet<>();
+
+            userTaskRunResult.getEventsList().forEach(serverEvent -> {
+                AuditEventDTO event = AuditEventDTO.fromUserTaskEvent(serverEvent);
+                events.add(event);
+            });
+
+            resultDto.setEvents(events);
+        }
+
         return Optional.of(resultDto);
     }
 
-    public void completeUserTask(@NonNull String userId, @NonNull CompleteUserTaskRequest request) {
+    public void completeUserTask(@NonNull String userId, @NonNull CompleteUserTaskRequest request, @NonNull String tenantId,
+                                 boolean isAdminRequest) {
         try {
             log.info("Completing UserTaskRun");
 
             Optional<DetailedUserTaskRunDTO> userTaskDetails = getUserTaskDetails(request.getWfRunId(),
-                    request.getUserTaskRunGuid(), userId, null);//TODO: UserGroup param must be added here later on
+                    request.getUserTaskRunGuid(), tenantId, userId, null, isAdminRequest);//TODO: UserGroup param must be added here later on
 
             if (userTaskDetails.isPresent()) {
                 if (isUserTaskTerminated(userTaskDetails.get().getStatus().toServerStatus())) {
@@ -129,7 +149,10 @@ public class UserTaskService {
             }
 
             CompleteUserTaskRunRequest serverRequest = request.toServerRequest(userId);
-            lhClient.completeUserTaskRun(serverRequest);
+
+            LittleHorseGrpc.LittleHorseBlockingStub tenantClient = lhClient.withCallCredentials(new TenantMetadataProvider(tenantId));
+
+            tenantClient.completeUserTaskRun(serverRequest);
 
             log.atInfo()
                     .setMessage("UserTaskRun with wfRunId: {}, guid: {} was successfully completed")

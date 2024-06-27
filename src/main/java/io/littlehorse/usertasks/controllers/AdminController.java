@@ -1,7 +1,9 @@
 package io.littlehorse.usertasks.controllers;
 
+import io.littlehorse.usertasks.exceptions.CustomUnauthorizedException;
 import io.littlehorse.usertasks.exceptions.NotFoundException;
 import io.littlehorse.usertasks.models.requests.UserTaskRequestFilter;
+import io.littlehorse.usertasks.models.responses.DetailedUserTaskRunDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskDefListDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskRunListDTO;
 import io.littlehorse.usertasks.services.TenantService;
@@ -114,7 +116,7 @@ public class AdminController {
                     status, type);
             byte[] parsedBookmark = Objects.nonNull(bookmark) ? Base64.decodeBase64(bookmark) : null;
 
-            Optional<UserTaskRunListDTO> optionalUserTasks = userTaskService.getTasks(userId, userGroup, additionalFilters,
+            Optional<UserTaskRunListDTO> optionalUserTasks = userTaskService.getTasks(tenantId, userId, userGroup, additionalFilters,
                     limit, parsedBookmark, true);
 
             return optionalUserTasks
@@ -179,6 +181,67 @@ public class AdminController {
             return ResponseEntity.of(ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, e.getMessage())).build();
         } catch (Exception e) {
             return ResponseEntity.of(ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage())).build();
+        }
+    }
+
+    @Operation(
+            summary = "Gets a UserTask's details, including its definition (UserTaskDef) and events."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "UserTask's details with fields defined in its UserTaskDef. Additionally, it may include " +
+                            "results (in case it is in DONE status).",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = DetailedUserTaskRunDTO.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Tenant Id is not valid.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "Not enough privileges to access this resource.",
+                    content = {@Content}
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "No UserTask/UserTaskDef data was found in LH Server using the given params.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            )
+    })
+    @GetMapping("/{tenant_id}/admin/tasks/{wf_run_id}/{user_task_guid}")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseEntity<DetailedUserTaskRunDTO> getUserTaskDetail(@PathVariable(name = "tenant_id") String tenantId,
+                                                                    @PathVariable(name = "wf_run_id") String wfRunId,
+                                                                    @PathVariable(name = "user_task_guid") String userTaskRunGuid) {
+
+        try {
+            if (!tenantService.isValidTenant(tenantId)) {
+                return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.UNAUTHORIZED)).build();
+            }
+
+            var optionalUserTaskDetail = userTaskService.getUserTaskDetails(wfRunId, userTaskRunGuid, tenantId,
+                    null, null, true);
+
+            if (optionalUserTaskDetail.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            return ResponseEntity.of(optionalUserTaskDetail);
+        } catch (NotFoundException e) {
+            return ResponseEntity.of(ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, e.getMessage())).build();
+        } catch (CustomUnauthorizedException e) {
+            return ResponseEntity.of(ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, e.getMessage())).build();
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR)).build();
         }
     }
 }

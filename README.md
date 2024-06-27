@@ -33,6 +33,7 @@ lhctl put tenant here-you-put-your-tenant-identifier
  ```shell
   export LHC_API_HOST=localhost
   export LHC_API_PORT=2025
+  export LHC_TENANT_ID=here-you-put-your-tenant-identifier
   ```
 
 This is just an example, use the values that match your LittleHorse config

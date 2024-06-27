@@ -3,6 +3,7 @@ package io.littlehorse.usertasks.models.responses;
 import io.littlehorse.sdk.common.proto.UserTaskField;
 import io.littlehorse.usertasks.util.UserTaskFieldType;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -24,7 +25,7 @@ public class UserTaskFieldDTO {
     @NotBlank
     private String displayName;
     private String description;
-    @NonNull
+    @NotNull
     private UserTaskFieldType type;
     private boolean required;
 
