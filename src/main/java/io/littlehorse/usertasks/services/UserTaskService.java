@@ -2,6 +2,7 @@ package io.littlehorse.usertasks.services;
 
 import com.google.protobuf.ByteString;
 import io.littlehorse.sdk.common.auth.TenantMetadataProvider;
+import io.littlehorse.sdk.common.proto.AssignUserTaskRunRequest;
 import io.littlehorse.sdk.common.proto.CompleteUserTaskRunRequest;
 import io.littlehorse.sdk.common.proto.LittleHorseGrpc;
 import io.littlehorse.sdk.common.proto.SearchUserTaskDefRequest;
@@ -15,6 +16,7 @@ import io.littlehorse.sdk.common.proto.UserTaskRunStatus;
 import io.littlehorse.sdk.common.proto.WfRunId;
 import io.littlehorse.usertasks.exceptions.CustomUnauthorizedException;
 import io.littlehorse.usertasks.exceptions.NotFoundException;
+import io.littlehorse.usertasks.models.requests.AssignationRequest;
 import io.littlehorse.usertasks.models.requests.CompleteUserTaskRequest;
 import io.littlehorse.usertasks.models.requests.StandardPagination;
 import io.littlehorse.usertasks.models.requests.UserTaskRequestFilter;
@@ -23,6 +25,7 @@ import io.littlehorse.usertasks.models.responses.DetailedUserTaskRunDTO;
 import io.littlehorse.usertasks.models.responses.SimpleUserTaskRunDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskDefListDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskRunListDTO;
+import io.littlehorse.usertasks.util.enums.UserTaskAssignationType;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.util.codec.binary.Base64;
@@ -198,6 +201,52 @@ public class UserTaskService {
                         ? Base64.encodeBase64String(searchResults.getBookmark().toByteArray())
                         : null)
                 .build();
+    }
+
+    public void assignUserTask(@NonNull AssignationRequest requestBody, @NonNull String wfRunId,
+                               @NonNull String userTaskRunGuid, @NonNull String tenantId) {
+        try {
+            log.atInfo()
+                    .setMessage("Assigning UserTaskRun with wfRunId: {} and userTaskGuid: {}")
+                    .addArgument(wfRunId)
+                    .addArgument(userTaskRunGuid)
+                    .log();
+            LittleHorseGrpc.LittleHorseBlockingStub tenantClient = lhClient.withCallCredentials(new TenantMetadataProvider(tenantId));
+
+            AssignUserTaskRunRequest.Builder requestBuilder = AssignUserTaskRunRequest.newBuilder()
+                    .setUserTaskRunId(UserTaskRunId.newBuilder()
+                            .setWfRunId(WfRunId.newBuilder()
+                                    .setId(wfRunId)
+                                    .build())
+                            .setUserTaskGuid(userTaskRunGuid)
+                            .build())
+                    .setOverrideClaim(true);
+
+            if (requestBody.getType().equals(UserTaskAssignationType.USER)) {
+                requestBuilder.setUserId(requestBody.getAssignee());
+            } else {
+                requestBuilder.setUserGroup(requestBody.getAssignee());
+            }
+
+            tenantClient.assignUserTaskRun(requestBuilder.build());
+
+            log.atInfo()
+                    .setMessage("UserTaskRun with wfRunId: {} and guid: {} was successfully assigned to {}")
+                    .addArgument(wfRunId)
+                    .addArgument(userTaskRunGuid)
+                    .addArgument(requestBody.getAssignee())
+                    .log();
+        } catch (Exception e) {
+            if (e.getMessage().contains("INVALID_ARGUMENT")) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+            }
+            log.atError()
+                    .setMessage("Assignation of UserTaskRun with wfRunId: {} and guid: {} failed")
+                    .addArgument(wfRunId)
+                    .addArgument(userTaskRunGuid)
+                    .log();
+            throw e;
+        }
     }
 
     private SearchUserTaskRunRequest buildSearchUserTaskRunRequest(String userId, String userGroup,

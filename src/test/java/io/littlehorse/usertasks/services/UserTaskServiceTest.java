@@ -3,6 +3,7 @@ package io.littlehorse.usertasks.services;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
 import com.google.protobuf.Timestamp;
+import io.littlehorse.sdk.common.proto.AssignUserTaskRunRequest;
 import io.littlehorse.sdk.common.proto.CompleteUserTaskRunRequest;
 import io.littlehorse.sdk.common.proto.LittleHorseGrpc;
 import io.littlehorse.sdk.common.proto.SearchUserTaskDefRequest;
@@ -22,6 +23,7 @@ import io.littlehorse.sdk.common.proto.WfRunId;
 import io.littlehorse.usertasks.exceptions.CustomUnauthorizedException;
 import io.littlehorse.usertasks.exceptions.NotFoundException;
 import io.littlehorse.usertasks.models.common.UserTaskVariableValue;
+import io.littlehorse.usertasks.models.requests.AssignationRequest;
 import io.littlehorse.usertasks.models.requests.CompleteUserTaskRequest;
 import io.littlehorse.usertasks.models.requests.UserTaskRequestFilter;
 import io.littlehorse.usertasks.models.responses.SimpleUserTaskRunDTO;
@@ -29,12 +31,14 @@ import io.littlehorse.usertasks.models.responses.UserTaskDefListDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskFieldDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskRunListDTO;
 import io.littlehorse.usertasks.util.DateUtil;
+import io.littlehorse.usertasks.util.enums.UserTaskAssignationType;
 import io.littlehorse.usertasks.util.enums.UserTaskFieldType;
 import io.littlehorse.usertasks.util.enums.UserTaskStatus;
 import org.apache.tomcat.util.codec.binary.Base64;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.StringUtils;
@@ -1162,6 +1166,155 @@ class UserTaskServiceTest {
         assertEquals(expectedQuantityOfUserTaskDefs, result.getUserTaskDefNames().size());
 
         verify(lhTenantClient).searchUserTaskDef(searchRequest);
+    }
+
+    @Test
+    void assignUserTask_shouldThrowNullPointerExceptionWhenRequestBodyIsNull() {
+        var wfRunId = buildStringGuid();
+        var userTaskRunGuid = buildStringGuid();
+
+        assertThrows(NullPointerException.class,
+                () -> userTaskService.assignUserTask(null, wfRunId, userTaskRunGuid, tenantId));
+    }
+
+    @Test
+    void assignUserTask_shouldThrowNullPointerExceptionWhenWfRunIdIsNull() {
+        var request = AssignationRequest.builder()
+                .type(UserTaskAssignationType.USER)
+                .assignee("some-user-id")
+                .build();
+
+        var userTaskRunGuid = buildStringGuid();
+
+        assertThrows(NullPointerException.class,
+                () -> userTaskService.assignUserTask(request, null, userTaskRunGuid, tenantId));
+    }
+
+    @Test
+    void assignUserTask_shouldThrowNullPointerExceptionWhenUserTaskRunGuidIsNull() {
+        var request = AssignationRequest.builder()
+                .type(UserTaskAssignationType.USER)
+                .assignee("some-user-id")
+                .build();
+
+        var wfRunId = buildStringGuid();
+
+        assertThrows(NullPointerException.class,
+                () -> userTaskService.assignUserTask(request, wfRunId, null, tenantId));
+    }
+
+    @Test
+    void assignUserTask_shouldThrowNullPointerExceptionWhenTenantIdIsNull() {
+        var request = AssignationRequest.builder()
+                .type(UserTaskAssignationType.USER)
+                .assignee("some-user-id")
+                .build();
+
+        var wfRunId = buildStringGuid();
+        var userTaskRunGuid = buildStringGuid();
+
+        assertThrows(NullPointerException.class,
+                () -> userTaskService.assignUserTask(request, wfRunId, userTaskRunGuid, null));
+    }
+
+    @Test
+    void assignUserTask_shouldSucceedWhenUserTaskRunIsAssignedToAUserAndServerDoesNotThrowAnyException() {
+        var assignedUserId = "some-user-id";
+        var request = AssignationRequest.builder()
+                .type(UserTaskAssignationType.USER)
+                .assignee(assignedUserId)
+                .build();
+
+        var wfRunId = buildStringGuid();
+        var userTaskRunGuid = buildStringGuid();
+
+        when(lhTenantClient.assignUserTaskRun(any(AssignUserTaskRunRequest.class))).thenReturn(Empty.getDefaultInstance());
+
+        userTaskService.assignUserTask(request, wfRunId, userTaskRunGuid, tenantId);
+        ArgumentCaptor<AssignUserTaskRunRequest> serverRequest = ArgumentCaptor.forClass(AssignUserTaskRunRequest.class);
+
+        verify(lhTenantClient).assignUserTaskRun(serverRequest.capture());
+
+        AssignUserTaskRunRequest actualServerRequest = serverRequest.getValue();
+
+        assertTrue(actualServerRequest.hasUserId());
+        assertEquals(assignedUserId, actualServerRequest.getUserId());
+        assertFalse(actualServerRequest.hasUserGroup());
+    }
+
+    @Test
+    void assignUserTask_shouldSucceedWhenUserTaskRunIsAssignedToAUserGroupAndServerDoesNotThrowAnyException() {
+        var assignedUserGroup = "some-user-group";
+        var request = AssignationRequest.builder()
+                .type(UserTaskAssignationType.USER_GROUP)
+                .assignee(assignedUserGroup)
+                .build();
+
+        var wfRunId = buildStringGuid();
+        var userTaskRunGuid = buildStringGuid();
+
+        when(lhTenantClient.assignUserTaskRun(any(AssignUserTaskRunRequest.class))).thenReturn(Empty.getDefaultInstance());
+
+        userTaskService.assignUserTask(request, wfRunId, userTaskRunGuid, tenantId);
+        ArgumentCaptor<AssignUserTaskRunRequest> serverRequest = ArgumentCaptor.forClass(AssignUserTaskRunRequest.class);
+
+        verify(lhTenantClient).assignUserTaskRun(serverRequest.capture());
+
+        AssignUserTaskRunRequest actualServerRequest = serverRequest.getValue();
+
+        assertFalse(actualServerRequest.hasUserId());
+        assertTrue(actualServerRequest.hasUserGroup());
+        assertEquals(assignedUserGroup, actualServerRequest.getUserGroup());
+    }
+
+    @Test
+    void assignUserTask_shouldThrowResponseStatusExceptionAsBadRequestWhenServerThrowsExceptionRelatedToAnArgument() {
+        var wrongUserGroup = "2938-wjas";
+        var request = AssignationRequest.builder()
+                .type(UserTaskAssignationType.USER_GROUP)
+                .assignee(wrongUserGroup)
+                .build();
+
+        var wfRunId = buildStringGuid();
+        var userTaskRunGuid = buildStringGuid();
+        var expectedErrorMessage = "INVALID_ARGUMENT: Field [name = userGroup, type = STR] is not defined in UserTask " +
+                "schema or has different type";
+
+        when(lhTenantClient.assignUserTaskRun(any(AssignUserTaskRunRequest.class)))
+                .thenThrow(new RuntimeException(expectedErrorMessage));
+
+        ResponseStatusException thrownException = assertThrows(ResponseStatusException.class,
+                () -> userTaskService.assignUserTask(request, wfRunId, userTaskRunGuid, tenantId));
+
+        int expectedHttpErrorCode = HttpStatus.BAD_REQUEST.value();
+
+        assertEquals(expectedHttpErrorCode, thrownException.getBody().getStatus());
+        assertEquals(expectedErrorMessage, thrownException.getReason());
+
+        verify(lhTenantClient).assignUserTaskRun(any(AssignUserTaskRunRequest.class));
+    }
+
+    @Test
+    void assignUserTask_shouldThrowExceptionWhenServerThrowsUnhandledException() {
+        var assignedUserGroup = "some-user-group";
+        var request = AssignationRequest.builder()
+                .type(UserTaskAssignationType.USER_GROUP)
+                .assignee(assignedUserGroup)
+                .build();
+
+        var wfRunId = buildStringGuid();
+        var userTaskRunGuid = buildStringGuid();
+        var expectedErrorMessage = "Something went wrong while assigning UserTaskRun";
+
+        when(lhTenantClient.assignUserTaskRun(any(AssignUserTaskRunRequest.class)))
+                .thenThrow(new RuntimeException(expectedErrorMessage));
+
+        RuntimeException thrownException = assertThrows(RuntimeException.class,
+                () -> userTaskService.assignUserTask(request, wfRunId, userTaskRunGuid, tenantId));
+
+        assertEquals(expectedErrorMessage, thrownException.getMessage());
+
+        verify(lhTenantClient).assignUserTaskRun(any(AssignUserTaskRunRequest.class));
     }
 
     private static String buildStringGuid() {

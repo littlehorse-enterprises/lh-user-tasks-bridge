@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import io.littlehorse.usertasks.exceptions.CustomUnauthorizedException;
 import io.littlehorse.usertasks.exceptions.NotFoundException;
 import io.littlehorse.usertasks.models.common.UserTaskVariableValue;
+import io.littlehorse.usertasks.models.requests.AssignationRequest;
 import io.littlehorse.usertasks.models.requests.CompleteUserTaskRequest;
 import io.littlehorse.usertasks.models.requests.UserTaskRequestFilter;
 import io.littlehorse.usertasks.models.responses.DetailedUserTaskRunDTO;
@@ -298,5 +299,42 @@ public class AdminController {
                 .build();
 
         userTaskService.completeUserTask(userIdFromToken, request, tenantId, true);
+    }
+
+    @Operation(
+            summary = "Assigns a User Task Run to a User or UserGroup."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "204",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Tenant Id is not valid. It could also be triggered when given admin user does not " +
+                            "have permissions to assign users/userGroups to the requested UserTask.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "No UserTask/UserTaskDef data was found in LH Server using the given params.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            )
+    })
+    @PostMapping("/{tenant_id}/admin/tasks/{wf_run_id}/{user_task_guid}/assign")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void assignUserTask(@PathVariable(name = "tenant_id") String tenantId,
+                               @PathVariable(name = "wf_run_id") String wfRunId,
+                               @PathVariable(name = "user_task_guid") String userTaskRunGuid,
+                               @RequestBody AssignationRequest requestBody) {
+        if (!tenantService.isValidTenant(tenantId)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+
+        userTaskService.assignUserTask(requestBody, wfRunId, userTaskRunGuid, tenantId);
     }
 }
