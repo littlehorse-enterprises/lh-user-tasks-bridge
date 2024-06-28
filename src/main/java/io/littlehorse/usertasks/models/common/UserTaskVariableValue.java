@@ -2,7 +2,7 @@ package io.littlehorse.usertasks.models.common;
 
 import io.littlehorse.sdk.common.proto.VariableType;
 import io.littlehorse.sdk.common.proto.VariableValue;
-import io.littlehorse.usertasks.util.UserTaskFieldType;
+import io.littlehorse.usertasks.util.enums.UserTaskFieldType;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

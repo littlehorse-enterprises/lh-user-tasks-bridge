@@ -11,7 +11,7 @@ import io.littlehorse.usertasks.models.responses.UserTaskRunListDTO;
 import io.littlehorse.usertasks.services.TenantService;
 import io.littlehorse.usertasks.services.UserTaskService;
 import io.littlehorse.usertasks.util.TokenUtil;
-import io.littlehorse.usertasks.util.UserTaskStatus;
+import io.littlehorse.usertasks.util.enums.UserTaskStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -40,6 +40,8 @@ import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Objects;
 
+import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.USER_ID_CLAIM;
+
 @Tag(
         name = "User Controller",
         description = "This is a controller that exposes endpoints in charge of handling requests related to non-admin users"
@@ -49,9 +51,6 @@ import java.util.Objects;
 @PreAuthorize("isAuthenticated()")
 @Slf4j
 public class UserController {
-
-    //TODO: Might change this constant to a global common Constants class later
-    private final String USER_ID_CLAIM = "sub";
     private final TenantService tenantService;
     private final UserTaskService userTaskService;
 

@@ -167,7 +167,6 @@ public class UserTaskService {
                     .setMessage("Completion of UserTaskRun with wfRunId: {}, guid: {} failed")
                     .addArgument(request.getWfRunId())
                     .addArgument(request.getUserTaskRunGuid())
-                    .setCause(e)
                     .log();
             throw e;
         }

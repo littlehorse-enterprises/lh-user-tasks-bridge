@@ -3,7 +3,7 @@ package io.littlehorse.usertasks.models.responses;
 import io.littlehorse.sdk.common.proto.TaskRunId;
 import io.littlehorse.sdk.common.proto.UserTaskEvent;
 import io.littlehorse.usertasks.util.DateUtil;
-import io.littlehorse.usertasks.util.UserTaskEvenType;
+import io.littlehorse.usertasks.util.enums.UserTaskEvenType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

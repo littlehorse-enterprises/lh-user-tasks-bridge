@@ -29,8 +29,8 @@ import io.littlehorse.usertasks.models.responses.UserTaskDefListDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskFieldDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskRunListDTO;
 import io.littlehorse.usertasks.util.DateUtil;
-import io.littlehorse.usertasks.util.UserTaskFieldType;
-import io.littlehorse.usertasks.util.UserTaskStatus;
+import io.littlehorse.usertasks.util.enums.UserTaskFieldType;
+import io.littlehorse.usertasks.util.enums.UserTaskStatus;
 import org.apache.tomcat.util.codec.binary.Base64;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -885,6 +885,40 @@ class UserTaskServiceTest {
         when(lhTenantClient.completeUserTaskRun(any(CompleteUserTaskRunRequest.class))).thenReturn(Empty.getDefaultInstance());
 
         userTaskService.completeUserTask(userId, request, tenantId, false);
+
+        verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient).getUserTaskDef(any(UserTaskDefId.class));
+        verify(lhTenantClient).completeUserTaskRun(any(CompleteUserTaskRunRequest.class));
+    }
+
+    @Test
+    void completeUserTask_shouldSucceedForAdminUserWhenServerDoesNotThrowAnException() {
+        var userId = "my-admin-user-id";
+        var wfRunId = buildStringGuid();
+        var userTaskRunGuid = buildStringGuid();
+        var request = CompleteUserTaskRequest.builder()
+                .wfRunId(wfRunId)
+                .userTaskRunGuid(userTaskRunGuid)
+                .results(Map.of(
+                                "string-field", UserTaskVariableValue.builder()
+                                        .value("some-value")
+                                        .type(UserTaskFieldType.STRING)
+                                        .build(),
+                                "integer-field", UserTaskVariableValue.builder()
+                                        .value(1)
+                                        .type(UserTaskFieldType.INTEGER)
+                                        .build()
+                        )
+                ).build();
+
+        var userTaskRun = buildFakeUserTaskRun(userId, wfRunId);
+        var userTaskDef = buildFakeUserTaskDef(userTaskRun.getUserTaskDefId().getName());
+
+        when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun);
+        when(lhTenantClient.getUserTaskDef(any(UserTaskDefId.class))).thenReturn(userTaskDef);
+        when(lhTenantClient.completeUserTaskRun(any(CompleteUserTaskRunRequest.class))).thenReturn(Empty.getDefaultInstance());
+
+        userTaskService.completeUserTask(userId, request, tenantId, true);
 
         verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
         verify(lhTenantClient).getUserTaskDef(any(UserTaskDefId.class));
