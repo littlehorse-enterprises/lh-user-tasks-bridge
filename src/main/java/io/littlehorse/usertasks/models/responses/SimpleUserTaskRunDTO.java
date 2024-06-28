@@ -1,7 +1,7 @@
 package io.littlehorse.usertasks.models.responses;
 
 import io.littlehorse.sdk.common.proto.UserTaskRun;
-import io.littlehorse.usertasks.util.UserTaskStatus;
+import io.littlehorse.usertasks.util.enums.UserTaskStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;

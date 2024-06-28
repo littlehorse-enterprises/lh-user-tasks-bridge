@@ -1,7 +1,7 @@
 package io.littlehorse.usertasks.models.responses;
 
 import io.littlehorse.sdk.common.proto.UserTaskField;
-import io.littlehorse.usertasks.util.UserTaskFieldType;
+import io.littlehorse.usertasks.util.enums.UserTaskFieldType;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;

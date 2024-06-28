@@ -1,14 +1,18 @@
 package io.littlehorse.usertasks.controllers;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import io.littlehorse.usertasks.exceptions.CustomUnauthorizedException;
 import io.littlehorse.usertasks.exceptions.NotFoundException;
+import io.littlehorse.usertasks.models.common.UserTaskVariableValue;
+import io.littlehorse.usertasks.models.requests.CompleteUserTaskRequest;
 import io.littlehorse.usertasks.models.requests.UserTaskRequestFilter;
 import io.littlehorse.usertasks.models.responses.DetailedUserTaskRunDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskDefListDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskRunListDTO;
 import io.littlehorse.usertasks.services.TenantService;
 import io.littlehorse.usertasks.services.UserTaskService;
-import io.littlehorse.usertasks.util.UserTaskStatus;
+import io.littlehorse.usertasks.util.TokenUtil;
+import io.littlehorse.usertasks.util.enums.UserTaskStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -25,16 +29,21 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
-import static io.littlehorse.usertasks.util.AuthoritiesConstants.USER_TASKS_ADMIN;
+import static io.littlehorse.usertasks.util.constants.AuthoritiesConstants.USER_TASKS_ADMIN;
+import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.USER_ID_CLAIM;
 
 @Tag(
         name = "Admin Controller",
@@ -243,5 +252,52 @@ public class AdminController {
             log.error(e.getMessage());
             return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR)).build();
         }
+    }
+
+    @Operation(
+            summary = "Completes a UserTask by making it transition to DONE status if the request is successfully processed in " +
+                    "LittleHorse Server."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "204",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Tenant Id is not valid. It could also be triggered when current user/userGroup does " +
+                            "not have permissions to complete the requested UserTask.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "No UserTask/UserTaskDef data was found in LH Server using the given params.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            )
+    })
+    @PostMapping("/{tenant_id}/admin/tasks/{wf_run_id}/{user_task_guid}/result")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void completeUserTask(@RequestHeader("Authorization") String accessToken,
+                                 @PathVariable(name = "tenant_id") String tenantId,
+                                 @PathVariable(name = "wf_run_id") String wfRunId,
+                                 @PathVariable(name = "user_task_guid") String userTaskRunGuid,
+                                 @RequestBody Map<String, UserTaskVariableValue> requestBody) throws JsonProcessingException {
+        if (!tenantService.isValidTenant(tenantId)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+        var tokenClaims = TokenUtil.getTokenClaims(accessToken);
+
+        var userIdFromToken = (String) tokenClaims.get(USER_ID_CLAIM);
+        CompleteUserTaskRequest request = CompleteUserTaskRequest.builder()
+                .wfRunId(wfRunId)
+                .userTaskRunGuid(userTaskRunGuid)
+                .results(requestBody)
+                .build();
+
+        userTaskService.completeUserTask(userIdFromToken, request, tenantId, true);
     }
 }

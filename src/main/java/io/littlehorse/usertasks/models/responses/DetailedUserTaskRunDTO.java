@@ -5,7 +5,7 @@ import io.littlehorse.sdk.common.proto.UserTaskDef;
 import io.littlehorse.sdk.common.proto.UserTaskRun;
 import io.littlehorse.sdk.common.proto.VariableValue;
 import io.littlehorse.usertasks.models.common.UserTaskVariableValue;
-import io.littlehorse.usertasks.util.UserTaskStatus;
+import io.littlehorse.usertasks.util.enums.UserTaskStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;

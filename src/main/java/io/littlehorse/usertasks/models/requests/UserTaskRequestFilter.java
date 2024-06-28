@@ -1,7 +1,7 @@
 package io.littlehorse.usertasks.models.requests;
 
 import com.google.protobuf.Timestamp;
-import io.littlehorse.usertasks.util.UserTaskStatus;
+import io.littlehorse.usertasks.util.enums.UserTaskStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

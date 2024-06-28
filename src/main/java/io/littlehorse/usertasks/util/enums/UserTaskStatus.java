@@ -1,4 +1,4 @@
-package io.littlehorse.usertasks.util;
+package io.littlehorse.usertasks.util.enums;
 
 import io.littlehorse.sdk.common.proto.UserTaskRunStatus;
 import lombok.NonNull;
