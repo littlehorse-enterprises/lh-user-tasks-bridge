@@ -265,8 +265,7 @@ public class AdminController {
             ),
             @ApiResponse(
                     responseCode = "401",
-                    description = "Tenant Id is not valid. It could also be triggered when current user/userGroup does " +
-                            "not have permissions to complete the requested UserTask.",
+                    description = "Tenant Id is not valid.",
                     content = {@Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ProblemDetail.class))}
