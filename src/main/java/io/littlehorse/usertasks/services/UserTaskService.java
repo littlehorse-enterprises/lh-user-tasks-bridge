@@ -237,7 +237,7 @@ public class UserTaskService {
                     .addArgument(requestBody.getAssignee())
                     .log();
         } catch (Exception e) {
-            if (e.getMessage().contains("INVALID_ARGUMENT")) {
+            if (e.getMessage().contains("INVALID_ARGUMENT") || e.getMessage().contains("FAILED_PRECONDITION")) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
             }
             log.atError()

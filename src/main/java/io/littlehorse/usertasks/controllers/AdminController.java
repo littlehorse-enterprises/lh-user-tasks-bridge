@@ -310,6 +310,13 @@ public class AdminController {
                     content = @Content
             ),
             @ApiResponse(
+                    responseCode = "400",
+                    description = "Field(s) passed in is/are invalid or failed at a LittleHorse server condition",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
                     responseCode = "401",
                     description = "Tenant Id is not valid. It could also be triggered when given admin user does not " +
                             "have permissions to assign users/userGroups to the requested UserTask.",

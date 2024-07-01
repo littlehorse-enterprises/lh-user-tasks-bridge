@@ -1295,6 +1295,32 @@ class UserTaskServiceTest {
     }
 
     @Test
+    void assignUserTask_shouldThrowResponseStatusExceptionAsBadRequestWhenUserTaskRunIsInATerminalStatus() {
+        var userGroup = "my-user-group";
+        var request = AssignationRequest.builder()
+                .type(UserTaskAssignationType.USER_GROUP)
+                .assignee(userGroup)
+                .build();
+
+        var wfRunId = buildStringGuid();
+        var userTaskRunGuid = buildStringGuid();
+        var expectedErrorMessage = "FAILED_PRECONDITION: Couldn't reassign User Task Run since it  is in terminal status DONE";
+
+        when(lhTenantClient.assignUserTaskRun(any(AssignUserTaskRunRequest.class)))
+                .thenThrow(new RuntimeException(expectedErrorMessage));
+
+        ResponseStatusException thrownException = assertThrows(ResponseStatusException.class,
+                () -> userTaskService.assignUserTask(request, wfRunId, userTaskRunGuid, tenantId));
+
+        int expectedHttpErrorCode = HttpStatus.BAD_REQUEST.value();
+
+        assertEquals(expectedHttpErrorCode, thrownException.getBody().getStatus());
+        assertEquals(expectedErrorMessage, thrownException.getReason());
+
+        verify(lhTenantClient).assignUserTaskRun(any(AssignUserTaskRunRequest.class));
+    }
+
+    @Test
     void assignUserTask_shouldThrowExceptionWhenServerThrowsUnhandledException() {
         var assignedUserGroup = "some-user-group";
         var request = AssignationRequest.builder()
