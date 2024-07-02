@@ -1,7 +1,10 @@
 package io.littlehorse.usertasks.services;
 
 import com.google.protobuf.ByteString;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.littlehorse.sdk.common.auth.TenantMetadataProvider;
+import io.littlehorse.sdk.common.proto.AssignUserTaskRunRequest;
 import io.littlehorse.sdk.common.proto.CompleteUserTaskRunRequest;
 import io.littlehorse.sdk.common.proto.LittleHorseGrpc;
 import io.littlehorse.sdk.common.proto.SearchUserTaskDefRequest;
@@ -15,6 +18,7 @@ import io.littlehorse.sdk.common.proto.UserTaskRunStatus;
 import io.littlehorse.sdk.common.proto.WfRunId;
 import io.littlehorse.usertasks.exceptions.CustomUnauthorizedException;
 import io.littlehorse.usertasks.exceptions.NotFoundException;
+import io.littlehorse.usertasks.models.requests.AssignmentRequest;
 import io.littlehorse.usertasks.models.requests.CompleteUserTaskRequest;
 import io.littlehorse.usertasks.models.requests.StandardPagination;
 import io.littlehorse.usertasks.models.requests.UserTaskRequestFilter;
@@ -159,10 +163,20 @@ public class UserTaskService {
                     .addArgument(request.getWfRunId())
                     .addArgument(request.getUserTaskRunGuid())
                     .log();
-        } catch (Exception e) {
-            if (e.getMessage().contains("INVALID_ARGUMENT")) {
+        } catch (StatusRuntimeException e) {
+            log.atError()
+                    .setMessage("Something went wrong in LH Server with completion process for UserTaskRun with with " +
+                            "wfRunId: {} and guid: {} ")
+                    .addArgument(request.getWfRunId())
+                    .addArgument(request.getUserTaskRunGuid())
+                    .log();
+
+            if (e.getStatus().getCode() == Status.Code.INVALID_ARGUMENT) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
             }
+
+            throw e;
+        } catch (Exception e) {
             log.atError()
                     .setMessage("Completion of UserTaskRun with wfRunId: {}, guid: {} failed")
                     .addArgument(request.getWfRunId())
@@ -198,6 +212,73 @@ public class UserTaskService {
                         ? Base64.encodeBase64String(searchResults.getBookmark().toByteArray())
                         : null)
                 .build();
+    }
+
+    public void assignUserTask(@NonNull AssignmentRequest requestBody, @NonNull String wfRunId,
+                               @NonNull String userTaskRunGuid, @NonNull String tenantId) {
+        try {
+            log.atInfo()
+                    .setMessage("Assigning UserTaskRun with wfRunId: {} and userTaskGuid: {}")
+                    .addArgument(wfRunId)
+                    .addArgument(userTaskRunGuid)
+                    .log();
+
+            if (!StringUtils.hasText(requestBody.getUserId()) && !StringUtils.hasText(requestBody.getUserGroup())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No valid arguments were received to complete reassignment.");
+            }
+
+            LittleHorseGrpc.LittleHorseBlockingStub tenantClient = lhClient.withCallCredentials(new TenantMetadataProvider(tenantId));
+
+            AssignUserTaskRunRequest.Builder requestBuilder = AssignUserTaskRunRequest.newBuilder()
+                    .setUserTaskRunId(UserTaskRunId.newBuilder()
+                            .setWfRunId(WfRunId.newBuilder()
+                                    .setId(wfRunId)
+                                    .build())
+                            .setUserTaskGuid(userTaskRunGuid)
+                            .build())
+                    .setOverrideClaim(true);
+
+            if (StringUtils.hasText(requestBody.getUserId())) {
+                requestBuilder.setUserId(requestBody.getUserId());
+            }
+
+            if (StringUtils.hasText(requestBody.getUserGroup())) {
+                requestBuilder.setUserGroup(requestBody.getUserGroup());
+            }
+
+            tenantClient.assignUserTaskRun(requestBuilder.build());
+
+            log.atInfo()
+                    .setMessage("UserTaskRun with wfRunId: {} and guid: {} was successfully assigned to {}")
+                    .addArgument(wfRunId)
+                    .addArgument(userTaskRunGuid)
+                    .addArgument(requestBody.getUserId())
+                    .log();
+        } catch (StatusRuntimeException e) {
+            log.atError()
+                    .setMessage("Something went wrong in LH Server with assignment process for UserTaskRun with with " +
+                            "wfRunId: {} and guid: {} ")
+                    .addArgument(wfRunId)
+                    .addArgument(userTaskRunGuid)
+                    .log();
+            if (e.getStatus().getCode() == Status.Code.INVALID_ARGUMENT) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+            }
+
+            if (e.getStatus().getCode() == Status.Code.FAILED_PRECONDITION) {
+                throw new ResponseStatusException(HttpStatus.PRECONDITION_FAILED, e.getMessage(), e);
+            }
+
+            throw e;
+        } catch (Exception e) {
+            log.atError()
+                    .setMessage("Assignment of UserTaskRun with wfRunId: {} and guid: {} failed")
+                    .addArgument(wfRunId)
+                    .addArgument(userTaskRunGuid)
+                    .log();
+
+            throw e;
+        }
     }
 
     private SearchUserTaskRunRequest buildSearchUserTaskRunRequest(String userId, String userGroup,

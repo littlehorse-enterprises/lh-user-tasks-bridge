@@ -1,5 +1,7 @@
 package io.littlehorse.usertasks.services;
 
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.littlehorse.sdk.common.proto.LittleHorseGrpc;
 import io.littlehorse.sdk.common.proto.Tenant;
 import io.littlehorse.sdk.common.proto.TenantId;
@@ -14,6 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -22,6 +25,13 @@ class TenantServiceTest {
     private final LittleHorseGrpc.LittleHorseBlockingStub lhClient = mock();
 
     private final TenantService tenantService = new TenantService(lhClient);
+
+    @Test
+    void isValidTenant_shouldThrowNullPointerExceptionWhenTenantIdIsNull() throws NotFoundException {
+        assertThrows(NullPointerException.class, () -> tenantService.isValidTenant(null));
+
+        verify(lhClient, never()).getTenant(any(TenantId.class));
+    }
 
     @Test
     void isValidTenant_shouldReturnFalseWhenNoMatchingTenantIsFound() throws NotFoundException {
@@ -38,10 +48,20 @@ class TenantServiceTest {
     void isValidTenant_shouldReturnFalseWhenServerAPIThrowsNotFoundException() throws NotFoundException {
         var tenantIdToValidate = "someTenant";
 
-        when(lhClient.getTenant(any(TenantId.class)))
-                .thenThrow(new RuntimeException("NOT_FOUND: Could not find tenant " + tenantIdToValidate));
+        when(lhClient.getTenant(any(TenantId.class))).thenThrow(new StatusRuntimeException(Status.NOT_FOUND));
 
         assertFalse(tenantService.isValidTenant(tenantIdToValidate));
+
+        verify(lhClient).getTenant(any(TenantId.class));
+    }
+
+    @Test
+    void isValidTenant_shouldReturnFalseWhenServerAPIThrowsUnhandledException() throws NotFoundException {
+        var tenantIdToValidate = "someOtherTenant";
+
+        when(lhClient.getTenant(any(TenantId.class))).thenThrow(new StatusRuntimeException(Status.ABORTED));
+
+        assertThrows(StatusRuntimeException.class, () -> tenantService.isValidTenant(tenantIdToValidate));
 
         verify(lhClient).getTenant(any(TenantId.class));
     }
