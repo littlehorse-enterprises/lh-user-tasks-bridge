@@ -25,7 +25,6 @@ import io.littlehorse.usertasks.models.responses.DetailedUserTaskRunDTO;
 import io.littlehorse.usertasks.models.responses.SimpleUserTaskRunDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskDefListDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskRunListDTO;
-import io.littlehorse.usertasks.util.enums.UserTaskAssignationType;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.util.codec.binary.Base64;
@@ -211,6 +210,11 @@ public class UserTaskService {
                     .addArgument(wfRunId)
                     .addArgument(userTaskRunGuid)
                     .log();
+
+            if (!StringUtils.hasText(requestBody.getUserId()) && !StringUtils.hasText(requestBody.getUserGroup())) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No valid arguments were received to complete reassignment.");
+            }
+
             LittleHorseGrpc.LittleHorseBlockingStub tenantClient = lhClient.withCallCredentials(new TenantMetadataProvider(tenantId));
 
             AssignUserTaskRunRequest.Builder requestBuilder = AssignUserTaskRunRequest.newBuilder()
@@ -222,10 +226,12 @@ public class UserTaskService {
                             .build())
                     .setOverrideClaim(true);
 
-            if (requestBody.getType().equals(UserTaskAssignationType.USER)) {
-                requestBuilder.setUserId(requestBody.getAssignee());
-            } else {
-                requestBuilder.setUserGroup(requestBody.getAssignee());
+            if (StringUtils.hasText(requestBody.getUserId())) {
+                requestBuilder.setUserId(requestBody.getUserId());
+            }
+
+            if (StringUtils.hasText(requestBody.getUserGroup())) {
+                requestBuilder.setUserGroup(requestBody.getUserGroup());
             }
 
             tenantClient.assignUserTaskRun(requestBuilder.build());
@@ -234,11 +240,15 @@ public class UserTaskService {
                     .setMessage("UserTaskRun with wfRunId: {} and guid: {} was successfully assigned to {}")
                     .addArgument(wfRunId)
                     .addArgument(userTaskRunGuid)
-                    .addArgument(requestBody.getAssignee())
+                    .addArgument(requestBody.getUserId())
                     .log();
         } catch (Exception e) {
-            if (e.getMessage().contains("INVALID_ARGUMENT") || e.getMessage().contains("FAILED_PRECONDITION")) {
+            if (e.getMessage().contains("INVALID_ARGUMENT")) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+            }
+
+            if (e.getMessage().contains("FAILED_PRECONDITION")) {
+                throw new ResponseStatusException(HttpStatus.PRECONDITION_FAILED, e.getMessage(), e);
             }
             log.atError()
                     .setMessage("Assignation of UserTaskRun with wfRunId: {} and guid: {} failed")

@@ -302,7 +302,7 @@ public class AdminController {
     }
 
     @Operation(
-            summary = "Assigns a User Task Run to a User or UserGroup."
+            summary = "Assigns a UserTaskRun to a User and/or UserGroup."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -311,7 +311,7 @@ public class AdminController {
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "Field(s) passed in is/are invalid or failed at a LittleHorse server condition",
+                    description = "Field(s) passed in is/are invalid, or no userId nor userGroup are passed in.",
                     content = {@Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ProblemDetail.class))}
@@ -327,6 +327,13 @@ public class AdminController {
             @ApiResponse(
                     responseCode = "404",
                     description = "No UserTask/UserTaskDef data was found in LH Server using the given params.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "412",
+                    description = "Failed at a LittleHorse server condition.",
                     content = {@Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ProblemDetail.class))}

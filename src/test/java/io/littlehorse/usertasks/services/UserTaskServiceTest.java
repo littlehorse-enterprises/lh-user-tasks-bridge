@@ -31,7 +31,6 @@ import io.littlehorse.usertasks.models.responses.UserTaskDefListDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskFieldDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskRunListDTO;
 import io.littlehorse.usertasks.util.DateUtil;
-import io.littlehorse.usertasks.util.enums.UserTaskAssignationType;
 import io.littlehorse.usertasks.util.enums.UserTaskFieldType;
 import io.littlehorse.usertasks.util.enums.UserTaskStatus;
 import org.apache.tomcat.util.codec.binary.Base64;
@@ -1180,8 +1179,7 @@ class UserTaskServiceTest {
     @Test
     void assignUserTask_shouldThrowNullPointerExceptionWhenWfRunIdIsNull() {
         var request = AssignationRequest.builder()
-                .type(UserTaskAssignationType.USER)
-                .assignee("some-user-id")
+                .userId("some-user-id")
                 .build();
 
         var userTaskRunGuid = buildStringGuid();
@@ -1193,8 +1191,7 @@ class UserTaskServiceTest {
     @Test
     void assignUserTask_shouldThrowNullPointerExceptionWhenUserTaskRunGuidIsNull() {
         var request = AssignationRequest.builder()
-                .type(UserTaskAssignationType.USER)
-                .assignee("some-user-id")
+                .userId("some-user-id")
                 .build();
 
         var wfRunId = buildStringGuid();
@@ -1206,8 +1203,7 @@ class UserTaskServiceTest {
     @Test
     void assignUserTask_shouldThrowNullPointerExceptionWhenTenantIdIsNull() {
         var request = AssignationRequest.builder()
-                .type(UserTaskAssignationType.USER)
-                .assignee("some-user-id")
+                .userId("some-user-id")
                 .build();
 
         var wfRunId = buildStringGuid();
@@ -1218,11 +1214,31 @@ class UserTaskServiceTest {
     }
 
     @Test
+    void assignUserTask_shouldThrowResponseStatusExceptionAsBadRequestWhenUserIdAndUserGroupAreEmpty() {
+        var request = AssignationRequest.builder()
+                .userId("")
+                .userGroup("")
+                .build();
+
+        var wfRunId = buildStringGuid();
+        var userTaskRunGuid = buildStringGuid();
+
+        ResponseStatusException thrownException = assertThrows(ResponseStatusException.class,
+                () -> userTaskService.assignUserTask(request, wfRunId, userTaskRunGuid, tenantId));
+
+        String expectedExceptionMessage = "No valid arguments were received to complete reassignment.";
+
+        assertEquals(HttpStatus.BAD_REQUEST.value(), thrownException.getBody().getStatus());
+        assertEquals(expectedExceptionMessage, thrownException.getReason());
+
+        verify(lhTenantClient, never()).assignUserTaskRun(any());
+    }
+
+    @Test
     void assignUserTask_shouldSucceedWhenUserTaskRunIsAssignedToAUserAndServerDoesNotThrowAnyException() {
         var assignedUserId = "some-user-id";
         var request = AssignationRequest.builder()
-                .type(UserTaskAssignationType.USER)
-                .assignee(assignedUserId)
+                .userId(assignedUserId)
                 .build();
 
         var wfRunId = buildStringGuid();
@@ -1246,8 +1262,7 @@ class UserTaskServiceTest {
     void assignUserTask_shouldSucceedWhenUserTaskRunIsAssignedToAUserGroupAndServerDoesNotThrowAnyException() {
         var assignedUserGroup = "some-user-group";
         var request = AssignationRequest.builder()
-                .type(UserTaskAssignationType.USER_GROUP)
-                .assignee(assignedUserGroup)
+                .userGroup(assignedUserGroup)
                 .build();
 
         var wfRunId = buildStringGuid();
@@ -1268,11 +1283,36 @@ class UserTaskServiceTest {
     }
 
     @Test
+    void assignUserTask_shouldSucceedWhenUserTaskRunIsAssignedToAUserIdAndUserGroupAndServerDoesNotThrowAnyException() {
+        var assignedUserId = "some-user-id";
+        var assignedUserGroup = "some-user-group";
+        var request = AssignationRequest.builder()
+                .userId(assignedUserId)
+                .userGroup(assignedUserGroup)
+                .build();
+
+        var wfRunId = buildStringGuid();
+        var userTaskRunGuid = buildStringGuid();
+
+        when(lhTenantClient.assignUserTaskRun(any(AssignUserTaskRunRequest.class))).thenReturn(Empty.getDefaultInstance());
+
+        userTaskService.assignUserTask(request, wfRunId, userTaskRunGuid, tenantId);
+        ArgumentCaptor<AssignUserTaskRunRequest> serverRequest = ArgumentCaptor.forClass(AssignUserTaskRunRequest.class);
+
+        verify(lhTenantClient).assignUserTaskRun(serverRequest.capture());
+
+        AssignUserTaskRunRequest actualServerRequest = serverRequest.getValue();
+
+        assertTrue(actualServerRequest.hasUserId());
+        assertTrue(actualServerRequest.hasUserGroup());
+        assertEquals(assignedUserGroup, actualServerRequest.getUserGroup());
+    }
+
+    @Test
     void assignUserTask_shouldThrowResponseStatusExceptionAsBadRequestWhenServerThrowsExceptionRelatedToAnArgument() {
         var wrongUserGroup = "2938-wjas";
         var request = AssignationRequest.builder()
-                .type(UserTaskAssignationType.USER_GROUP)
-                .assignee(wrongUserGroup)
+                .userId(wrongUserGroup)
                 .build();
 
         var wfRunId = buildStringGuid();
@@ -1295,11 +1335,10 @@ class UserTaskServiceTest {
     }
 
     @Test
-    void assignUserTask_shouldThrowResponseStatusExceptionAsBadRequestWhenUserTaskRunIsInATerminalStatus() {
+    void assignUserTask_shouldThrowResponseStatusExceptionAsPreconditionFailedWhenUserTaskRunIsInATerminalStatus() {
         var userGroup = "my-user-group";
         var request = AssignationRequest.builder()
-                .type(UserTaskAssignationType.USER_GROUP)
-                .assignee(userGroup)
+                .userId(userGroup)
                 .build();
 
         var wfRunId = buildStringGuid();
@@ -1312,7 +1351,7 @@ class UserTaskServiceTest {
         ResponseStatusException thrownException = assertThrows(ResponseStatusException.class,
                 () -> userTaskService.assignUserTask(request, wfRunId, userTaskRunGuid, tenantId));
 
-        int expectedHttpErrorCode = HttpStatus.BAD_REQUEST.value();
+        int expectedHttpErrorCode = HttpStatus.PRECONDITION_FAILED.value();
 
         assertEquals(expectedHttpErrorCode, thrownException.getBody().getStatus());
         assertEquals(expectedErrorMessage, thrownException.getReason());
@@ -1324,8 +1363,7 @@ class UserTaskServiceTest {
     void assignUserTask_shouldThrowExceptionWhenServerThrowsUnhandledException() {
         var assignedUserGroup = "some-user-group";
         var request = AssignationRequest.builder()
-                .type(UserTaskAssignationType.USER_GROUP)
-                .assignee(assignedUserGroup)
+                .userId(assignedUserGroup)
                 .build();
 
         var wfRunId = buildStringGuid();
