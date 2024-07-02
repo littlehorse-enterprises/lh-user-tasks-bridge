@@ -16,7 +16,7 @@ import io.littlehorse.sdk.common.proto.UserTaskRunStatus;
 import io.littlehorse.sdk.common.proto.WfRunId;
 import io.littlehorse.usertasks.exceptions.CustomUnauthorizedException;
 import io.littlehorse.usertasks.exceptions.NotFoundException;
-import io.littlehorse.usertasks.models.requests.AssignationRequest;
+import io.littlehorse.usertasks.models.requests.AssignmentRequest;
 import io.littlehorse.usertasks.models.requests.CompleteUserTaskRequest;
 import io.littlehorse.usertasks.models.requests.StandardPagination;
 import io.littlehorse.usertasks.models.requests.UserTaskRequestFilter;
@@ -202,7 +202,7 @@ public class UserTaskService {
                 .build();
     }
 
-    public void assignUserTask(@NonNull AssignationRequest requestBody, @NonNull String wfRunId,
+    public void assignUserTask(@NonNull AssignmentRequest requestBody, @NonNull String wfRunId,
                                @NonNull String userTaskRunGuid, @NonNull String tenantId) {
         try {
             log.atInfo()

@@ -7,7 +7,7 @@ import lombok.Data;
 @Data
 @Builder
 @AllArgsConstructor
-public class AssignationRequest {
+public class AssignmentRequest {
     private String userId;
     private String userGroup;
 }

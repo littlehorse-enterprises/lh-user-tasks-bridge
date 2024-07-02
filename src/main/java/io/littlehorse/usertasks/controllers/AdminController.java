@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import io.littlehorse.usertasks.exceptions.CustomUnauthorizedException;
 import io.littlehorse.usertasks.exceptions.NotFoundException;
 import io.littlehorse.usertasks.models.common.UserTaskVariableValue;
-import io.littlehorse.usertasks.models.requests.AssignationRequest;
+import io.littlehorse.usertasks.models.requests.AssignmentRequest;
 import io.littlehorse.usertasks.models.requests.CompleteUserTaskRequest;
 import io.littlehorse.usertasks.models.requests.UserTaskRequestFilter;
 import io.littlehorse.usertasks.models.responses.DetailedUserTaskRunDTO;
@@ -344,7 +344,7 @@ public class AdminController {
     public void assignUserTask(@PathVariable(name = "tenant_id") String tenantId,
                                @PathVariable(name = "wf_run_id") String wfRunId,
                                @PathVariable(name = "user_task_guid") String userTaskRunGuid,
-                               @RequestBody AssignationRequest requestBody) {
+                               @RequestBody AssignmentRequest requestBody) {
         if (!tenantService.isValidTenant(tenantId)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }

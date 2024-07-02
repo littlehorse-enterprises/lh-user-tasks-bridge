@@ -23,7 +23,7 @@ import io.littlehorse.sdk.common.proto.WfRunId;
 import io.littlehorse.usertasks.exceptions.CustomUnauthorizedException;
 import io.littlehorse.usertasks.exceptions.NotFoundException;
 import io.littlehorse.usertasks.models.common.UserTaskVariableValue;
-import io.littlehorse.usertasks.models.requests.AssignationRequest;
+import io.littlehorse.usertasks.models.requests.AssignmentRequest;
 import io.littlehorse.usertasks.models.requests.CompleteUserTaskRequest;
 import io.littlehorse.usertasks.models.requests.UserTaskRequestFilter;
 import io.littlehorse.usertasks.models.responses.SimpleUserTaskRunDTO;
@@ -1178,7 +1178,7 @@ class UserTaskServiceTest {
 
     @Test
     void assignUserTask_shouldThrowNullPointerExceptionWhenWfRunIdIsNull() {
-        var request = AssignationRequest.builder()
+        var request = AssignmentRequest.builder()
                 .userId("some-user-id")
                 .build();
 
@@ -1190,7 +1190,7 @@ class UserTaskServiceTest {
 
     @Test
     void assignUserTask_shouldThrowNullPointerExceptionWhenUserTaskRunGuidIsNull() {
-        var request = AssignationRequest.builder()
+        var request = AssignmentRequest.builder()
                 .userId("some-user-id")
                 .build();
 
@@ -1202,7 +1202,7 @@ class UserTaskServiceTest {
 
     @Test
     void assignUserTask_shouldThrowNullPointerExceptionWhenTenantIdIsNull() {
-        var request = AssignationRequest.builder()
+        var request = AssignmentRequest.builder()
                 .userId("some-user-id")
                 .build();
 
@@ -1215,7 +1215,7 @@ class UserTaskServiceTest {
 
     @Test
     void assignUserTask_shouldThrowResponseStatusExceptionAsBadRequestWhenUserIdAndUserGroupAreEmpty() {
-        var request = AssignationRequest.builder()
+        var request = AssignmentRequest.builder()
                 .userId("")
                 .userGroup("")
                 .build();
@@ -1237,7 +1237,7 @@ class UserTaskServiceTest {
     @Test
     void assignUserTask_shouldSucceedWhenUserTaskRunIsAssignedToAUserAndServerDoesNotThrowAnyException() {
         var assignedUserId = "some-user-id";
-        var request = AssignationRequest.builder()
+        var request = AssignmentRequest.builder()
                 .userId(assignedUserId)
                 .build();
 
@@ -1261,7 +1261,7 @@ class UserTaskServiceTest {
     @Test
     void assignUserTask_shouldSucceedWhenUserTaskRunIsAssignedToAUserGroupAndServerDoesNotThrowAnyException() {
         var assignedUserGroup = "some-user-group";
-        var request = AssignationRequest.builder()
+        var request = AssignmentRequest.builder()
                 .userGroup(assignedUserGroup)
                 .build();
 
@@ -1286,7 +1286,7 @@ class UserTaskServiceTest {
     void assignUserTask_shouldSucceedWhenUserTaskRunIsAssignedToAUserIdAndUserGroupAndServerDoesNotThrowAnyException() {
         var assignedUserId = "some-user-id";
         var assignedUserGroup = "some-user-group";
-        var request = AssignationRequest.builder()
+        var request = AssignmentRequest.builder()
                 .userId(assignedUserId)
                 .userGroup(assignedUserGroup)
                 .build();
@@ -1311,7 +1311,7 @@ class UserTaskServiceTest {
     @Test
     void assignUserTask_shouldThrowResponseStatusExceptionAsBadRequestWhenServerThrowsExceptionRelatedToAnArgument() {
         var wrongUserGroup = "2938-wjas";
-        var request = AssignationRequest.builder()
+        var request = AssignmentRequest.builder()
                 .userId(wrongUserGroup)
                 .build();
 
@@ -1337,7 +1337,7 @@ class UserTaskServiceTest {
     @Test
     void assignUserTask_shouldThrowResponseStatusExceptionAsPreconditionFailedWhenUserTaskRunIsInATerminalStatus() {
         var userGroup = "my-user-group";
-        var request = AssignationRequest.builder()
+        var request = AssignmentRequest.builder()
                 .userId(userGroup)
                 .build();
 
@@ -1362,7 +1362,7 @@ class UserTaskServiceTest {
     @Test
     void assignUserTask_shouldThrowExceptionWhenServerThrowsUnhandledException() {
         var assignedUserGroup = "some-user-group";
-        var request = AssignationRequest.builder()
+        var request = AssignmentRequest.builder()
                 .userId(assignedUserGroup)
                 .build();
 
