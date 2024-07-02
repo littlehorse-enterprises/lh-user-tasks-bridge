@@ -162,14 +162,16 @@ public class UserTaskService {
                     .addArgument(request.getUserTaskRunGuid())
                     .log();
         } catch (Exception e) {
-            if (e.getMessage().contains("INVALID_ARGUMENT")) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
-            }
             log.atError()
                     .setMessage("Completion of UserTaskRun with wfRunId: {}, guid: {} failed")
                     .addArgument(request.getWfRunId())
                     .addArgument(request.getUserTaskRunGuid())
                     .log();
+
+            if (e.getMessage().contains("INVALID_ARGUMENT")) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+            }
+
             throw e;
         }
     }
@@ -243,6 +245,11 @@ public class UserTaskService {
                     .addArgument(requestBody.getUserId())
                     .log();
         } catch (Exception e) {
+            log.atError()
+                    .setMessage("Assignation of UserTaskRun with wfRunId: {} and guid: {} failed")
+                    .addArgument(wfRunId)
+                    .addArgument(userTaskRunGuid)
+                    .log();
             if (e.getMessage().contains("INVALID_ARGUMENT")) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
             }
@@ -250,11 +257,6 @@ public class UserTaskService {
             if (e.getMessage().contains("FAILED_PRECONDITION")) {
                 throw new ResponseStatusException(HttpStatus.PRECONDITION_FAILED, e.getMessage(), e);
             }
-            log.atError()
-                    .setMessage("Assignation of UserTaskRun with wfRunId: {} and guid: {} failed")
-                    .addArgument(wfRunId)
-                    .addArgument(userTaskRunGuid)
-                    .log();
             throw e;
         }
     }
