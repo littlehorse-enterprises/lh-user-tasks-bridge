@@ -3,6 +3,8 @@ package io.littlehorse.usertasks.services;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Empty;
 import com.google.protobuf.Timestamp;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.littlehorse.sdk.common.proto.AssignUserTaskRunRequest;
 import io.littlehorse.sdk.common.proto.CompleteUserTaskRunRequest;
 import io.littlehorse.sdk.common.proto.LittleHorseGrpc;
@@ -1029,7 +1031,7 @@ class UserTaskServiceTest {
     }
 
     @Test
-    void completeUserTask_shouldThrowABadRequestExceptionWhenUserTaskRunHasStatusCancelled() {
+    void completeUserTask_shouldThrowABadRequestExceptionWhenServerThrowsExceptionRelatedToAnArgument() {
         var userId = "my-user-id";
         var wfRunId = buildStringGuid();
         var userTaskRunGuid = buildStringGuid();
@@ -1054,13 +1056,11 @@ class UserTaskServiceTest {
 
         var userTaskRun = buildFakeUserTaskRun(userId, wfRunId);
         var userTaskDef = buildFakeUserTaskDef(userTaskRun.getUserTaskDefId().getName());
-        var expectedErrorMessage = "INVALID_ARGUMENT: Field [name = not-defined-field, type = BOOL] is not defined in UserTask " +
-                "schema or has different type";
 
         when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun);
         when(lhTenantClient.getUserTaskDef(any(UserTaskDefId.class))).thenReturn(userTaskDef);
         when(lhTenantClient.completeUserTaskRun(any(CompleteUserTaskRunRequest.class)))
-                .thenThrow(new RuntimeException(expectedErrorMessage));
+                .thenThrow(new StatusRuntimeException(Status.INVALID_ARGUMENT));
 
         ResponseStatusException thrownException = assertThrows(ResponseStatusException.class,
                 () -> userTaskService.completeUserTask(userId, request, tenantId, false));
@@ -1068,7 +1068,47 @@ class UserTaskServiceTest {
         int expectedHttpErrorCode = HttpStatus.BAD_REQUEST.value();
 
         assertEquals(expectedHttpErrorCode, thrownException.getBody().getStatus());
-        assertEquals(expectedErrorMessage, thrownException.getReason());
+        assertEquals("INVALID_ARGUMENT", thrownException.getReason());
+
+        verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient).getUserTaskDef(any(UserTaskDefId.class));
+        verify(lhTenantClient).completeUserTaskRun(any(CompleteUserTaskRunRequest.class));
+    }
+
+    @Test
+    void completeUserTask_shouldThrowABadRequestExceptionWhenServerThrowsUnhandledException() {
+        var userId = "my-user-id";
+        var wfRunId = buildStringGuid();
+        var userTaskRunGuid = buildStringGuid();
+        var request = CompleteUserTaskRequest.builder()
+                .wfRunId(wfRunId)
+                .userTaskRunGuid(userTaskRunGuid)
+                .results(Map.of(
+                        "string-field", UserTaskVariableValue.builder()
+                                .value("some-value")
+                                .type(UserTaskFieldType.STRING)
+                                .build(),
+                        "integer-field", UserTaskVariableValue.builder()
+                                .value(1)
+                                .type(UserTaskFieldType.INTEGER)
+                                .build(),
+                        "not-defined-field", UserTaskVariableValue.builder()
+                                .value(true)
+                                .type(UserTaskFieldType.BOOLEAN)
+                                .build()
+                ))
+                .build();
+
+        var userTaskRun = buildFakeUserTaskRun(userId, wfRunId);
+        var userTaskDef = buildFakeUserTaskDef(userTaskRun.getUserTaskDefId().getName());
+
+        when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun);
+        when(lhTenantClient.getUserTaskDef(any(UserTaskDefId.class))).thenReturn(userTaskDef);
+        when(lhTenantClient.completeUserTaskRun(any(CompleteUserTaskRunRequest.class)))
+                .thenThrow(new StatusRuntimeException(Status.ABORTED));
+
+        assertThrows(StatusRuntimeException.class,
+                () -> userTaskService.completeUserTask(userId, request, tenantId, false));
 
         verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
         verify(lhTenantClient).getUserTaskDef(any(UserTaskDefId.class));
@@ -1317,11 +1357,9 @@ class UserTaskServiceTest {
 
         var wfRunId = buildStringGuid();
         var userTaskRunGuid = buildStringGuid();
-        var expectedErrorMessage = "INVALID_ARGUMENT: Field [name = userGroup, type = STR] is not defined in UserTask " +
-                "schema or has different type";
 
         when(lhTenantClient.assignUserTaskRun(any(AssignUserTaskRunRequest.class)))
-                .thenThrow(new RuntimeException(expectedErrorMessage));
+                .thenThrow(new StatusRuntimeException(Status.INVALID_ARGUMENT));
 
         ResponseStatusException thrownException = assertThrows(ResponseStatusException.class,
                 () -> userTaskService.assignUserTask(request, wfRunId, userTaskRunGuid, tenantId));
@@ -1329,7 +1367,7 @@ class UserTaskServiceTest {
         int expectedHttpErrorCode = HttpStatus.BAD_REQUEST.value();
 
         assertEquals(expectedHttpErrorCode, thrownException.getBody().getStatus());
-        assertEquals(expectedErrorMessage, thrownException.getReason());
+        assertEquals("INVALID_ARGUMENT", thrownException.getReason());
 
         verify(lhTenantClient).assignUserTaskRun(any(AssignUserTaskRunRequest.class));
     }
@@ -1343,10 +1381,9 @@ class UserTaskServiceTest {
 
         var wfRunId = buildStringGuid();
         var userTaskRunGuid = buildStringGuid();
-        var expectedErrorMessage = "FAILED_PRECONDITION: Couldn't reassign User Task Run since it  is in terminal status DONE";
 
         when(lhTenantClient.assignUserTaskRun(any(AssignUserTaskRunRequest.class)))
-                .thenThrow(new RuntimeException(expectedErrorMessage));
+                .thenThrow(new StatusRuntimeException(Status.FAILED_PRECONDITION));
 
         ResponseStatusException thrownException = assertThrows(ResponseStatusException.class,
                 () -> userTaskService.assignUserTask(request, wfRunId, userTaskRunGuid, tenantId));
@@ -1354,7 +1391,26 @@ class UserTaskServiceTest {
         int expectedHttpErrorCode = HttpStatus.PRECONDITION_FAILED.value();
 
         assertEquals(expectedHttpErrorCode, thrownException.getBody().getStatus());
-        assertEquals(expectedErrorMessage, thrownException.getReason());
+        assertEquals("FAILED_PRECONDITION", thrownException.getReason());
+
+        verify(lhTenantClient).assignUserTaskRun(any(AssignUserTaskRunRequest.class));
+    }
+
+    @Test
+    void assignUserTask_shouldThrowExceptionAsIsWhenServerThrowsUnhandledException() {
+        var userGroup = "my-user-group";
+        var request = AssignmentRequest.builder()
+                .userId(userGroup)
+                .build();
+
+        var wfRunId = buildStringGuid();
+        var userTaskRunGuid = buildStringGuid();
+
+        when(lhTenantClient.assignUserTaskRun(any(AssignUserTaskRunRequest.class)))
+                .thenThrow(new StatusRuntimeException(Status.ABORTED));
+
+        assertThrows(StatusRuntimeException.class,
+                () -> userTaskService.assignUserTask(request, wfRunId, userTaskRunGuid, tenantId));
 
         verify(lhTenantClient).assignUserTaskRun(any(AssignUserTaskRunRequest.class));
     }

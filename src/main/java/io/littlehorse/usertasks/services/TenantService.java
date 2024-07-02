@@ -1,5 +1,7 @@
 package io.littlehorse.usertasks.services;
 
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.littlehorse.sdk.common.proto.LittleHorseGrpc;
 import io.littlehorse.sdk.common.proto.Tenant;
 import io.littlehorse.sdk.common.proto.TenantId;
@@ -25,16 +27,18 @@ public class TenantService {
             tenant = lhClient.getTenant(TenantId.newBuilder()
                     .setId(tenantId)
                     .build());
-        } catch (Exception e) {
-            if (e.getMessage().contains("NOT_FOUND")) {
+        } catch (StatusRuntimeException e) {
+            if (e.getStatus().getCode() == Status.Code.NOT_FOUND) {
                 log.atInfo()
                         .setMessage("Tenant {} was not found in LH Server!")
                         .addArgument(tenantId)
                         .log();
             } else {
-                log.error("Something went wrong while getting Tenant from LH Server.", e);
                 throw e;
             }
+        } catch (Exception e) {
+            log.error("Something went wrong while getting Tenant from LH Server.", e);
+            throw e;
         }
 
         return Objects.nonNull(tenant);
