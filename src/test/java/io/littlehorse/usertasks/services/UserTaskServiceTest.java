@@ -6,6 +6,7 @@ import com.google.protobuf.Timestamp;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.littlehorse.sdk.common.proto.AssignUserTaskRunRequest;
+import io.littlehorse.sdk.common.proto.CancelUserTaskRunRequest;
 import io.littlehorse.sdk.common.proto.CompleteUserTaskRunRequest;
 import io.littlehorse.sdk.common.proto.LittleHorseGrpc;
 import io.littlehorse.sdk.common.proto.SearchUserTaskDefRequest;
@@ -1435,6 +1436,134 @@ class UserTaskServiceTest {
         assertEquals(expectedErrorMessage, thrownException.getMessage());
 
         verify(lhTenantClient).assignUserTaskRun(any(AssignUserTaskRunRequest.class));
+    }
+
+    @Test
+    void cancelUserTask_shouldThrowNullPointerExceptionWhenWfRunIdIsNull() {
+        var someUserTaskRunGuid = buildStringGuid();
+
+        assertThrows(NullPointerException.class,
+                () -> userTaskService.cancelUserTask(null, someUserTaskRunGuid, tenantId));
+    }
+
+    @Test
+    void cancelUserTask_shouldThrowNullPointerExceptionWhenUserTaskRunGuidIsNull() {
+        var someWfRunId = buildStringGuid();
+
+        assertThrows(NullPointerException.class,
+                () -> userTaskService.cancelUserTask(someWfRunId, null, tenantId));
+    }
+
+    @Test
+    void cancelUserTask_shouldThrowNullPointerExceptionWhenTenantIdIsNull() {
+        var someUserTaskRunGuid = buildStringGuid();
+        var someWfRunId = buildStringGuid();
+
+        assertThrows(NullPointerException.class,
+                () -> userTaskService.cancelUserTask(someWfRunId, someUserTaskRunGuid, null));
+    }
+
+    @Test
+    void cancelUserTask_shouldThrowResponseStatusExceptionAsBadRequestWhenServerThrowsExceptionRelatedToAnArgument() {
+        var someUserTaskRunGuid = buildStringGuid();
+        var someWfRunId = buildStringGuid();
+
+        when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class)))
+                .thenThrow(new StatusRuntimeException(Status.INVALID_ARGUMENT));
+
+        ResponseStatusException thrownException = assertThrows(ResponseStatusException.class,
+                () -> userTaskService.cancelUserTask(someWfRunId, someUserTaskRunGuid, tenantId));
+
+        int expectedHttpErrorCode = HttpStatus.BAD_REQUEST.value();
+
+        assertEquals(expectedHttpErrorCode, thrownException.getBody().getStatus());
+        assertEquals("INVALID_ARGUMENT", thrownException.getReason());
+
+        verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient, never()).getUserTaskDef(any(UserTaskDefId.class));
+        verify(lhTenantClient, never()).cancelUserTaskRun(any(CancelUserTaskRunRequest.class));
+    }
+
+    @Test
+    void cancelUserTask_shouldThrowResponseStatusExceptionAsPreconditionFailedWhenServerThrowsExceptionRelatedToAFailedPrecondition() {
+        var someUserTaskRunGuid = buildStringGuid();
+        var someWfRunId = buildStringGuid();
+
+        when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class)))
+                .thenThrow(new StatusRuntimeException(Status.FAILED_PRECONDITION));
+
+        ResponseStatusException thrownException = assertThrows(ResponseStatusException.class,
+                () -> userTaskService.cancelUserTask(someWfRunId, someUserTaskRunGuid, tenantId));
+
+        int expectedHttpErrorCode = HttpStatus.PRECONDITION_FAILED.value();
+
+        assertEquals(expectedHttpErrorCode, thrownException.getBody().getStatus());
+        assertEquals("FAILED_PRECONDITION", thrownException.getReason());
+
+        verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient, never()).getUserTaskDef(any(UserTaskDefId.class));
+        verify(lhTenantClient, never()).cancelUserTaskRun(any(CancelUserTaskRunRequest.class));
+    }
+
+    @Test
+    void cancelUserTask_shouldThrowExceptionAsIsWhenServerThrowsUnhandledException() {
+        var someUserTaskRunGuid = buildStringGuid();
+        var someWfRunId = buildStringGuid();
+
+        when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenThrow(new StatusRuntimeException(Status.ABORTED));
+
+        assertThrows(StatusRuntimeException.class,
+                () -> userTaskService.cancelUserTask(someWfRunId, someUserTaskRunGuid, tenantId));
+
+        verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient, never()).getUserTaskDef(any(UserTaskDefId.class));
+        verify(lhTenantClient, never()).cancelUserTaskRun(any(CancelUserTaskRunRequest.class));
+    }
+
+    @Test
+    void cancelUserTask_shouldThrowResponseStatusExceptionAsForbiddenWhenUserTaskRunIsAlreadyInATerminatedStatus() {
+        var someUserTaskRunGuid = buildStringGuid();
+        var someWfRunId = buildStringGuid();
+        var someUserId = buildStringGuid();
+
+        UserTaskRun sampleUserTaskRun = buildFakeUserTaskRun(someUserId, someWfRunId)
+                .toBuilder().setStatus(UserTaskRunStatus.CANCELLED).build();
+        UserTaskDef sampleUserTaskDef = buildFakeUserTaskDef(sampleUserTaskRun.getUserTaskDefId().getName());
+
+        when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(sampleUserTaskRun);
+        when(lhTenantClient.getUserTaskDef(any(UserTaskDefId.class))).thenReturn(sampleUserTaskDef);
+
+        ResponseStatusException thrownException = assertThrows(ResponseStatusException.class,
+                () -> userTaskService.cancelUserTask(someWfRunId, someUserTaskRunGuid, tenantId));
+
+        var expectedExceptionMessage = "The UserTask you are trying to cancel is already DONE or CANCELLED";
+
+        assertEquals(HttpStatus.FORBIDDEN.value(), thrownException.getBody().getStatus());
+        assertEquals(expectedExceptionMessage, thrownException.getReason());
+
+        verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient).getUserTaskDef(any(UserTaskDefId.class));
+        verify(lhTenantClient, never()).cancelUserTaskRun(any(CancelUserTaskRunRequest.class));
+    }
+
+    @Test
+    void cancelUserTask_shouldSucceedWhenUserTaskRunIsNotInATerminatedStatusAndServerDoesNotThrowAnError() {
+        var someUserTaskRunGuid = buildStringGuid();
+        var someWfRunId = buildStringGuid();
+        var someUserId = buildStringGuid();
+
+        UserTaskRun sampleUserTaskRun = buildFakeUserTaskRun(someUserId, someWfRunId);
+        UserTaskDef sampleUserTaskDef = buildFakeUserTaskDef(sampleUserTaskRun.getUserTaskDefId().getName());
+
+        when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(sampleUserTaskRun);
+        when(lhTenantClient.getUserTaskDef(any(UserTaskDefId.class))).thenReturn(sampleUserTaskDef);
+        when(lhTenantClient.cancelUserTaskRun(any(CancelUserTaskRunRequest.class))).thenReturn(Empty.getDefaultInstance());
+
+        userTaskService.cancelUserTask(someWfRunId, someUserTaskRunGuid, tenantId);
+
+        verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient).getUserTaskDef(any(UserTaskDefId.class));
+        verify(lhTenantClient).cancelUserTaskRun(any(CancelUserTaskRunRequest.class));
     }
 
     private static String buildStringGuid() {
