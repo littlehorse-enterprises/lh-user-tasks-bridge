@@ -326,7 +326,7 @@ public class AdminController {
             ),
             @ApiResponse(
                     responseCode = "404",
-                    description = "No UserTask/UserTaskDef data was found in LH Server using the given params.",
+                    description = "No UserTask data was found in LH Server using the given params.",
                     content = {@Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ProblemDetail.class))}
@@ -350,5 +350,60 @@ public class AdminController {
         }
 
         userTaskService.assignUserTask(requestBody, wfRunId, userTaskRunGuid, tenantId);
+    }
+
+    @Operation(
+            summary = "Cancels a UserTaskRun by making it transition to CANCELLED status without verifying to whom the " +
+                    "UserTaskRun is assigned to."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "204",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Field(s) passed in is/are invalid, or no userId nor userGroup are passed in.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Tenant Id is not valid.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "Trying to cancel a UserTask that is already DONE or CANCELLED",
+                    content = {@Content}
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "No UserTask data was found in LH Server using the given params.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "412",
+                    description = "Failed at a LittleHorse server condition.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            )
+    })
+    @PostMapping("/{tenant_id}/admin/tasks/{wf_run_id}/{user_task_guid}/cancel")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void cancelUserTask(@PathVariable(name = "tenant_id") String tenantId,
+                               @PathVariable(name = "wf_run_id") String wfRunId,
+                               @PathVariable(name = "user_task_guid") String userTaskRunGuid) {
+        if (!tenantService.isValidTenant(tenantId)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+
+        userTaskService.cancelUserTask(wfRunId, userTaskRunGuid, tenantId);
     }
 }

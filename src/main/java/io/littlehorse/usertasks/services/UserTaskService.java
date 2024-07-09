@@ -5,6 +5,7 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.littlehorse.sdk.common.auth.TenantMetadataProvider;
 import io.littlehorse.sdk.common.proto.AssignUserTaskRunRequest;
+import io.littlehorse.sdk.common.proto.CancelUserTaskRunRequest;
 import io.littlehorse.sdk.common.proto.CompleteUserTaskRunRequest;
 import io.littlehorse.sdk.common.proto.LittleHorseGrpc;
 import io.littlehorse.sdk.common.proto.SearchUserTaskDefRequest;
@@ -272,7 +273,74 @@ public class UserTaskService {
             throw e;
         } catch (Exception e) {
             log.atError()
-                    .setMessage("Assignment of UserTaskRun with wfRunId: {} and guid: {} failed")
+                    .setMessage("Assignment of UserTaskRun with wfRunId: {} and guid: {} failed.")
+                    .addArgument(wfRunId)
+                    .addArgument(userTaskRunGuid)
+                    .log();
+
+            throw e;
+        }
+    }
+
+    public void cancelUserTask(@NonNull String wfRunId, @NonNull String userTaskRunGuid, @NonNull String tenantId) {
+        try {
+            log.atInfo()
+                    .setMessage("Cancelling UserTaskRun with wfRunId: {} and userTaskGuid: {}")
+                    .addArgument(wfRunId)
+                    .addArgument(userTaskRunGuid)
+                    .log();
+
+            Optional<DetailedUserTaskRunDTO> userTaskDetails = getUserTaskDetails(wfRunId, userTaskRunGuid, tenantId,
+                    null, null, true);
+
+            boolean isAlreadyTerminated = false;
+
+            if (userTaskDetails.isPresent()) {
+                isAlreadyTerminated = isUserTaskTerminated(userTaskDetails.get().getStatus().toServerStatus());
+            }
+
+            if (isAlreadyTerminated) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                        "The UserTask you are trying to cancel is already DONE or CANCELLED");
+            }
+
+            LittleHorseGrpc.LittleHorseBlockingStub tenantClient = lhClient.withCallCredentials(new TenantMetadataProvider(tenantId));
+
+            CancelUserTaskRunRequest requestBuilder = CancelUserTaskRunRequest.newBuilder()
+                    .setUserTaskRunId(UserTaskRunId.newBuilder()
+                            .setWfRunId(WfRunId.newBuilder()
+                                    .setId(wfRunId)
+                                    .build())
+                            .setUserTaskGuid(userTaskRunGuid)
+                            .build())
+                    .build();
+
+            tenantClient.cancelUserTaskRun(requestBuilder);
+
+            log.atInfo()
+                    .setMessage("UserTaskRun with wfRunId: {} and guid: {} was successfully cancelled.")
+                    .addArgument(wfRunId)
+                    .addArgument(userTaskRunGuid)
+                    .log();
+        } catch (StatusRuntimeException e) {
+            log.atError()
+                    .setMessage("Something went wrong in LH Server with cancellation process for UserTaskRun with with " +
+                            "wfRunId: {} and guid: {} ")
+                    .addArgument(wfRunId)
+                    .addArgument(userTaskRunGuid)
+                    .log();
+            if (e.getStatus().getCode() == Status.Code.INVALID_ARGUMENT) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+            }
+
+            if (e.getStatus().getCode() == Status.Code.FAILED_PRECONDITION) {
+                throw new ResponseStatusException(HttpStatus.PRECONDITION_FAILED, e.getMessage(), e);
+            }
+
+            throw e;
+        } catch (Exception e) {
+            log.atError()
+                    .setMessage("Cancellation of UserTaskRun with wfRunId: {} and guid: {} failed.")
                     .addArgument(wfRunId)
                     .addArgument(userTaskRunGuid)
                     .log();
