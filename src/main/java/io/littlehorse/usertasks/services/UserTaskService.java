@@ -282,7 +282,8 @@ public class UserTaskService {
         }
     }
 
-    public void cancelUserTask(@NonNull String wfRunId, @NonNull String userTaskRunGuid, @NonNull String tenantId) {
+    public void cancelUserTask(@NonNull String wfRunId, @NonNull String userTaskRunGuid, @NonNull String tenantId,
+                               String userId) {
         try {
             log.atInfo()
                     .setMessage("Cancelling UserTaskRun with wfRunId: {} and userTaskGuid: {}")
@@ -290,13 +291,25 @@ public class UserTaskService {
                     .addArgument(userTaskRunGuid)
                     .log();
 
-            Optional<DetailedUserTaskRunDTO> userTaskDetails = getUserTaskDetails(wfRunId, userTaskRunGuid, tenantId,
-                    null, null, true);
+            boolean isAdminRequest = !StringUtils.hasText(userId);
 
-            boolean isAlreadyTerminated = false;
+            LittleHorseGrpc.LittleHorseBlockingStub tenantClient = lhClient.withCallCredentials(new TenantMetadataProvider(tenantId));
 
-            if (userTaskDetails.isPresent()) {
-                isAlreadyTerminated = isUserTaskTerminated(userTaskDetails.get().getStatus().toServerStatus());
+            UserTaskRunId userTaskRunId = UserTaskRunId.newBuilder()
+                    .setUserTaskGuid(userTaskRunGuid)
+                    .setWfRunId(WfRunId.newBuilder()
+                            .setId(wfRunId)
+                            .build())
+                    .build();
+
+            UserTaskRun userTaskRun = tenantClient.getUserTaskRun(userTaskRunId);
+
+            boolean isAlreadyTerminated;
+
+            if (Objects.nonNull(userTaskRun)) {
+                isAlreadyTerminated = isUserTaskTerminated(userTaskRun.getStatus());
+            } else {
+                throw new NotFoundException("Could not find UserTaskRun!");
             }
 
             if (isAlreadyTerminated) {
@@ -304,7 +317,9 @@ public class UserTaskService {
                         "The UserTask you are trying to cancel is already DONE or CANCELLED");
             }
 
-            LittleHorseGrpc.LittleHorseBlockingStub tenantClient = lhClient.withCallCredentials(new TenantMetadataProvider(tenantId));
+            if (!isAdminRequest) {
+                validateIfUserIsAllowedToSeeUserTask(userId, null, userTaskRun);
+            }
 
             CancelUserTaskRunRequest requestBuilder = CancelUserTaskRunRequest.newBuilder()
                     .setUserTaskRunId(UserTaskRunId.newBuilder()
@@ -338,6 +353,8 @@ public class UserTaskService {
             }
 
             throw e;
+        } catch (CustomUnauthorizedException e) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, e.getMessage());
         } catch (Exception e) {
             log.atError()
                     .setMessage("Cancellation of UserTaskRun with wfRunId: {} and guid: {} failed.")

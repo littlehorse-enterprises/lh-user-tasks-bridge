@@ -404,6 +404,6 @@ public class AdminController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
 
-        userTaskService.cancelUserTask(wfRunId, userTaskRunGuid, tenantId);
+        userTaskService.cancelUserTask(wfRunId, userTaskRunGuid, tenantId, null);
     }
 }
