@@ -109,7 +109,7 @@ public class UserController {
                 return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.UNAUTHORIZED)).build();
             }
 
-            var tokenClaims = TokenUtil.getTokenClaims(accessToken);
+            Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
 
             var userIdFromToken = (String) tokenClaims.get(USER_ID_CLAIM);
             var additionalFilters = UserTaskRequestFilter.buildUserTaskRequestFilter(earliestStartDate, latestStartDate, status, type);
@@ -173,7 +173,7 @@ public class UserController {
                 return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.UNAUTHORIZED)).build();
             }
 
-            var tokenClaims = TokenUtil.getTokenClaims(accessToken);
+            Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
 
             var userIdFromToken = (String) tokenClaims.get(USER_ID_CLAIM);
 
@@ -231,7 +231,7 @@ public class UserController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
 
-        var tokenClaims = TokenUtil.getTokenClaims(accessToken);
+        Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
 
         var userIdFromToken = (String) tokenClaims.get(USER_ID_CLAIM);
         CompleteUserTaskRequest request = CompleteUserTaskRequest.builder()
@@ -241,5 +241,65 @@ public class UserController {
                 .build();
 
         userTaskService.completeUserTask(userIdFromToken, request, tenantId, false);
+    }
+
+    @Operation(
+            summary = "Cancels a UserTask by making it transition to CANCELLED status if the request is successfully " +
+                    "processed in LittleHorse Server."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "204",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Field(s) passed in is/are invalid, or no userId nor userGroup are passed in.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Tenant Id is not valid. It could also be triggered when current user/userGroup does " +
+                            "not have permissions to complete the requested UserTask.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "Trying to cancel a UserTask that is already DONE or CANCELLED",
+                    content = {@Content}
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "No UserTask data was found in LH Server using the given params.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "412",
+                    description = "Failed at a LittleHorse server condition.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            )
+    })
+    @PostMapping("/{tenant_id}/tasks/{wf_run_id}/{user_task_guid}/cancel")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void cancelUserTask(@RequestHeader("Authorization") String accessToken,
+                               @PathVariable(name = "tenant_id") String tenantId,
+                               @PathVariable(name = "wf_run_id") String wfRunId,
+                               @PathVariable(name = "user_task_guid") String userTaskRunGuid) throws JsonProcessingException {
+        if (!tenantService.isValidTenant(tenantId)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+
+        Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
+        var userIdFromToken = (String) tokenClaims.get(USER_ID_CLAIM);
+
+        userTaskService.cancelUserTaskForNonAdmin(wfRunId, userTaskRunGuid, tenantId, userIdFromToken);
     }
 }
