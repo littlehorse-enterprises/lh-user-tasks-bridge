@@ -300,6 +300,6 @@ public class UserController {
         Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
         var userIdFromToken = (String) tokenClaims.get(USER_ID_CLAIM);
 
-        userTaskService.cancelUserTask(wfRunId, userTaskRunGuid, tenantId, userIdFromToken);
+        userTaskService.cancelUserTaskForNonAdmin(wfRunId, userTaskRunGuid, tenantId, userIdFromToken);
     }
 }

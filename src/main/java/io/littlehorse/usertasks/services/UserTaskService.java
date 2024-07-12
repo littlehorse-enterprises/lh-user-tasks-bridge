@@ -282,16 +282,13 @@ public class UserTaskService {
         }
     }
 
-    public void cancelUserTask(@NonNull String wfRunId, @NonNull String userTaskRunGuid, @NonNull String tenantId,
-                               String userId) {
+    public void cancelUserTask(@NonNull String wfRunId, @NonNull String userTaskRunGuid, @NonNull String tenantId) {
         try {
             log.atInfo()
-                    .setMessage("Cancelling UserTaskRun with wfRunId: {} and userTaskGuid: {}")
+                    .setMessage("Cancelling UserTaskRun with wfRunId: {} and userTaskGuid: {} as Admin.")
                     .addArgument(wfRunId)
                     .addArgument(userTaskRunGuid)
                     .log();
-
-            boolean isAdminRequest = !StringUtils.hasText(userId);
 
             LittleHorseGrpc.LittleHorseBlockingStub tenantClient = lhClient.withCallCredentials(new TenantMetadataProvider(tenantId));
 
@@ -317,9 +314,83 @@ public class UserTaskService {
                         "The UserTask you are trying to cancel is already DONE or CANCELLED");
             }
 
-            if (!isAdminRequest) {
-                validateIfUserIsAllowedToSeeUserTask(userId, null, userTaskRun);
+            CancelUserTaskRunRequest requestBuilder = CancelUserTaskRunRequest.newBuilder()
+                    .setUserTaskRunId(UserTaskRunId.newBuilder()
+                            .setWfRunId(WfRunId.newBuilder()
+                                    .setId(wfRunId)
+                                    .build())
+                            .setUserTaskGuid(userTaskRunGuid)
+                            .build())
+                    .build();
+
+            tenantClient.cancelUserTaskRun(requestBuilder);
+
+            log.atInfo()
+                    .setMessage("UserTaskRun with wfRunId: {} and guid: {} was successfully cancelled as Admin.")
+                    .addArgument(wfRunId)
+                    .addArgument(userTaskRunGuid)
+                    .log();
+        } catch (StatusRuntimeException e) {
+            log.atError()
+                    .setMessage("Something went wrong in LH Server with cancellation process for UserTaskRun with " +
+                            "wfRunId: {} and guid: {} as Admin.")
+                    .addArgument(wfRunId)
+                    .addArgument(userTaskRunGuid)
+                    .log();
+            if (e.getStatus().getCode() == Status.Code.INVALID_ARGUMENT) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
             }
+
+            if (e.getStatus().getCode() == Status.Code.FAILED_PRECONDITION) {
+                throw new ResponseStatusException(HttpStatus.PRECONDITION_FAILED, e.getMessage(), e);
+            }
+
+            throw e;
+        } catch (Exception e) {
+            log.atError()
+                    .setMessage("Cancellation of UserTaskRun with wfRunId: {} and guid: {} as Admin failed.")
+                    .addArgument(wfRunId)
+                    .addArgument(userTaskRunGuid)
+                    .log();
+
+            throw e;
+        }
+    }
+
+    public void cancelUserTaskForNonAdmin(@NonNull String wfRunId, @NonNull String userTaskRunGuid, @NonNull String tenantId,
+                                          @NonNull String userId) {
+        try {
+            log.atInfo()
+                    .setMessage("Cancelling UserTaskRun with wfRunId: {} and userTaskGuid: {}")
+                    .addArgument(wfRunId)
+                    .addArgument(userTaskRunGuid)
+                    .log();
+
+            LittleHorseGrpc.LittleHorseBlockingStub tenantClient = lhClient.withCallCredentials(new TenantMetadataProvider(tenantId));
+
+            UserTaskRunId userTaskRunId = UserTaskRunId.newBuilder()
+                    .setUserTaskGuid(userTaskRunGuid)
+                    .setWfRunId(WfRunId.newBuilder()
+                            .setId(wfRunId)
+                            .build())
+                    .build();
+
+            UserTaskRun userTaskRun = tenantClient.getUserTaskRun(userTaskRunId);
+
+            boolean isAlreadyTerminated;
+
+            if (Objects.nonNull(userTaskRun)) {
+                isAlreadyTerminated = isUserTaskTerminated(userTaskRun.getStatus());
+            } else {
+                throw new NotFoundException("Could not find UserTaskRun!");
+            }
+
+            if (isAlreadyTerminated) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                        "The UserTask you are trying to cancel is already DONE or CANCELLED");
+            }
+
+            validateIfUserIsAllowedToSeeUserTask(userId, null, userTaskRun);
 
             CancelUserTaskRunRequest requestBuilder = CancelUserTaskRunRequest.newBuilder()
                     .setUserTaskRunId(UserTaskRunId.newBuilder()
@@ -339,7 +410,7 @@ public class UserTaskService {
                     .log();
         } catch (StatusRuntimeException e) {
             log.atError()
-                    .setMessage("Something went wrong in LH Server with cancellation process for UserTaskRun with with " +
+                    .setMessage("Something went wrong in LH Server with cancellation process for UserTaskRun with " +
                             "wfRunId: {} and guid: {} ")
                     .addArgument(wfRunId)
                     .addArgument(userTaskRunGuid)
@@ -357,7 +428,7 @@ public class UserTaskService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, e.getMessage());
         } catch (Exception e) {
             log.atError()
-                    .setMessage("Cancellation of UserTaskRun with wfRunId: {} and guid: {} failed.")
+                    .setMessage("Cancellation of UserTaskRun with wfRunId: {} and guid: {} failed")
                     .addArgument(wfRunId)
                     .addArgument(userTaskRunGuid)
                     .log();
@@ -415,7 +486,7 @@ public class UserTaskService {
         }
     }
 
-    private void validateIfUserIsAllowedToSeeUserTask(@NonNull String userId, String userGroup, @NonNull UserTaskRun userTaskRun) {
+    private void validateIfUserIsAllowedToSeeUserTask(String userId, String userGroup, @NonNull UserTaskRun userTaskRun) {
         if (!StringUtils.hasText(userId)) {
             throw new CustomUnauthorizedException("Unable to read provided user information");
         }

@@ -1443,7 +1443,7 @@ class UserTaskServiceTest {
         var someUserTaskRunGuid = buildStringGuid();
 
         assertThrows(NullPointerException.class,
-                () -> userTaskService.cancelUserTask(null, someUserTaskRunGuid, tenantId, null));
+                () -> userTaskService.cancelUserTask(null, someUserTaskRunGuid, tenantId));
     }
 
     @Test
@@ -1451,7 +1451,7 @@ class UserTaskServiceTest {
         var someWfRunId = buildStringGuid();
 
         assertThrows(NullPointerException.class,
-                () -> userTaskService.cancelUserTask(someWfRunId, null, tenantId, null));
+                () -> userTaskService.cancelUserTask(someWfRunId, null, tenantId));
     }
 
     @Test
@@ -1460,7 +1460,7 @@ class UserTaskServiceTest {
         var someWfRunId = buildStringGuid();
 
         assertThrows(NullPointerException.class,
-                () -> userTaskService.cancelUserTask(someWfRunId, someUserTaskRunGuid, null, null));
+                () -> userTaskService.cancelUserTask(someWfRunId, someUserTaskRunGuid, null));
     }
 
     @Test
@@ -1472,7 +1472,7 @@ class UserTaskServiceTest {
                 .thenThrow(new StatusRuntimeException(Status.INVALID_ARGUMENT));
 
         ResponseStatusException thrownException = assertThrows(ResponseStatusException.class,
-                () -> userTaskService.cancelUserTask(someWfRunId, someUserTaskRunGuid, tenantId, null));
+                () -> userTaskService.cancelUserTask(someWfRunId, someUserTaskRunGuid, tenantId));
 
         int expectedHttpErrorCode = HttpStatus.BAD_REQUEST.value();
 
@@ -1492,7 +1492,7 @@ class UserTaskServiceTest {
                 .thenThrow(new StatusRuntimeException(Status.FAILED_PRECONDITION));
 
         ResponseStatusException thrownException = assertThrows(ResponseStatusException.class,
-                () -> userTaskService.cancelUserTask(someWfRunId, someUserTaskRunGuid, tenantId, null));
+                () -> userTaskService.cancelUserTask(someWfRunId, someUserTaskRunGuid, tenantId));
 
         int expectedHttpErrorCode = HttpStatus.PRECONDITION_FAILED.value();
 
@@ -1511,7 +1511,7 @@ class UserTaskServiceTest {
         when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenThrow(new StatusRuntimeException(Status.ABORTED));
 
         assertThrows(StatusRuntimeException.class,
-                () -> userTaskService.cancelUserTask(someWfRunId, someUserTaskRunGuid, tenantId, null));
+                () -> userTaskService.cancelUserTask(someWfRunId, someUserTaskRunGuid, tenantId));
 
         verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
         verify(lhTenantClient, never()).cancelUserTaskRun(any(CancelUserTaskRunRequest.class));
@@ -1529,7 +1529,7 @@ class UserTaskServiceTest {
         when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(sampleUserTaskRun);
 
         ResponseStatusException thrownException = assertThrows(ResponseStatusException.class,
-                () -> userTaskService.cancelUserTask(someWfRunId, someUserTaskRunGuid, tenantId, null));
+                () -> userTaskService.cancelUserTask(someWfRunId, someUserTaskRunGuid, tenantId));
 
         var expectedExceptionMessage = "The UserTask you are trying to cancel is already DONE or CANCELLED";
 
@@ -1548,7 +1548,7 @@ class UserTaskServiceTest {
         when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(null);
 
         NotFoundException thrownException = assertThrows(NotFoundException.class,
-                () -> userTaskService.cancelUserTask(someWfRunId, someUserTaskRunGuid, tenantId, null));
+                () -> userTaskService.cancelUserTask(someWfRunId, someUserTaskRunGuid, tenantId));
 
         var expectedExceptionMessage = "Could not find UserTaskRun!";
 
@@ -1569,14 +1569,174 @@ class UserTaskServiceTest {
         when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(sampleUserTaskRun);
         when(lhTenantClient.cancelUserTaskRun(any(CancelUserTaskRunRequest.class))).thenReturn(Empty.getDefaultInstance());
 
-        userTaskService.cancelUserTask(someWfRunId, someUserTaskRunGuid, tenantId, null);
+        userTaskService.cancelUserTask(someWfRunId, someUserTaskRunGuid, tenantId);
 
         verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
         verify(lhTenantClient).cancelUserTaskRun(any(CancelUserTaskRunRequest.class));
     }
 
     @Test
-    void cancelUserTask_shouldSucceedForNonAdminUserWhenUserTaskRunIsNotInATerminatedStatusAndServerDoesNotThrowAnError() {
+    void cancelUserTaskForNonAdmin_shouldThrowNullPointerExceptionWhenWfRunIdIsNull() {
+        var someUserTaskRunGuid = buildStringGuid();
+        var someUserId = buildStringGuid();
+
+        assertThrows(NullPointerException.class,
+                () -> userTaskService.cancelUserTaskForNonAdmin(null, someUserTaskRunGuid, tenantId, someUserId));
+    }
+
+    @Test
+    void cancelUserTaskForNonAdmin_shouldThrowNullPointerExceptionWhenUserTaskRunGuidIsNull() {
+        var someWfRunId = buildStringGuid();
+        var someUserId = buildStringGuid();
+
+        assertThrows(NullPointerException.class,
+                () -> userTaskService.cancelUserTaskForNonAdmin(someWfRunId, null, tenantId, someUserId));
+    }
+
+    @Test
+    void cancelUserTaskForNonAdmin_shouldThrowNullPointerExceptionWhenTenantIdIsNull() {
+        var someWfRunId = buildStringGuid();
+        var someUserTaskRunGuid = buildStringGuid();
+        var someUserId = buildStringGuid();
+
+        assertThrows(NullPointerException.class,
+                () -> userTaskService.cancelUserTaskForNonAdmin(someWfRunId, someUserTaskRunGuid, null, someUserId));
+    }
+
+    @Test
+    void cancelUserTaskForNonAdmin_shouldThrowNullPointerExceptionWhenUserIdIsNull() {
+        var someWfRunId = buildStringGuid();
+        var someUserTaskRunGuid = buildStringGuid();
+
+        assertThrows(NullPointerException.class,
+                () -> userTaskService.cancelUserTaskForNonAdmin(someWfRunId, someUserTaskRunGuid, tenantId, null));
+    }
+
+    @Test
+    void cancelUserTaskForNonAdmin_shouldThrowResponseStatusExceptionAsBadRequestWhenServerThrowsExceptionRelatedToAnArgument() {
+        var someUserTaskRunGuid = buildStringGuid();
+        var someWfRunId = buildStringGuid();
+        var someUserId = "some-user-id";
+
+        when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class)))
+                .thenThrow(new StatusRuntimeException(Status.INVALID_ARGUMENT));
+
+        ResponseStatusException thrownException = assertThrows(ResponseStatusException.class,
+                () -> userTaskService.cancelUserTaskForNonAdmin(someWfRunId, someUserTaskRunGuid, tenantId, someUserId));
+
+        int expectedHttpErrorCode = HttpStatus.BAD_REQUEST.value();
+
+        assertEquals(expectedHttpErrorCode, thrownException.getBody().getStatus());
+        assertEquals("INVALID_ARGUMENT", thrownException.getReason());
+
+        verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient, never()).cancelUserTaskRun(any(CancelUserTaskRunRequest.class));
+    }
+
+    @Test
+    void cancelUserTaskForNonAdmin_shouldThrowResponseStatusExceptionAsPreconditionFailedWhenServerThrowsExceptionRelatedToAFailedPrecondition() {
+        var someUserTaskRunGuid = buildStringGuid();
+        var someWfRunId = buildStringGuid();
+        var someUserId = "some-user-id";
+
+        when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class)))
+                .thenThrow(new StatusRuntimeException(Status.FAILED_PRECONDITION));
+
+        ResponseStatusException thrownException = assertThrows(ResponseStatusException.class,
+                () -> userTaskService.cancelUserTaskForNonAdmin(someWfRunId, someUserTaskRunGuid, tenantId, someUserId));
+
+        int expectedHttpErrorCode = HttpStatus.PRECONDITION_FAILED.value();
+
+        assertEquals(expectedHttpErrorCode, thrownException.getBody().getStatus());
+        assertEquals("FAILED_PRECONDITION", thrownException.getReason());
+
+        verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient, never()).cancelUserTaskRun(any(CancelUserTaskRunRequest.class));
+    }
+
+    @Test
+    void cancelUserTaskForNonAdmin_shouldThrowExceptionAsIsWhenServerThrowsUnhandledException() {
+        var someUserTaskRunGuid = buildStringGuid();
+        var someWfRunId = buildStringGuid();
+        var someUserId = "some-user-id";
+
+        when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenThrow(new StatusRuntimeException(Status.ABORTED));
+
+        assertThrows(StatusRuntimeException.class,
+                () -> userTaskService.cancelUserTaskForNonAdmin(someWfRunId, someUserTaskRunGuid, tenantId, someUserId));
+
+        verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient, never()).cancelUserTaskRun(any(CancelUserTaskRunRequest.class));
+    }
+
+    @Test
+    void cancelUserTaskForNonAdmin_shouldThrowResponseStatusExceptionAsForbiddenWhenUserTaskRunIsAlreadyInATerminatedStatus() {
+        var someUserTaskRunGuid = buildStringGuid();
+        var someWfRunId = buildStringGuid();
+        var someUserId = buildStringGuid();
+
+        UserTaskRun sampleUserTaskRun = buildFakeUserTaskRun(someUserId, someWfRunId)
+                .toBuilder().setStatus(UserTaskRunStatus.CANCELLED).build();
+
+        when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(sampleUserTaskRun);
+
+        ResponseStatusException thrownException = assertThrows(ResponseStatusException.class,
+                () -> userTaskService.cancelUserTaskForNonAdmin(someWfRunId, someUserTaskRunGuid, tenantId, someUserId));
+
+        var expectedExceptionMessage = "The UserTask you are trying to cancel is already DONE or CANCELLED";
+
+        assertEquals(HttpStatus.FORBIDDEN.value(), thrownException.getBody().getStatus());
+        assertEquals(expectedExceptionMessage, thrownException.getReason());
+
+        verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient, never()).cancelUserTaskRun(any(CancelUserTaskRunRequest.class));
+    }
+
+    @Test
+    void cancelUserTaskForNonAdmin_shouldThrowResponseStatusExceptionAsForbiddenWhenUserTaskRunIsNotFound() {
+        var someUserTaskRunGuid = buildStringGuid();
+        var someWfRunId = buildStringGuid();
+        var someUserId = buildStringGuid();
+
+        when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(null);
+
+        NotFoundException thrownException = assertThrows(NotFoundException.class,
+                () -> userTaskService.cancelUserTaskForNonAdmin(someWfRunId, someUserTaskRunGuid, tenantId, someUserId));
+
+        var expectedExceptionMessage = "Could not find UserTaskRun!";
+
+        assertEquals(expectedExceptionMessage, thrownException.getMessage());
+
+        verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient, never()).cancelUserTaskRun(any(CancelUserTaskRunRequest.class));
+    }
+
+    @Test
+    void cancelUserTaskForNonAdmin_shouldThrowResponseStatusExceptionAsUnauthorizedWhenUserTaskRunIsAssignedToCurrentUserId() {
+        var someUserTaskRunGuid = buildStringGuid();
+        var someWfRunId = buildStringGuid();
+        var someUserId = buildStringGuid();
+        var someOtherUserId = buildStringGuid();
+
+        UserTaskRun sampleUserTaskRun = buildFakeUserTaskRun(someOtherUserId, someWfRunId);
+
+        when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(sampleUserTaskRun);
+
+        ResponseStatusException thrownException = assertThrows(ResponseStatusException.class,
+                () -> userTaskService.cancelUserTaskForNonAdmin(someWfRunId, someUserTaskRunGuid, tenantId, someUserId));
+
+        var expectedExceptionMessage = "Current user is forbidden from accessing this UserTask information";
+
+        assertEquals(HttpStatus.UNAUTHORIZED.value(), thrownException.getBody().getStatus());
+        assertEquals(expectedExceptionMessage, thrownException.getReason());
+
+        verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient, never()).cancelUserTaskRun(any(CancelUserTaskRunRequest.class));
+    }
+
+
+    @Test
+    void cancelUserTaskForNonAdmin_shouldSucceedWhenUserTaskRunIsNotInATerminatedStatusAndServerDoesNotThrowAnError() {
         var someUserTaskRunGuid = buildStringGuid();
         var someWfRunId = buildStringGuid();
         var someUserId = buildStringGuid();
@@ -1586,7 +1746,7 @@ class UserTaskServiceTest {
         when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(sampleUserTaskRun);
         when(lhTenantClient.cancelUserTaskRun(any(CancelUserTaskRunRequest.class))).thenReturn(Empty.getDefaultInstance());
 
-        userTaskService.cancelUserTask(someWfRunId, someUserTaskRunGuid, tenantId, someUserId);
+        userTaskService.cancelUserTaskForNonAdmin(someWfRunId, someUserTaskRunGuid, tenantId, someUserId);
 
         verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
         verify(lhTenantClient).cancelUserTaskRun(any(CancelUserTaskRunRequest.class));
