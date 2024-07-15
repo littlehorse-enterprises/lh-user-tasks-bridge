@@ -77,13 +77,6 @@ public class UserController {
                     content = {@Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ProblemDetail.class))}
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "No UserTasks were found for current user and/or given search criteria.",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class))}
             )
     })
     @GetMapping("/{tenant_id}/tasks")
@@ -116,12 +109,10 @@ public class UserController {
             var parsedBookmark = Objects.nonNull(bookmark) ? Base64.decodeBase64(bookmark) : null;
 
             //TODO: User Group filter is pending
-            var optionalUserTasks = userTaskService.getTasks(tenantId, userIdFromToken, null, additionalFilters,
+            UserTaskRunListDTO response = userTaskService.getTasks(tenantId, userIdFromToken, null, additionalFilters,
                     limit, parsedBookmark, false);
 
-            return optionalUserTasks
-                    .map(ResponseEntity::ok)
-                    .orElseThrow(() -> new NotFoundException("No UserTasks found with given search criteria"));
+            return ResponseEntity.ok(response);
         } catch (NotFoundException e) {
             return ResponseEntity.of(ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, e.getMessage())).build();
         } catch (JsonProcessingException e) {

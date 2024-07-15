@@ -54,7 +54,8 @@ public class UserTaskService {
         this.lhClient = lhClient;
     }
 
-    public Optional<UserTaskRunListDTO> getTasks(@NonNull String tenantId, String userId, String userGroup, UserTaskRequestFilter additionalFilters,
+    @NonNull
+    public UserTaskRunListDTO getTasks(@NonNull String tenantId, String userId, String userGroup, UserTaskRequestFilter additionalFilters,
                                                  int limit, byte[] bookmark, boolean isAdminRequest) {
         if (!isAdminRequest && !StringUtils.hasText(userId)) {
             throw new IllegalArgumentException("Cannot search UserTask without specifying a proper UserId");
@@ -89,9 +90,7 @@ public class UserTaskService {
                     : null);
         }
 
-        return response.getUserTasks().isEmpty()
-                ? Optional.empty()
-                : Optional.of(response);
+        return response;
     }
 
     public Optional<DetailedUserTaskRunDTO> getUserTaskDetails(@NonNull String wfRunId, @NonNull String userTaskRunGuid,

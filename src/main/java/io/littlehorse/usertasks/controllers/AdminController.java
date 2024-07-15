@@ -41,7 +41,6 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 
 import static io.littlehorse.usertasks.util.constants.AuthoritiesConstants.USER_TASKS_ADMIN;
 import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.USER_ID_CLAIM;
@@ -86,36 +85,29 @@ public class AdminController {
                     responseCode = "403",
                     description = "Not enough privileges to access this resource.",
                     content = {@Content}
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "No UserTasks were found for given tenant and/or search criteria.",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class))}
             )
     })
     @GetMapping("/{tenant_id}/admin/tasks")
     @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<UserTaskRunListDTO> getMyTasks(@RequestHeader("Authorization") String accessToken,
-                                                         @PathVariable(name = "tenant_id") String tenantId,
-                                                         @RequestParam(name = "earliest_start_date", required = false)
+    public ResponseEntity<UserTaskRunListDTO> getAllTasks(@RequestHeader("Authorization") String accessToken,
+                                                          @PathVariable(name = "tenant_id") String tenantId,
+                                                          @RequestParam(name = "earliest_start_date", required = false)
                                                          @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
                                                          LocalDateTime earliestStartDate,
-                                                         @RequestParam(name = "latest_start_date", required = false)
+                                                          @RequestParam(name = "latest_start_date", required = false)
                                                          @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
                                                          LocalDateTime latestStartDate,
-                                                         @RequestParam(name = "status", required = false)
+                                                          @RequestParam(name = "status", required = false)
                                                          UserTaskStatus status,
-                                                         @RequestParam(name = "type", required = false)
+                                                          @RequestParam(name = "type", required = false)
                                                          String type,
-                                                         @RequestParam(name = "limit")
+                                                          @RequestParam(name = "limit")
                                                          Integer limit,
-                                                         @RequestParam(name = "user_id", required = false)
+                                                          @RequestParam(name = "user_id", required = false)
                                                          String userId,
-                                                         @RequestParam(name = "user_group", required = false)
+                                                          @RequestParam(name = "user_group", required = false)
                                                          String userGroup,
-                                                         @RequestParam(name = "bookmark", required = false)
+                                                          @RequestParam(name = "bookmark", required = false)
                                                          String bookmark) {
         try {
             if (!tenantService.isValidTenant(tenantId)) {
@@ -126,12 +118,10 @@ public class AdminController {
                     status, type);
             byte[] parsedBookmark = Objects.nonNull(bookmark) ? Base64.decodeBase64(bookmark) : null;
 
-            Optional<UserTaskRunListDTO> optionalUserTasks = userTaskService.getTasks(tenantId, userId, userGroup, additionalFilters,
+            UserTaskRunListDTO response = userTaskService.getTasks(tenantId, userId, userGroup, additionalFilters,
                     limit, parsedBookmark, true);
 
-            return optionalUserTasks
-                    .map(ResponseEntity::ok)
-                    .orElseThrow(() -> new NotFoundException("No UserTasks found with given search criteria"));
+            return ResponseEntity.ok(response);
         } catch (NotFoundException e) {
             return ResponseEntity.of(ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, e.getMessage())).build();
         } catch (Exception e) {
