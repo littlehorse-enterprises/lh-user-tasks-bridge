@@ -97,12 +97,7 @@ public class UserTaskService {
     public Optional<DetailedUserTaskRunDTO> getUserTaskDetails(@NonNull String wfRunId, @NonNull String userTaskRunGuid,
                                                                @NonNull String tenantId, String userId, String userGroup,
                                                                boolean isAdminRequest) {
-        var getUserTaskRunRequest = UserTaskRunId.newBuilder()
-                .setWfRunId(WfRunId.newBuilder()
-                        .setId(wfRunId)
-                        .build())
-                .setUserTaskGuid(userTaskRunGuid)
-                .build();
+        UserTaskRunId getUserTaskRunRequest = buildUserTaskRunId(wfRunId, userTaskRunGuid);
 
         LittleHorseGrpc.LittleHorseBlockingStub tenantClient = lhClient.withCallCredentials(new TenantMetadataProvider(tenantId));
 
@@ -166,7 +161,7 @@ public class UserTaskService {
                     .log();
         } catch (StatusRuntimeException e) {
             log.atError()
-                    .setMessage("Something went wrong in LH Server with completion process for UserTaskRun with with " +
+                    .setMessage("Something went wrong in LH Server with completion process for UserTaskRun with " +
                             "wfRunId: {} and guid: {} ")
                     .addArgument(request.getWfRunId())
                     .addArgument(request.getUserTaskRunGuid())
@@ -230,13 +225,10 @@ public class UserTaskService {
 
             LittleHorseGrpc.LittleHorseBlockingStub tenantClient = lhClient.withCallCredentials(new TenantMetadataProvider(tenantId));
 
+            UserTaskRunId userTaskRunId = buildUserTaskRunId(wfRunId, userTaskRunGuid);
+
             AssignUserTaskRunRequest.Builder requestBuilder = AssignUserTaskRunRequest.newBuilder()
-                    .setUserTaskRunId(UserTaskRunId.newBuilder()
-                            .setWfRunId(WfRunId.newBuilder()
-                                    .setId(wfRunId)
-                                    .build())
-                            .setUserTaskGuid(userTaskRunGuid)
-                            .build())
+                    .setUserTaskRunId(userTaskRunId)
                     .setOverrideClaim(true);
 
             if (StringUtils.hasText(requestBody.getUserId())) {
@@ -257,7 +249,7 @@ public class UserTaskService {
                     .log();
         } catch (StatusRuntimeException e) {
             log.atError()
-                    .setMessage("Something went wrong in LH Server with assignment process for UserTaskRun with with " +
+                    .setMessage("Something went wrong in LH Server with assignment process for UserTaskRun with " +
                             "wfRunId: {} and guid: {} ")
                     .addArgument(wfRunId)
                     .addArgument(userTaskRunGuid)
@@ -437,6 +429,74 @@ public class UserTaskService {
         }
     }
 
+    public void claimUserTask(@NonNull String userId, @NonNull String wfRunId, @NonNull String userTaskRunGuid,
+                              @NonNull String tenantId) {
+        try {
+            log.atInfo()
+                    .setMessage("Claiming UserTaskRun with wfRunId: {} and userTaskGuid: {}")
+                    .addArgument(wfRunId)
+                    .addArgument(userTaskRunGuid)
+                    .log();
+
+            LittleHorseGrpc.LittleHorseBlockingStub tenantClient = lhClient.withCallCredentials(new TenantMetadataProvider(tenantId));
+
+            UserTaskRunId userTaskRunId = buildUserTaskRunId(wfRunId, userTaskRunGuid);
+
+            UserTaskRun userTaskRun = tenantClient.getUserTaskRun(userTaskRunId);
+
+            boolean isUserTaskClaimable = userTaskRun.getStatus().equals(UserTaskRunStatus.UNASSIGNED);
+
+            //TODO: Once userGroups are properly implemented, also implement the logic to verify that the claiming user
+            // belongs to the userGroup to which the UserTaskRun is assigned to.
+
+            if (isUserTaskClaimable) {
+                AssignUserTaskRunRequest requestBuilder = AssignUserTaskRunRequest.newBuilder()
+                        .setUserId(userId)
+                        .setUserGroup(userTaskRun.getUserGroup())
+                        .setUserTaskRunId(userTaskRunId)
+                        .build();
+
+                tenantClient.assignUserTaskRun(requestBuilder);
+
+                log.atInfo()
+                        .setMessage("UserTaskRun with wfRunId: {} and guid: {} was successfully claimed.")
+                        .addArgument(wfRunId)
+                        .addArgument(userTaskRunGuid)
+                        .log();
+            } else {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "UserTaskRun cannot be claimed!");
+            }
+        } catch (StatusRuntimeException e) {
+            log.atError()
+                    .setMessage("Something went wrong in LH Server with claiming process for UserTaskRun with " +
+                            "wfRunId: {} and guid: {} ")
+                    .addArgument(wfRunId)
+                    .addArgument(userTaskRunGuid)
+                    .log();
+            if (e.getStatus().getCode() == Status.Code.INVALID_ARGUMENT) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+            }
+
+            if (e.getStatus().getCode() == Status.Code.FAILED_PRECONDITION) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage(), e);
+            }
+
+            if (e.getStatus().getCode() == Status.Code.NOT_FOUND) {
+                throw new NotFoundException("Could not find UserTaskRun!");
+            }
+
+            throw e;
+        } catch (Exception e) {
+            log.atError()
+                    .setMessage("Claim of UserTaskRun with wfRunId: {} and guid: {} failed.")
+                    .addArgument(wfRunId)
+                    .addArgument(userTaskRunGuid)
+                    .log();
+
+            throw e;
+        }
+    }
+
     private SearchUserTaskRunRequest buildSearchUserTaskRunRequest(String userId, String userGroup,
                                                                    UserTaskRequestFilter additionalFilters,
                                                                    @NonNull StandardPagination pagination) {
@@ -512,5 +572,14 @@ public class UserTaskService {
     private boolean isUserTaskTerminated(UserTaskRunStatus currentStatus) {
         var blockingStatuses = Set.of(UserTaskRunStatus.DONE, UserTaskRunStatus.CANCELLED);
         return blockingStatuses.contains(currentStatus);
+    }
+
+    private UserTaskRunId buildUserTaskRunId(String wfRunId, String userTaskRunGuid) {
+        return UserTaskRunId.newBuilder()
+                .setUserTaskGuid(userTaskRunGuid)
+                .setWfRunId(WfRunId.newBuilder()
+                        .setId(wfRunId)
+                        .build())
+                .build();
     }
 }
