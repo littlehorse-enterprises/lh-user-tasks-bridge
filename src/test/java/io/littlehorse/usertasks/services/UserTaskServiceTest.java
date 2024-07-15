@@ -52,13 +52,13 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -101,27 +101,33 @@ class UserTaskServiceTest {
     }
 
     @Test
-    void getTasks_shouldReturnEmptyOptionalWhenNoTasksAreFoundForAGivenUser() {
+    void getTasks_shouldReturnEmptyResponseWhenNoTasksAreFoundForAGivenUser() {
         var userId = UUID.randomUUID().toString();
         var listOfUserTasks = UserTaskRunIdList.newBuilder().build();
 
         when(lhTenantClient.searchUserTaskRun(any(SearchUserTaskRunRequest.class))).thenReturn(listOfUserTasks);
 
-        assertTrue(userTaskService.getTasks(tenantId, userId, null, null,
-                RESULTS_LIMIT, null, false).isEmpty());
+        UserTaskRunListDTO response = userTaskService.getTasks(tenantId, userId, null, null,
+                RESULTS_LIMIT, null, false);
+
+        assertNull(response.getBookmark());
+        assertTrue(response.getUserTasks().isEmpty());
 
         verify(lhTenantClient).searchUserTaskRun(any(SearchUserTaskRunRequest.class));
     }
 
     @Test
-    void getTasks_shouldReturnEmptyOptionalWhenNoTasksAreFoundForAGivenAdminUser() {
+    void getTasks_shouldReturnEmptyWhenNoTasksAreFoundForAGivenAdminUser() {
         var userId = UUID.randomUUID().toString();
         var listOfUserTasks = UserTaskRunIdList.newBuilder().build();
 
         when(lhTenantClient.searchUserTaskRun(any(SearchUserTaskRunRequest.class))).thenReturn(listOfUserTasks);
 
-        assertTrue(userTaskService.getTasks(tenantId, userId, null, null,
-                RESULTS_LIMIT, null, true).isEmpty());
+        UserTaskRunListDTO response = userTaskService.getTasks(tenantId, userId, null, null,
+                RESULTS_LIMIT, null, true);
+
+        assertNull(response.getBookmark());
+        assertTrue(response.getUserTasks().isEmpty());
 
         verify(lhTenantClient).searchUserTaskRun(any(SearchUserTaskRunRequest.class));
     }
@@ -143,11 +149,11 @@ class UserTaskServiceTest {
         when(lhTenantClient.searchUserTaskRun(any(SearchUserTaskRunRequest.class))).thenReturn(listOfUserTasks);
         when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun1, userTaskRun2);
 
-        Optional<UserTaskRunListDTO> result = userTaskService.getTasks(tenantId, userId, null, null,
+        UserTaskRunListDTO response = userTaskService.getTasks(tenantId, userId, null, null,
                 RESULTS_LIMIT, null, false);
 
-        assertTrue(result.isPresent());
-        Set<SimpleUserTaskRunDTO> actualUserTaskDTOs = result.get().getUserTasks();
+        assertNotNull(response);
+        Set<SimpleUserTaskRunDTO> actualUserTaskDTOs = response.getUserTasks();
 
         assertTrue(actualUserTaskDTOs.stream().allMatch(hasMandatoryFieldsForAUser(userId)));
 
@@ -172,11 +178,11 @@ class UserTaskServiceTest {
         when(lhTenantClient.searchUserTaskRun(any(SearchUserTaskRunRequest.class))).thenReturn(listOfUserTasks);
         when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun1, userTaskRun2);
 
-        Optional<UserTaskRunListDTO> result = userTaskService.getTasks(tenantId, userId, null, null,
+        UserTaskRunListDTO response = userTaskService.getTasks(tenantId, userId, null, null,
                 RESULTS_LIMIT, null, true);
 
-        assertTrue(result.isPresent());
-        Set<SimpleUserTaskRunDTO> actualUserTaskDTOs = result.get().getUserTasks();
+        assertNotNull(response);
+        Set<SimpleUserTaskRunDTO> actualUserTaskDTOs = response.getUserTasks();
 
         assertTrue(actualUserTaskDTOs.stream().allMatch(hasMandatoryFieldsForAUser(userId)));
 
@@ -201,11 +207,11 @@ class UserTaskServiceTest {
         when(lhTenantClient.searchUserTaskRun(any(SearchUserTaskRunRequest.class))).thenReturn(listOfUserTasks);
         when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun1);
 
-        Optional<UserTaskRunListDTO> result = userTaskService.getTasks(tenantId, userId, myUserGroup, null,
+        UserTaskRunListDTO response = userTaskService.getTasks(tenantId, userId, myUserGroup, null,
                 RESULTS_LIMIT, null, false);
 
-        assertTrue(result.isPresent());
-        Set<SimpleUserTaskRunDTO> actualUserTaskDTOs = result.get().getUserTasks();
+        assertNotNull(response);
+        Set<SimpleUserTaskRunDTO> actualUserTaskDTOs = response.getUserTasks();
 
         assertTrue(actualUserTaskDTOs.stream().allMatch(hasMandatoryFieldsForAUser(userId)));
         assertTrue(actualUserTaskDTOs.stream().allMatch(hasUserGroup(myUserGroup)));
@@ -240,11 +246,11 @@ class UserTaskServiceTest {
         when(lhTenantClient.searchUserTaskRun(searchRequest)).thenReturn(listOfUserTasks);
         when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun1, userTaskRun2);
 
-        Optional<UserTaskRunListDTO> result = userTaskService.getTasks(tenantId, userId, null, additionalFilters,
+        UserTaskRunListDTO response = userTaskService.getTasks(tenantId, userId, null, additionalFilters,
                 RESULTS_LIMIT, null, false);
 
-        assertTrue(result.isPresent());
-        Set<SimpleUserTaskRunDTO> actualUserTaskDTOs = result.get().getUserTasks();
+        assertNotNull(response);
+        Set<SimpleUserTaskRunDTO> actualUserTaskDTOs = response.getUserTasks();
 
         assertTrue(actualUserTaskDTOs.stream().allMatch(hasMandatoryFieldsForAUser(userId)));
         assertTrue(actualUserTaskDTOs.stream().allMatch(hasScheduledTimeAfterEarliestStart(fiveDaysAgo)));
@@ -279,11 +285,11 @@ class UserTaskServiceTest {
         when(lhTenantClient.searchUserTaskRun(searchRequest)).thenReturn(listOfUserTasks);
         when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun1, userTaskRun2);
 
-        Optional<UserTaskRunListDTO> result = userTaskService.getTasks(tenantId, userId, null, additionalFilters,
+        UserTaskRunListDTO response = userTaskService.getTasks(tenantId, userId, null, additionalFilters,
                 RESULTS_LIMIT, null, false);
 
-        assertTrue(result.isPresent());
-        Set<SimpleUserTaskRunDTO> actualUserTaskDTOs = result.get().getUserTasks();
+        assertNotNull(response);
+        Set<SimpleUserTaskRunDTO> actualUserTaskDTOs = response.getUserTasks();
 
         assertTrue(actualUserTaskDTOs.stream().allMatch(hasMandatoryFieldsForAUser(userId)));
         assertTrue(actualUserTaskDTOs.stream().allMatch(hasScheduledTimeBeforeLatestStart(currentDate)));
@@ -323,11 +329,11 @@ class UserTaskServiceTest {
         when(lhTenantClient.searchUserTaskRun(searchRequest)).thenReturn(listOfUserTasks);
         when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun1, userTaskRun2, userTaskRun3);
 
-        Optional<UserTaskRunListDTO> result = userTaskService.getTasks(tenantId, userId, null, additionalFilters,
+        UserTaskRunListDTO response = userTaskService.getTasks(tenantId, userId, null, additionalFilters,
                 RESULTS_LIMIT, null, false);
 
-        assertTrue(result.isPresent());
-        Set<SimpleUserTaskRunDTO> actualUserTaskDTOs = result.get().getUserTasks();
+        assertNotNull(response);
+        Set<SimpleUserTaskRunDTO> actualUserTaskDTOs = response.getUserTasks();
 
         assertTrue(actualUserTaskDTOs.stream().allMatch(hasMandatoryFieldsForAUser(userId)));
         assertTrue(actualUserTaskDTOs.stream().allMatch(hasScheduledTimeAfterEarliestStart(lastTenDays)));
@@ -383,11 +389,11 @@ class UserTaskServiceTest {
         when(lhTenantClient.searchUserTaskRun(searchRequest)).thenReturn(listOfUserTasks);
         when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun1, userTaskRun2);
 
-        Optional<UserTaskRunListDTO> result = userTaskService.getTasks(tenantId, userId, null, additionalFilters,
+        UserTaskRunListDTO response = userTaskService.getTasks(tenantId, userId, null, additionalFilters,
                 RESULTS_LIMIT, null, false);
 
-        assertTrue(result.isPresent());
-        Set<SimpleUserTaskRunDTO> actualUserTaskDTOs = result.get().getUserTasks();
+        assertNotNull(response);
+        Set<SimpleUserTaskRunDTO> actualUserTaskDTOs = response.getUserTasks();
 
         assertTrue(actualUserTaskDTOs.stream().allMatch(hasMandatoryFieldsForAUser(userId)));
 
@@ -421,11 +427,11 @@ class UserTaskServiceTest {
         when(lhTenantClient.searchUserTaskRun(searchRequest)).thenReturn(listOfUserTasks);
         when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun1, userTaskRun2);
 
-        Optional<UserTaskRunListDTO> result = userTaskService.getTasks(tenantId, userId, null, additionalFilters,
+        UserTaskRunListDTO response = userTaskService.getTasks(tenantId, userId, null, additionalFilters,
                 RESULTS_LIMIT, null, false);
 
-        assertTrue(result.isPresent());
-        Set<SimpleUserTaskRunDTO> actualUserTaskDTOs = result.get().getUserTasks();
+        assertNotNull(response);
+        Set<SimpleUserTaskRunDTO> actualUserTaskDTOs = response.getUserTasks();
 
         assertTrue(actualUserTaskDTOs.stream().allMatch(hasMandatoryFieldsForAUser(userId)));
         assertTrue(actualUserTaskDTOs.stream().allMatch(dto -> dto.getUserTaskDefName().equalsIgnoreCase(type)));
@@ -468,11 +474,11 @@ class UserTaskServiceTest {
         when(lhTenantClient.searchUserTaskRun(searchRequest)).thenReturn(listOfUserTasks);
         when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun1, userTaskRun2);
 
-        Optional<UserTaskRunListDTO> result = userTaskService.getTasks(tenantId, userId, null, additionalFilters,
+        UserTaskRunListDTO response = userTaskService.getTasks(tenantId, userId, null, additionalFilters,
                 RESULTS_LIMIT, null, false);
 
-        assertTrue(result.isPresent());
-        Set<SimpleUserTaskRunDTO> actualUserTaskDTOs = result.get().getUserTasks();
+        assertNotNull(response);
+        Set<SimpleUserTaskRunDTO> actualUserTaskDTOs = response.getUserTasks();
 
         assertTrue(actualUserTaskDTOs.stream().allMatch(hasMandatoryFieldsForAUser(userId)));
         assertTrue(actualUserTaskDTOs.stream().allMatch(dto -> dto.getUserTaskDefName().equalsIgnoreCase(type)));
