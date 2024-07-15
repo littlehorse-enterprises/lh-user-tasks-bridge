@@ -478,7 +478,7 @@ public class UserTaskService {
             }
 
             if (e.getStatus().getCode() == Status.Code.FAILED_PRECONDITION) {
-                throw new ResponseStatusException(HttpStatus.PRECONDITION_FAILED, e.getMessage(), e);
+                throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage(), e);
             }
 
             if (e.getStatus().getCode() == Status.Code.NOT_FOUND) {

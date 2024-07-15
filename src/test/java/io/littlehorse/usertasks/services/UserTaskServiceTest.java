@@ -1884,7 +1884,7 @@ class UserTaskServiceTest {
     }
 
     @Test
-    void claimUserTask_shouldThrowResponseStatusExceptionAsPreconditionFailedWhenServerThrowsExceptionRelatedToAFailedPrecondition() {
+    void claimUserTask_shouldThrowResponseStatusExceptionAsConflictWhenServerThrowsExceptionRelatedToAFailedPrecondition() {
         var userId = "my-user-id";
         var wfRunId = buildStringGuid();
         var userTaskRunGuid = buildStringGuid();
@@ -1903,7 +1903,7 @@ class UserTaskServiceTest {
         ResponseStatusException thrownException = assertThrows(ResponseStatusException.class,
                 () -> userTaskService.claimUserTask(userId, wfRunId, userTaskRunGuid, tenantId));
 
-        int expectedHttpErrorCode = HttpStatus.PRECONDITION_FAILED.value();
+        int expectedHttpErrorCode = HttpStatus.CONFLICT.value();
 
         assertEquals(expectedHttpErrorCode, thrownException.getBody().getStatus());
         assertEquals("FAILED_PRECONDITION", thrownException.getReason());
