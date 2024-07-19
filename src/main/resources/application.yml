@@ -27,3 +27,7 @@ com:
 springdoc:
   api-docs:
     path: /api-docs
+
+keycloak-properties:
+  url: http://localhost:8888
+  client-id: user-tasks-client

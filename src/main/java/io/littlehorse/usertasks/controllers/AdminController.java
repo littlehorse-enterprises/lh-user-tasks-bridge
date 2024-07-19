@@ -3,6 +3,7 @@ package io.littlehorse.usertasks.controllers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.littlehorse.usertasks.exceptions.CustomUnauthorizedException;
 import io.littlehorse.usertasks.exceptions.NotFoundException;
+import io.littlehorse.usertasks.idp_adaptors.keycloak.KeycloakAdminService;
 import io.littlehorse.usertasks.models.common.UserTaskVariableValue;
 import io.littlehorse.usertasks.models.requests.AssignmentRequest;
 import io.littlehorse.usertasks.models.requests.CompleteUserTaskRequest;
@@ -41,6 +42,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import static io.littlehorse.usertasks.util.constants.AuthoritiesConstants.USER_TASKS_ADMIN;
 import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.USER_ID_CLAIM;
@@ -56,10 +58,12 @@ import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.USER_I
 public class AdminController {
     private final TenantService tenantService;
     private final UserTaskService userTaskService;
+    private final KeycloakAdminService keycloakAdminService;
 
-    public AdminController(TenantService tenantService, UserTaskService userTaskService) {
+    public AdminController(TenantService tenantService, UserTaskService userTaskService, KeycloakAdminService keycloakAdminService) {
         this.tenantService = tenantService;
         this.userTaskService = userTaskService;
+        this.keycloakAdminService = keycloakAdminService;
     }
 
     @Operation(
@@ -395,5 +399,19 @@ public class AdminController {
         }
 
         userTaskService.cancelUserTask(wfRunId, userTaskRunGuid, tenantId);
+    }
+
+    @GetMapping("/groups")
+    @ResponseStatus(HttpStatus.OK)
+    public Set<String> getUserGroupsFromIdentityProvider(@RequestHeader(name = "Authorization") String accessToken,
+                                                         @RequestParam(name = "realm") String realm) {
+        return keycloakAdminService.getUserGroupsByRealm(realm, accessToken);
+    }
+
+    @GetMapping("/users")
+    @ResponseStatus(HttpStatus.OK)
+    public Set<String> getUsersFromIdentityProvider(@RequestHeader(name = "Authorization") String accessToken,
+                                                    @RequestParam(name = "realm") String realm) {
+        return keycloakAdminService.getUsersByRealm(realm, accessToken);
     }
 }
