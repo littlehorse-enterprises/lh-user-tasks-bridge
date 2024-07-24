@@ -3,12 +3,15 @@ package io.littlehorse.usertasks.controllers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.littlehorse.usertasks.exceptions.CustomUnauthorizedException;
 import io.littlehorse.usertasks.exceptions.NotFoundException;
-import io.littlehorse.usertasks.idp_adaptors.keycloak.KeycloakAdminService;
+import io.littlehorse.usertasks.idp_adapters.IStandardIdentityProviderAdapter;
+import io.littlehorse.usertasks.idp_adapters.IdentityProviderVendor;
+import io.littlehorse.usertasks.idp_adapters.keycloak.KeycloakAdapter;
 import io.littlehorse.usertasks.models.common.UserTaskVariableValue;
 import io.littlehorse.usertasks.models.requests.AssignmentRequest;
 import io.littlehorse.usertasks.models.requests.CompleteUserTaskRequest;
 import io.littlehorse.usertasks.models.requests.UserTaskRequestFilter;
 import io.littlehorse.usertasks.models.responses.DetailedUserTaskRunDTO;
+import io.littlehorse.usertasks.models.responses.StringSetDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskDefListDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskRunListDTO;
 import io.littlehorse.usertasks.services.TenantService;
@@ -21,6 +24,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.util.codec.binary.Base64;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -42,7 +46,6 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 import static io.littlehorse.usertasks.util.constants.AuthoritiesConstants.USER_TASKS_ADMIN;
 import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.USER_ID_CLAIM;
@@ -58,12 +61,10 @@ import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.USER_I
 public class AdminController {
     private final TenantService tenantService;
     private final UserTaskService userTaskService;
-    private final KeycloakAdminService keycloakAdminService;
 
-    public AdminController(TenantService tenantService, UserTaskService userTaskService, KeycloakAdminService keycloakAdminService) {
+    public AdminController(TenantService tenantService, UserTaskService userTaskService) {
         this.tenantService = tenantService;
         this.userTaskService = userTaskService;
-        this.keycloakAdminService = keycloakAdminService;
     }
 
     @Operation(
@@ -401,17 +402,121 @@ public class AdminController {
         userTaskService.cancelUserTask(wfRunId, userTaskRunGuid, tenantId);
     }
 
-    @GetMapping("/groups")
+    @Operation(
+            summary = "Gets all Groups from a specific identity provider of a specific tenant."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = StringSetDTO.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Field(s) passed in is/are invalid.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Tenant Id is not valid.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "Missing required role.",
+                    content = {@Content}
+            ),
+            @ApiResponse(
+                    responseCode = "406",
+                    description = "Unknown vendor.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            )
+    })
+    @GetMapping("/{tenant_id}/admin/groups")
     @ResponseStatus(HttpStatus.OK)
-    public Set<String> getUserGroupsFromIdentityProvider(@RequestHeader(name = "Authorization") String accessToken,
-                                                         @RequestParam(name = "realm") String realm) {
-        return keycloakAdminService.getUserGroupsByRealm(realm, accessToken);
+    public ResponseEntity<StringSetDTO> getUserGroupsFromIdentityProvider(@PathVariable(name = "tenant_id") String tenantId,
+                                                                          @RequestParam(name = "realm") String realm,
+                                                                          @RequestParam(name = "vendor") IdentityProviderVendor vendor,
+                                                                          @RequestHeader(name = "Authorization") String accessToken) {
+        if (!tenantService.isValidTenant(tenantId)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+
+        Map<String, Object> params = Map.of("realm", realm, "accessToken", accessToken);
+        IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(vendor);
+
+        var response = new StringSetDTO(identityProviderHandler.getUserGroups(params));
+
+        return ResponseEntity.ok(response);
     }
 
-    @GetMapping("/users")
+    @Operation(
+            summary = "Gets all Users from a specific identity provider of a specific tenant."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = StringSetDTO.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Field(s) passed in is/are invalid.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Tenant Id is not valid.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "Missing required role.",
+                    content = {@Content}
+            ),
+            @ApiResponse(
+                    responseCode = "406",
+                    description = "Unknown vendor.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            )
+    })
+    @GetMapping("/{tenant_id}/admin/users")
     @ResponseStatus(HttpStatus.OK)
-    public Set<String> getUsersFromIdentityProvider(@RequestHeader(name = "Authorization") String accessToken,
-                                                    @RequestParam(name = "realm") String realm) {
-        return keycloakAdminService.getUsersByRealm(realm, accessToken);
+    public ResponseEntity<StringSetDTO> getUsersFromIdentityProvider(@PathVariable(name = "tenant_id") String tenantId,
+                                                                     @RequestParam(name = "realm") String realm,
+                                                                     @RequestParam(name = "vendor") IdentityProviderVendor vendor,
+                                                                     @RequestHeader(name = "Authorization") String accessToken) {
+        if (!tenantService.isValidTenant(tenantId)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+
+        Map<String, Object> params = Map.of("realm", realm, "accessToken", accessToken);
+        IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(vendor);
+
+        var response = new StringSetDTO(identityProviderHandler.getUsers(params));
+
+        return ResponseEntity.ok(response);
+    }
+
+    private IStandardIdentityProviderAdapter getIdentityProviderHandler(@NonNull IdentityProviderVendor vendor) {
+        if (vendor == IdentityProviderVendor.KEYCLOAK) {
+            return new KeycloakAdapter();
+        } else {
+            throw new ResponseStatusException(HttpStatus.NOT_ACCEPTABLE);
+        }
     }
 }
