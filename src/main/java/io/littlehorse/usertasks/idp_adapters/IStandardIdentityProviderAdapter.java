@@ -9,5 +9,6 @@ import java.util.Set;
 public interface IStandardIdentityProviderAdapter {
     Set<String> getUserGroups(Map<String, Object> params);
 
+    Set<String> getMyUserGroups(Map<String, Object> params);
     Set<String> getUsers(Map<String, Object> params);
 }

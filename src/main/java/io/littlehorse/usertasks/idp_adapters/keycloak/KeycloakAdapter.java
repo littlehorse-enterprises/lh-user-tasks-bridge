@@ -12,6 +12,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.USER_ID_CLAIM;
+
 @Service
 public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
 
@@ -24,6 +26,24 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
             Keycloak keycloak = getKeycloakInstance(realm, accessToken);
 
             return keycloak.realm(realm).groups().groups().stream()
+                    .map(GroupRepresentation::getName)
+                    .collect(Collectors.toSet());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Override
+    public Set<String> getMyUserGroups(Map<String, Object> params) {
+        try {
+            var realm = (String) params.get("realm");
+            var accessToken = (String) params.get("accessToken");
+
+            Keycloak keycloak = getKeycloakInstance(realm, accessToken);
+
+            var userId = (String) TokenUtil.getTokenClaims(accessToken).get(USER_ID_CLAIM);
+
+            return keycloak.realm(realm).users().get(userId).groups().stream()
                     .map(GroupRepresentation::getName)
                     .collect(Collectors.toSet());
         } catch (Exception e) {

@@ -3,10 +3,14 @@ package io.littlehorse.usertasks.controllers;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.littlehorse.usertasks.exceptions.CustomUnauthorizedException;
 import io.littlehorse.usertasks.exceptions.NotFoundException;
+import io.littlehorse.usertasks.idp_adapters.IStandardIdentityProviderAdapter;
+import io.littlehorse.usertasks.idp_adapters.IdentityProviderVendor;
+import io.littlehorse.usertasks.idp_adapters.keycloak.KeycloakAdapter;
 import io.littlehorse.usertasks.models.common.UserTaskVariableValue;
 import io.littlehorse.usertasks.models.requests.CompleteUserTaskRequest;
 import io.littlehorse.usertasks.models.requests.UserTaskRequestFilter;
 import io.littlehorse.usertasks.models.responses.DetailedUserTaskRunDTO;
+import io.littlehorse.usertasks.models.responses.StringSetDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskRunListDTO;
 import io.littlehorse.usertasks.services.TenantService;
 import io.littlehorse.usertasks.services.UserTaskService;
@@ -18,6 +22,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.util.codec.binary.Base64;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -354,5 +359,63 @@ public class UserController {
         var userIdFromToken = (String) tokenClaims.get(USER_ID_CLAIM);
 
         userTaskService.claimUserTask(userIdFromToken, wfRunId, userTaskRunGuid, tenantId);
+    }
+
+    @Operation(
+            summary = "Gets all Groups from a specific identity provider of a specific tenant for the requesting user."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = StringSetDTO.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Field(s) passed in is/are invalid.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Tenant Id is not valid.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "406",
+                    description = "Unknown vendor.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            )
+    })
+    @GetMapping("/{tenant_id}/groups")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseEntity<StringSetDTO> getUserGroupsFromIdentityProvider(@PathVariable(name = "tenant_id") String tenantId,
+                                                                          @RequestParam(name = "realm") String realm,
+                                                                          @RequestParam(name = "vendor") IdentityProviderVendor vendor,
+                                                                          @RequestHeader(name = "Authorization") String accessToken) {
+        if (!tenantService.isValidTenant(tenantId)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+
+        Map<String, Object> params = Map.of("realm", realm, "accessToken", accessToken);
+        IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(vendor);
+
+        var response = new StringSetDTO(identityProviderHandler.getMyUserGroups(params));
+
+        return ResponseEntity.ok(response);
+    }
+
+    private IStandardIdentityProviderAdapter getIdentityProviderHandler(@NonNull IdentityProviderVendor vendor) {
+        if (vendor == IdentityProviderVendor.KEYCLOAK) {
+            return new KeycloakAdapter();
+        } else {
+            throw new ResponseStatusException(HttpStatus.NOT_ACCEPTABLE);
+        }
     }
 }
