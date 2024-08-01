@@ -1,6 +1,8 @@
 package io.littlehorse.usertasks.controllers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.littlehorse.usertasks.configurations.CustomIdentityProviderProperties;
+import io.littlehorse.usertasks.configurations.IdentityProviderConfigProperties;
 import io.littlehorse.usertasks.exceptions.CustomUnauthorizedException;
 import io.littlehorse.usertasks.exceptions.NotFoundException;
 import io.littlehorse.usertasks.idp_adapters.IStandardIdentityProviderAdapter;
@@ -30,6 +32,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -44,7 +47,9 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
+import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.ISSUER_URL_CLAIM;
 import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.USER_ID_CLAIM;
 
 @Tag(
@@ -58,10 +63,12 @@ import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.USER_I
 public class UserController {
     private final TenantService tenantService;
     private final UserTaskService userTaskService;
+    private final IdentityProviderConfigProperties identityProviderConfigProperties;
 
-    public UserController(TenantService tenantService, UserTaskService userTaskService) {
+    public UserController(TenantService tenantService, UserTaskService userTaskService, IdentityProviderConfigProperties identityProviderConfigProperties) {
         this.tenantService = tenantService;
         this.userTaskService = userTaskService;
+        this.identityProviderConfigProperties = identityProviderConfigProperties;
     }
 
     @Operation(
@@ -98,6 +105,8 @@ public class UserController {
                                                              UserTaskStatus status,
                                                          @RequestParam(name = "type", required = false)
                                                              String type,
+                                                         @RequestParam(name = "user_group", required = false)
+                                                             String userGroup,
                                                          @RequestParam(name = "limit")
                                                              Integer limit,
                                                          @RequestParam(name = "bookmark", required = false)
@@ -113,8 +122,16 @@ public class UserController {
             var additionalFilters = UserTaskRequestFilter.buildUserTaskRequestFilter(earliestStartDate, latestStartDate, status, type);
             var parsedBookmark = Objects.nonNull(bookmark) ? Base64.decodeBase64(bookmark) : null;
 
-            //TODO: User Group filter is pending
-            UserTaskRunListDTO response = userTaskService.getTasks(tenantId, userIdFromToken, null, additionalFilters,
+            if (StringUtils.hasText(userGroup)) {
+                var issuerUrl = (String) tokenClaims.get(ISSUER_URL_CLAIM);
+
+                CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(issuerUrl);
+                IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor());
+
+                identityProviderHandler.validateUserGroup(userGroup, accessToken);
+            }
+
+            UserTaskRunListDTO response = userTaskService.getTasks(tenantId, userIdFromToken, userGroup, additionalFilters,
                     limit, parsedBookmark, false);
 
             return ResponseEntity.ok(response);
@@ -417,5 +434,14 @@ public class UserController {
         } else {
             throw new ResponseStatusException(HttpStatus.NOT_ACCEPTABLE);
         }
+    }
+
+    private CustomIdentityProviderProperties getCustomIdentityProviderProperties(@NonNull String issuerUrl) {
+        Optional<CustomIdentityProviderProperties> actualProperties = identityProviderConfigProperties.getOps().stream()
+                .filter(customProperties ->
+                        org.apache.commons.lang3.StringUtils.equalsIgnoreCase(customProperties.getIss().toString(), issuerUrl))
+                .findFirst();
+
+        return actualProperties.orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
     }
 }

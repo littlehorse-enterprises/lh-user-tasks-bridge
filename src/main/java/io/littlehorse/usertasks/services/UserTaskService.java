@@ -542,6 +542,12 @@ public class UserTaskService {
                 //TODO: Map this to produce a BadRequest error response
                 throw new IllegalArgumentException("Wrong date range received");
             }
+
+            //This enforces that given the UNASSIGNED status and a userGroup, no userId is required
+            if (builder.getStatus() == UserTaskRunStatus.UNASSIGNED && Objects.nonNull(additionalFilters.getStatus())
+                    && builder.hasUserGroup()) {
+                builder.clearUserId();
+            }
         }
     }
 
