@@ -47,8 +47,8 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 
+import static io.littlehorse.usertasks.configurations.CustomIdentityProviderProperties.getCustomIdentityProviderProperties;
 import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.ISSUER_URL_CLAIM;
 import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.USER_ID_CLAIM;
 
@@ -125,7 +125,7 @@ public class UserController {
             if (StringUtils.hasText(userGroup)) {
                 var issuerUrl = (String) tokenClaims.get(ISSUER_URL_CLAIM);
 
-                CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(issuerUrl);
+                CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(issuerUrl, identityProviderConfigProperties);
                 IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor());
 
                 identityProviderHandler.validateUserGroup(userGroup, accessToken);
@@ -138,7 +138,7 @@ public class UserController {
         } catch (NotFoundException e) {
             return ResponseEntity.of(ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, e.getMessage())).build();
         } catch (JsonProcessingException e) {
-            log.error("Something went wrong when getting claims from token");
+            log.error("Something went wrong when getting claims from token while trying to fetch UserTaskRuns.");
             return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR)).build();
         } catch (Exception e) {
             log.error(e.getMessage());
@@ -414,18 +414,33 @@ public class UserController {
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<StringSetDTO> getUserGroupsFromIdentityProvider(@PathVariable(name = "tenant_id") String tenantId,
                                                                           @RequestParam(name = "realm") String realm,
-                                                                          @RequestParam(name = "vendor") IdentityProviderVendor vendor,
                                                                           @RequestHeader(name = "Authorization") String accessToken) {
         if (!tenantService.isValidTenant(tenantId)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
 
-        Map<String, Object> params = Map.of("realm", realm, "accessToken", accessToken);
-        IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(vendor);
+        try {
+            Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
+            var issuerUrl = (String) tokenClaims.get(ISSUER_URL_CLAIM);
 
-        var response = new StringSetDTO(identityProviderHandler.getMyUserGroups(params));
+            CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(issuerUrl,
+                    identityProviderConfigProperties);
 
-        return ResponseEntity.ok(response);
+            Map<String, Object> params = Map.of("realm", realm, "accessToken", accessToken);
+            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor());
+
+            var response = new StringSetDTO(identityProviderHandler.getMyUserGroups(params));
+
+            return ResponseEntity.ok(response);
+        } catch (JsonProcessingException e) {
+            log.error("Something went wrong when getting claims from token while trying to fetch userGroups.");
+            return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR)).build();
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR)).build();
+        }
     }
 
     private IStandardIdentityProviderAdapter getIdentityProviderHandler(@NonNull IdentityProviderVendor vendor) {
@@ -434,14 +449,5 @@ public class UserController {
         } else {
             throw new ResponseStatusException(HttpStatus.NOT_ACCEPTABLE);
         }
-    }
-
-    private CustomIdentityProviderProperties getCustomIdentityProviderProperties(@NonNull String issuerUrl) {
-        Optional<CustomIdentityProviderProperties> actualProperties = identityProviderConfigProperties.getOps().stream()
-                .filter(customProperties ->
-                        org.apache.commons.lang3.StringUtils.equalsIgnoreCase(customProperties.getIss().toString(), issuerUrl))
-                .findFirst();
-
-        return actualProperties.orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
     }
 }
