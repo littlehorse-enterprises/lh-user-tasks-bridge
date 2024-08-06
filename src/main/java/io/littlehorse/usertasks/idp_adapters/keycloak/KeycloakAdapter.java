@@ -1,6 +1,7 @@
 package io.littlehorse.usertasks.idp_adapters.keycloak;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.littlehorse.usertasks.exceptions.AdapterException;
 import io.littlehorse.usertasks.idp_adapters.IStandardIdentityProviderAdapter;
 import io.littlehorse.usertasks.util.TokenUtil;
 import lombok.NonNull;
@@ -38,8 +39,13 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
             return keycloak.realm(realm).groups().groups().stream()
                     .map(GroupRepresentation::getName)
                     .collect(Collectors.toSet());
+        } catch (AdapterException e) {
+            log.error(e.getMessage());
+            throw new AdapterException(e.getMessage());
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            var errorMessage = "Something went wrong while fetching all Groups from Keycloak realm.";
+            log.error(errorMessage, e);
+            throw new AdapterException(errorMessage);
         }
     }
 
@@ -56,8 +62,13 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
             return keycloak.realm(realm).users().get(userId).groups().stream()
                     .map(GroupRepresentation::getName)
                     .collect(Collectors.toSet());
+        } catch (AdapterException e) {
+            log.error(e.getMessage());
+            throw new AdapterException(e.getMessage());
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            var errorMessage = "Something went wrong while fetching all My Groups from Keycloak realm.";
+            log.error(errorMessage, e);
+            throw new AdapterException(errorMessage);
         }
     }
 
@@ -72,8 +83,13 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
             return keycloak.realm(realm).users().list().stream()
                     .map(UserRepresentation::getUsername)
                     .collect(Collectors.toSet());
+        } catch (AdapterException e) {
+            log.error(e.getMessage());
+            throw new AdapterException(e.getMessage());
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            var errorMessage = "Something went wrong while fetching all Users from Keycloak realm.";
+            log.error(errorMessage, e);
+            throw new AdapterException(errorMessage);
         }
     }
 
@@ -89,7 +105,7 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
         }
     }
 
-    private Keycloak getKeycloakInstance(String realm, String accessToken) throws JsonProcessingException {
+    private Keycloak getKeycloakInstance(String realm, String accessToken) {
         try {
             Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
             var issuerUrl = (String) tokenClaims.get(ISSUER_URL_CLAIM);
@@ -98,7 +114,13 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
 
             return Keycloak.getInstance(keycloakBaseUrl, realm, clientId, accessToken);
         } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+            var errorMessage = "Something went wrong while reading claims.";
+            log.error(errorMessage, e);
+            throw new AdapterException(errorMessage);
+        } catch (Exception e) {
+            var errorMessage = "Something went wrong while creating Keycloak instance.";
+            log.error(errorMessage, e);
+            throw new AdapterException(errorMessage);
         }
     }
 
@@ -108,7 +130,13 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
 
             return issuerUrl.split(REALM_URL_PATH)[1];
         } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
+            var errorMessage = "Something went wrong while reading claims.";
+            log.error(errorMessage, e);
+            throw new AdapterException(errorMessage);
+        } catch (Exception e) {
+            var errorMessage = "Something went wrong while getting realm.";
+            log.error(errorMessage, e);
+            throw new AdapterException(errorMessage);
         }
     }
 }
