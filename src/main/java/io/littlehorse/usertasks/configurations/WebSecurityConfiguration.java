@@ -76,4 +76,9 @@ public class WebSecurityConfiguration {
     public LittleHorseGrpc.LittleHorseBlockingStub lhClient() {
         return new LHConfig().getBlockingStub();
     }
+
+    @Bean
+    public IdentityProviderConfigProperties identityProviderConfigProperties() {
+        return new IdentityProviderConfigProperties();
+    }
 }

@@ -1,12 +1,18 @@
 package io.littlehorse.usertasks.controllers;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import io.littlehorse.usertasks.configurations.CustomIdentityProviderProperties;
+import io.littlehorse.usertasks.configurations.IdentityProviderConfigProperties;
 import io.littlehorse.usertasks.exceptions.CustomUnauthorizedException;
 import io.littlehorse.usertasks.exceptions.NotFoundException;
+import io.littlehorse.usertasks.idp_adapters.IStandardIdentityProviderAdapter;
+import io.littlehorse.usertasks.idp_adapters.IdentityProviderVendor;
+import io.littlehorse.usertasks.idp_adapters.keycloak.KeycloakAdapter;
 import io.littlehorse.usertasks.models.common.UserTaskVariableValue;
 import io.littlehorse.usertasks.models.requests.CompleteUserTaskRequest;
 import io.littlehorse.usertasks.models.requests.UserTaskRequestFilter;
 import io.littlehorse.usertasks.models.responses.DetailedUserTaskRunDTO;
+import io.littlehorse.usertasks.models.responses.StringSetDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskRunListDTO;
 import io.littlehorse.usertasks.services.TenantService;
 import io.littlehorse.usertasks.services.UserTaskService;
@@ -18,6 +24,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.util.codec.binary.Base64;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -25,6 +32,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -40,6 +48,8 @@ import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Objects;
 
+import static io.littlehorse.usertasks.configurations.CustomIdentityProviderProperties.getCustomIdentityProviderProperties;
+import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.ISSUER_URL_CLAIM;
 import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.USER_ID_CLAIM;
 
 @Tag(
@@ -53,10 +63,12 @@ import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.USER_I
 public class UserController {
     private final TenantService tenantService;
     private final UserTaskService userTaskService;
+    private final IdentityProviderConfigProperties identityProviderConfigProperties;
 
-    public UserController(TenantService tenantService, UserTaskService userTaskService) {
+    public UserController(TenantService tenantService, UserTaskService userTaskService, IdentityProviderConfigProperties identityProviderConfigProperties) {
         this.tenantService = tenantService;
         this.userTaskService = userTaskService;
+        this.identityProviderConfigProperties = identityProviderConfigProperties;
     }
 
     @Operation(
@@ -93,6 +105,8 @@ public class UserController {
                                                              UserTaskStatus status,
                                                          @RequestParam(name = "type", required = false)
                                                              String type,
+                                                         @RequestParam(name = "user_group", required = false)
+                                                             String userGroup,
                                                          @RequestParam(name = "limit")
                                                              Integer limit,
                                                          @RequestParam(name = "bookmark", required = false)
@@ -108,15 +122,23 @@ public class UserController {
             var additionalFilters = UserTaskRequestFilter.buildUserTaskRequestFilter(earliestStartDate, latestStartDate, status, type);
             var parsedBookmark = Objects.nonNull(bookmark) ? Base64.decodeBase64(bookmark) : null;
 
-            //TODO: User Group filter is pending
-            UserTaskRunListDTO response = userTaskService.getTasks(tenantId, userIdFromToken, null, additionalFilters,
+            if (StringUtils.hasText(userGroup)) {
+                var issuerUrl = (String) tokenClaims.get(ISSUER_URL_CLAIM);
+
+                CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(issuerUrl, identityProviderConfigProperties);
+                IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor());
+
+                identityProviderHandler.validateUserGroup(userGroup, accessToken);
+            }
+
+            UserTaskRunListDTO response = userTaskService.getTasks(tenantId, userIdFromToken, userGroup, additionalFilters,
                     limit, parsedBookmark, false);
 
             return ResponseEntity.ok(response);
         } catch (NotFoundException e) {
             return ResponseEntity.of(ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, e.getMessage())).build();
         } catch (JsonProcessingException e) {
-            log.error("Something went wrong when getting claims from token");
+            log.error("Something went wrong when getting claims from token while trying to fetch UserTaskRuns.");
             return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR)).build();
         } catch (Exception e) {
             log.error(e.getMessage());
@@ -354,5 +376,78 @@ public class UserController {
         var userIdFromToken = (String) tokenClaims.get(USER_ID_CLAIM);
 
         userTaskService.claimUserTask(userIdFromToken, wfRunId, userTaskRunGuid, tenantId);
+    }
+
+    @Operation(
+            summary = "Gets all Groups from a specific identity provider of a specific tenant for the requesting user."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = StringSetDTO.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Field(s) passed in is/are invalid.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Tenant Id is not valid.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "406",
+                    description = "Unknown vendor.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            )
+    })
+    @GetMapping("/{tenant_id}/groups")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseEntity<StringSetDTO> getUserGroupsFromIdentityProvider(@PathVariable(name = "tenant_id") String tenantId,
+                                                                          @RequestParam(name = "realm") String realm,
+                                                                          @RequestHeader(name = "Authorization") String accessToken) {
+        if (!tenantService.isValidTenant(tenantId)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+
+        try {
+            Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
+            var issuerUrl = (String) tokenClaims.get(ISSUER_URL_CLAIM);
+
+            CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(issuerUrl,
+                    identityProviderConfigProperties);
+
+            Map<String, Object> params = Map.of("realm", realm, "accessToken", accessToken);
+            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor());
+
+            var response = new StringSetDTO(identityProviderHandler.getMyUserGroups(params));
+
+            return ResponseEntity.ok(response);
+        } catch (JsonProcessingException e) {
+            log.error("Something went wrong when getting claims from token while trying to fetch userGroups.");
+            return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR)).build();
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR)).build();
+        }
+    }
+
+    private IStandardIdentityProviderAdapter getIdentityProviderHandler(@NonNull IdentityProviderVendor vendor) {
+        if (vendor == IdentityProviderVendor.KEYCLOAK) {
+            return new KeycloakAdapter();
+        } else {
+            throw new ResponseStatusException(HttpStatus.NOT_ACCEPTABLE);
+        }
     }
 }

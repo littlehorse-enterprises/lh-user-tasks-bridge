@@ -23,6 +23,7 @@ com:
             authorities:
               - path: $.realm_access.roles
               - path: $.resource_access.*.roles
+            vendor: keycloak
 
 springdoc:
   api-docs:
