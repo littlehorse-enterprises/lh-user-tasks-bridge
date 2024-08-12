@@ -14,6 +14,7 @@ import io.littlehorse.usertasks.models.requests.CompleteUserTaskRequest;
 import io.littlehorse.usertasks.models.requests.UserTaskRequestFilter;
 import io.littlehorse.usertasks.models.responses.DetailedUserTaskRunDTO;
 import io.littlehorse.usertasks.models.responses.StringSetDTO;
+import io.littlehorse.usertasks.models.responses.UserListDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskDefListDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskRunListDTO;
 import io.littlehorse.usertasks.services.TenantService;
@@ -486,7 +487,7 @@ public class AdminController {
                     responseCode = "200",
                     content = {@Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = StringSetDTO.class))}
+                            schema = @Schema(implementation = UserListDTO.class))}
             ),
             @ApiResponse(
                     responseCode = "400",
@@ -517,9 +518,8 @@ public class AdminController {
     })
     @GetMapping("/{tenant_id}/admin/users")
     @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<StringSetDTO> getUsersFromIdentityProvider(@PathVariable(name = "tenant_id") String tenantId,
-                                                                     @RequestParam(name = "realm") String realm,
-                                                                     @RequestHeader(name = "Authorization") String accessToken) {
+    public ResponseEntity<UserListDTO> getUsersFromIdentityProvider(@PathVariable(name = "tenant_id") String tenantId,
+                                                                    @RequestHeader(name = "Authorization") String accessToken) {
         if (!tenantService.isValidTenant(tenantId)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
@@ -531,10 +531,10 @@ public class AdminController {
             CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(issuerUrl,
                     identityProviderConfigProperties);
 
-            Map<String, Object> params = Map.of("realm", realm, "accessToken", accessToken);
+            Map<String, Object> params = Map.of("accessToken", accessToken);
             IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor());
 
-            var response = new StringSetDTO(identityProviderHandler.getUsers(params));
+            UserListDTO response = identityProviderHandler.getUsers(params);
 
             return ResponseEntity.ok(response);
         } catch (JsonProcessingException e) {

@@ -8,6 +8,7 @@ import io.littlehorse.usertasks.exceptions.NotFoundException;
 import io.littlehorse.usertasks.idp_adapters.IStandardIdentityProviderAdapter;
 import io.littlehorse.usertasks.idp_adapters.IdentityProviderVendor;
 import io.littlehorse.usertasks.idp_adapters.keycloak.KeycloakAdapter;
+import io.littlehorse.usertasks.models.common.UserDTO;
 import io.littlehorse.usertasks.models.common.UserTaskVariableValue;
 import io.littlehorse.usertasks.models.requests.CompleteUserTaskRequest;
 import io.littlehorse.usertasks.models.requests.UserTaskRequestFilter;
@@ -434,6 +435,71 @@ public class UserController {
             return ResponseEntity.ok(response);
         } catch (JsonProcessingException e) {
             log.error("Something went wrong when getting claims from token while trying to fetch userGroups.");
+            return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR)).build();
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR)).build();
+        }
+    }
+
+    @Operation(
+            summary = "Gets the requesting user's info."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = UserDTO.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Field(s) passed in is/are invalid.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Tenant Id is not valid.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "406",
+                    description = "Unknown vendor.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            )
+    })
+    @GetMapping("/{tenant_id}/userInfo")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseEntity<UserDTO> getMyUserInfo(@RequestHeader(name = "Authorization") String accessToken,
+                                                 @PathVariable(name = "tenant_id") String tenantId) {
+        if (!tenantService.isValidTenant(tenantId)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+
+        try {
+            Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
+            var issuerUrl = (String) tokenClaims.get(ISSUER_URL_CLAIM);
+            var userId = (String) tokenClaims.get(USER_ID_CLAIM);
+
+            CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(issuerUrl,
+                    identityProviderConfigProperties);
+
+            Map<String, Object> params = Map.of("userId", userId, "accessToken", accessToken);
+            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor());
+
+            var response = identityProviderHandler.getUserInfo(params);
+
+            return ResponseEntity.ok(response);
+        } catch (JsonProcessingException e) {
+            log.error("Something went wrong when getting claims from token while trying to fetch User info.");
             return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR)).build();
         } catch (ResponseStatusException e) {
             throw e;
