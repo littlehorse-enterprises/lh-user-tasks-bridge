@@ -3,6 +3,8 @@ package io.littlehorse.usertasks.idp_adapters.keycloak;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.littlehorse.usertasks.exceptions.AdapterException;
 import io.littlehorse.usertasks.idp_adapters.IStandardIdentityProviderAdapter;
+import io.littlehorse.usertasks.models.common.UserDTO;
+import io.littlehorse.usertasks.models.responses.UserListDTO;
 import io.littlehorse.usertasks.util.TokenUtil;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -73,16 +75,22 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
     }
 
     @Override
-    public Set<String> getUsers(Map<String, Object> params) {
+    public UserListDTO getUsers(Map<String, Object> params) {
         try {
-            var realm = (String) params.get(REALM_MAP_KEY);
             var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
+            var realm = getRealmFromToken(accessToken);
 
             Keycloak keycloak = getKeycloakInstance(realm, accessToken);
 
-            return keycloak.realm(realm).users().list().stream()
-                    .map(UserRepresentation::getUsername)
+            Set<UserDTO> setOfUsers = keycloak.realm(realm).users().list().stream()
+                    .map(userRepresentation -> UserDTO.builder()
+                            .id(userRepresentation.getId())
+                            .email(userRepresentation.getEmail())
+                            .username(userRepresentation.getUsername())
+                            .build())
                     .collect(Collectors.toSet());
+
+            return new UserListDTO(setOfUsers);
         } catch (AdapterException e) {
             log.error(e.getMessage());
             throw new AdapterException(e.getMessage());
@@ -102,6 +110,32 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
         if (CollectionUtils.isEmpty(myUserGroups) || !myUserGroups.contains(userGroup)) {
             log.error("Cannot access requested group.");
             throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+        }
+    }
+
+    @Override
+    public UserDTO getUserInfo(Map<String, Object> params) {
+        try {
+            var userId = (String) params.get("userId");
+            var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
+
+            String realm = getRealmFromToken(accessToken);
+
+            Keycloak keycloak = getKeycloakInstance(realm, accessToken);
+            UserRepresentation userRepresentation = keycloak.realm(realm).users().get(userId).toRepresentation();
+
+            return UserDTO.builder()
+                    .id(userRepresentation.getId())
+                    .email(userRepresentation.getEmail())
+                    .username(userRepresentation.getUsername())
+                    .build();
+        } catch (AdapterException e) {
+            log.error(e.getMessage());
+            throw new AdapterException(e.getMessage());
+        } catch (Exception e) {
+            var errorMessage = "Something went wrong while fetching User's info from Keycloak realm.";
+            log.error(errorMessage, e);
+            throw new AdapterException(errorMessage);
         }
     }
 

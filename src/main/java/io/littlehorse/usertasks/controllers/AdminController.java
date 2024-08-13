@@ -8,12 +8,14 @@ import io.littlehorse.usertasks.exceptions.NotFoundException;
 import io.littlehorse.usertasks.idp_adapters.IStandardIdentityProviderAdapter;
 import io.littlehorse.usertasks.idp_adapters.IdentityProviderVendor;
 import io.littlehorse.usertasks.idp_adapters.keycloak.KeycloakAdapter;
+import io.littlehorse.usertasks.models.common.UserDTO;
 import io.littlehorse.usertasks.models.common.UserTaskVariableValue;
 import io.littlehorse.usertasks.models.requests.AssignmentRequest;
 import io.littlehorse.usertasks.models.requests.CompleteUserTaskRequest;
 import io.littlehorse.usertasks.models.requests.UserTaskRequestFilter;
 import io.littlehorse.usertasks.models.responses.DetailedUserTaskRunDTO;
 import io.littlehorse.usertasks.models.responses.StringSetDTO;
+import io.littlehorse.usertasks.models.responses.UserListDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskDefListDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskRunListDTO;
 import io.littlehorse.usertasks.services.TenantService;
@@ -486,7 +488,7 @@ public class AdminController {
                     responseCode = "200",
                     content = {@Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = StringSetDTO.class))}
+                            schema = @Schema(implementation = UserListDTO.class))}
             ),
             @ApiResponse(
                     responseCode = "400",
@@ -517,9 +519,8 @@ public class AdminController {
     })
     @GetMapping("/{tenant_id}/admin/users")
     @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<StringSetDTO> getUsersFromIdentityProvider(@PathVariable(name = "tenant_id") String tenantId,
-                                                                     @RequestParam(name = "realm") String realm,
-                                                                     @RequestHeader(name = "Authorization") String accessToken) {
+    public ResponseEntity<UserListDTO> getUsersFromIdentityProvider(@PathVariable(name = "tenant_id") String tenantId,
+                                                                    @RequestHeader(name = "Authorization") String accessToken) {
         if (!tenantService.isValidTenant(tenantId)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
@@ -531,14 +532,84 @@ public class AdminController {
             CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(issuerUrl,
                     identityProviderConfigProperties);
 
-            Map<String, Object> params = Map.of("realm", realm, "accessToken", accessToken);
+            Map<String, Object> params = Map.of("accessToken", accessToken);
             IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor());
 
-            var response = new StringSetDTO(identityProviderHandler.getUsers(params));
+            UserListDTO response = identityProviderHandler.getUsers(params);
 
             return ResponseEntity.ok(response);
         } catch (JsonProcessingException e) {
             log.error("Something went wrong when getting claims from token while trying to fetch list of users.");
+            return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR)).build();
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR)).build();
+        }
+    }
+
+    @Operation(
+            summary = "Gets a User's basic info."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = UserDTO.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Field(s) passed in is/are invalid.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Tenant Id is not valid.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "Missing required role.",
+                    content = {@Content}
+            ),
+            @ApiResponse(
+                    responseCode = "406",
+                    description = "Unknown vendor.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            )
+    })
+    @GetMapping("/{tenant_id}/admin/users/{user_id}")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseEntity<UserDTO> getUsersFromIdentityProvider(@PathVariable(name = "tenant_id") String tenantId,
+                                                                @PathVariable(name = "user_id") String userId,
+                                                                @RequestHeader(name = "Authorization") String accessToken) {
+        if (!tenantService.isValidTenant(tenantId)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+
+        try {
+            Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
+            var issuerUrl = (String) tokenClaims.get(ISSUER_URL_CLAIM);
+
+            CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(issuerUrl,
+                    identityProviderConfigProperties);
+
+            Map<String, Object> params = Map.of("userId", userId, "accessToken", accessToken);
+            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor());
+
+            UserDTO response = identityProviderHandler.getUserInfo(params);
+
+            return ResponseEntity.ok(response);
+        } catch (JsonProcessingException e) {
+            log.error("Something went wrong when getting claims from token while trying to fetch a User's info.");
             return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR)).build();
         } catch (ResponseStatusException e) {
             throw e;
