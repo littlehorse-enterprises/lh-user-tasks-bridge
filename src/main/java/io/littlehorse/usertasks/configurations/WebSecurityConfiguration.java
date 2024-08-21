@@ -1,7 +1,6 @@
 package io.littlehorse.usertasks.configurations;
 
 import com.c4_soft.springaddons.security.oidc.starter.OpenidProviderPropertiesResolver;
-import com.c4_soft.springaddons.security.oidc.starter.properties.OpenidProviderProperties;
 import com.c4_soft.springaddons.security.oidc.starter.properties.SpringAddonsOidcProperties;
 import io.littlehorse.sdk.common.config.LHConfig;
 import io.littlehorse.sdk.common.proto.LittleHorseGrpc;
@@ -59,7 +58,7 @@ public class WebSecurityConfiguration {
         }
 
         @Override
-        public Optional<OpenidProviderProperties> resolve(Map<String, Object> claimSet) {
+        public Optional<SpringAddonsOidcProperties.OpenidProviderProperties> resolve(Map<String, Object> claimSet) {
             final var tokenIss = Optional.ofNullable(claimSet.get(JwtClaimNames.ISS)).map(Object::toString)
                     .orElseThrow(() -> new RuntimeException("Invalid token: missing issuer"));
             return properties.getOps().stream().filter(opProps -> {
