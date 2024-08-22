@@ -1,0 +1,11 @@
+com:
+  c4-soft:
+    springaddons:
+      oidc:
+        ops:
+          - iss: http://user-tasks-keycloak:8888/realms/lh
+            username-claim: preferred_username
+            authorities:
+              - path: $.realm_access.roles
+              - path: $.resource_access.*.roles
+            vendor: keycloak

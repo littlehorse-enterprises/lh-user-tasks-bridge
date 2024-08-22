@@ -8,12 +8,12 @@ services:
       timeout: 5s
       retries: 3
       start_period: 5s
-    command: [ "start-dev", "--http-port=8888" ]
+    command: [ "start-dev", "--http-port=8888", "--hostname-strict=false" ]
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
       KC_HEALTH_ENABLED: true
-  user-tasks-keycloak-configurer:
+  keycloak-configurer:
     image: user-tasks-keycloak-configurer
     build: ./local-dev/keycloak-configurer
     depends_on:
@@ -21,3 +21,34 @@ services:
         condition: service_healthy
     environment:
       - LHCC_KEYCLOAK_CLIENT_SECRET=${LHCC_KEYCLOAK_CLIENT_SECRET}
+  littlehorse:
+    image: ghcr.io/littlehorse-enterprises/littlehorse/lh-standalone:master
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:1822/liveness" ]
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    ports:
+      - "8080:8080" # Dashboard Port
+      - "2023:2023" # LittleHorse Port
+    environment:
+      - LHC_API_HOST=http://littlehorse
+      - LHC_API_PORT=2023
+      - LHC_TENANT_ID=lh
+      - LHS_LISTENERS=PLAIN:2023
+      - LHS_ADVERTISED_LISTENERS=PLAIN://littlehorse:2023
+  backend:
+    image: user-tasks-backend
+    #Add healthcheck
+    build: .
+    depends_on:
+      - user-tasks-keycloak
+      - littlehorse
+    ports:
+      - "8089:8089"
+    volumes:
+      - ./ut-config/:/lh/config/
+    environment:
+      - LHC_API_HOST=littlehorse
+      - LHC_API_PORT=2023
+      - LHC_TENANT_ID=lh
