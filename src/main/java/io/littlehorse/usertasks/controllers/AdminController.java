@@ -362,14 +362,17 @@ public class AdminController {
             CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(issuerUrl,
                     identityProviderConfigProperties);
 
-            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor());
+            //TODO: This condition MUST be updated in the event that we add support to more IdP adapters
+            if (actualProperties.getVendor() == IdentityProviderVendor.KEYCLOAK) {
+                IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor());
 
-            Map<String, Object> params = new HashMap<>();
-            params.put("userId", requestBody.getUserId());
-            params.put("userGroup", requestBody.getUserGroup());
-            params.put("accessToken", accessToken);
+                Map<String, Object> params = new HashMap<>();
+                params.put("userId", requestBody.getUserId());
+                params.put("userGroup", requestBody.getUserGroup());
+                params.put("accessToken", accessToken);
 
-            identityProviderHandler.validateAssignmentProperties(params);
+                identityProviderHandler.validateAssignmentProperties(params);
+            }
 
             userTaskService.assignUserTask(requestBody, wfRunId, userTaskRunGuid, tenantId);
         } catch (JsonProcessingException e) {
