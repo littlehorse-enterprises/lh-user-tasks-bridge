@@ -48,6 +48,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -344,7 +345,8 @@ public class AdminController {
     })
     @PostMapping("/{tenant_id}/admin/tasks/{wf_run_id}/{user_task_guid}/assign")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void assignUserTask(@PathVariable(name = "tenant_id") String tenantId,
+    public void assignUserTask(@RequestHeader(name = "Authorization") String accessToken,
+                               @PathVariable(name = "tenant_id") String tenantId,
                                @PathVariable(name = "wf_run_id") String wfRunId,
                                @PathVariable(name = "user_task_guid") String userTaskRunGuid,
                                @RequestBody AssignmentRequest requestBody) {
@@ -352,7 +354,36 @@ public class AdminController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
 
-        userTaskService.assignUserTask(requestBody, wfRunId, userTaskRunGuid, tenantId);
+        try {
+            Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
+
+            var issuerUrl = (String) tokenClaims.get(ISSUER_URL_CLAIM);
+
+            CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(issuerUrl,
+                    identityProviderConfigProperties);
+
+            //TODO: This condition MUST be updated in the event that we add support to more IdP adapters
+            if (actualProperties.getVendor() == IdentityProviderVendor.KEYCLOAK) {
+                IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor());
+
+                Map<String, Object> params = new HashMap<>();
+                params.put("userId", requestBody.getUserId());
+                params.put("userGroup", requestBody.getUserGroup());
+                params.put("accessToken", accessToken);
+
+                identityProviderHandler.validateAssignmentProperties(params);
+            }
+
+            userTaskService.assignUserTask(requestBody, wfRunId, userTaskRunGuid, tenantId);
+        } catch (JsonProcessingException e) {
+            log.error("Something went wrong when getting claims from token while trying to reassign a Task");
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @Operation(
@@ -579,6 +610,11 @@ public class AdminController {
                     content = {@Content}
             ),
             @ApiResponse(
+                    responseCode = "404",
+                    description = "User was not found.",
+                    content = {@Content}
+            ),
+            @ApiResponse(
                     responseCode = "406",
                     description = "Unknown vendor.",
                     content = {@Content(
@@ -607,7 +643,9 @@ public class AdminController {
 
             UserDTO response = identityProviderHandler.getUserInfo(params);
 
-            return ResponseEntity.ok(response);
+            return Objects.nonNull(response)
+                    ? ResponseEntity.ok(response)
+                    : ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.NOT_FOUND)).build();
         } catch (JsonProcessingException e) {
             log.error("Something went wrong when getting claims from token while trying to fetch a User's info.");
             return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR)).build();

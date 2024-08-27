@@ -6,8 +6,10 @@ import io.littlehorse.usertasks.idp_adapters.IStandardIdentityProviderAdapter;
 import io.littlehorse.usertasks.models.common.UserDTO;
 import io.littlehorse.usertasks.models.responses.UserListDTO;
 import io.littlehorse.usertasks.util.TokenUtil;
+import jakarta.ws.rs.NotFoundException;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.representations.idm.GroupRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
@@ -16,7 +18,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -29,6 +33,7 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
     public static final String REALM_URL_PATH = "/realms/";
     public static final String REALM_MAP_KEY = "realm";
     public static final String ACCESS_TOKEN_MAP_KEY = "accessToken";
+    public static final String USER_ID_MAP_KEY = "userId";
 
     @Override
     public Set<String> getUserGroups(Map<String, Object> params) {
@@ -54,12 +59,17 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
     @Override
     public Set<String> getMyUserGroups(Map<String, Object> params) {
         try {
+            //TODO: It's probably worth it to remove the "realm" from the params map and take it from the accessToken instead,
+            // since users cannot see anything from outside the realm that they belong to.
             var realm = (String) params.get(REALM_MAP_KEY);
             var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
+            var requestedUserId = (String) params.get(USER_ID_MAP_KEY);
 
             Keycloak keycloak = getKeycloakInstance(realm, accessToken);
 
-            var userId = (String) TokenUtil.getTokenClaims(accessToken).get(USER_ID_CLAIM);
+            var userId = StringUtils.isNotBlank(requestedUserId)
+                    ? requestedUserId
+                    : (String) TokenUtil.getTokenClaims(accessToken).get(USER_ID_CLAIM);
 
             return keycloak.realm(realm).users().get(userId).groups().stream()
                     .map(GroupRepresentation::getName)
@@ -116,7 +126,7 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
     @Override
     public UserDTO getUserInfo(Map<String, Object> params) {
         try {
-            var userId = (String) params.get("userId");
+            var userId = (String) params.get(USER_ID_MAP_KEY);
             var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
 
             String realm = getRealmFromToken(accessToken);
@@ -127,15 +137,39 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
             return UserDTO.builder()
                     .id(userRepresentation.getId())
                     .email(userRepresentation.getEmail())
-                    .username(userRepresentation.getUsername())
-                    .build();
+                    .username(userRepresentation.getUsername()).build();
         } catch (AdapterException e) {
             log.error(e.getMessage());
             throw new AdapterException(e.getMessage());
+        } catch (NotFoundException e) {
+            log.error("User could not be found", e);
+            return null;
         } catch (Exception e) {
             var errorMessage = "Something went wrong while fetching User's info from Keycloak realm.";
             log.error(errorMessage, e);
             throw new AdapterException(errorMessage);
+        }
+    }
+
+    @Override
+    public void validateAssignmentProperties(Map<String, Object> params) {
+        log.info("Validating assignment properties!");
+
+        var userId = (String) params.get(USER_ID_MAP_KEY);
+        var userGroup = (String) params.get("userGroup");
+        var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
+
+        if (CollectionUtils.isEmpty(params) || (StringUtils.isBlank(userId) && StringUtils.isBlank(userGroup))) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No valid arguments were received to complete reassignment.");
+        }
+
+        if (StringUtils.isNotBlank(userId) && StringUtils.isNotBlank(userGroup)) {
+            validateUserInfoForAssignment(params);
+            validateUserGroupForAssignment(params, accessToken, userGroup);
+        } else if (StringUtils.isNotBlank(userId)) {
+            validateUserInfoForAssignment(params);
+        } else {
+            validateUserGroupForAssignment(params, accessToken, userGroup);
         }
     }
 
@@ -171,6 +205,31 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
             var errorMessage = "Something went wrong while getting realm.";
             log.error(errorMessage, e);
             throw new AdapterException(errorMessage);
+        }
+    }
+
+    private void validateUserInfoForAssignment(Map<String, Object> params) {
+        UserDTO userInfo = getUserInfo(params);
+
+        if (!Objects.nonNull(userInfo)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot assign Task to non-existent user.");
+        }
+    }
+
+    private void validateUserGroupForAssignment(Map<String, Object> params, String accessToken, String userGroup) {
+        var userId = (String) params.get(USER_ID_MAP_KEY);
+        String realm = getRealmFromToken(accessToken);
+        Map<String, Object> paramsWithRealm = new HashMap<>();
+        paramsWithRealm.put(REALM_MAP_KEY, realm);
+        paramsWithRealm.putAll(params);
+
+        Set<String> userGroups = StringUtils.isNotBlank(userId)
+                ? getMyUserGroups(paramsWithRealm)
+                : getUserGroups(paramsWithRealm);
+
+        if (CollectionUtils.isEmpty(userGroups) || !userGroups.contains(userGroup)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot assign Task to non-existent group, " +
+                    "nor can the Task be assigned to an existing group that the requested user is not a member of.");
         }
     }
 }
