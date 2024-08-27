@@ -3,6 +3,7 @@ package io.littlehorse.usertasks.idp_adapters.keycloak;
 import io.littlehorse.usertasks.exceptions.AdapterException;
 import io.littlehorse.usertasks.models.common.UserDTO;
 import io.littlehorse.usertasks.models.responses.UserListDTO;
+import jakarta.ws.rs.NotFoundException;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.keycloak.admin.client.Keycloak;
@@ -474,6 +475,279 @@ class KeycloakAdapterTest {
 
             assertNotNull(foundUserInfo);
             assertTrue(StringUtils.isNotBlank(foundUserInfo.getId()));
+        }
+    }
+
+    @Test
+    void validateAssignmentProperties_shouldThrowResponseStatusExceptionAsBadRequestWhenNoParamsAreProvided() {
+        ResponseStatusException thrownException = assertThrows(ResponseStatusException.class,
+                () -> keycloakAdapter.validateAssignmentProperties(Collections.emptyMap()));
+
+        int expectedHttpErrorCode = HttpStatus.BAD_REQUEST.value();
+        var expectedErrorMessage = "No valid arguments were received to complete reassignment.";
+
+        assertEquals(expectedHttpErrorCode, thrownException.getBody().getStatus());
+        assertEquals(expectedErrorMessage, thrownException.getReason());
+    }
+
+    @Test
+    void validateAssignmentProperties_shouldThrowResponseStatusExceptionAsBadRequestWhenNoUserAndUserGroupAreProvided() {
+        Map<String, Object> params = Map.of("someKey", new Object());
+
+        ResponseStatusException thrownException = assertThrows(ResponseStatusException.class,
+                () -> keycloakAdapter.validateAssignmentProperties(params));
+
+        int expectedHttpErrorCode = HttpStatus.BAD_REQUEST.value();
+        var expectedErrorMessage = "No valid arguments were received to complete reassignment.";
+
+        assertEquals(expectedHttpErrorCode, thrownException.getBody().getStatus());
+        assertEquals(expectedErrorMessage, thrownException.getReason());
+    }
+
+    @Test
+    void validateAssignmentProperties_shouldThrowResponseStatusExceptionAsBadRequestWhenUserIdIsReceivedButNoUserInfoIsFound() {
+        var userId = UUID.randomUUID().toString();
+        Map<String, Object> params = Map.of("userId", userId, "accessToken", STUBBED_ACCESS_TOKEN);
+
+        RealmResource fakeRealmResource = mock(RealmResource.class);
+        UsersResource fakeUsersResource = mock(UsersResource.class);
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
+            when(fakeRealmResource.users()).thenReturn(fakeUsersResource);
+            when(fakeUsersResource.get(anyString())).thenThrow(new NotFoundException());
+
+            ResponseStatusException thrownException = assertThrows(ResponseStatusException.class,
+                    () -> keycloakAdapter.validateAssignmentProperties(params));
+
+            int expectedHttpErrorCode = HttpStatus.BAD_REQUEST.value();
+            var expectedErrorMessage = "Cannot assign Task to non-existent user.";
+
+            assertEquals(expectedHttpErrorCode, thrownException.getBody().getStatus());
+            assertEquals(expectedErrorMessage, thrownException.getReason());
+        }
+    }
+
+    @Test
+    void validateAssignmentProperties_shouldThrowResponseStatusExceptionAsBadRequestWhenUserGroupIsReceivedButItIsNotFoundWithinRealm() {
+        var requestedUserGroup = "my-group";
+        Map<String, Object> params = Map.of("userGroup", requestedUserGroup, "accessToken", STUBBED_ACCESS_TOKEN);
+
+        RealmResource fakeRealmResource = mock(RealmResource.class);
+        GroupsResource fakeGroupsResource = mock(GroupsResource.class);
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
+            when(fakeRealmResource.groups()).thenReturn(fakeGroupsResource);
+            when(fakeGroupsResource.groups()).thenReturn(Collections.emptyList());
+
+            ResponseStatusException thrownException = assertThrows(ResponseStatusException.class,
+                    () -> keycloakAdapter.validateAssignmentProperties(params));
+
+            int expectedHttpErrorCode = HttpStatus.BAD_REQUEST.value();
+            var expectedErrorMessage = "Cannot assign Task to non-existent group, nor can the Task be assigned to an " +
+                    "existing group that the requested user is not a member of.";
+
+            assertEquals(expectedHttpErrorCode, thrownException.getBody().getStatus());
+            assertEquals(expectedErrorMessage, thrownException.getReason());
+        }
+    }
+
+    @Test
+    void validateAssignmentProperties_shouldThrowResponseStatusExceptionAsBadRequestWhenUserGroupIsReceivedButItIsNotPartOfTheOnesInRealm() {
+        var requestedUserGroup = "my-group";
+        Map<String, Object> params = Map.of("userGroup", requestedUserGroup, "accessToken", STUBBED_ACCESS_TOKEN);
+
+        RealmResource fakeRealmResource = mock(RealmResource.class);
+        GroupsResource fakeGroupsResource = mock(GroupsResource.class);
+
+        GroupRepresentation group1 = new GroupRepresentation();
+        group1.setId(UUID.randomUUID().toString());
+        group1.setName("Group #1");
+
+        GroupRepresentation group2 = new GroupRepresentation();
+        group2.setId(UUID.randomUUID().toString());
+        group2.setName("Group #2");
+        var fakeGroups = List.of(group1, group2);
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
+            when(fakeRealmResource.groups()).thenReturn(fakeGroupsResource);
+            when(fakeGroupsResource.groups()).thenReturn(fakeGroups);
+
+            ResponseStatusException thrownException = assertThrows(ResponseStatusException.class,
+                    () -> keycloakAdapter.validateAssignmentProperties(params));
+
+            int expectedHttpErrorCode = HttpStatus.BAD_REQUEST.value();
+            var expectedErrorMessage = "Cannot assign Task to non-existent group, nor can the Task be assigned to an " +
+                    "existing group that the requested user is not a member of.";
+
+            assertEquals(expectedHttpErrorCode, thrownException.getBody().getStatus());
+            assertEquals(expectedErrorMessage, thrownException.getReason());
+        }
+    }
+
+    @Test
+    void validateAssignmentProperties_shouldThrowResponseStatusExceptionAsBadRequestWhenUserIdAndUserGroupAreReceivedButUserGroupIsNotFoundWithinRealm() {
+        var userId = UUID.randomUUID().toString();
+        var requestedUserGroup = "my-group";
+        Map<String, Object> params = Map.of("userId", userId, "userGroup", requestedUserGroup, "accessToken", STUBBED_ACCESS_TOKEN);
+
+        RealmResource fakeRealmResource = mock(RealmResource.class);
+        UsersResource fakeUsersResource = mock(UsersResource.class);
+        UserResource fakeUserResource = mock(UserResource.class);
+        UserRepresentation fakeUserRepresentation = new UserRepresentation();
+        fakeUserRepresentation.setId(userId);
+
+        GroupsResource fakeGroupsResource = mock(GroupsResource.class);
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
+            when(fakeRealmResource.users()).thenReturn(fakeUsersResource);
+            when(fakeUsersResource.get(anyString())).thenReturn(fakeUserResource);
+            when(fakeUserResource.toRepresentation()).thenReturn(fakeUserRepresentation);
+
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
+            when(fakeRealmResource.groups()).thenReturn(fakeGroupsResource);
+            when(fakeGroupsResource.groups()).thenReturn(Collections.emptyList());
+
+            ResponseStatusException thrownException = assertThrows(ResponseStatusException.class,
+                    () -> keycloakAdapter.validateAssignmentProperties(params));
+
+            int expectedHttpErrorCode = HttpStatus.BAD_REQUEST.value();
+            var expectedErrorMessage = "Cannot assign Task to non-existent group, nor can the Task be assigned to an " +
+                    "existing group that the requested user is not a member of.";
+
+            assertEquals(expectedHttpErrorCode, thrownException.getBody().getStatus());
+            assertEquals(expectedErrorMessage, thrownException.getReason());
+        }
+    }
+
+    @Test
+    void validateAssignmentProperties_shouldThrowResponseStatusExceptionAsBadRequestWhenUserIdAndUserGroupAreReceivedButNoUserInfoIsFound() {
+        var userId = UUID.randomUUID().toString();
+        var requestedUserGroup = "my-group";
+        Map<String, Object> params = Map.of("userId", userId, "userGroup", requestedUserGroup, "accessToken", STUBBED_ACCESS_TOKEN);
+
+        RealmResource fakeRealmResource = mock(RealmResource.class);
+        UsersResource fakeUsersResource = mock(UsersResource.class);
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
+            when(fakeRealmResource.users()).thenReturn(fakeUsersResource);
+            when(fakeUsersResource.get(anyString())).thenThrow(new NotFoundException());
+
+            ResponseStatusException thrownException = assertThrows(ResponseStatusException.class,
+                    () -> keycloakAdapter.validateAssignmentProperties(params));
+
+            int expectedHttpErrorCode = HttpStatus.BAD_REQUEST.value();
+            var expectedErrorMessage = "Cannot assign Task to non-existent user.";
+
+            assertEquals(expectedHttpErrorCode, thrownException.getBody().getStatus());
+            assertEquals(expectedErrorMessage, thrownException.getReason());
+        }
+    }
+
+    @Test
+    void validateAssignmentProperties_shouldNotThrowAnyExceptionWhenUserIdAndUserGroupAreReceivedAndTheyAreFoundWithinRealm() {
+        var userId = UUID.randomUUID().toString();
+        var requestedUserGroup = "Group #2";
+        Map<String, Object> params = Map.of("userId", userId, "userGroup", requestedUserGroup, "accessToken", STUBBED_ACCESS_TOKEN);
+
+        RealmResource fakeRealmResource = mock(RealmResource.class);
+        UsersResource fakeUsersResource = mock(UsersResource.class);
+        UserResource fakeUserResource = mock(UserResource.class);
+        UserRepresentation fakeUserRepresentation = new UserRepresentation();
+        fakeUserRepresentation.setId(userId);
+
+        GroupRepresentation group1 = new GroupRepresentation();
+        group1.setId(UUID.randomUUID().toString());
+        group1.setName("Group #1");
+
+        GroupRepresentation group2 = new GroupRepresentation();
+        group2.setId(UUID.randomUUID().toString());
+        group2.setName("Group #2");
+        var fakeGroups = List.of(group1, group2);
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
+            when(fakeRealmResource.users()).thenReturn(fakeUsersResource);
+            when(fakeUsersResource.get(anyString())).thenReturn(fakeUserResource);
+            when(fakeUserResource.toRepresentation()).thenReturn(fakeUserRepresentation);
+            when(fakeUserResource.groups()).thenReturn(fakeGroups);
+
+            assertDoesNotThrow(() -> keycloakAdapter.validateAssignmentProperties(params));
+        }
+    }
+
+    @Test
+    void validateAssignmentProperties_shouldNotThrowAnyExceptionWhenUserGroupIsReceivedAndItIsFoundWithinRealm() {
+        var requestedUserGroup = "Group #2";
+        Map<String, Object> params = Map.of("userGroup", requestedUserGroup, "accessToken", STUBBED_ACCESS_TOKEN);
+
+        RealmResource fakeRealmResource = mock(RealmResource.class);
+        GroupsResource fakeGroupsResource = mock(GroupsResource.class);
+
+        GroupRepresentation group1 = new GroupRepresentation();
+        group1.setId(UUID.randomUUID().toString());
+        group1.setName("Group #1");
+
+        GroupRepresentation group2 = new GroupRepresentation();
+        group2.setId(UUID.randomUUID().toString());
+        group2.setName("Group #2");
+        var fakeGroups = List.of(group1, group2);
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
+            when(fakeRealmResource.groups()).thenReturn(fakeGroupsResource);
+            when(fakeGroupsResource.groups()).thenReturn(fakeGroups);
+
+            assertDoesNotThrow(() -> keycloakAdapter.validateAssignmentProperties(params));
+        }
+    }
+
+    @Test
+    void validateAssignmentProperties_shouldNotThrowAnyExceptionWhenUserIdIsReceivedAndItIsFoundWithinRealm() {
+        var userId = UUID.randomUUID().toString();
+        Map<String, Object> params = Map.of("userId", userId, "accessToken", STUBBED_ACCESS_TOKEN);
+
+        RealmResource fakeRealmResource = mock(RealmResource.class);
+        UsersResource fakeUsersResource = mock(UsersResource.class);
+        UserResource fakeUserResource = mock(UserResource.class);
+        UserRepresentation fakeUserRepresentation = new UserRepresentation();
+        fakeUserRepresentation.setId(userId);
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
+            when(fakeRealmResource.users()).thenReturn(fakeUsersResource);
+            when(fakeUsersResource.get(anyString())).thenReturn(fakeUserResource);
+            when(fakeUserResource.toRepresentation()).thenReturn(fakeUserRepresentation);
+
+            assertDoesNotThrow(() -> keycloakAdapter.validateAssignmentProperties(params));
         }
     }
 }

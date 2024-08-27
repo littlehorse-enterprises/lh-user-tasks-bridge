@@ -413,6 +413,8 @@ public class UserController {
     })
     @GetMapping("/{tenant_id}/groups")
     @ResponseStatus(HttpStatus.OK)
+    //TODO: It's probably worth it to remove the "realm" param and take it from the accessToken,
+    // since users cannot see anything from outside the realm that they belong to.
     public ResponseEntity<StringSetDTO> getUserGroupsFromIdentityProvider(@PathVariable(name = "tenant_id") String tenantId,
                                                                           @RequestParam(name = "realm") String realm,
                                                                           @RequestHeader(name = "Authorization") String accessToken) {

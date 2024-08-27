@@ -244,7 +244,9 @@ public class UserTaskService {
                     .setMessage("UserTaskRun with wfRunId: {} and guid: {} was successfully assigned to {}")
                     .addArgument(wfRunId)
                     .addArgument(userTaskRunGuid)
-                    .addArgument(requestBody.getUserId())
+                    .addArgument(StringUtils.hasText(requestBody.getUserId())
+                            ? requestBody.getUserId()
+                            : requestBody.getUserGroup())
                     .log();
         } catch (StatusRuntimeException e) {
             log.atError()
