@@ -11,6 +11,8 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.resource.RealmResource;
+import org.keycloak.admin.client.resource.UsersResource;
 import org.keycloak.representations.idm.GroupRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.http.HttpStatus;
@@ -19,6 +21,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -89,21 +92,28 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
         try {
             var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
             var realm = getRealmFromToken(accessToken);
+            var searchValue = (String) params.get("searchValue");
+            var userGroup = (String) params.get("userGroup");
+            var firstResult = (Integer) params.get("firstResult");
+            var maxResults = (Integer) params.get("maxResults");
+
+            if (StringUtils.isNotBlank(searchValue) && StringUtils.isNotBlank(userGroup)) {
+                throw new AdapterException("Combination of userGroup and searchValue is not supported to fetch users.");
+            }
 
             Keycloak keycloak = getKeycloakInstance(realm, accessToken);
+            RealmResource realmResource = keycloak.realm(realm);
 
-            Set<UserDTO> setOfUsers = keycloak.realm(realm).users().list().stream()
-                    .map(userRepresentation -> UserDTO.builder()
-                            .id(userRepresentation.getId())
-                            .email(userRepresentation.getEmail())
-                            .username(userRepresentation.getUsername())
-                            .build())
+            Set<UserRepresentation> foundUsers = filterUsers(realmResource, searchValue, userGroup, firstResult, maxResults);
+
+            Set<UserDTO> setOfUsers = foundUsers.stream()
+                    .map(UserDTO.transform())
                     .collect(Collectors.toSet());
 
             return new UserListDTO(setOfUsers);
         } catch (AdapterException e) {
             log.error(e.getMessage());
-            throw new AdapterException(e.getMessage());
+            throw e;
         } catch (Exception e) {
             var errorMessage = "Something went wrong while fetching all Users from Keycloak realm.";
             log.error(errorMessage, e);
@@ -134,10 +144,7 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
             Keycloak keycloak = getKeycloakInstance(realm, accessToken);
             UserRepresentation userRepresentation = keycloak.realm(realm).users().get(userId).toRepresentation();
 
-            return UserDTO.builder()
-                    .id(userRepresentation.getId())
-                    .email(userRepresentation.getEmail())
-                    .username(userRepresentation.getUsername()).build();
+            return UserDTO.transform().apply(userRepresentation);
         } catch (AdapterException e) {
             log.error(e.getMessage());
             throw new AdapterException(e.getMessage());
@@ -231,5 +238,21 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot assign Task to non-existent group, " +
                     "nor can the Task be assigned to an existing group that the requested user is not a member of.");
         }
+    }
+
+    private Set<UserRepresentation> filterUsers(RealmResource realmResource, String searchValue, String userGroup,
+                                                int firstResult, int maxResults) {
+        Set<UserRepresentation> filteredUsers;
+        UsersResource usersResource = realmResource.users();
+
+        if (StringUtils.isNotBlank(searchValue)) {
+            filteredUsers = new HashSet<>(usersResource.search(searchValue, false, firstResult, maxResults));
+        } else if (StringUtils.isNotBlank(userGroup)) {
+            filteredUsers = new HashSet<>(realmResource.groups().group(userGroup).members(firstResult, maxResults));
+        } else {
+            filteredUsers = new HashSet<>(usersResource.list(firstResult, maxResults));
+        }
+
+        return filteredUsers;
     }
 }

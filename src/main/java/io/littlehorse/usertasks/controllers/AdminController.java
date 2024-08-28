@@ -551,7 +551,11 @@ public class AdminController {
     @GetMapping("/{tenant_id}/admin/users")
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<UserListDTO> getUsersFromIdentityProvider(@PathVariable(name = "tenant_id") String tenantId,
-                                                                    @RequestHeader(name = "Authorization") String accessToken) {
+                                                                    @RequestHeader(name = "Authorization") String accessToken,
+                                                                    @RequestParam(name = "search_value", required = false) String searchValue,
+                                                                    @RequestParam(name = "user_group", required = false) String userGroup,
+                                                                    @RequestParam(name = "first_result", defaultValue = "1") Integer firstResult,
+                                                                    @RequestParam(name = "max_results", defaultValue = "10") Integer maxResults) {
         if (!tenantService.isValidTenant(tenantId)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
@@ -563,7 +567,13 @@ public class AdminController {
             CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(issuerUrl,
                     identityProviderConfigProperties);
 
-            Map<String, Object> params = Map.of("accessToken", accessToken);
+            Map<String, Object> params = new HashMap<>();
+            params.put("accessToken", accessToken);
+            params.put("searchValue", searchValue);
+            params.put("userGroup", userGroup);
+            params.put("firstResult", firstResult);
+            params.put("maxResults", maxResults);
+
             IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor());
 
             UserListDTO response = identityProviderHandler.getUsers(params);
@@ -624,9 +634,9 @@ public class AdminController {
     })
     @GetMapping("/{tenant_id}/admin/users/{user_id}")
     @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<UserDTO> getUsersFromIdentityProvider(@PathVariable(name = "tenant_id") String tenantId,
-                                                                @PathVariable(name = "user_id") String userId,
-                                                                @RequestHeader(name = "Authorization") String accessToken) {
+    public ResponseEntity<UserDTO> getUserFromIdentityProvider(@PathVariable(name = "tenant_id") String tenantId,
+                                                               @PathVariable(name = "user_id") String userId,
+                                                               @RequestHeader(name = "Authorization") String accessToken) {
         if (!tenantService.isValidTenant(tenantId)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
