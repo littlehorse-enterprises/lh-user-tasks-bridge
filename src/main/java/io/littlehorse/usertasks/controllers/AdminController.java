@@ -552,9 +552,12 @@ public class AdminController {
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<UserListDTO> getUsersFromIdentityProvider(@PathVariable(name = "tenant_id") String tenantId,
                                                                     @RequestHeader(name = "Authorization") String accessToken,
-                                                                    @RequestParam(name = "search_value", required = false) String searchValue,
+                                                                    @RequestParam(name = "email", required = false) String email,
+                                                                    @RequestParam(name = "first_name", required = false) String firstName,
+                                                                    @RequestParam(name = "last_name", required = false) String lastName,
+                                                                    @RequestParam(name = "username", required = false) String username,
                                                                     @RequestParam(name = "user_group", required = false) String userGroup,
-                                                                    @RequestParam(name = "first_result", defaultValue = "1") Integer firstResult,
+                                                                    @RequestParam(name = "first_result", defaultValue = "0") Integer firstResult,
                                                                     @RequestParam(name = "max_results", defaultValue = "10") Integer maxResults) {
         if (!tenantService.isValidTenant(tenantId)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
@@ -569,7 +572,10 @@ public class AdminController {
 
             Map<String, Object> params = new HashMap<>();
             params.put("accessToken", accessToken);
-            params.put("searchValue", searchValue);
+            params.put("email", email);
+            params.put("firstName", firstName);
+            params.put("lastName", lastName);
+            params.put("username", username);
             params.put("userGroup", userGroup);
             params.put("firstResult", firstResult);
             params.put("maxResults", maxResults);

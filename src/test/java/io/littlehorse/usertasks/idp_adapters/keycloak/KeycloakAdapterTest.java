@@ -31,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -228,28 +229,6 @@ class KeycloakAdapterTest {
     }
 
     @Test
-    void getUsers_shouldThrowAdapterExceptionWhenSearchValueAndUserGroupFiltersAreReceived() {
-        Map<String, Object> params = new HashMap<>();
-        params.putAll(standardParams);
-        params.put("searchValue", "someValue");
-        params.put("userGroup", "someGroup");
-        params.put("firstResult", 1);
-        params.put("maxResults", 5);
-
-        try (MockedStatic<Keycloak> ignored = mockStatic(Keycloak.class)) {
-            when(Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
-                    .thenThrow(new RuntimeException("Error"));
-
-            AdapterException thrownException = assertThrows(AdapterException.class,
-                    () -> keycloakAdapter.getUsers(params));
-
-            var expectedErrorMessage = "Combination of userGroup and searchValue is not supported to fetch users.";
-
-            assertEquals(expectedErrorMessage, thrownException.getMessage());
-        }
-    }
-
-    @Test
     void getUsers_shouldThrowAdapterExceptionCreatingKeycloakInstanceWhenRuntimeExceptionIsThrownGettingNewInstance() {
         Map<String, Object> params = new HashMap<>();
         params.putAll(standardParams);
@@ -334,10 +313,11 @@ class KeycloakAdapterTest {
     }
 
     @Test
-    void getUsers_shouldReturnSetOfUsersWhenSearchValueFilterIsAppliedAndNoExceptionIsThrown() {
+    void getUsers_shouldReturnSetOfUsersWhenEmailFilterIsAppliedAndNoExceptionIsThrown() {
+        var randomEmailAddress = "somemail@somedomain.com";
         Map<String, Object> params = new HashMap<>();
         params.putAll(standardParams);
-        params.put("searchValue", "usern");
+        params.put("email", randomEmailAddress);
         params.put("firstResult", 1);
         params.put("maxResults", 5);
 
@@ -347,16 +327,9 @@ class KeycloakAdapterTest {
         UserRepresentation user1 = new UserRepresentation();
         user1.setId(UUID.randomUUID().toString());
         user1.setUsername("username1");
+        user1.setEmail(randomEmailAddress);
 
-        UserRepresentation user2 = new UserRepresentation();
-        user2.setId(UUID.randomUUID().toString());
-        user2.setUsername("username2");
-
-        UserRepresentation user3 = new UserRepresentation();
-        user3.setId(UUID.randomUUID().toString());
-        user3.setUsername("username3");
-
-        var fakeUsers = List.of(user1, user2, user3);
+        var fakeUsers = List.of(user1);
 
         try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
             Keycloak mockKeycloakInstance = mock(Keycloak.class);
@@ -364,11 +337,12 @@ class KeycloakAdapterTest {
                     .thenReturn(mockKeycloakInstance);
             when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
             when(fakeRealmResource.users()).thenReturn(fakeUsersResource);
-            when(fakeUsersResource.search(anyString(), eq(false), anyInt(), anyInt())).thenReturn(fakeUsers);
+            when(fakeUsersResource.search(eq(null), eq(null), eq(null), eq(randomEmailAddress), anyInt(), anyInt(),
+                    anyBoolean(), anyBoolean(), anyBoolean())).thenReturn(fakeUsers);
 
             UserListDTO foundUsers = keycloakAdapter.getUsers(params);
 
-            int expectedQuantityOfUsers = 3;
+            int expectedQuantityOfUsers = 1;
 
             assertFalse(foundUsers.getUsers().isEmpty());
             assertTrue(foundUsers.getUsers().stream().allMatch(userDTO -> StringUtils.isNotBlank(userDTO.getId())));

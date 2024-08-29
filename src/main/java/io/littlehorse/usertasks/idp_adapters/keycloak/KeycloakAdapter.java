@@ -22,6 +22,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -92,19 +93,19 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
         try {
             var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
             var realm = getRealmFromToken(accessToken);
-            var searchValue = (String) params.get("searchValue");
+            var email = (String) params.get("email");
+            var firstName = (String) params.get("firstName");
+            var lastName = (String) params.get("lastName");
+            var username = (String) params.get("username");
             var userGroup = (String) params.get("userGroup");
             var firstResult = (Integer) params.get("firstResult");
             var maxResults = (Integer) params.get("maxResults");
 
-            if (StringUtils.isNotBlank(searchValue) && StringUtils.isNotBlank(userGroup)) {
-                throw new AdapterException("Combination of userGroup and searchValue is not supported to fetch users.");
-            }
-
             Keycloak keycloak = getKeycloakInstance(realm, accessToken);
             RealmResource realmResource = keycloak.realm(realm);
 
-            Set<UserRepresentation> foundUsers = filterUsers(realmResource, searchValue, userGroup, firstResult, maxResults);
+            Set<UserRepresentation> foundUsers = filterUsers(realmResource, email, firstName, lastName, username, userGroup,
+                    firstResult, maxResults);
 
             Set<UserDTO> setOfUsers = foundUsers.stream()
                     .map(UserDTO.transform())
@@ -240,14 +241,19 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
         }
     }
 
-    private Set<UserRepresentation> filterUsers(RealmResource realmResource, String searchValue, String userGroup,
-                                                int firstResult, int maxResults) {
+    private Set<UserRepresentation> filterUsers(RealmResource realmResource, String email, String firstName, String lastName,
+                                                String username, String userGroup, int firstResult, int maxResults) {
         Set<UserRepresentation> filteredUsers;
         UsersResource usersResource = realmResource.users();
 
-        if (StringUtils.isNotBlank(searchValue)) {
-            filteredUsers = new HashSet<>(usersResource.search(searchValue, false, firstResult, maxResults));
+        if (StringUtils.isNotBlank(username) || StringUtils.isNotBlank(firstName) || StringUtils.isNotBlank(lastName)
+                || StringUtils.isNotBlank(email)) {
+            List<UserRepresentation> searchResult = usersResource.search(username, firstName, lastName, email, firstResult,
+                    maxResults, true, false, false);
+            filteredUsers = new HashSet<>(searchResult);
         } else if (StringUtils.isNotBlank(userGroup)) {
+            //TODO: Change response of endpoint to fetch list of groups. Now I need to return an array of DTOs with id and name
+            // so that I can use the id of the groups to search users by group
             filteredUsers = new HashSet<>(realmResource.groups().group(userGroup).members(firstResult, maxResults));
         } else {
             filteredUsers = new HashSet<>(usersResource.list(firstResult, maxResults));
