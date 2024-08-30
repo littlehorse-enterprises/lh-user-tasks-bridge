@@ -19,6 +19,8 @@ public class UserDTO {
     private String id;
     private String email;
     private String username;
+    private String firstName;
+    private String lastName;
 
     /**
      * Transforms a {@code UserRepresentation} into a {@code UserDTO}
@@ -31,6 +33,8 @@ public class UserDTO {
                 .id(userRepresentation.getId())
                 .email(userRepresentation.getEmail())
                 .username(userRepresentation.getUsername())
+                .firstName(userRepresentation.getFirstName())
+                .lastName(userRepresentation.getLastName())
                 .build();
     }
 }
