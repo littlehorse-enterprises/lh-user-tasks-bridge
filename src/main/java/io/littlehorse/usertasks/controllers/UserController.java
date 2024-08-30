@@ -13,7 +13,7 @@ import io.littlehorse.usertasks.models.common.UserTaskVariableValue;
 import io.littlehorse.usertasks.models.requests.CompleteUserTaskRequest;
 import io.littlehorse.usertasks.models.requests.UserTaskRequestFilter;
 import io.littlehorse.usertasks.models.responses.DetailedUserTaskRunDTO;
-import io.littlehorse.usertasks.models.responses.StringSetDTO;
+import io.littlehorse.usertasks.models.responses.UserGroupListDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskRunListDTO;
 import io.littlehorse.usertasks.services.TenantService;
 import io.littlehorse.usertasks.services.UserTaskService;
@@ -387,7 +387,7 @@ public class UserController {
                     responseCode = "200",
                     content = {@Content(
                             mediaType = "application/json",
-                            schema = @Schema(implementation = StringSetDTO.class))}
+                            schema = @Schema(implementation = UserGroupListDTO.class))}
             ),
             @ApiResponse(
                     responseCode = "400",
@@ -413,11 +413,8 @@ public class UserController {
     })
     @GetMapping("/{tenant_id}/groups")
     @ResponseStatus(HttpStatus.OK)
-    //TODO: It's probably worth it to remove the "realm" param and take it from the accessToken,
-    // since users cannot see anything from outside the realm that they belong to.
-    public ResponseEntity<StringSetDTO> getUserGroupsFromIdentityProvider(@PathVariable(name = "tenant_id") String tenantId,
-                                                                          @RequestParam(name = "realm") String realm,
-                                                                          @RequestHeader(name = "Authorization") String accessToken) {
+    public ResponseEntity<UserGroupListDTO> getUserGroupsFromIdentityProvider(@PathVariable(name = "tenant_id") String tenantId,
+                                                                              @RequestHeader(name = "Authorization") String accessToken) {
         if (!tenantService.isValidTenant(tenantId)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
@@ -429,10 +426,10 @@ public class UserController {
             CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(issuerUrl,
                     identityProviderConfigProperties);
 
-            Map<String, Object> params = Map.of("realm", realm, "accessToken", accessToken);
+            Map<String, Object> params = Map.of("accessToken", accessToken);
             IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor());
 
-            var response = new StringSetDTO(identityProviderHandler.getMyUserGroups(params));
+            var response = identityProviderHandler.getMyUserGroups(params);
 
             return ResponseEntity.ok(response);
         } catch (JsonProcessingException e) {
