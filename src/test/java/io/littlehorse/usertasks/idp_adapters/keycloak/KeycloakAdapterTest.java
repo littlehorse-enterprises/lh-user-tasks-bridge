@@ -2,11 +2,13 @@ package io.littlehorse.usertasks.idp_adapters.keycloak;
 
 import io.littlehorse.usertasks.exceptions.AdapterException;
 import io.littlehorse.usertasks.models.common.UserDTO;
+import io.littlehorse.usertasks.models.responses.UserGroupListDTO;
 import io.littlehorse.usertasks.models.responses.UserListDTO;
 import jakarta.ws.rs.NotFoundException;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.keycloak.admin.client.Keycloak;
+import org.keycloak.admin.client.resource.GroupResource;
 import org.keycloak.admin.client.resource.GroupsResource;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.UserResource;
@@ -18,9 +20,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -29,7 +31,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
@@ -37,7 +42,6 @@ import static org.mockito.Mockito.when;
 class KeycloakAdapterTest {
     private final KeycloakAdapter keycloakAdapter = new KeycloakAdapter();
 
-    private final String FAKE_REALM = "someRealm";
     private final String STUBBED_ACCESS_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICIxemZidUhsMWtZX3k4bTFFaXFwdHVFNFNrbG1CNW" +
             "JlaFpVN1ZVeG5TMzlBIn0.eyJleHAiOjE3MjE4NTU5ODQsImlhdCI6MTcyMTg1NTY4NCwianRpIjoiZGM4ZjVhOWUtOGRkZS00ZDY4LThmN" +
             "GYtYTc5NzRhYzgwODgxIiwiaXNzIjoiaHR0cDovL2xvY2FsaG9zdDo4ODg4L3JlYWxtcy9saCIsImF1ZCI6WyJyZWFsbS1tYW5hZ2VtZW50" +
@@ -53,7 +57,7 @@ class KeycloakAdapterTest {
             "0kG4P5t3VwdaprlKgi6OhJbs8c2VMTjbFF_l5SeMlVno0wyMFGEDXQU6ENPgY7Jk29esTiizNmdigoxOgpK0wmDh4NJqe4TajO0cOKvkT1q" +
             "p-0GFtpPXwUXn6Ghdsx_4Fwgox3SwDQdJUuit-UlTVjbjWyDgdWgB28Tn08K6MY-Yht_vPfqj1wgc7aArRDWjvZBGXRBA";
 
-    private final Map<String, Object> standardParams = Map.of("realm", FAKE_REALM, "accessToken", STUBBED_ACCESS_TOKEN);
+    private final Map<String, Object> standardParams = Map.of("accessToken", STUBBED_ACCESS_TOKEN);
 
     @Test
     void getUserGroups_shouldThrowAdapterExceptionCreatingKeycloakInstanceWhenRuntimeExceptionIsThrownGettingNewInstance() {
@@ -76,7 +80,7 @@ class KeycloakAdapterTest {
             Keycloak mockKeycloakInstance = mock(Keycloak.class);
             mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
                     .thenReturn(mockKeycloakInstance);
-            when(mockKeycloakInstance.realm(FAKE_REALM)).thenThrow(new RuntimeException());
+            when(mockKeycloakInstance.realm(anyString())).thenThrow(new RuntimeException());
 
             AdapterException thrownException = assertThrows(AdapterException.class,
                     () -> keycloakAdapter.getUserGroups(standardParams));
@@ -105,17 +109,18 @@ class KeycloakAdapterTest {
             Keycloak mockKeycloakInstance = mock(Keycloak.class);
             mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
                     .thenReturn(mockKeycloakInstance);
-            when(mockKeycloakInstance.realm(FAKE_REALM)).thenReturn(fakeRealmResource);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
             when(fakeRealmResource.groups()).thenReturn(fakeGroupsResource);
             when(fakeGroupsResource.groups()).thenReturn(fakeGroups);
 
-            Set<String> foundUserGroups = keycloakAdapter.getUserGroups(standardParams);
+            UserGroupListDTO foundUserGroups = keycloakAdapter.getUserGroups(standardParams);
 
             int expectedQuantityOfGroups = 2;
 
-            assertFalse(foundUserGroups.isEmpty());
-            assertTrue(foundUserGroups.stream().allMatch(StringUtils::isNotBlank));
-            assertEquals(expectedQuantityOfGroups, foundUserGroups.size());
+            assertNotNull(foundUserGroups);
+            assertFalse(foundUserGroups.getGroups().isEmpty());
+            assertTrue(foundUserGroups.getGroups().stream().allMatch(userGroupDTO -> StringUtils.isNotBlank(userGroupDTO.getName())));
+            assertEquals(expectedQuantityOfGroups, foundUserGroups.getGroups().size());
         }
     }
 
@@ -128,13 +133,14 @@ class KeycloakAdapterTest {
             Keycloak mockKeycloakInstance = mock(Keycloak.class);
             mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
                     .thenReturn(mockKeycloakInstance);
-            when(mockKeycloakInstance.realm(FAKE_REALM)).thenReturn(fakeRealmResource);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
             when(fakeRealmResource.groups()).thenReturn(fakeGroupsResource);
             when(fakeGroupsResource.groups()).thenReturn(Collections.emptyList());
 
-            Set<String> foundUserGroups = keycloakAdapter.getUserGroups(standardParams);
+            UserGroupListDTO foundUserGroups = keycloakAdapter.getUserGroups(standardParams);
 
-            assertTrue(foundUserGroups.isEmpty());
+            assertNotNull(foundUserGroups);
+            assertTrue(foundUserGroups.getGroups().isEmpty());
         }
     }
 
@@ -159,7 +165,7 @@ class KeycloakAdapterTest {
             Keycloak mockKeycloakInstance = mock(Keycloak.class);
             mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
                     .thenReturn(mockKeycloakInstance);
-            when(mockKeycloakInstance.realm(FAKE_REALM)).thenThrow(new RuntimeException());
+            when(mockKeycloakInstance.realm(anyString())).thenThrow(new RuntimeException());
 
             AdapterException thrownException = assertThrows(AdapterException.class,
                     () -> keycloakAdapter.getMyUserGroups(standardParams));
@@ -186,18 +192,19 @@ class KeycloakAdapterTest {
             Keycloak mockKeycloakInstance = mock(Keycloak.class);
             mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
                     .thenReturn(mockKeycloakInstance);
-            when(mockKeycloakInstance.realm(FAKE_REALM)).thenReturn(fakeRealmResource);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
             when(fakeRealmResource.users()).thenReturn(fakeUsersResource);
             when(fakeUsersResource.get(anyString())).thenReturn(fakeUserResource);
             when(fakeUserResource.groups()).thenReturn(fakeGroups);
 
-            Set<String> foundUserGroups = keycloakAdapter.getMyUserGroups(standardParams);
+            UserGroupListDTO foundUserGroups = keycloakAdapter.getMyUserGroups(standardParams);
 
             int expectedQuantityOfGroups = 1;
 
-            assertFalse(foundUserGroups.isEmpty());
-            assertTrue(foundUserGroups.stream().allMatch(StringUtils::isNotBlank));
-            assertEquals(expectedQuantityOfGroups, foundUserGroups.size());
+            assertNotNull(foundUserGroups);
+            assertFalse(foundUserGroups.getGroups().isEmpty());
+            assertTrue(foundUserGroups.getGroups().stream().allMatch(userGroupDTO -> StringUtils.isNotBlank(userGroupDTO.getName())));
+            assertEquals(expectedQuantityOfGroups, foundUserGroups.getGroups().size());
         }
     }
 
@@ -211,26 +218,30 @@ class KeycloakAdapterTest {
             Keycloak mockKeycloakInstance = mock(Keycloak.class);
             mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
                     .thenReturn(mockKeycloakInstance);
-            when(mockKeycloakInstance.realm(FAKE_REALM)).thenReturn(fakeRealmResource);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
             when(fakeRealmResource.users()).thenReturn(fakeUsersResource);
             when(fakeUsersResource.get(anyString())).thenReturn(fakeUserResource);
             when(fakeUserResource.groups()).thenReturn(Collections.emptyList());
 
+            UserGroupListDTO foundUserGroups = keycloakAdapter.getMyUserGroups(standardParams);
 
-            Set<String> foundUserGroups = keycloakAdapter.getMyUserGroups(standardParams);
-
-            assertTrue(foundUserGroups.isEmpty());
+            assertNotNull(foundUserGroups);
+            assertTrue(foundUserGroups.getGroups().isEmpty());
         }
     }
 
     @Test
     void getUsers_shouldThrowAdapterExceptionCreatingKeycloakInstanceWhenRuntimeExceptionIsThrownGettingNewInstance() {
+        Map<String, Object> params = new HashMap<>(standardParams);
+        params.put("firstResult", 0);
+        params.put("maxResults", 5);
+
         try (MockedStatic<Keycloak> ignored = mockStatic(Keycloak.class)) {
             when(Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
                     .thenThrow(new RuntimeException("Error"));
 
             AdapterException thrownException = assertThrows(AdapterException.class,
-                    () -> keycloakAdapter.getUsers(standardParams));
+                    () -> keycloakAdapter.getUsers(params));
 
             var expectedErrorMessage = "Something went wrong while creating Keycloak instance.";
 
@@ -240,14 +251,18 @@ class KeycloakAdapterTest {
 
     @Test
     void getUsers_shouldThrowExceptionCreatingKeycloakInstanceWhenAccessingRealms() {
+        Map<String, Object> params = new HashMap<>(standardParams);
+        params.put("firstResult", 0);
+        params.put("maxResults", 5);
+
         try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
             Keycloak mockKeycloakInstance = mock(Keycloak.class);
             mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
                     .thenReturn(mockKeycloakInstance);
-            when(mockKeycloakInstance.realm(FAKE_REALM)).thenThrow(new RuntimeException());
+            when(mockKeycloakInstance.realm(anyString())).thenThrow(new RuntimeException());
 
             AdapterException thrownException = assertThrows(AdapterException.class,
-                    () -> keycloakAdapter.getUsers(standardParams));
+                    () -> keycloakAdapter.getUsers(params));
 
             var expectedErrorMessage = "Something went wrong while fetching all Users from Keycloak realm.";
 
@@ -256,7 +271,36 @@ class KeycloakAdapterTest {
     }
 
     @Test
-    void getUsers_shouldReturnSetOfUsernamesWhenNoExceptionIsThrown() {
+    void getUsers_shouldThrowExceptionWhenUserGroupIdAndUsernameAreReceived() {
+        Map<String, Object> params = new HashMap<>(standardParams);
+        params.put("userGroupId", "some-id");
+        params.put("username", "some-username");
+        params.put("firstResult", 0);
+        params.put("maxResults", 5);
+
+        RealmResource fakeRealmResource = mock(RealmResource.class);
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
+
+            AdapterException thrownException = assertThrows(AdapterException.class,
+                    () -> keycloakAdapter.getUsers(params));
+
+            var expectedErrorMessage = "Combination of userGroup + other filters (username/email/firstName/lastName) is not supported";
+
+            assertEquals(expectedErrorMessage, thrownException.getMessage());
+        }
+    }
+
+    @Test
+    void getUsers_shouldReturnSetOfUsersWhenNoFilterIsAppliedAndNoExceptionIsThrown() {
+        Map<String, Object> params = new HashMap<>(standardParams);
+        params.put("firstResult", 0);
+        params.put("maxResults", 5);
+
         RealmResource fakeRealmResource = mock(RealmResource.class);
         UsersResource fakeUsersResource = mock(UsersResource.class);
 
@@ -280,9 +324,9 @@ class KeycloakAdapterTest {
                     .thenReturn(mockKeycloakInstance);
             when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
             when(fakeRealmResource.users()).thenReturn(fakeUsersResource);
-            when(fakeUsersResource.list()).thenReturn(fakeUsers);
+            when(fakeUsersResource.list(anyInt(), anyInt())).thenReturn(fakeUsers);
 
-            UserListDTO foundUsers = keycloakAdapter.getUsers(standardParams);
+            UserListDTO foundUsers = keycloakAdapter.getUsers(params);
 
             int expectedQuantityOfUsers = 3;
 
@@ -293,7 +337,217 @@ class KeycloakAdapterTest {
     }
 
     @Test
+    void getUsers_shouldReturnSetOfUsersWhenUsernameFilterIsAppliedAndNoExceptionIsThrown() {
+        var randomUsernamePrefix = "username";
+        Map<String, Object> params = new HashMap<>(standardParams);
+        params.put("username", randomUsernamePrefix);
+        params.put("firstResult", 0);
+        params.put("maxResults", 5);
+
+        RealmResource fakeRealmResource = mock(RealmResource.class);
+        UsersResource fakeUsersResource = mock(UsersResource.class);
+
+        UserRepresentation user1 = new UserRepresentation();
+        user1.setId(UUID.randomUUID().toString());
+        user1.setUsername("username1");
+
+        UserRepresentation user2 = new UserRepresentation();
+        user2.setId(UUID.randomUUID().toString());
+        user2.setUsername("username2");
+
+        var fakeUsers = List.of(user1, user2);
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
+            when(fakeRealmResource.users()).thenReturn(fakeUsersResource);
+            when(fakeUsersResource.search(eq(randomUsernamePrefix), eq(null), eq(null), eq(null), anyInt(), anyInt(),
+                    anyBoolean(), anyBoolean(), anyBoolean())).thenReturn(fakeUsers);
+
+            UserListDTO foundUsers = keycloakAdapter.getUsers(params);
+
+            int expectedQuantityOfUsers = 2;
+
+            assertFalse(foundUsers.getUsers().isEmpty());
+            assertTrue(foundUsers.getUsers().stream()
+                    .allMatch(userDTO -> StringUtils.isNotBlank(userDTO.getId()) && StringUtils.isNotBlank(userDTO.getUsername())));
+            assertEquals(expectedQuantityOfUsers, foundUsers.getUsers().size());
+        }
+    }
+
+    @Test
+    void getUsers_shouldReturnSetOfUsersWhenFirstNameFilterIsAppliedAndNoExceptionIsThrown() {
+        var randomFirstNamePrefix = "al";
+        Map<String, Object> params = new HashMap<>(standardParams);
+        params.put("firstName", randomFirstNamePrefix);
+        params.put("firstResult", 0);
+        params.put("maxResults", 5);
+
+        RealmResource fakeRealmResource = mock(RealmResource.class);
+        UsersResource fakeUsersResource = mock(UsersResource.class);
+
+        UserRepresentation user1 = new UserRepresentation();
+        user1.setId(UUID.randomUUID().toString());
+        user1.setFirstName("Albert");
+
+        UserRepresentation user2 = new UserRepresentation();
+        user2.setId(UUID.randomUUID().toString());
+        user2.setFirstName("Allison");
+
+        UserRepresentation user3 = new UserRepresentation();
+        user3.setId(UUID.randomUUID().toString());
+        user3.setFirstName("Alina");
+
+        var fakeUsers = List.of(user1, user2, user3);
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
+            when(fakeRealmResource.users()).thenReturn(fakeUsersResource);
+            when(fakeUsersResource.search(eq(null), eq(randomFirstNamePrefix), eq(null), eq(null), anyInt(), anyInt(),
+                    anyBoolean(), anyBoolean(), anyBoolean())).thenReturn(fakeUsers);
+
+            UserListDTO foundUsers = keycloakAdapter.getUsers(params);
+
+            int expectedQuantityOfUsers = 3;
+
+            assertFalse(foundUsers.getUsers().isEmpty());
+            assertTrue(foundUsers.getUsers().stream()
+                    .allMatch(userDTO -> StringUtils.isNotBlank(userDTO.getId()) && StringUtils.isNotBlank(userDTO.getFirstName())));
+            assertEquals(expectedQuantityOfUsers, foundUsers.getUsers().size());
+        }
+    }
+
+    @Test
+    void getUsers_shouldReturnSetOfUsersWhenLastNameFilterIsAppliedAndNoExceptionIsThrown() {
+        var randomLastNamePrefix = "own";
+        Map<String, Object> params = new HashMap<>(standardParams);
+        params.put("lastName", randomLastNamePrefix);
+        params.put("firstResult", 0);
+        params.put("maxResults", 5);
+
+        RealmResource fakeRealmResource = mock(RealmResource.class);
+        UsersResource fakeUsersResource = mock(UsersResource.class);
+
+        UserRepresentation user1 = new UserRepresentation();
+        user1.setId(UUID.randomUUID().toString());
+        user1.setLastName("Brown");
+
+        UserRepresentation user2 = new UserRepresentation();
+        user2.setId(UUID.randomUUID().toString());
+        user2.setLastName("Towns");
+
+        var fakeUsers = List.of(user1, user2);
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
+            when(fakeRealmResource.users()).thenReturn(fakeUsersResource);
+            when(fakeUsersResource.search(eq(null), eq(null), eq(randomLastNamePrefix), eq(null), anyInt(), anyInt(),
+                    anyBoolean(), anyBoolean(), anyBoolean())).thenReturn(fakeUsers);
+
+            UserListDTO foundUsers = keycloakAdapter.getUsers(params);
+
+            int expectedQuantityOfUsers = 2;
+
+            assertFalse(foundUsers.getUsers().isEmpty());
+            assertTrue(foundUsers.getUsers().stream()
+                    .allMatch(userDTO -> StringUtils.isNotBlank(userDTO.getId()) && StringUtils.isNotBlank(userDTO.getLastName())));
+            assertEquals(expectedQuantityOfUsers, foundUsers.getUsers().size());
+        }
+    }
+
+    @Test
+    void getUsers_shouldReturnSetOfUsersWhenEmailFilterIsAppliedAndNoExceptionIsThrown() {
+        var randomEmailAddress = "somemail@somedomain.com";
+        Map<String, Object> params = new HashMap<>(standardParams);
+        params.put("email", randomEmailAddress);
+        params.put("firstResult", 0);
+        params.put("maxResults", 5);
+
+        RealmResource fakeRealmResource = mock(RealmResource.class);
+        UsersResource fakeUsersResource = mock(UsersResource.class);
+
+        UserRepresentation user1 = new UserRepresentation();
+        user1.setId(UUID.randomUUID().toString());
+        user1.setUsername("username1");
+        user1.setEmail(randomEmailAddress);
+
+        var fakeUsers = List.of(user1);
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
+            when(fakeRealmResource.users()).thenReturn(fakeUsersResource);
+            when(fakeUsersResource.search(eq(null), eq(null), eq(null), eq(randomEmailAddress), anyInt(), anyInt(),
+                    anyBoolean(), anyBoolean(), anyBoolean())).thenReturn(fakeUsers);
+
+            UserListDTO foundUsers = keycloakAdapter.getUsers(params);
+
+            int expectedQuantityOfUsers = 1;
+
+            assertFalse(foundUsers.getUsers().isEmpty());
+            assertTrue(foundUsers.getUsers().stream()
+                    .allMatch(userDTO -> StringUtils.isNotBlank(userDTO.getId()) && StringUtils.isNotBlank(userDTO.getEmail())));
+            assertEquals(expectedQuantityOfUsers, foundUsers.getUsers().size());
+        }
+    }
+
+    @Test
+    void getUsers_shouldReturnSetOfUsersWhenUserGroupFilterIsAppliedAndNoExceptionIsThrown() {
+        Map<String, Object> params = new HashMap<>(standardParams);
+        params.put("userGroupId", "my-group");
+        params.put("firstResult", 0);
+        params.put("maxResults", 5);
+
+        RealmResource fakeRealmResource = mock(RealmResource.class);
+        GroupsResource fakeGroupsResource = mock(GroupsResource.class);
+        GroupResource fakeGroupResource = mock(GroupResource.class);
+
+        UserRepresentation user1 = new UserRepresentation();
+        user1.setId(UUID.randomUUID().toString());
+        user1.setUsername("username1");
+
+        UserRepresentation user2 = new UserRepresentation();
+        user2.setId(UUID.randomUUID().toString());
+        user2.setUsername("username2");
+
+
+        var fakeUsers = List.of(user1, user2);
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
+            when(fakeRealmResource.groups()).thenReturn(fakeGroupsResource);
+            when(fakeGroupsResource.group(eq("my-group"))).thenReturn(fakeGroupResource);
+            when(fakeGroupResource.members(anyInt(), anyInt())).thenReturn(fakeUsers);
+
+            UserListDTO foundUsers = keycloakAdapter.getUsers(params);
+
+            int expectedQuantityOfUsers = 2;
+
+            assertFalse(foundUsers.getUsers().isEmpty());
+            assertTrue(foundUsers.getUsers().stream().allMatch(userDTO -> StringUtils.isNotBlank(userDTO.getId())));
+            assertEquals(expectedQuantityOfUsers, foundUsers.getUsers().size());
+        }
+    }
+
+    @Test
     void getUsers_shouldReturnEmptySetOfUsernamesWhenNoGroupsExist() {
+        Map<String, Object> params = new HashMap<>(standardParams);
+        params.put("firstResult", 0);
+        params.put("maxResults", 5);
+
         RealmResource fakeRealmResource = mock(RealmResource.class);
         UsersResource fakeUsersResource = mock(UsersResource.class);
 
@@ -305,7 +559,7 @@ class KeycloakAdapterTest {
             when(fakeRealmResource.users()).thenReturn(fakeUsersResource);
             when(fakeUsersResource.list()).thenReturn(Collections.emptyList());
 
-            UserListDTO foundUsers = keycloakAdapter.getUsers(standardParams);
+            UserListDTO foundUsers = keycloakAdapter.getUsers(params);
 
             assertTrue(foundUsers.getUsers().isEmpty());
         }
