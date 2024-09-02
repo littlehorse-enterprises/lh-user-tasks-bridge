@@ -1,0 +1,71 @@
+name: build and publish
+on:
+  workflow_call:
+    inputs:
+      version:
+        type: string
+        default: main
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'corretto'
+
+      - name: Test and Build Artifact
+        run: ./gradlew build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: user-tasks-api-jar
+          path: build/libs
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: 
+      - test-and-build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: user-tasks-api-jar
+          path: ./build/libs/
+
+      - name: Build and publish
+        id: publish-image
+        uses: littlehorse-enterprises/publish-image@v1
+        with:
+          image-name: user-tasks-api
+          registry: ecr
+          tags: |
+            type=semver,pattern={{version}}
+            type=ref,event=branch
+
+      - name: Login to Quay.io
+        uses: docker/login-action@v3
+        with:
+          registry: quay.io
+          username: littlehorse+github
+          password: ${{ secrets.QUAY_REGISTRY_SECRET }}
+
+      - name: Get image
+        id: get-image
+        run: |
+          image=$(echo "${{ steps.publish-image.outputs.tags }}" | head -n 1)
+          echo "IMAGE=${image}" >> $GITHUB_ENV
+      - name: Push image to Quay
+        run: |
+          docker buildx imagetools create \
+            --tag quay.io/littlehorse/user-tasks-api:${{ inputs.version }} \
+            ${IMAGE}

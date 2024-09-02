@@ -1,11 +1,10 @@
-name: tests-and-build
+name: test
 run-name: Running Tests for branch ${{ github.ref_name }}
 on:
-  workflow_dispatch:
-  push:
-
+  pull_request:
+    
 jobs:
-  test-and-build:
+  test:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -16,8 +15,3 @@ jobs:
 
       - name: Test and Build Artifact
         run: ./gradlew build
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: user-tasks-api-jar
-          path: build/libs
