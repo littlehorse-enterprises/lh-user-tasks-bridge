@@ -1,0 +1,14 @@
+name: main
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  build-and-publish:
+    uses: ./.github/workflows/shared-publish.yml
+    secrets: inherit
