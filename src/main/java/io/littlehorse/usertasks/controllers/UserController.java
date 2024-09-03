@@ -106,8 +106,8 @@ public class UserController {
                                                              UserTaskStatus status,
                                                          @RequestParam(name = "type", required = false)
                                                              String type,
-                                                         @RequestParam(name = "user_group", required = false)
-                                                             String userGroup,
+                                                         @RequestParam(name = "user_group_id", required = false)
+                                                             String userGroupId,
                                                          @RequestParam(name = "limit")
                                                              Integer limit,
                                                          @RequestParam(name = "bookmark", required = false)
@@ -123,16 +123,16 @@ public class UserController {
             var additionalFilters = UserTaskRequestFilter.buildUserTaskRequestFilter(earliestStartDate, latestStartDate, status, type);
             var parsedBookmark = Objects.nonNull(bookmark) ? Base64.decodeBase64(bookmark) : null;
 
-            if (StringUtils.hasText(userGroup)) {
+            if (StringUtils.hasText(userGroupId)) {
                 var issuerUrl = (String) tokenClaims.get(ISSUER_URL_CLAIM);
 
                 CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(issuerUrl, identityProviderConfigProperties);
                 IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor());
 
-                identityProviderHandler.validateUserGroup(userGroup, accessToken);
+                identityProviderHandler.validateUserGroup(userGroupId, accessToken);
             }
 
-            UserTaskRunListDTO response = userTaskService.getTasks(tenantId, userIdFromToken, userGroup, additionalFilters,
+            UserTaskRunListDTO response = userTaskService.getTasks(tenantId, userIdFromToken, userGroupId, additionalFilters,
                     limit, parsedBookmark, false);
 
             return ResponseEntity.ok(response);
