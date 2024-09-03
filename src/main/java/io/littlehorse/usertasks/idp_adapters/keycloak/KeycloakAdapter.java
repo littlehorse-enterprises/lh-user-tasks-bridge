@@ -130,13 +130,13 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
     }
 
     @Override
-    public void validateUserGroup(String userGroup, String accessToken) {
+    public void validateUserGroup(String userGroupId, String accessToken) {
         String realm = getRealmFromToken(accessToken);
         Map<String, Object> params = Map.of(REALM_MAP_KEY, realm, ACCESS_TOKEN_MAP_KEY, accessToken);
         UserGroupListDTO myUserGroups = getMyUserGroups(params);
 
         if (CollectionUtils.isEmpty(myUserGroups.getGroups())
-                || myUserGroups.getGroups().stream().noneMatch(equalUserGroupNamePredicate(userGroup))) {
+                || myUserGroups.getGroups().stream().noneMatch(equalUserGroupIdPredicate(userGroupId))) {
             log.error("Cannot access requested group.");
             throw new ResponseStatusException(HttpStatus.FORBIDDEN);
         }
@@ -172,20 +172,20 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
         log.info("Validating assignment properties!");
 
         var userId = (String) params.get(USER_ID_MAP_KEY);
-        var userGroup = (String) params.get("userGroup");
+        var userGroupId = (String) params.get("userGroup");
         var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
 
-        if (CollectionUtils.isEmpty(params) || (StringUtils.isBlank(userId) && StringUtils.isBlank(userGroup))) {
+        if (CollectionUtils.isEmpty(params) || (StringUtils.isBlank(userId) && StringUtils.isBlank(userGroupId))) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No valid arguments were received to complete reassignment.");
         }
 
-        if (StringUtils.isNotBlank(userId) && StringUtils.isNotBlank(userGroup)) {
+        if (StringUtils.isNotBlank(userId) && StringUtils.isNotBlank(userGroupId)) {
             validateUserInfoForAssignment(params);
-            validateUserGroupForAssignment(params, accessToken, userGroup);
+            validateUserGroupForAssignment(params, accessToken, userGroupId);
         } else if (StringUtils.isNotBlank(userId)) {
             validateUserInfoForAssignment(params);
         } else {
-            validateUserGroupForAssignment(params, accessToken, userGroup);
+            validateUserGroupForAssignment(params, accessToken, userGroupId);
         }
     }
 
@@ -232,7 +232,7 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
         }
     }
 
-    private void validateUserGroupForAssignment(Map<String, Object> params, String accessToken, String userGroup) {
+    private void validateUserGroupForAssignment(Map<String, Object> params, String accessToken, String userGroupId) {
         var userId = (String) params.get(USER_ID_MAP_KEY);
         String realm = getRealmFromToken(accessToken);
         Map<String, Object> paramsWithRealm = new HashMap<>();
@@ -244,7 +244,7 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
                 : getUserGroups(paramsWithRealm);
 
         if (CollectionUtils.isEmpty(userGroups.getGroups())
-                || userGroups.getGroups().stream().noneMatch(equalUserGroupNamePredicate(userGroup))) {
+                || userGroups.getGroups().stream().noneMatch(equalUserGroupIdPredicate(userGroupId))) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot assign Task to non-existent group, " +
                     "nor can the Task be assigned to an existing group that the requested user is not a member of.");
         }
@@ -276,7 +276,7 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
         return filteredUsers;
     }
 
-    private Predicate<UserGroupDTO> equalUserGroupNamePredicate(String userGroup) {
-        return userGroupDTO -> StringUtils.equals(userGroup, userGroupDTO.getName());
+    private Predicate<UserGroupDTO> equalUserGroupIdPredicate(String userGroupId) {
+        return userGroupDTO -> StringUtils.equals(userGroupId, userGroupDTO.getId());
     }
 }

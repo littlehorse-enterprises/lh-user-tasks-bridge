@@ -648,8 +648,10 @@ class KeycloakAdapterTest {
         group1.setId(UUID.randomUUID().toString());
         group1.setName("Group #1");
 
+        var idGroup2 = UUID.randomUUID().toString();
+
         GroupRepresentation group2 = new GroupRepresentation();
-        group2.setId(UUID.randomUUID().toString());
+        group2.setId(idGroup2);
         group2.setName("Group #2");
 
         var fakeGroups = List.of(group1, group2);
@@ -663,7 +665,7 @@ class KeycloakAdapterTest {
             when(fakeUsersResource.get(anyString())).thenReturn(fakeUserResource);
             when(fakeUserResource.groups()).thenReturn(fakeGroups);
 
-            assertDoesNotThrow(() -> keycloakAdapter.validateUserGroup("Group #2", STUBBED_ACCESS_TOKEN));
+            assertDoesNotThrow(() -> keycloakAdapter.validateUserGroup(idGroup2, STUBBED_ACCESS_TOKEN));
         }
     }
 
@@ -920,7 +922,7 @@ class KeycloakAdapterTest {
     @Test
     void validateAssignmentProperties_shouldNotThrowAnyExceptionWhenUserIdAndUserGroupAreReceivedAndTheyAreFoundWithinRealm() {
         var userId = UUID.randomUUID().toString();
-        var requestedUserGroup = "Group #2";
+        var requestedUserGroup = UUID.randomUUID().toString();
         Map<String, Object> params = Map.of("userId", userId, "userGroup", requestedUserGroup, "accessToken", STUBBED_ACCESS_TOKEN);
 
         RealmResource fakeRealmResource = mock(RealmResource.class);
@@ -934,7 +936,7 @@ class KeycloakAdapterTest {
         group1.setName("Group #1");
 
         GroupRepresentation group2 = new GroupRepresentation();
-        group2.setId(UUID.randomUUID().toString());
+        group2.setId(requestedUserGroup);
         group2.setName("Group #2");
         var fakeGroups = List.of(group1, group2);
 
@@ -954,7 +956,7 @@ class KeycloakAdapterTest {
 
     @Test
     void validateAssignmentProperties_shouldNotThrowAnyExceptionWhenUserGroupIsReceivedAndItIsFoundWithinRealm() {
-        var requestedUserGroup = "Group #2";
+        var requestedUserGroup = UUID.randomUUID().toString();
         Map<String, Object> params = Map.of("userGroup", requestedUserGroup, "accessToken", STUBBED_ACCESS_TOKEN);
 
         RealmResource fakeRealmResource = mock(RealmResource.class);
@@ -965,7 +967,7 @@ class KeycloakAdapterTest {
         group1.setName("Group #1");
 
         GroupRepresentation group2 = new GroupRepresentation();
-        group2.setId(UUID.randomUUID().toString());
+        group2.setId(requestedUserGroup);
         group2.setName("Group #2");
         var fakeGroups = List.of(group1, group2);
 

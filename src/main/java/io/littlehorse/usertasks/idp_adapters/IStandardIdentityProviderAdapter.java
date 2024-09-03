@@ -18,7 +18,7 @@ public interface IStandardIdentityProviderAdapter {
 
     UserDTO getUserInfo(Map<String, Object> params);
 
-    void validateUserGroup(String userGroup, String accessToken);
+    void validateUserGroup(String userGroupId, String accessToken);
 
     void validateAssignmentProperties(Map<String, Object> params);
 }
