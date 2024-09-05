@@ -1,10 +1,18 @@
 package io.littlehorse.usertasks.models.responses;
 
+import io.littlehorse.usertasks.idp_adapters.IStandardIdentityProviderAdapter;
+import io.littlehorse.usertasks.models.common.UserDTO;
+import io.littlehorse.usertasks.models.common.UserGroupDTO;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
+import org.springframework.util.CollectionUtils;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -21,4 +29,39 @@ import java.util.Set;
 public class UserTaskRunListDTO {
     private Set<SimpleUserTaskRunDTO> userTasks;
     private String bookmark;
+
+    public void addAssignmentDetails(@NonNull String accessToken, @NonNull IStandardIdentityProviderAdapter identityProviderHandler) {
+        if (!CollectionUtils.isEmpty(this.getUserTasks())) {
+            this.getUserTasks().forEach(userTaskRunDTO -> {
+                Map<String, Object> params = new HashMap<>();
+                params.put("accessToken", accessToken);
+
+                addAssignedUserInfo(identityProviderHandler, userTaskRunDTO, params);
+                addAssignedUserGroupInfo(identityProviderHandler, userTaskRunDTO, params);
+            });
+        }
+    }
+
+    private void addAssignedUserInfo(IStandardIdentityProviderAdapter identityProviderHandler,
+                                     SimpleUserTaskRunDTO userTaskRunDTO, Map<String, Object> params) {
+        if (Objects.nonNull(userTaskRunDTO.getUser())) {
+            params.put("userId", userTaskRunDTO.getUser().getId());
+            UserDTO userDTO = identityProviderHandler.getUserInfo(params);
+
+            if (Objects.nonNull(userDTO)) {
+                userTaskRunDTO.setUser(userDTO);
+            }
+        }
+    }
+
+    private void addAssignedUserGroupInfo(IStandardIdentityProviderAdapter identityProviderHandler, SimpleUserTaskRunDTO userTaskRunDTO, Map<String, Object> params) {
+        if (Objects.nonNull(userTaskRunDTO.getUserGroup())) {
+            params.put("userGroupId", userTaskRunDTO.getUserGroup().getId());
+            UserGroupDTO userGroupDTO = identityProviderHandler.getUserGroup(params);
+
+            if (Objects.nonNull(userGroupDTO)) {
+                userTaskRunDTO.setUserGroup(userGroupDTO);
+            }
+        }
+    }
 }

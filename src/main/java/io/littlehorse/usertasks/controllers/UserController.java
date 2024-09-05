@@ -33,6 +33,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -122,18 +123,23 @@ public class UserController {
             var userIdFromToken = (String) tokenClaims.get(USER_ID_CLAIM);
             var additionalFilters = UserTaskRequestFilter.buildUserTaskRequestFilter(earliestStartDate, latestStartDate, status, type);
             var parsedBookmark = Objects.nonNull(bookmark) ? Base64.decodeBase64(bookmark) : null;
+            var issuerUrl = (String) tokenClaims.get(ISSUER_URL_CLAIM);
 
-            if (StringUtils.hasText(userGroupId)) {
-                var issuerUrl = (String) tokenClaims.get(ISSUER_URL_CLAIM);
+            CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(issuerUrl, identityProviderConfigProperties);
+            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor(), false);
 
-                CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(issuerUrl, identityProviderConfigProperties);
-                IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor());
+            boolean hasIdPAdapter = Objects.nonNull(identityProviderHandler);
 
+            if (StringUtils.hasText(userGroupId) && hasIdPAdapter) {
                 identityProviderHandler.validateUserGroup(userGroupId, accessToken);
             }
 
             UserTaskRunListDTO response = userTaskService.getTasks(tenantId, userIdFromToken, userGroupId, additionalFilters,
                     limit, parsedBookmark, false);
+
+            if (!CollectionUtils.isEmpty(response.getUserTasks()) && hasIdPAdapter) {
+                response.addAssignmentDetails(accessToken, identityProviderHandler);
+            }
 
             return ResponseEntity.ok(response);
         } catch (NotFoundException e) {
@@ -427,7 +433,7 @@ public class UserController {
                     identityProviderConfigProperties);
 
             Map<String, Object> params = Map.of("accessToken", accessToken);
-            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor());
+            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor(), true);
 
             var response = identityProviderHandler.getMyUserGroups(params);
 
@@ -492,7 +498,7 @@ public class UserController {
                     identityProviderConfigProperties);
 
             Map<String, Object> params = Map.of("userId", userId, "accessToken", accessToken);
-            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor());
+            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor(), true);
 
             var response = identityProviderHandler.getUserInfo(params);
 
@@ -508,11 +514,15 @@ public class UserController {
         }
     }
 
-    private IStandardIdentityProviderAdapter getIdentityProviderHandler(@NonNull IdentityProviderVendor vendor) {
+    private IStandardIdentityProviderAdapter getIdentityProviderHandler(@NonNull IdentityProviderVendor vendor, boolean strict) {
         if (vendor == IdentityProviderVendor.KEYCLOAK) {
             return new KeycloakAdapter();
         } else {
-            throw new ResponseStatusException(HttpStatus.NOT_ACCEPTABLE);
+            if (strict) {
+                throw new ResponseStatusException(HttpStatus.NOT_ACCEPTABLE);
+            } else {
+                return null;
+            }
         }
     }
 }

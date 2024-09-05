@@ -1,8 +1,8 @@
 name: test
-run-name: Running Tests for branch ${{ github.ref_name }}
+run-name: Running Tests for branch ${{ github.head_ref }}
 on:
   pull_request:
-    
+
 jobs:
   test:
     runs-on: ubuntu-latest

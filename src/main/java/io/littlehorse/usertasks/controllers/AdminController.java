@@ -36,6 +36,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -119,7 +120,7 @@ public class AdminController {
                                                          Integer limit,
                                                           @RequestParam(name = "user_id", required = false)
                                                          String userId,
-                                                          @RequestParam(name = "user_group", required = false)
+                                                          @RequestParam(name = "user_group_id", required = false)
                                                          String userGroup,
                                                           @RequestParam(name = "bookmark", required = false)
                                                          String bookmark) {
@@ -128,6 +129,9 @@ public class AdminController {
                 return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.UNAUTHORIZED)).build();
             }
 
+            Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
+            var issuerUrl = (String) tokenClaims.get(ISSUER_URL_CLAIM);
+
             var additionalFilters = UserTaskRequestFilter.buildUserTaskRequestFilter(earliestStartDate, latestStartDate,
                     status, type);
             byte[] parsedBookmark = Objects.nonNull(bookmark) ? Base64.decodeBase64(bookmark) : null;
@@ -135,9 +139,23 @@ public class AdminController {
             UserTaskRunListDTO response = userTaskService.getTasks(tenantId, userId, userGroup, additionalFilters,
                     limit, parsedBookmark, true);
 
+            CustomIdentityProviderProperties customIdentityProviderProperties = getCustomIdentityProviderProperties(issuerUrl,
+                    identityProviderConfigProperties);
+
+            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(customIdentityProviderProperties.getVendor(), false);
+
+            boolean hasIdpAdapter = Objects.nonNull(identityProviderHandler);
+
+            if (!CollectionUtils.isEmpty(response.getUserTasks()) && hasIdpAdapter) {
+                response.addAssignmentDetails(accessToken, identityProviderHandler);
+            }
+
             return ResponseEntity.ok(response);
         } catch (NotFoundException e) {
             return ResponseEntity.of(ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, e.getMessage())).build();
+        } catch (JsonProcessingException e) {
+            log.error("Something went wrong when getting claims from token while trying to fetch all tasks.");
+            return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR)).build();
         } catch (Exception e) {
             return ResponseEntity.of(ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage())).build();
         }
@@ -232,7 +250,8 @@ public class AdminController {
     })
     @GetMapping("/{tenant_id}/admin/tasks/{wf_run_id}/{user_task_guid}")
     @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<DetailedUserTaskRunDTO> getUserTaskDetail(@PathVariable(name = "tenant_id") String tenantId,
+    public ResponseEntity<DetailedUserTaskRunDTO> getUserTaskDetail(@RequestHeader("Authorization") String accessToken,
+                                                                    @PathVariable(name = "tenant_id") String tenantId,
                                                                     @PathVariable(name = "wf_run_id") String wfRunId,
                                                                     @PathVariable(name = "user_task_guid") String userTaskRunGuid) {
 
@@ -241,12 +260,23 @@ public class AdminController {
                 return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.UNAUTHORIZED)).build();
             }
 
+            Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
+            var issuerUrl = (String) tokenClaims.get(ISSUER_URL_CLAIM);
+
+            CustomIdentityProviderProperties customIdentityProviderProperties = getCustomIdentityProviderProperties(issuerUrl,
+                    identityProviderConfigProperties);
+
+            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(customIdentityProviderProperties.getVendor(), false);
+            boolean hasIdpAdapter = Objects.nonNull(identityProviderHandler);
+
             var optionalUserTaskDetail = userTaskService.getUserTaskDetails(wfRunId, userTaskRunGuid, tenantId,
                     null, null, true);
 
-            if (optionalUserTaskDetail.isEmpty()) {
-                return ResponseEntity.notFound().build();
-            }
+            optionalUserTaskDetail.ifPresent(detailedUserTaskRunDTO -> {
+                if (hasIdpAdapter) {
+                    detailedUserTaskRunDTO.addAssignmentDetails(accessToken, identityProviderHandler);
+                }
+            });
 
             return ResponseEntity.of(optionalUserTaskDetail);
         } catch (NotFoundException e) {
@@ -364,7 +394,7 @@ public class AdminController {
 
             //TODO: This condition MUST be updated in the event that we add support to more IdP adapters
             if (actualProperties.getVendor() == IdentityProviderVendor.KEYCLOAK) {
-                IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor());
+                IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor(), true);
 
                 Map<String, Object> params = new HashMap<>();
                 params.put("userId", requestBody.getUserId());
@@ -494,7 +524,7 @@ public class AdminController {
                     identityProviderConfigProperties);
 
             Map<String, Object> params = Map.of("accessToken", accessToken);
-            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor());
+            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor(), true);
 
             var response = identityProviderHandler.getUserGroups(params);
 
@@ -579,7 +609,7 @@ public class AdminController {
             params.put("firstResult", firstResult);
             params.put("maxResults", maxResults);
 
-            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor());
+            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor(), true);
 
             UserListDTO response = identityProviderHandler.getUsers(params);
 
@@ -654,7 +684,7 @@ public class AdminController {
                     identityProviderConfigProperties);
 
             Map<String, Object> params = Map.of("userId", userId, "accessToken", accessToken);
-            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor());
+            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor(), true);
 
             UserDTO response = identityProviderHandler.getUserInfo(params);
 
@@ -672,11 +702,15 @@ public class AdminController {
         }
     }
 
-    private IStandardIdentityProviderAdapter getIdentityProviderHandler(@NonNull IdentityProviderVendor vendor) {
+    private IStandardIdentityProviderAdapter getIdentityProviderHandler(@NonNull IdentityProviderVendor vendor, boolean strict) {
         if (vendor == IdentityProviderVendor.KEYCLOAK) {
             return new KeycloakAdapter();
         } else {
-            throw new ResponseStatusException(HttpStatus.NOT_ACCEPTABLE);
+            if (strict) {
+                throw new ResponseStatusException(HttpStatus.NOT_ACCEPTABLE);
+            } else {
+                return null;
+            }
         }
     }
 }
