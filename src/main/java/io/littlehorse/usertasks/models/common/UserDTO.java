@@ -1,9 +1,11 @@
 package io.littlehorse.usertasks.models.common;
 
+import io.littlehorse.sdk.common.proto.UserTaskRun;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NonNull;
 import org.keycloak.representations.idm.UserRepresentation;
 
 import java.util.function.Function;
@@ -36,5 +38,19 @@ public class UserDTO {
                 .firstName(userRepresentation.getFirstName())
                 .lastName(userRepresentation.getLastName())
                 .build();
+    }
+
+    /**
+     * Builds a partial {@code UserDTO} based on a {@code UserTaskRun} that might have a userId assigned
+     *
+     * @param userTaskRun UserTaskRun from which the userGroup might be taken from.
+     * @return A partial representation of a {@code UserDTO} that only has the ID property set, or null in case that
+     * the UserTaskRun does not have a userId set.
+     * @see UserTaskRun
+     */
+    public static UserDTO partiallyBuildFromUserTaskRun(@NonNull UserTaskRun userTaskRun) {
+        return userTaskRun.hasUserId()
+                ? UserDTO.builder().id(userTaskRun.getUserId()).build()
+                : null;
     }
 }

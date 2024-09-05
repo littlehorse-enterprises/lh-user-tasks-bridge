@@ -14,6 +14,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.UsersResource;
+import org.keycloak.representations.idm.GroupRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -162,6 +163,31 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
             return null;
         } catch (Exception e) {
             var errorMessage = "Something went wrong while fetching User's info from Keycloak realm.";
+            log.error(errorMessage, e);
+            throw new AdapterException(errorMessage);
+        }
+    }
+
+    @Override
+    public UserGroupDTO getUserGroup(Map<String, Object> params) {
+        try {
+            var userGroupId = (String) params.get("userGroupId");
+            var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
+
+            String realm = getRealmFromToken(accessToken);
+
+            Keycloak keycloak = getKeycloakInstance(realm, accessToken);
+            GroupRepresentation groupRepresentation = keycloak.realm(realm).groups().group(userGroupId).toRepresentation();
+
+            return UserGroupDTO.transform().apply(groupRepresentation);
+        } catch (AdapterException e) {
+            log.error(e.getMessage());
+            throw new AdapterException(e.getMessage());
+        } catch (NotFoundException e) {
+            log.error("Group could not be found", e);
+            return null;
+        } catch (Exception e) {
+            var errorMessage = "Something went wrong while fetching Group's info from Keycloak realm.";
             log.error(errorMessage, e);
             throw new AdapterException(errorMessage);
         }

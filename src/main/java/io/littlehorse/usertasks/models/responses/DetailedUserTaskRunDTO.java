@@ -4,6 +4,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import io.littlehorse.sdk.common.proto.UserTaskDef;
 import io.littlehorse.sdk.common.proto.UserTaskRun;
 import io.littlehorse.sdk.common.proto.VariableValue;
+import io.littlehorse.usertasks.idp_adapters.IStandardIdentityProviderAdapter;
+import io.littlehorse.usertasks.models.common.UserDTO;
+import io.littlehorse.usertasks.models.common.UserGroupDTO;
 import io.littlehorse.usertasks.models.common.UserTaskVariableValue;
 import io.littlehorse.usertasks.util.enums.UserTaskStatus;
 import jakarta.validation.constraints.NotBlank;
@@ -15,8 +18,10 @@ import lombok.NoArgsConstructor;
 import lombok.NonNull;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -40,8 +45,8 @@ public class DetailedUserTaskRunDTO {
     private String wfRunId;
     @NotBlank
     private String userTaskDefName;
-    private String userGroup;
-    private String userId;
+    private UserGroupDTO userGroup;
+    private UserDTO user;
     @NotNull
     private UserTaskStatus status;
     private String notes;
@@ -63,8 +68,8 @@ public class DetailedUserTaskRunDTO {
                 .id(userTaskRun.getId().getUserTaskGuid())
                 .wfRunId(userTaskRun.getId().getWfRunId().getId())
                 .userTaskDefName(userTaskRun.getUserTaskDefId().getName())
-                .userId(userTaskRun.getUserId())
-                .userGroup(userTaskRun.getUserGroup())
+                .user(UserDTO.partiallyBuildFromUserTaskRun(userTaskRun))
+                .userGroup(UserGroupDTO.partiallyBuildFromUserTaskRun(userTaskRun))
                 .notes(userTaskRun.getNotes())
                 .status(UserTaskStatus.fromServerStatus(userTaskRun.getStatus()))
                 .scheduledTime(timestampToLocalDateTime(userTaskRun.getScheduledTime()))
@@ -76,5 +81,38 @@ public class DetailedUserTaskRunDTO {
     private static Map<String, UserTaskVariableValue> fromServerTypeResults(Map<String, VariableValue> serverResults) {
         return serverResults.entrySet().stream()
                 .collect(Collectors.toMap(Map.Entry::getKey, entry -> UserTaskVariableValue.fromServerType(entry.getValue())));
+    }
+
+    public void addAssignmentDetails(@NonNull String accessToken, @NonNull IStandardIdentityProviderAdapter identityProviderHandler) {
+        Map<String, Object> params = new HashMap<>();
+        params.put("accessToken", accessToken);
+
+        addAssignedUserInfo(identityProviderHandler, this, params);
+        addAssignedUserGroupInfo(identityProviderHandler, this, params);
+
+    }
+
+    private void addAssignedUserInfo(IStandardIdentityProviderAdapter identityProviderHandler,
+                                     DetailedUserTaskRunDTO detailedUserTaskRunDTO, Map<String, Object> params) {
+        if (Objects.nonNull(detailedUserTaskRunDTO.getUser())) {
+            params.put("userId", detailedUserTaskRunDTO.getUser().getId());
+            UserDTO userDTO = identityProviderHandler.getUserInfo(params);
+
+            if (Objects.nonNull(userDTO)) {
+                detailedUserTaskRunDTO.setUser(userDTO);
+            }
+        }
+    }
+
+    private void addAssignedUserGroupInfo(IStandardIdentityProviderAdapter identityProviderHandler,
+                                          DetailedUserTaskRunDTO detailedUserTaskRunDTO, Map<String, Object> params) {
+        if (Objects.nonNull(detailedUserTaskRunDTO.getUserGroup())) {
+            params.put("userGroupId", detailedUserTaskRunDTO.getUserGroup().getId());
+            UserGroupDTO userGroupDTO = identityProviderHandler.getUserGroup(params);
+
+            if (Objects.nonNull(userGroupDTO)) {
+                detailedUserTaskRunDTO.setUserGroup(userGroupDTO);
+            }
+        }
     }
 }

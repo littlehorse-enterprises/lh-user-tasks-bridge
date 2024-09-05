@@ -1,6 +1,7 @@
 package io.littlehorse.usertasks.idp_adapters;
 
 import io.littlehorse.usertasks.models.common.UserDTO;
+import io.littlehorse.usertasks.models.common.UserGroupDTO;
 import io.littlehorse.usertasks.models.responses.UserGroupListDTO;
 import io.littlehorse.usertasks.models.responses.UserListDTO;
 
@@ -17,6 +18,8 @@ public interface IStandardIdentityProviderAdapter {
     UserListDTO getUsers(Map<String, Object> params);
 
     UserDTO getUserInfo(Map<String, Object> params);
+
+    UserGroupDTO getUserGroup(Map<String, Object> params);
 
     void validateUserGroup(String userGroupId, String accessToken);
 

@@ -193,7 +193,7 @@ class UserTaskServiceTest {
     @Test
     void getTasks_shouldReturnUserTaskListWhenTasksAreFoundForAGivenUserAndUserGroup() {
         var userId = UUID.randomUUID().toString();
-        var myUserGroup = "the_jedi_order";
+        var myUserGroup = UUID.randomUUID().toString();
         var wfRunId = UUID.randomUUID().toString();
 
         var foundUserTaskRunIdList = Set.of(buildFakeUserTaskRunId(wfRunId));
@@ -785,7 +785,7 @@ class UserTaskServiceTest {
         assertEquals(existingUserTaskGuid, foundUserTaskRunDTO.getId());
         assertFalse(foundUserTaskRunDTO.getFields().isEmpty());
         assertNull(foundUserTaskRunDTO.getEvents());
-        assertFalse(StringUtils.hasText(foundUserTaskRunDTO.getUserId()));
+        assertNull(foundUserTaskRunDTO.getUser());
         assertTrue(foundUserTaskRunDTO.getFields().stream().allMatch(hasMandatoryFieldsForUserTaskField()));
 
         verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
@@ -825,7 +825,7 @@ class UserTaskServiceTest {
         assertEquals(existingUserTaskGuid, foundUserTaskRunDTO.getId());
         assertFalse(foundUserTaskRunDTO.getFields().isEmpty());
         assertNull(foundUserTaskRunDTO.getEvents());
-        assertEquals(userId, foundUserTaskRunDTO.getUserId());
+        assertEquals(userId, foundUserTaskRunDTO.getUser().getId());
         assertTrue(foundUserTaskRunDTO.getFields().stream().allMatch(hasMandatoryFieldsForUserTaskField()));
 
         verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
@@ -2039,13 +2039,15 @@ class UserTaskServiceTest {
     private Predicate<SimpleUserTaskRunDTO> hasMandatoryFieldsForAUser(String userId) {
         return dto -> StringUtils.hasText(dto.getId()) && StringUtils.hasText(dto.getWfRunId())
                 && StringUtils.hasText(dto.getUserTaskDefName())
-                && StringUtils.hasText(dto.getUserId()) && dto.getUserId().equalsIgnoreCase(userId)
+                && Objects.nonNull(dto.getUser()) && StringUtils.hasText(dto.getUser().getId())
+                && dto.getUser().getId().equalsIgnoreCase(userId)
                 && Objects.nonNull(dto.getStatus()) && dto.getStatus() == UserTaskStatus.ASSIGNED
                 && Objects.nonNull(dto.getScheduledTime());
     }
 
     private Predicate<SimpleUserTaskRunDTO> hasUserGroup(String userGroup) {
-        return dto -> StringUtils.hasText(dto.getUserGroup()) && dto.getUserGroup().equalsIgnoreCase(userGroup);
+        return dto -> Objects.nonNull(dto.getUserGroup()) && StringUtils.hasText(dto.getUserGroup().getId())
+                && dto.getUserGroup().getId().equalsIgnoreCase(userGroup);
     }
 
     private Predicate<SimpleUserTaskRunDTO> hasScheduledTimeAfterEarliestStart(LocalDateTime earliestStartDate) {
