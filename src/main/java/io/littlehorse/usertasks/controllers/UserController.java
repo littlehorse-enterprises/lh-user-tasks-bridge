@@ -51,6 +51,8 @@ import java.util.Map;
 import java.util.Objects;
 
 import static io.littlehorse.usertasks.configurations.CustomIdentityProviderProperties.getCustomIdentityProviderProperties;
+import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.ALLOWED_TOKEN_CUSTOM_CLAIM;
+import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.AUTHORIZED_PARTY_CLAIM;
 import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.ISSUER_URL_CLAIM;
 import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.USER_ID_CLAIM;
 
@@ -114,7 +116,7 @@ public class UserController {
                                                          @RequestParam(name = "bookmark", required = false)
                                                              String bookmark) {
         try {
-            if (!tenantService.isValidTenant(tenantId)) {
+            if (!tenantService.isValidTenant(tenantId, accessToken)) {
                 return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.UNAUTHORIZED)).build();
             }
 
@@ -124,8 +126,11 @@ public class UserController {
             var additionalFilters = UserTaskRequestFilter.buildUserTaskRequestFilter(earliestStartDate, latestStartDate, status, type);
             var parsedBookmark = Objects.nonNull(bookmark) ? Base64.decodeBase64(bookmark) : null;
             var issuerUrl = (String) tokenClaims.get(ISSUER_URL_CLAIM);
+            var allowedTenant = (String) tokenClaims.get(ALLOWED_TOKEN_CUSTOM_CLAIM);
+            var client = (String) tokenClaims.get(AUTHORIZED_PARTY_CLAIM);
 
-            CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(issuerUrl, identityProviderConfigProperties);
+            CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(issuerUrl, allowedTenant,
+                    client, identityProviderConfigProperties);
             IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor(), false);
 
             boolean hasIdPAdapter = Objects.nonNull(identityProviderHandler);
@@ -189,7 +194,7 @@ public class UserController {
                                                                     @PathVariable(name = "user_task_guid") String userTaskRunGuid) {
 
         try {
-            if (!tenantService.isValidTenant(tenantId)) {
+            if (!tenantService.isValidTenant(tenantId, accessToken)) {
                 return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.UNAUTHORIZED)).build();
             }
 
@@ -247,7 +252,7 @@ public class UserController {
                                  @PathVariable(name = "wf_run_id") String wfRunId,
                                  @PathVariable(name = "user_task_guid") String userTaskRunGuid,
                                  @RequestBody Map<String, UserTaskVariableValue> requestBody) throws JsonProcessingException {
-        if (!tenantService.isValidTenant(tenantId)) {
+        if (!tenantService.isValidTenant(tenantId, accessToken)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
 
@@ -313,7 +318,7 @@ public class UserController {
                                @PathVariable(name = "tenant_id") String tenantId,
                                @PathVariable(name = "wf_run_id") String wfRunId,
                                @PathVariable(name = "user_task_guid") String userTaskRunGuid) throws JsonProcessingException {
-        if (!tenantService.isValidTenant(tenantId)) {
+        if (!tenantService.isValidTenant(tenantId, accessToken)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
 
@@ -374,7 +379,7 @@ public class UserController {
                               @PathVariable(name = "tenant_id") String tenantId,
                               @PathVariable(name = "wf_run_id") String wfRunId,
                               @PathVariable(name = "user_task_guid") String userTaskRunGuid) throws JsonProcessingException {
-        if (!tenantService.isValidTenant(tenantId)) {
+        if (!tenantService.isValidTenant(tenantId, accessToken)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
 
@@ -421,16 +426,18 @@ public class UserController {
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<UserGroupListDTO> getUserGroupsFromIdentityProvider(@PathVariable(name = "tenant_id") String tenantId,
                                                                               @RequestHeader(name = "Authorization") String accessToken) {
-        if (!tenantService.isValidTenant(tenantId)) {
+        if (!tenantService.isValidTenant(tenantId, accessToken)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
 
         try {
             Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
             var issuerUrl = (String) tokenClaims.get(ISSUER_URL_CLAIM);
+            var allowedTenant = (String) tokenClaims.get(ALLOWED_TOKEN_CUSTOM_CLAIM);
+            var client = (String) tokenClaims.get(AUTHORIZED_PARTY_CLAIM);
 
-            CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(issuerUrl,
-                    identityProviderConfigProperties);
+            CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(issuerUrl, allowedTenant,
+                    client, identityProviderConfigProperties);
 
             Map<String, Object> params = Map.of("accessToken", accessToken);
             IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor(), true);
@@ -485,7 +492,7 @@ public class UserController {
     @ResponseStatus(HttpStatus.OK)
     public ResponseEntity<UserDTO> getMyUserInfo(@RequestHeader(name = "Authorization") String accessToken,
                                                  @PathVariable(name = "tenant_id") String tenantId) {
-        if (!tenantService.isValidTenant(tenantId)) {
+        if (!tenantService.isValidTenant(tenantId, accessToken)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
 
@@ -493,9 +500,11 @@ public class UserController {
             Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
             var issuerUrl = (String) tokenClaims.get(ISSUER_URL_CLAIM);
             var userId = (String) tokenClaims.get(USER_ID_CLAIM);
+            var allowedTenant = (String) tokenClaims.get(ALLOWED_TOKEN_CUSTOM_CLAIM);
+            var client = (String) tokenClaims.get(AUTHORIZED_PARTY_CLAIM);
 
-            CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(issuerUrl,
-                    identityProviderConfigProperties);
+            CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(issuerUrl, allowedTenant,
+                    client, identityProviderConfigProperties);
 
             Map<String, Object> params = Map.of("userId", userId, "accessToken", accessToken);
             IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor(), true);

@@ -69,6 +69,17 @@ on http://localhost:8888
   to navigate to the **Settings** tab, scroll down until you reach the **Capability config** section, now disable the
   _**Client authentication**_ property (unless you want to use Service Account roles) and keep default values for all
   the other fields
+- Within the **Clients** section, click on your client id to see the details. Once you are seeing your client's details
+  navigate to the _Client Scopes_ tab and click on your client's scope. Once you have clicked on your client's scope,
+  you
+  will now see the mappers, and there you need to create one custom claim. To do that, click on _**Add mapper**_, and
+  select
+  _By configuration_. Now, from the list of mappings, choose **Hardcoded claim**. In the mapper details form you have to
+  set
+  **_allowed_tenant_** as the value in both fields _Name_ and _Token Claim Name_, and your tenant id MUST be the value
+  of
+  _Claim value_ field, keep the _Claim JSON Type_ as String and make sure that you switch on the _Add to access token_
+  property
 - Go to the **Users** section on the left sidebar, now you can create a user with username as `my-user`
   (email and names are optional, so, feel free to fill them up or ignore them)
 - Go to the **Credentials** tab in **Users** section and add a password as `1234` (Make sure that you uncheck
@@ -146,13 +157,15 @@ Here's what you need to modify in that file:
 - _**iss**_: Here you need to paste your Identity Provider's issuer url.
 - _**username-claim**_: This field is currently not being used, but it is part of the required configuration,
   so you can just leave it as is with the default value as _preferred_username_
-- _**authorities**_: Within this property you need to set at least 1 JSON path that indicates from where the roles are
+- _**authorities**_: Within this property you MUST set at least 1 JSON path that indicates from where the roles are
   going to be found within the token's claims, and this is important to help the API differentiate between ADMIN
   and NON-ADMIN users.
 - _**vendor**_: This indicates who is the vendor or identity provider in charge of the authentication of users for
   the previously set issuer. For now, Keycloak is the only vendor with access to all the features that this API
   provides.
-  _More vendors are going to be supported in the future._
+- **tenant-id**: This property must match your Tenant that MUST be already created within LittleHorse Server.
+- **clients**: Within this property you MUST set at least one client-id from your Keycloak realm from which your
+  access tokens will be generated.
 
 When you have your oidc-properties.yml properly configured, you will be ready to run UserTasks API from the source code.
 
