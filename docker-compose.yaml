@@ -2,7 +2,7 @@ services:
   user-tasks-keycloak:
     ports:
       - "8888:8888"
-    image: quay.io/keycloak/keycloak:21.1.1
+    image: quay.io/keycloak/keycloak:25.0.1
     healthcheck:
       test: "timeout 5s bash -c ':> /dev/tcp/localhost/8888'"
       timeout: 5s

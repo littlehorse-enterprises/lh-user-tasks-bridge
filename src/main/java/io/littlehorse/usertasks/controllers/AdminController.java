@@ -55,6 +55,8 @@ import java.util.Objects;
 
 import static io.littlehorse.usertasks.configurations.CustomIdentityProviderProperties.getCustomIdentityProviderProperties;
 import static io.littlehorse.usertasks.util.constants.AuthoritiesConstants.USER_TASKS_ADMIN;
+import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.ALLOWED_TOKEN_CUSTOM_CLAIM;
+import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.AUTHORIZED_PARTY_CLAIM;
 import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.ISSUER_URL_CLAIM;
 import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.USER_ID_CLAIM;
 
@@ -125,12 +127,14 @@ public class AdminController {
                                                           @RequestParam(name = "bookmark", required = false)
                                                          String bookmark) {
         try {
-            if (!tenantService.isValidTenant(tenantId)) {
+            if (!tenantService.isValidTenant(tenantId, accessToken)) {
                 return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.UNAUTHORIZED)).build();
             }
 
             Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
             var issuerUrl = (String) tokenClaims.get(ISSUER_URL_CLAIM);
+            var allowedTenant = (String) tokenClaims.get(ALLOWED_TOKEN_CUSTOM_CLAIM);
+            var client = (String) tokenClaims.get(AUTHORIZED_PARTY_CLAIM);
 
             var additionalFilters = UserTaskRequestFilter.buildUserTaskRequestFilter(earliestStartDate, latestStartDate,
                     status, type);
@@ -140,7 +144,7 @@ public class AdminController {
                     limit, parsedBookmark, true);
 
             CustomIdentityProviderProperties customIdentityProviderProperties = getCustomIdentityProviderProperties(issuerUrl,
-                    identityProviderConfigProperties);
+                    allowedTenant, client, identityProviderConfigProperties);
 
             IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(customIdentityProviderProperties.getVendor(), false);
 
@@ -195,12 +199,13 @@ public class AdminController {
     })
     @GetMapping("/{tenant_id}/admin/taskTypes")
     @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<UserTaskDefListDTO> getAllUserTasksDef(@PathVariable(name = "tenant_id") String tenantId,
+    public ResponseEntity<UserTaskDefListDTO> getAllUserTasksDef(@RequestHeader("Authorization") String accessToken,
+                                                                 @PathVariable(name = "tenant_id") String tenantId,
                                                                  @RequestParam(name = "limit") Integer limit,
                                                                  @RequestParam(name = "bookmark", required = false)
                                                                  String bookmark) {
         try {
-            if (!tenantService.isValidTenant(tenantId)) {
+            if (!tenantService.isValidTenant(tenantId, accessToken)) {
                 return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.UNAUTHORIZED)).build();
             }
 
@@ -256,15 +261,17 @@ public class AdminController {
                                                                     @PathVariable(name = "user_task_guid") String userTaskRunGuid) {
 
         try {
-            if (!tenantService.isValidTenant(tenantId)) {
+            if (!tenantService.isValidTenant(tenantId, accessToken)) {
                 return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.UNAUTHORIZED)).build();
             }
 
             Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
             var issuerUrl = (String) tokenClaims.get(ISSUER_URL_CLAIM);
+            var allowedTenant = (String) tokenClaims.get(ALLOWED_TOKEN_CUSTOM_CLAIM);
+            var client = (String) tokenClaims.get(AUTHORIZED_PARTY_CLAIM);
 
             CustomIdentityProviderProperties customIdentityProviderProperties = getCustomIdentityProviderProperties(issuerUrl,
-                    identityProviderConfigProperties);
+                    allowedTenant, client, identityProviderConfigProperties);
 
             IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(customIdentityProviderProperties.getVendor(), false);
             boolean hasIdpAdapter = Objects.nonNull(identityProviderHandler);
@@ -320,7 +327,7 @@ public class AdminController {
                                  @PathVariable(name = "wf_run_id") String wfRunId,
                                  @PathVariable(name = "user_task_guid") String userTaskRunGuid,
                                  @RequestBody Map<String, UserTaskVariableValue> requestBody) throws JsonProcessingException {
-        if (!tenantService.isValidTenant(tenantId)) {
+        if (!tenantService.isValidTenant(tenantId, accessToken)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
         var tokenClaims = TokenUtil.getTokenClaims(accessToken);
@@ -380,7 +387,7 @@ public class AdminController {
                                @PathVariable(name = "wf_run_id") String wfRunId,
                                @PathVariable(name = "user_task_guid") String userTaskRunGuid,
                                @RequestBody AssignmentRequest requestBody) {
-        if (!tenantService.isValidTenant(tenantId)) {
+        if (!tenantService.isValidTenant(tenantId, accessToken)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
 
@@ -388,9 +395,11 @@ public class AdminController {
             Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
 
             var issuerUrl = (String) tokenClaims.get(ISSUER_URL_CLAIM);
+            var allowedTenant = (String) tokenClaims.get(ALLOWED_TOKEN_CUSTOM_CLAIM);
+            var client = (String) tokenClaims.get(AUTHORIZED_PARTY_CLAIM);
 
-            CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(issuerUrl,
-                    identityProviderConfigProperties);
+            CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(issuerUrl, allowedTenant,
+                    client, identityProviderConfigProperties);
 
             //TODO: This condition MUST be updated in the event that we add support to more IdP adapters
             if (actualProperties.getVendor() == IdentityProviderVendor.KEYCLOAK) {
@@ -461,10 +470,11 @@ public class AdminController {
     })
     @PostMapping("/{tenant_id}/admin/tasks/{wf_run_id}/{user_task_guid}/cancel")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void cancelUserTask(@PathVariable(name = "tenant_id") String tenantId,
+    public void cancelUserTask(@RequestHeader("Authorization") String accessToken,
+                               @PathVariable(name = "tenant_id") String tenantId,
                                @PathVariable(name = "wf_run_id") String wfRunId,
                                @PathVariable(name = "user_task_guid") String userTaskRunGuid) {
-        if (!tenantService.isValidTenant(tenantId)) {
+        if (!tenantService.isValidTenant(tenantId, accessToken)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
 
@@ -510,18 +520,20 @@ public class AdminController {
     })
     @GetMapping("/{tenant_id}/admin/groups")
     @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<UserGroupListDTO> getUserGroupsFromIdentityProvider(@PathVariable(name = "tenant_id") String tenantId,
-                                                                              @RequestHeader(name = "Authorization") String accessToken) {
-        if (!tenantService.isValidTenant(tenantId)) {
+    public ResponseEntity<UserGroupListDTO> getUserGroupsFromIdentityProvider(@RequestHeader(name = "Authorization") String accessToken,
+                                                                              @PathVariable(name = "tenant_id") String tenantId) {
+        if (!tenantService.isValidTenant(tenantId, accessToken)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
 
         try {
             Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
             var issuerUrl = (String) tokenClaims.get(ISSUER_URL_CLAIM);
+            var allowedTenant = (String) tokenClaims.get(ALLOWED_TOKEN_CUSTOM_CLAIM);
+            var client = (String) tokenClaims.get(AUTHORIZED_PARTY_CLAIM);
 
-            CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(issuerUrl,
-                    identityProviderConfigProperties);
+            CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(issuerUrl, allowedTenant,
+                    client, identityProviderConfigProperties);
 
             Map<String, Object> params = Map.of("accessToken", accessToken);
             IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor(), true);
@@ -579,8 +591,8 @@ public class AdminController {
     })
     @GetMapping("/{tenant_id}/admin/users")
     @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<UserListDTO> getUsersFromIdentityProvider(@PathVariable(name = "tenant_id") String tenantId,
-                                                                    @RequestHeader(name = "Authorization") String accessToken,
+    public ResponseEntity<UserListDTO> getUsersFromIdentityProvider(@RequestHeader(name = "Authorization") String accessToken,
+                                                                    @PathVariable(name = "tenant_id") String tenantId,
                                                                     @RequestParam(name = "email", required = false) String email,
                                                                     @RequestParam(name = "first_name", required = false) String firstName,
                                                                     @RequestParam(name = "last_name", required = false) String lastName,
@@ -588,16 +600,18 @@ public class AdminController {
                                                                     @RequestParam(name = "user_group_id", required = false) String userGroupId,
                                                                     @RequestParam(name = "first_result", defaultValue = "0") Integer firstResult,
                                                                     @RequestParam(name = "max_results", defaultValue = "10") Integer maxResults) {
-        if (!tenantService.isValidTenant(tenantId)) {
+        if (!tenantService.isValidTenant(tenantId, accessToken)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
 
         try {
             Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
             var issuerUrl = (String) tokenClaims.get(ISSUER_URL_CLAIM);
+            var allowedTenant = (String) tokenClaims.get(ALLOWED_TOKEN_CUSTOM_CLAIM);
+            var client = (String) tokenClaims.get(AUTHORIZED_PARTY_CLAIM);
 
-            CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(issuerUrl,
-                    identityProviderConfigProperties);
+            CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(issuerUrl, allowedTenant,
+                    client, identityProviderConfigProperties);
 
             Map<String, Object> params = new HashMap<>();
             params.put("accessToken", accessToken);
@@ -669,19 +683,21 @@ public class AdminController {
     })
     @GetMapping("/{tenant_id}/admin/users/{user_id}")
     @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<UserDTO> getUserFromIdentityProvider(@PathVariable(name = "tenant_id") String tenantId,
-                                                               @PathVariable(name = "user_id") String userId,
-                                                               @RequestHeader(name = "Authorization") String accessToken) {
-        if (!tenantService.isValidTenant(tenantId)) {
+    public ResponseEntity<UserDTO> getUserFromIdentityProvider(@RequestHeader(name = "Authorization") String accessToken,
+                                                               @PathVariable(name = "tenant_id") String tenantId,
+                                                               @PathVariable(name = "user_id") String userId) {
+        if (!tenantService.isValidTenant(tenantId, accessToken)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
 
         try {
             Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
             var issuerUrl = (String) tokenClaims.get(ISSUER_URL_CLAIM);
+            var allowedTenant = (String) tokenClaims.get(ALLOWED_TOKEN_CUSTOM_CLAIM);
+            var client = (String) tokenClaims.get(AUTHORIZED_PARTY_CLAIM);
 
-            CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(issuerUrl,
-                    identityProviderConfigProperties);
+            CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(issuerUrl, allowedTenant,
+                    client, identityProviderConfigProperties);
 
             Map<String, Object> params = Map.of("userId", userId, "accessToken", accessToken);
             IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor(), true);

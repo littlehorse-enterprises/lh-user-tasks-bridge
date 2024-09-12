@@ -51,7 +51,7 @@ public class InitController {
     @GetMapping("/{tenant_id}/init")
     public void initIntegrationForTenant(@RequestHeader("Authorization") String accessToken,
                                          @PathVariable(name = "tenant_id") String tenantId) {
-        if (!tenantService.isValidTenant(tenantId)) {
+        if (!tenantService.isValidTenant(tenantId, accessToken)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
 
