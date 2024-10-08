@@ -52,3 +52,17 @@ services:
       - LHC_API_HOST=littlehorse
       - LHC_API_PORT=2023
       - LHC_TENANT_ID=lh
+  user-task-ui:
+    build:
+      context: ./lh-user-tasks-ui
+      dockerfile: Dockerfile
+    ports:
+      - '3000:3000'
+    environment:
+      - NEXTAUTH_SECRET=your-secret
+      - KEYCLOAK_HOST=your-host-url
+      - KEYCLOAK_CLIENT_ID=your-client-id
+      - NEXT_PUBLIC_KEYCLOAK_REALM=lh
+      - KEYCLOAK_REALM=lh
+      - NEXT_PUBLIC_SERVER_URL=http://localhost:8089
+      - NEXT_PUBLIC_KEYCLOAK_REALM=

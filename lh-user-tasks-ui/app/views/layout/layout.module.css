@@ -1,0 +1,96 @@
+/* header css */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #ffffff; /* White background */
+  padding: 10px 20px;
+  color: #000; /* Black text */
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+}
+
+.leftSection {
+  display: flex;
+  align-items: center;
+}
+
+.logoContainer {
+  display: flex;
+  align-items: center;
+  width: 2rem;
+  height: auto;
+}
+
+.logoText {
+  font-size: 18px;
+  font-weight: bold;
+  color: #000; /* Black text */
+  margin-left: 10px;
+}
+
+.rightSection {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.profile {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.profileName {
+  margin-right: 10px;
+  font-size: 12px;
+  font-weight: medium;
+}
+
+.profileIcon {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.dropdownMenu {
+  display: block;
+  position: absolute;
+  top: 40px;
+  right: 0;
+  background-color: #fff;
+  padding: 6px 10px;
+  border-radius: 5px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* Updated shadow */
+  z-index: 10;
+}
+
+.logoutButton {
+  color: #000;
+  border-radius: 3px;
+  cursor: pointer;
+  width: 100%;
+  padding: 0px 8px;
+  text-align: left;
+  transition: background-color 0.3s ease;
+  font-size: 12px;
+}
+
+.logoutButton:hover {
+  background-color: #e0e0e0; /* Slightly darker on hover */
+}
+
+/* foote css */
+
+.copyright {
+  margin-top: 20px;
+  border-top: 1px solid #333333;
+  padding-top: 20px;
+  text-align: center;
+}
+
+.copyright p {
+  margin: 0;
+  font-size: 12px;
+  color: #000;
+}
