@@ -19,8 +19,6 @@ services:
     depends_on:
       user-tasks-keycloak:
         condition: service_healthy
-    environment:
-      - LHCC_KEYCLOAK_CLIENT_SECRET=${LHCC_KEYCLOAK_CLIENT_SECRET}
   littlehorse:
     image: ghcr.io/littlehorse-enterprises/littlehorse/lh-standalone:master
     healthcheck:
@@ -52,3 +50,17 @@ services:
       - LHC_API_HOST=littlehorse
       - LHC_API_PORT=2023
       - LHC_TENANT_ID=lh
+  user-task-ui:
+    build:
+      context: ../lh-user-tasks-ui
+      dockerfile: Dockerfile
+    ports:
+      - '3000:3000'
+    environment:
+      - NEXTAUTH_SECRET=your-secret
+      - KEYCLOAK_HOST=http://user-tasks-keycloak:8888 # this is being called from the next js back side
+      - KEYCLOAK_CLIENT_ID=user-tasks-client
+      - KEYCLOAK_REALM=lh
+      - NEXT_PUBLIC_KEYCLOAK_REALM=lh
+      - NEXT_PUBLIC_SERVER_URL=http://localhost:8089 # this is being called from the next js front side
+

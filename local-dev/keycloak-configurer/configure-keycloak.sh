@@ -20,6 +20,7 @@ configure_keycloak() {
     KEYCLOAK_ADMIN_PASSWORD="admin"
     KEYCLOAK_PORT="8888"
     KEYCLOAK_CLIENT_ID="user-tasks-client"
+    KEYCLOAK_CLIENT_SECRET="any-secret"
 
     echo "Getting admin access token"
 
@@ -53,7 +54,7 @@ configure_keycloak() {
           id="$KEYCLOAK_CLIENT_ID"  \
           protocol="openid-connect" \
           clientId="$KEYCLOAK_CLIENT_ID" \
-          secret="${LHCC_KEYCLOAK_CLIENT_SECRET}" \
+          secret="${KEYCLOAK_CLIENT_SECRET}" \
           name="LH-Client" \
           description="LH-Client" \
           directAccessGrantsEnabled:=true \
@@ -81,7 +82,7 @@ configure_keycloak() {
     [0][name]="manage-users"
 
    echo "Keycloak Client Id '${KEYCLOAK_CLIENT_ID}' created"
-   echo "Keycloak Client Secret '${LHCC_KEYCLOAK_CLIENT_SECRET}' created"
+   echo "Keycloak Client Secret '${KEYCLOAK_CLIENT_SECRET}' created"
 
 #   TODO: It's probably a good idea to create the test user here as well
 }

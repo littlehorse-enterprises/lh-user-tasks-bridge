@@ -9,16 +9,6 @@ com:
               - path: $.realm_access.roles
               - path: $.resource_access.*.roles
             vendor: keycloak
-            tenant-id: my-local-tenant
+            tenant-id: lh
             clients:
               - user-tasks-client
-              - user-tasks-client-2
-          - iss: http://user-tasks-keycloak:8888/realms/lh-2
-            username-claim: preferred_username
-            authorities:
-              - path: $.realm_access.roles
-              - path: $.resource_access.*.roles
-            vendor: keycloak
-            tenant-id: my-local-tenant-2
-            clients:
-              - user-tasks-client-lh-2
