@@ -80,21 +80,15 @@ on http://localhost:8888
   of
   _Claim value_ field, keep the _Claim JSON Type_ as String and make sure that you switch on the _Add to access token_
   property
-- Go to the **Users** section on the left sidebar, now you can create a user with username as `my-user`
-  (email and names are optional, so, feel free to fill them up or ignore them)
-- Go to the **Credentials** tab in **Users** section and add a password as `1234` (Make sure that you uncheck
-  the `Temporary` field)
 - Make sure that you assign the role `view-users` to all your users (ADMIN & NON-ADMIN) that will access UserTasks API
-  so
-  that they can query their own user details and see their groups. To do this you need to go to the **Users** section on
+  so that they can query their own user details and see their groups. To do this you need to go to the **Users** section on
   the
   left sidebar, click on the user that you want to assign roles to, now go to the **_Role Mapping_** tab, click on
   `Assign role`,
   on the PopUp window that gets displayed select "Filter by clients", go through the list of available roles and select
   the one named as `view-users` and click on **Assign**
 - In order to have an ADMIN user, you first need to create a role named as `lh-user-tasks-admin`. To create this role,
-  you need to go to the **Realm roles** section on the left sidebar, click on `Create role`, set **_lh-user-tasks-admin_
-  **
+  you need to go to the **Realm roles** section on the left sidebar, click on `Create role`, set **_lh-user-tasks-admin_**
   as _Role name_ and click on `Save` (Description is optional, so feel free to ignore it if you want)
 - Now that you have the UserTasks Admin role created, you can assign it to the users that you decide that are going to
   have ADMIN privileges.
