@@ -20,7 +20,7 @@ services:
       user-tasks-keycloak:
         condition: service_healthy
   littlehorse:
-    image: ghcr.io/littlehorse-enterprises/littlehorse/lh-standalone:master
+    image: ghcr.io/littlehorse-enterprises/littlehorse/lh-standalone:0.11.2
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:1822/liveness" ]
       timeout: 10s
@@ -32,7 +32,7 @@ services:
     environment:
       - LHC_API_HOST=http://littlehorse
       - LHC_API_PORT=2023
-      - LHC_TENANT_ID=lh
+      - LHC_TENANT_ID=default
       - LHS_LISTENERS=PLAIN:2023
       - LHS_ADVERTISED_LISTENERS=PLAIN://littlehorse:2023
   backend:
@@ -49,7 +49,7 @@ services:
     environment:
       - LHC_API_HOST=littlehorse
       - LHC_API_PORT=2023
-      - LHC_TENANT_ID=lh
+      - LHC_TENANT_ID=default
   user-task-ui:
     build:
       context: ../lh-user-tasks-ui
@@ -60,7 +60,7 @@ services:
       - NEXTAUTH_SECRET=your-secret
       - KEYCLOAK_HOST=http://user-tasks-keycloak:8888 # this is being called from the next js back side
       - KEYCLOAK_CLIENT_ID=user-tasks-client
-      - KEYCLOAK_REALM=lh
-      - NEXT_PUBLIC_KEYCLOAK_REALM=lh
-      - NEXT_PUBLIC_SERVER_URL=http://localhost:8089 # this is being called from the next js front side
+      - KEYCLOAK_REALM=default
+      - KEYCLOAK_CLIENT_SECRET=test
+      - SERVER_URL=http://localhost:8089 # this is being called from the next js front side
 
