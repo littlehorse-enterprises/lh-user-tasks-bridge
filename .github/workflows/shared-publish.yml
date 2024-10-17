@@ -46,7 +46,7 @@ jobs:
         id: publish-image
         uses: littlehorse-enterprises/publish-image@v1
         with:
-          image-name: user-tasks-api
+          image-name: lh-user-tasks-api
           registry: ecr
           tags: |
             type=semver,pattern={{version}}
@@ -67,5 +67,5 @@ jobs:
       - name: Push image to Quay
         run: |
           docker buildx imagetools create \
-            --tag quay.io/littlehorse/user-tasks-api:${{ inputs.version }} \
+            --tag quay.io/littlehorse/lh-user-tasks-api:${{ inputs.version }} \
             ${IMAGE}
