@@ -53,7 +53,7 @@ jobs:
             type=ref,event=branch
 
       - name: Build and Publish Standalone
-        id: publish-image
+        id: publish-standalone-image
         uses: littlehorse-enterprises/publish-image@v1
         with:
           image-name: lh-user-tasks-standalone
