@@ -6,7 +6,7 @@ set -e
 /lh/keycloak-entrypoint.sh &
 
 # 60s default timeout
-if ! kafka-topics.sh --bootstrap-server=localhost:9092 --list > /dev/null 2>&1; then
+if ! kafka-topics.sh --bootstrap-server=localhost:9092 --list >/dev/null 2>&1; then
     echo "Error trying to connect to kafka, exiting..."
     exit 1
 fi
@@ -19,9 +19,9 @@ done
 /lh/littlehorse-entrypoint.sh &
 /lh/dashboard-entrypoint.sh &
 
-if ! lhctl version >/dev/null 2>&1; then
+while ! lhctl version >/dev/null 2>&1; do
     echo "Waiting for lh"
     sleep 1
-fi
+done
 
 tail -f /dev/null
