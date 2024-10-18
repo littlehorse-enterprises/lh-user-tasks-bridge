@@ -3,12 +3,12 @@ com:
     springaddons:
       oidc:
         ops:
-          - iss: http://localhost:8888/realms/lh
+          - iss: http://localhost:8888/realms/default
             username-claim: preferred_username
             authorities:
               - path: $.realm_access.roles
               - path: $.resource_access.*.roles
             vendor: keycloak
-            tenant-id: lh
+            tenant-id: default
             clients:
               - user-tasks-client

@@ -27,3 +27,4 @@ COPY ./build/libs/user-tasks.jar /user-task-api
 COPY ./standalone/api-properties.yml /user-task-api
 
 WORKDIR /
+RUN apt update && apt install -y httpie jq openjdk-21-jdk
