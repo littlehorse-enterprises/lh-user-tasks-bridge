@@ -7,7 +7,7 @@ exclude: |
 fail_fast: true
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v5.0.0
     hooks:
       - id: trailing-whitespace
         name: Trailing Whitespace
@@ -16,7 +16,7 @@ repos:
       - id: check-added-large-files
         name: Check For Any Large Added File
   - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.9.0.6
+    rev: v0.10.0.1
     hooks:
       - id: shellcheck
         name: List Shell Scripts
