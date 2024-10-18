@@ -17,5 +17,12 @@ RUN mkdir /lhctl \
     && tar -xzf /tmp/lhctl.tar.gz -C /lhctl \
     && rm /tmp/lhctl.tar.gz
 
+RUN mkdir /user-task-api \
+    && mkdir /user-task-ui
+
 COPY ./standalone/keycloak-entrypoint.sh /lh
 COPY ./standalone/docker-entrypoint.sh /lh
+COPY ./standalone/api-entrypoint.sh /lh
+
+COPY ./build/libs/user-tasks.jar /user-task-api
+COPY ./standalone/api-properties.yml /user-task-api
