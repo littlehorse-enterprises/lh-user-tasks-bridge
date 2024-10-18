@@ -40,4 +40,3 @@ protect_breaking_commits = false
 filter_commits = false
 topo_order = false
 sort_commits = "oldest"
-
