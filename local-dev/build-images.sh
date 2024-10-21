@@ -22,4 +22,6 @@ echo "Building lh-user-tasks-ui"
 "${UI_DIR}/local-dev/build.sh"
 
 echo "Building lh-user-tasks-standalone"
-docker build -t ghcr.io/littlehorse-enterprises/littlehorse/lh-user-tasks-standalone:latest -f ./standalone/Dockerfile .
+cp -r "${UI_DIR}/.next" ./.next
+cp -r "${UI_DIR}/public" ./public
+docker build -t ghcr.io/littlehorse-enterprises/lh-user-tasks-api/lh-user-tasks-standalone -f ./standalone/Dockerfile .
