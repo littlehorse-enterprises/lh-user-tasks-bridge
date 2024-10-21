@@ -7,6 +7,8 @@ ARG LH_VERSION
 ARG KEYCLOAK_VERSION
 ENV PATH=${PATH}:/keycloak/bin:/lhctl
 
+RUN apt update && apt install -y httpie jq openjdk-21-jdk
+
 WORKDIR /keycloak
 RUN wget -q https://github.com/keycloak/keycloak/releases/download/${KEYCLOAK_VERSION}/keycloak-${KEYCLOAK_VERSION}.tar.gz -O /tmp/keycloak.tar.gz \
     && tar -xzf /tmp/keycloak.tar.gz --strip-components 1 -C /keycloak \
@@ -21,10 +23,14 @@ WORKDIR /lh
 COPY ./standalone/keycloak-entrypoint.sh /lh
 COPY ./standalone/docker-entrypoint.sh /lh
 COPY ./standalone/api-entrypoint.sh /lh
+COPY ./standalone/ui-entrypoint.sh /lh
 
 WORKDIR /user-task-api
 COPY ./build/libs/user-tasks.jar /user-task-api
 COPY ./standalone/api-properties.yml /user-task-api
 
+WORKDIR /user-task-ui
+# COPY ./.next/standalone ./
+# COPY ./.next/static ./.next/static
+
 WORKDIR /
-RUN apt update && apt install -y httpie jq openjdk-21-jdk
