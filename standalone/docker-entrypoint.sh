@@ -26,5 +26,6 @@ while ! curl --silent --fail --output /dev/null http://localhost:8888; do
 done
 
 /lh/api-entrypoint.sh &
+/lh/ui-entrypoint.sh &
 
 tail -f /dev/null

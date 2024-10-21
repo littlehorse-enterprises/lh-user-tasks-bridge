@@ -10,15 +10,14 @@ jobs:
   test-and-build:
     runs-on: ubuntu-latest
     steps:
-
       - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
-          java-version: '21'
-          distribution: 'corretto'
+          java-version: "21"
+          distribution: "corretto"
 
       - name: Test and Build Artifact
         run: ./gradlew build
@@ -28,21 +27,58 @@ jobs:
           name: user-tasks-api-jar
           path: build/libs
 
+  build-ui:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone UI
+        uses: actions/checkout@v4
+        with:
+          repository: littlehorse-enterprises/lh-user-tasks-ui
+          path: lh-user-tasks-ui
+          ref: main
+          token: ${{ secrets.PAT_LH_USER_TASKS_UI }}
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build UI
+        working-directory: lh-user-tasks-ui
+        run: |
+          npm ci
+          npm run build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: user-tasks-ui
+          path:  |
+            lh-user-tasks-ui/.next/standalone
+            lh-user-tasks-ui/.next/static
+            lh-user-tasks-ui/public
+
   docker:
     runs-on: ubuntu-latest
     needs:
       - test-and-build
+      - build-ui
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Download artifact
+      - name: Download API Artifact
         uses: actions/download-artifact@v4
         with:
           name: user-tasks-api-jar
           path: ./build/libs/
 
-      - name: Build and publish
+      - name: Download UI Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: user-tasks-ui
+          path: ./
+
+      - name: Build and Publish
         id: publish-image
         uses: littlehorse-enterprises/publish-image@v1
         with:
