@@ -15,8 +15,14 @@ RUN wget -q https://github.com/keycloak/keycloak/releases/download/${KEYCLOAK_VE
     && rm /tmp/keycloak.tar.gz
 
 WORKDIR /lhctl
-# https://github.com/littlehorse-enterprises/littlehorse/blob/master/local-dev/Dockerfile
-RUN wget -q https://github.com/littlehorse-enterprises/littlehorse/releases/download/v${LH_VERSION}/lhctl_Linux_x86_64.tar.gz -O /tmp/lhctl.tar.gz \
+RUN set -x; \
+    dpkgArch="$(uname -m)" && \
+    case "$dpkgArch" in \
+    x86_64) ARCH='x86_64';; \
+    aarch64) ARCH='arm64';; \
+    *) echo >&2 "error: unsupported architecture: $dpkgArch"; exit 1 ;; \
+    esac \
+    && wget -q https://github.com/littlehorse-enterprises/littlehorse/releases/download/v${LH_VERSION}/lhctl_Linux_${ARCH}.tar.gz -O /tmp/lhctl.tar.gz \
     && tar -xzf /tmp/lhctl.tar.gz -C /lhctl \
     && rm /tmp/lhctl.tar.gz
 
