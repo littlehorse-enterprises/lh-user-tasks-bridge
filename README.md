@@ -108,6 +108,7 @@ curl --request POST \
 --url http://localhost:8888/realms/lh/protocol/openid-connect/token \
 --header 'Content-Type: application/x-www-form-urlencoded' \
 --data client_id=user-tasks-client \
+--data client_secret= \
 --data username=my-user \
 --data password=1234 \
 --data grant_type=password
