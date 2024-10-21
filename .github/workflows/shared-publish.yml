@@ -52,6 +52,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: user-tasks-ui
+          include-hidden-files: true
           path:  |
             lh-user-tasks-ui/.next/standalone
             lh-user-tasks-ui/.next/static
