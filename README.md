@@ -55,7 +55,7 @@ in `docker-compose.yaml`. You can run Keycloak, a local LH Server and the UserTa
 If the `docker compose up` command ended successfully, then you should see 4 containers running:
 
 - 1 for Keycloak
-- 1 for LittleHorse
+- 1 for LittleHorse Standalone (LH Server and LH Dashboard)
 - 1 for user-tasks-api
 - 1 for user-tasks-ui
 
@@ -70,25 +70,6 @@ on http://localhost:8888
   to navigate to the **Settings** tab, scroll down until you reach the **Capability config** section, now disable the
   _**Client authentication**_ property (unless you want to use Service Account roles) and keep default values for all
   the other fields
-- Within the **Clients** section, click on your client id to see the details. Once you are seeing your client's details
-  navigate to the _Client Scopes_ tab and click on your client's scope. Once you have clicked on your client's scope,
-  you
-  will now see the mappers, and there you need to create one custom claim. To do that, click on _**Add mapper**_, and
-  select
-  _By configuration_. Now, from the list of mappings, choose **Hardcoded claim**. In the mapper details form you have to
-  set
-  **_allowed_tenant_** as the value in both fields _Name_ and _Token Claim Name_, and your tenant id MUST be the value
-  of
-  _Claim value_ field, keep the _Claim JSON Type_ as String and make sure that you switch on the _Add to access token_
-  property
-- Make sure that you assign the role `view-users` to all your users (ADMIN & NON-ADMIN) that will access UserTasks API
-  so that they can query their own user details and see their groups. To do this you need to go to the **Users** section on
-  the
-  left sidebar, click on the user that you want to assign roles to, now go to the **_Role Mapping_** tab, click on
-  `Assign role`,
-  on the PopUp window that gets displayed select "Filter by clients", go through the list of available roles and select
-  the one named as `view-users` and click on **Assign**
-
 
 Also, you will need an access token to be able to be granted authorized access into user-tasks backend endpoints.
 In order to fetch said token, you can use the following cURL as is from the terminal, or you can import it

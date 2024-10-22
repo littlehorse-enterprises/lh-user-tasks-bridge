@@ -70,6 +70,21 @@ configure_keycloak() {
 
    echo "Client successfully created"
 
+   echo "Creating tenant custom claim"
+   http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" POST "http://user-tasks-keycloak:8888/admin/realms/$REALM_NAME/clients/$KEYCLOAK_CLIENT_ID/protocol-mappers/models" \
+                 protocol=openid-connect \
+                 protocolMapper=oidc-hardcoded-claim-mapper \
+                 name=allowed_tenant \
+                 config[claim.name]=allowed_tenant \
+                 config[claim.value]=default \
+                 config[jsonType.label]=String \
+                 config[id.token.claim]:=true \
+                 config[access.token.claim]:=true \
+                 config[lightweight.claim]:=false \
+                 config[userinfo.token.claim]:=true \
+                 config[access.tokenResponse.claim]:=false \
+                 config[introspection.token.claim]:=true
+
   SERVICE_ACCOUNT=$(http --ignore-stdin -A bearer -a "$KEYCLOAK_ADMIN_ACCESS_TOKEN" "http://user-tasks-keycloak:8888/admin/realms/$REALM_NAME/clients/$KEYCLOAK_CLIENT_ID/service-account-user" | jq -r ".id")
 
   REAL_MANAGEMENT_CLIENT_ID=$(http --ignore-stdin -A bearer -a "$KEYCLOAK_ADMIN_ACCESS_TOKEN" "http://user-tasks-keycloak:8888/admin/realms/$REALM_NAME/ui-ext/available-roles/users/$SERVICE_ACCOUNT?first=0&max=11&search=manage-user" | jq -r ".[0].clientId")
@@ -115,22 +130,27 @@ configure_keycloak() {
                credentials[0][temporary]:=false \
 
    echo "Fetching Users' IDs"
-#   NON_ADMIN_USER_ID=$(http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" "http://user-tasks-keycloak:8888/admin/realms/$REALM_NAME/users/?username=my-user" | jq -r ".[0].id")
+   NON_ADMIN_USER_ID=$(http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" "http://user-tasks-keycloak:8888/admin/realms/$REALM_NAME/users/?username=my-user" | jq -r ".[0].id")
    ADMIN_USER_ID=$(http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" "http://user-tasks-keycloak:8888/admin/realms/$REALM_NAME/users/?username=my-admin-user" | jq -r ".[0].id")
 
    echo "Fetching Roles' IDs"
-#   VIEW_USERS_ROLE_ID=$(http --ignore-stdin -A bearer -a "$KEYCLOAK_ADMIN_ACCESS_TOKEN" "http://user-tasks-keycloak:8888/admin/realms/$REALM_NAME/clients/$KEYCLOAK_CLIENT_ID/roles/view-users" | jq -r ".id")
+   VIEW_USERS_ROLE_ID=$(http --ignore-stdin -A bearer -a "$KEYCLOAK_ADMIN_ACCESS_TOKEN" "http://user-tasks-keycloak:8888/admin/realms/default/ui-ext/available-roles/users/$NON_ADMIN_USER_ID?first=0&max=1&search=view-users" | jq -r ".[0].id")
    USER_TASKS_ADMIN_ROLE_ID=$(http --ignore-stdin -A bearer -a "$KEYCLOAK_ADMIN_ACCESS_TOKEN" "http://user-tasks-keycloak:8888/admin/realms/$REALM_NAME/roles/lh-user-tasks-admin" | jq -r ".id")
 
-   echo "Assigning Admin Role to  Admin User"
+   echo "Assigning View-Users Role to Non Admin User"
+   http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" POST "http://user-tasks-keycloak:8888/admin/realms/$REALM_NAME/users/$NON_ADMIN_USER_ID/role-mappings/clients/$REAL_MANAGEMENT_CLIENT_ID" \
+              [0][id]="$VIEW_USERS_ROLE_ID" \
+              [0][name]="view-users"
+
+   echo "Assigning View-Users Role to Admin User"
+   http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" POST "http://user-tasks-keycloak:8888/admin/realms/$REALM_NAME/users/$ADMIN_USER_ID/role-mappings/clients/$REAL_MANAGEMENT_CLIENT_ID" \
+              [0][id]="$VIEW_USERS_ROLE_ID" \
+              [0][name]="view-users"
+
+   echo "Assigning Admin Role to Admin User"
    http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" POST "http://user-tasks-keycloak:8888/admin/realms/$REALM_NAME/users/$ADMIN_USER_ID/role-mappings/realm" \
               [0][id]="$USER_TASKS_ADMIN_ROLE_ID" \
               [0][name]="lh-user-tasks-admin"
-
-#   echo "Assigning View-Users Role to Admin User"
-#   http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" POST "http://user-tasks-keycloak:8888/admin/realms/$REALM_NAME/users/$ADMIN_USER_ID/role-mappings/clients/$KEYCLOAK_CLIENT_ID" \
-#              [0][id]="$VIEW_USERS_ROLE_ID" \
-#              [0][name]="view-users"
 
    echo "Roles successfully assigned to users!"
 }
