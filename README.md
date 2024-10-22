@@ -105,7 +105,7 @@ Once your LH server is up and running, then you can create a tenant to work with
 the following command:
 
 ```shell
-lhctl put tenant here-you-put-your-tenant-identifier
+lhctl put tenant default
 ```
 
 #### Set the following environment variables to let the LH Client within UserTasks API know where the LH Server is located
@@ -113,7 +113,7 @@ lhctl put tenant here-you-put-your-tenant-identifier
  ```shell
   export LHC_API_HOST=localhost
   export LHC_API_PORT=2023
-  export LHC_TENANT_ID=here-you-put-your-tenant-identifier
+  export LHC_TENANT_ID=default
   ```
 
 This is just an example, use the values that match your LittleHorse config
