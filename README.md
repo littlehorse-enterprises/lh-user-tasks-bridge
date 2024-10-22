@@ -64,12 +64,9 @@ After that, the UserTasks API should be available on http://localhost:8089
 Verify that Keycloak is up and running, and if that is the case, you can now access it through your browser
 on http://localhost:8888
 
-- Login as admin (username: **admin**, password: **admin**)
-- Switch to the **default** realm
-- Go to the **Clients** section, look for the client **user-tasks-client** in the list of clients and click on it
-  to navigate to the **Settings** tab, scroll down until you reach the **Capability config** section, now disable the
-  _**Client authentication**_ property (unless you want to use Service Account roles) and keep default values for all
-  the other fields
+Keycloak's admin credentials: 
+- username: **admin**
+- password: **admin**
 
 Also, you will need an access token to be able to be granted authorized access into user-tasks backend endpoints.
 In order to fetch said token, you can use the following cURL as is from the terminal, or you can import it

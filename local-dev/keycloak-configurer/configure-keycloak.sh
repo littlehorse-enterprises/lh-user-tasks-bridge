@@ -44,6 +44,8 @@ configure_keycloak() {
         editUsernameAllowed:=false \
         bruteForceProtected:=true \
         accessTokenLifespan=86400 \
+        ssoSessionIdleTimeout=86400 \
+        ssoSessionMaxLifespan=90000
 
     echo "Keycloak url: http://user-tasks-keycloak:${KEYCLOAK_PORT}"
     echo "Keycloak admin username: ${KEYCLOAK_ADMIN}"
@@ -153,6 +155,13 @@ configure_keycloak() {
               [0][name]="lh-user-tasks-admin"
 
    echo "Roles successfully assigned to users!"
+
+   echo "Making the client public"
+   http --ignore-stdin -q -A bearer -a "$KEYCLOAK_ADMIN_ACCESS_TOKEN" PUT "http://user-tasks-keycloak:${KEYCLOAK_PORT}/admin/realms/$REALM_NAME/clients/user-tasks-client" \
+             id="$KEYCLOAK_CLIENT_ID"  \
+             enabled:=true \
+             serviceAccountsEnabled:=false \
+             publicClient:=true
 }
 
 configure_keycloak
