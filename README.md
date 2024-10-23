@@ -54,7 +54,7 @@ in `docker-compose.yaml`. You can run Keycloak, a local LH Server and the UserTa
 
 > Stop it with `docker compose down`
 
-If the command avobe ended successfully, then you should see 4 containers running:
+If the command above ended successfully, then you should see 4 containers running:
 
 - 1 for Keycloak
 - 1 for LittleHorse Standalone (LH Server and LH Dashboard)
