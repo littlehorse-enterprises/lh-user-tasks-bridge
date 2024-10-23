@@ -5,9 +5,10 @@ FROM ghcr.io/littlehorse-enterprises/littlehorse/lh-standalone:${LH_VERSION}
 
 ARG LH_VERSION
 ARG KEYCLOAK_VERSION
-ENV PATH=${PATH}:/keycloak/bin:/lhctl:/httpie
+ENV PATH=${PATH}:/keycloak/bin:/lhctl
 
-RUN apt update && apt install -y jq openjdk-21-jdk
+RUN apt update && apt install -y jq openjdk-21-jdk python3-pip && apt clean
+RUN python3 -m pip install --upgrade pip wheel && python3 -m pip install httpie 
 
 WORKDIR /keycloak
 RUN wget -q https://github.com/keycloak/keycloak/releases/download/${KEYCLOAK_VERSION}/keycloak-${KEYCLOAK_VERSION}.tar.gz -O /tmp/keycloak.tar.gz \
@@ -25,10 +26,6 @@ RUN set -x; \
     && wget -q https://github.com/littlehorse-enterprises/littlehorse/releases/download/v${LH_VERSION}/lhctl_Linux_${ARCH}.tar.gz -O /tmp/lhctl.tar.gz \
     && tar -xzf /tmp/lhctl.tar.gz -C /lhctl \
     && rm /tmp/lhctl.tar.gz
-
-WORKDIR /httpie
-RUN wget -q https://packages.httpie.io/binaries/linux/http-latest -O http \
-    && chmod +x http
 
 WORKDIR /lh
 COPY ./standalone/keycloak-entrypoint.sh /lh
