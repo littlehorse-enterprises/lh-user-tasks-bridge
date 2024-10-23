@@ -56,8 +56,8 @@ docker run --rm -it --entrypoint="/bin/bash" littlehorse/lh-user-tasks-standalon
 
 Keycloak: http://localhost/8888
 
-| User     | Pass  | Realm   |
-| -------- | ----- | ------- |
-| my-user  | 1234  | default |
-| my-admin | 1234  | default |
-| admin    | admin | master  |
+| User          | Pass  | Realm   |
+| ------------- | ----- | ------- |
+| my-user       | 1234  | default |
+| my-admin-user | 1234  | default |
+| admin         | admin | master  |
