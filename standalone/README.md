@@ -5,7 +5,7 @@
 Run:
 
 ```shell
-docker run --name lh-user-tasks-standalone -d \
+docker run --name lh-user-tasks-standalone --rm -d\
         -p 2023:2023 \
         -p 8080:8080 \
         -p 8888:8888 \
@@ -27,7 +27,7 @@ Local Build:
 Run:
 
 ```shell
-docker run --name lh-user-tasks-standalone -d \
+docker run --name lh-user-tasks-standalone --rm -d \
         -p 2023:2023 \
         -p 8080:8080 \
         -p 8888:8888 \
