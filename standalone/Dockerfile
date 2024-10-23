@@ -31,6 +31,7 @@ COPY ./standalone/keycloak-entrypoint.sh /lh
 COPY ./standalone/docker-entrypoint.sh /lh
 COPY ./standalone/api-entrypoint.sh /lh
 COPY ./standalone/ui-entrypoint.sh /lh
+COPY ./local-dev/keycloak-configurer/configure-keycloak.sh /lh
 
 WORKDIR /user-task-api
 COPY ./build/libs/user-tasks.jar /user-task-api

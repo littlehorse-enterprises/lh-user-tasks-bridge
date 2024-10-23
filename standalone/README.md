@@ -19,11 +19,10 @@ docker run --name lh-user-tasks-standalone -d \
 Local Build:
 
 ```shell
-./gradlew build
-docker build -t ghcr.io/littlehorse-enterprises/lh-user-tasks-api/lh-user-tasks-standalone:latest -f ./standalone/Dockerfile .
+./local-dev/build-images.sh
 ```
 
-Run terminal:
+Run a terminal:
 
 ```shell
 docker run --rm -it --entrypoint="/bin/bash" ghcr.io/littlehorse-enterprises/lh-user-tasks-api/lh-user-tasks-standalone:latest

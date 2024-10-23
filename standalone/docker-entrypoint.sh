@@ -18,12 +18,16 @@ while ! lhctl version >/dev/null 2>&1; do
     sleep 1
 done
 
+lhctl put tenant default
+
 /lh/keycloak-entrypoint.sh &
 
 while ! curl --silent --fail --output /dev/null http://localhost:8888; do
     echo "Waiting for keycloak"
     sleep 1
 done
+
+/lh/configure-keycloak.sh http://localhost:8888
 
 /lh/api-entrypoint.sh &
 /lh/ui-entrypoint.sh &
