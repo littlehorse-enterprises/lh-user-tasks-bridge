@@ -17,7 +17,7 @@ configure_keycloak() {
 
 #  Here we set the Keycloak URL as a variable with a default value, so that it can be used in both local-env and when
 #  building the standalone docker image
-    KEYCLOAK_URL=${1:-"http://user-tasks-keycloak:8888"}
+    KEYCLOAK_URL=${1:-"http://keycloak:8888"}
     REALM_NAME="default"
     KEYCLOAK_ADMIN="admin"
     KEYCLOAK_ADMIN_PASSWORD="admin"

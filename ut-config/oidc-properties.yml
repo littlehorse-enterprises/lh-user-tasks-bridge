@@ -3,7 +3,7 @@ com:
     springaddons:
       oidc:
         ops:
-          - iss: http://user-tasks-keycloak:8888/realms/default
+          - iss: http://keycloak:8888/realms/default
             username-claim: preferred_username
             authorities:
               - path: $.realm_access.roles

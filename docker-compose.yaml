@@ -1,5 +1,5 @@
 services:
-  user-tasks-keycloak:
+  keycloak:
     ports:
       - "8888:8888"
     image: quay.io/keycloak/keycloak:25.0.1
@@ -14,13 +14,12 @@ services:
       KEYCLOAK_ADMIN_PASSWORD: admin
       KC_HEALTH_ENABLED: true
   keycloak-configurer:
-    image: user-tasks-keycloak-configurer
     build: ./local-dev/keycloak-configurer
     depends_on:
-      user-tasks-keycloak:
+      keycloak:
         condition: service_healthy
   littlehorse:
-    image: ghcr.io/littlehorse-enterprises/littlehorse/lh-standalone:0.11.2
+    image: ghcr.io/littlehorse-enterprises/littlehorse/lh-standalone:${LH_VERSION}
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:1822/liveness" ]
       timeout: 10s
@@ -35,12 +34,19 @@ services:
       - LHC_TENANT_ID=default
       - LHS_LISTENERS=PLAIN:2023
       - LHS_ADVERTISED_LISTENERS=PLAIN://littlehorse:2023
+  littlehorse-configurer:
+    image: ghcr.io/littlehorse-enterprises/littlehorse/lhctl:${LH_VERSION}
+    command: [ "put", "tenant", "default" ]
+    depends_on:
+      littlehorse:
+        condition: service_healthy
+    environment:
+      - LHC_API_HOST=littlehorse
+      - LHC_API_PORT=2023
   backend:
-    image: user-tasks-backend
-    #Add healthcheck
     build: .
     depends_on:
-      - user-tasks-keycloak
+      - keycloak
       - littlehorse
     ports:
       - "8089:8089"
@@ -50,15 +56,13 @@ services:
       - LHC_API_HOST=littlehorse
       - LHC_API_PORT=2023
       - LHC_TENANT_ID=default
-  user-task-ui:
-    build:
-      context: ../lh-user-tasks-ui
-      dockerfile: Dockerfile
+  frontend:
+    build: ../lh-user-tasks-ui
     ports:
       - '3000:3000'
     environment:
       - NEXTAUTH_SECRET=your-secret
-      - KEYCLOAK_HOST=http://user-tasks-keycloak:8888 # this is being called from the next js back side
+      - KEYCLOAK_HOST=http://keycloak:8888 # this is being called from the next js back side
       - KEYCLOAK_CLIENT_ID=user-tasks-client
       - KEYCLOAK_REALM=default
       - KEYCLOAK_CLIENT_SECRET=test

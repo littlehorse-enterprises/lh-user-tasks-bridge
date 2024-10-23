@@ -21,7 +21,7 @@ Run the following command to install pre-commit
 First update your `/etc/host` file with next hostnames:
 
 ```text
-127.0.0.1 user-tasks-keycloak
+127.0.0.1 keycloak
 127.0.0.1 littlehorse
 ```
 
@@ -75,14 +75,6 @@ curl --request GET \
   --url http://localhost:8089/default/init \
   --header 'Authorization: Bearer replace-this-with-your-access-token'
 ```
-
-Once your LH server is up and running, then you can create a tenant to work with, and to do that you can run
-the following command:
-
-```shell
-lhctl put tenant default
-```
-
 
 ### Using lhctl
 
