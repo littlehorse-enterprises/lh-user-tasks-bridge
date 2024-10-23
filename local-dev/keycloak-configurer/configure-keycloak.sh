@@ -63,7 +63,7 @@ configure_keycloak() {
           secret="${KEYCLOAK_CLIENT_SECRET}" \
           name="LH-Client" \
           description="LH-Client" \
-          redirectUris[]="http://localhost:3000/*" \
+          redirectUris[]="*" \
           directAccessGrantsEnabled:=true \
           serviceAccountsEnabled:=true \
           standardFlowEnabled:=true \
