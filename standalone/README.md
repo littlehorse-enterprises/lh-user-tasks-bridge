@@ -51,3 +51,13 @@ docker run --rm -it --entrypoint="/bin/bash" littlehorse/lh-user-tasks-standalon
 | Keycloak              | 8888 |
 | User Task API         | 8089 |
 | User Task UI          | 3000 |
+
+## Users
+
+Keycloak: http://localhost/8888
+
+| User     | Pass  | Realm   |
+| -------- | ----- | ------- |
+| my-user  | 1234  | default |
+| my-admin | 1234  | default |
+| admin    | admin | master  |
