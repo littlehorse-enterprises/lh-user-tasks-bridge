@@ -16,4 +16,4 @@ cd "${CONTEXT_DIR}"
 
 ./gradlew build
 "${UI_DIR}/local-dev/build.sh"
-docker compose up -d
+docker compose up -d --build

@@ -5,9 +5,9 @@ FROM ghcr.io/littlehorse-enterprises/littlehorse/lh-standalone:${LH_VERSION}
 
 ARG LH_VERSION
 ARG KEYCLOAK_VERSION
-ENV PATH=${PATH}:/keycloak/bin:/lhctl
+ENV PATH=${PATH}:/keycloak/bin:/lhctl:/httpie
 
-RUN apt update && apt install -y httpie jq openjdk-21-jdk
+RUN apt update && apt install -y jq openjdk-21-jdk
 
 WORKDIR /keycloak
 RUN wget -q https://github.com/keycloak/keycloak/releases/download/${KEYCLOAK_VERSION}/keycloak-${KEYCLOAK_VERSION}.tar.gz -O /tmp/keycloak.tar.gz \
@@ -26,11 +26,16 @@ RUN set -x; \
     && tar -xzf /tmp/lhctl.tar.gz -C /lhctl \
     && rm /tmp/lhctl.tar.gz
 
+WORKDIR /httpie
+RUN wget -q https://packages.httpie.io/binaries/linux/http-latest -O http \
+    && chmod +x http
+
 WORKDIR /lh
 COPY ./standalone/keycloak-entrypoint.sh /lh
 COPY ./standalone/docker-entrypoint.sh /lh
 COPY ./standalone/api-entrypoint.sh /lh
 COPY ./standalone/ui-entrypoint.sh /lh
+COPY ./local-dev/keycloak-configurer/configure-keycloak.sh /lh
 
 WORKDIR /user-task-api
 COPY ./build/libs/user-tasks.jar /user-task-api
@@ -39,6 +44,5 @@ COPY ./standalone/api-properties.yml /user-task-api
 WORKDIR /user-task-ui
 COPY ./.next/standalone /user-task-ui
 COPY ./.next/static /user-task-ui/.next/static
-COPY ./public /user-task-ui/public
 
 WORKDIR /

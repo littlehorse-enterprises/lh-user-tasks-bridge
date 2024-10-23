@@ -62,5 +62,5 @@ services:
       - KEYCLOAK_CLIENT_ID=user-tasks-client
       - KEYCLOAK_REALM=default
       - KEYCLOAK_CLIENT_SECRET=test
-      - SERVER_URL=http://localhost:8089 # this is being called from the next js front side
-
+      - LHUT_API_URL=http://localhost:8089 # this is being called from the next js front side
+      - LHUT_TENANT_ID=default

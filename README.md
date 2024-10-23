@@ -16,33 +16,14 @@ The following software packages are needed to be installed:
 Run the following command to install pre-commit
 `brew install pre-commit`
 
-## Running UserTasks API locally
+### Quick start
 
-First, let's list out which services or software components are required in order to run UserTasks API locally.
+First update your `/etc/host` file with next hostnames:
 
-- Run a LittleHorse Server
-- Run an Identity Provider compatible with OpenId Connect (OIDC) protocol (in this case, we provide a preconfigured
-  Keycloak)
-
-### IMPORTANT!
-
-##### Make sure that your LittleHorse configurations are taken from either the littlehorse.config file or respective environment variables. Avoid combining them, because they will clash with one another.
-
-[Here](https://littlehorse.dev/docs/developer-guide/client-configuration/) you will find out more about LittleHorse
-client configurations.
-
-### Build jar file
-
-Before running the containers, you need to have the Java artifact built, so, let's begin with that and
-run the following command to build the UserTasks API jar file:
-
-  ```shell
-./gradlew bootJar
-  ```
-
-After successfully building the jar file, we are ready to start running our containers.
-
-### Using Docker Compose
+```text
+127.0.0.1 user-tasks-keycloak
+127.0.0.1 littlehorse
+```
 
 We are using Keycloak to work as a sample Identity Provider that will support UserTasks API by having a basic
 identity provider configured. You can find a Docker Compose configuration
@@ -52,7 +33,7 @@ in `docker-compose.yaml`. You can run Keycloak, a local LH Server and the UserTa
   ./local-dev/run.sh
   ```
 
-> Stop it with `docker compose down`
+> Stop it with `docker compose down -v`
 
 If the command above ended successfully, then you should see 4 containers running:
 
@@ -95,14 +76,6 @@ curl --request GET \
   --header 'Authorization: Bearer replace-this-with-your-access-token'
 ```
 
-### Other ways of running UserTasks API locally
-
-#### Local LH Server
-
-In order to run UserTasks API, you will need to have an LH Server running beforehand.
-You can run an LH server locally by following the instructions
-here: https://littlehorse.dev/docs/developer-guide/install
-
 Once your LH server is up and running, then you can create a tenant to work with, and to do that you can run
 the following command:
 
@@ -110,7 +83,10 @@ the following command:
 lhctl put tenant default
 ```
 
-#### Set the following environment variables to let the LH Client within UserTasks API know where the LH Server is located
+
+### Using lhctl
+
+Update your `~/.config/littlehorse.config` or export next variables:
 
  ```shell
   export LHC_API_HOST=localhost
@@ -120,7 +96,7 @@ lhctl put tenant default
 
 This is just an example, use the values that match your LittleHorse config
 
-#### Using source code
+### OIDC Configuration
 
 Make sure that you edit the `oidc-properties.yml` file located at `./ut-config/` directory.
 
@@ -146,6 +122,8 @@ This command will execute Spring Boot's run task:
   ```shell
   ./gradlew :bootRun
   ```
+
+> In case of using the standalone image update the `standalone/api-properties.yml` file.
 
 ### Access Swagger UI
 

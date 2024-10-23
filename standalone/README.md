@@ -11,22 +11,35 @@ docker run --name lh-user-tasks-standalone -d \
         -p 8888:8888 \
         -p 8089:8089 \
         -p 3000:3000 \
-        ghcr.io/littlehorse-enterprises/lh-user-tasks-api/lh-user-tasks-standalone:latest
+        ghcr.io/littlehorse-enterprises/lh-user-tasks-api/lh-user-tasks-standalone:main
 ```
 
 > Keycloak user: `admin`, password: `admin`
 
+## Local build
+
 Local Build:
 
 ```shell
-./gradlew build
-docker build -t ghcr.io/littlehorse-enterprises/lh-user-tasks-api/lh-user-tasks-standalone:latest -f ./standalone/Dockerfile .
+./local-dev/build-images.sh
 ```
 
-Run terminal:
+Run:
 
 ```shell
-docker run --rm -it --entrypoint="/bin/bash" ghcr.io/littlehorse-enterprises/lh-user-tasks-api/lh-user-tasks-standalone:latest
+docker run --name lh-user-tasks-standalone -d \
+        -p 2023:2023 \
+        -p 8080:8080 \
+        -p 8888:8888 \
+        -p 8089:8089 \
+        -p 3000:3000 \
+        littlehorse/lh-user-tasks-standalone:latest
+```
+
+Run a terminal:
+
+```shell
+docker run --rm -it --entrypoint="/bin/bash" littlehorse/lh-user-tasks-standalone:latest
 ```
 
 ## Ports
@@ -38,3 +51,13 @@ docker run --rm -it --entrypoint="/bin/bash" ghcr.io/littlehorse-enterprises/lh-
 | Keycloak              | 8888 |
 | User Task API         | 8089 |
 | User Task UI          | 3000 |
+
+## Users
+
+Keycloak: http://localhost/8888
+
+| User          | Pass  | Realm   |
+| ------------- | ----- | ------- |
+| my-user       | 1234  | default |
+| my-admin-user | 1234  | default |
+| admin         | admin | master  |
