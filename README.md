@@ -49,10 +49,12 @@ identity provider configured. You can find a Docker Compose configuration
 in `docker-compose.yaml`. You can run Keycloak, a local LH Server and the UserTasks API locally with this command:
 
   ```shell
-  docker compose up -d
+  ./local-dev/run.sh
   ```
 
-If the `docker compose up` command ended successfully, then you should see 4 containers running:
+> Stop it with `docker compose down`
+
+If the command avobe ended successfully, then you should see 4 containers running:
 
 - 1 for Keycloak
 - 1 for LittleHorse Standalone (LH Server and LH Dashboard)
@@ -64,7 +66,7 @@ After that, the UserTasks API should be available on http://localhost:8089
 Verify that Keycloak is up and running, and if that is the case, you can now access it through your browser
 on http://localhost:8888
 
-Keycloak's admin credentials: 
+Keycloak's admin credentials:
 - username: **admin**
 - password: **admin**
 
