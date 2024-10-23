@@ -39,6 +39,5 @@ COPY ./standalone/api-properties.yml /user-task-api
 WORKDIR /user-task-ui
 COPY ./.next/standalone /user-task-ui
 COPY ./.next/static /user-task-ui/.next/static
-COPY ./public /user-task-ui/public
 
 WORKDIR /
