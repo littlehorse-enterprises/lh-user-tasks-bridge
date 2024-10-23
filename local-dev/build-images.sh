@@ -19,7 +19,7 @@ echo "Building lh-user-tasks-api"
 docker build -t littlehorse/lh-user-tasks-api:latest .
 
 echo "Building lh-user-tasks-ui"
-"${UI_DIR}/local-dev/build.sh"
+"${UI_DIR}/local-dev/build-image.sh"
 
 echo "Building lh-user-tasks-standalone"
 cp -r "${UI_DIR}/.next" ./.next
