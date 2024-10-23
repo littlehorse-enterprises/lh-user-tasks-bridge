@@ -11,10 +11,12 @@ docker run --name lh-user-tasks-standalone -d \
         -p 8888:8888 \
         -p 8089:8089 \
         -p 3000:3000 \
-        ghcr.io/littlehorse-enterprises/lh-user-tasks-api/lh-user-tasks-standalone:latest
+        ghcr.io/littlehorse-enterprises/lh-user-tasks-api/lh-user-tasks-standalone:main
 ```
 
 > Keycloak user: `admin`, password: `admin`
+
+## Local build
 
 Local Build:
 
@@ -22,10 +24,22 @@ Local Build:
 ./local-dev/build-images.sh
 ```
 
+Run:
+
+```shell
+docker run --name lh-user-tasks-standalone -d \
+        -p 2023:2023 \
+        -p 8080:8080 \
+        -p 8888:8888 \
+        -p 8089:8089 \
+        -p 3000:3000 \
+        littlehorse/lh-user-tasks-standalone:latest
+```
+
 Run a terminal:
 
 ```shell
-docker run --rm -it --entrypoint="/bin/bash" ghcr.io/littlehorse-enterprises/lh-user-tasks-api/lh-user-tasks-standalone:latest
+docker run --rm -it --entrypoint="/bin/bash" littlehorse/lh-user-tasks-standalone:latest
 ```
 
 ## Ports
