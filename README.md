@@ -18,7 +18,7 @@ Run the following command to install pre-commit
 
 ### Quick start
 
-First update your `/etc/host` file with next hostnames:
+First update your `/etc/hosts` file with next hostnames:
 
 ```text
 127.0.0.1 keycloak
