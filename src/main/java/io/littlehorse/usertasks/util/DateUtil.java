@@ -17,7 +17,7 @@ public class DateUtil {
     }
 
     public static LocalDateTime timestampToLocalDateTime(@NonNull Timestamp date) {
-        return LocalDateTime.ofEpochSecond(date.getSeconds(), date.getNanos(), ZoneOffset.UTC);
+        return LocalDateTime.ofEpochSecond(date.getSeconds(), date.getNanos(), UTC_ZONE);
     }
 
     public static Timestamp localDateTimeToTimestamp(@NonNull LocalDateTime date) {
