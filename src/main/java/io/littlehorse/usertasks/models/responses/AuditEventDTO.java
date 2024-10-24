@@ -1,5 +1,6 @@
 package io.littlehorse.usertasks.models.responses;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.littlehorse.sdk.common.proto.TaskRunId;
 import io.littlehorse.sdk.common.proto.UserTaskEvent;
 import io.littlehorse.usertasks.util.DateUtil;
@@ -24,6 +25,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class AuditEventDTO {
     @NotNull
+    @JsonFormat(pattern= "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
     private LocalDateTime time;
     @NotNull
     @Schema(oneOf = {UserTaskExecutedEvent.class, UserTaskAssignedEvent.class, UserTaskCancelledEvent.class})

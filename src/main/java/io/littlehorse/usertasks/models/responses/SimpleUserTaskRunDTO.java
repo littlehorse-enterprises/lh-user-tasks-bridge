@@ -1,5 +1,6 @@
 package io.littlehorse.usertasks.models.responses;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.littlehorse.sdk.common.proto.UserTaskRun;
 import io.littlehorse.usertasks.models.common.UserDTO;
 import io.littlehorse.usertasks.models.common.UserGroupDTO;
@@ -39,6 +40,7 @@ public class SimpleUserTaskRunDTO {
     private UserTaskStatus status;
     private String notes;
     @NotNull
+    @JsonFormat(pattern= "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
     private LocalDateTime scheduledTime;
 
     public static SimpleUserTaskRunDTO fromUserTaskRun(@NonNull UserTaskRun userTaskRun) {

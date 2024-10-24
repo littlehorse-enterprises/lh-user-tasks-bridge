@@ -116,7 +116,7 @@ public class AdminController {
                                                          LocalDateTime latestStartDate,
                                                           @RequestParam(name = "status", required = false)
                                                          UserTaskStatus status,
-                                                          @RequestParam(name = "type", required = false)
+                                                          @RequestParam(name = "type")
                                                          String type,
                                                           @RequestParam(name = "limit")
                                                          Integer limit,
