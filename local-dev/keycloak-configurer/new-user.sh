@@ -81,4 +81,4 @@ create_user() {
 
 verify_dependencies
 wait_for_keycloak
-create_user $1
+create_user
