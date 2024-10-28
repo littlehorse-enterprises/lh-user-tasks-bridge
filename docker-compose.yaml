@@ -2,7 +2,7 @@ services:
   keycloak:
     ports:
       - "8888:8888"
-    image: quay.io/keycloak/keycloak:25.0.1
+    image: quay.io/keycloak/keycloak:${KEYCLOAK_VERSION}
     healthcheck:
       test: "timeout 5s bash -c ':> /dev/tcp/localhost/8888'"
       timeout: 5s

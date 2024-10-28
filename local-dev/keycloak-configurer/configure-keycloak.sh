@@ -19,7 +19,7 @@ configure_keycloak() {
 #  building the standalone docker image
     KEYCLOAK_URL=${1:-"http://keycloak:8888"}
     REALM_NAME="default"
-    KEYCLOAK_ADMIN="admin"
+    KEYCLOAK_ADMIN_USER="admin"
     KEYCLOAK_ADMIN_PASSWORD="admin"
     KEYCLOAK_CLIENT_ID="user-tasks-client"
     KEYCLOAK_CLIENT_SECRET="any-secret"
@@ -29,7 +29,7 @@ configure_keycloak() {
 #   Here we fetch Keycloak's admin access token. This access token will be used in all of the subsequent Http requests
     KEYCLOAK_ADMIN_ACCESS_TOKEN=$(http --ignore-stdin --form "$KEYCLOAK_URL/realms/master/protocol/openid-connect/token" \
         client_id=admin-cli \
-        username="$KEYCLOAK_ADMIN" \
+        username="$KEYCLOAK_ADMIN_USER" \
         password="$KEYCLOAK_ADMIN_PASSWORD" \
         grant_type=password | jq -r ".access_token")
 
@@ -94,12 +94,12 @@ configure_keycloak() {
 
   SERVICE_ACCOUNT=$(http --ignore-stdin -A bearer -a "$KEYCLOAK_ADMIN_ACCESS_TOKEN" "$KEYCLOAK_URL/admin/realms/$REALM_NAME/clients/$KEYCLOAK_CLIENT_ID/service-account-user" | jq -r ".id")
 
-  REAL_MANAGEMENT_CLIENT_ID=$(http --ignore-stdin -A bearer -a "$KEYCLOAK_ADMIN_ACCESS_TOKEN" "$KEYCLOAK_URL/admin/realms/$REALM_NAME/ui-ext/available-roles/users/$SERVICE_ACCOUNT?first=0&max=11&search=manage-user" | jq -r ".[0].clientId")
+  REALM_MANAGEMENT_CLIENT_ID=$(http --ignore-stdin -A bearer -a "$KEYCLOAK_ADMIN_ACCESS_TOKEN" "$KEYCLOAK_URL/admin/realms/$REALM_NAME/ui-ext/available-roles/users/$SERVICE_ACCOUNT?first=0&max=11&search=manage-user" | jq -r ".[0].clientId")
 
   MANAGE_USER_ROLE_ID=$(http --ignore-stdin -A bearer -a "$KEYCLOAK_ADMIN_ACCESS_TOKEN" "$KEYCLOAK_URL/admin/realms/$REALM_NAME/ui-ext/available-roles/users/$SERVICE_ACCOUNT?first=0&max=11&search=manage-user" | jq -r ".[0].id")
 
    echo "Adding manage-users role to Client"
-   http --ignore-stdin -q -A bearer -a "$KEYCLOAK_ADMIN_ACCESS_TOKEN" POST "$KEYCLOAK_URL/admin/realms/$REALM_NAME/users/$SERVICE_ACCOUNT/role-mappings/clients/$REAL_MANAGEMENT_CLIENT_ID" \
+   http --ignore-stdin -q -A bearer -a "$KEYCLOAK_ADMIN_ACCESS_TOKEN" POST "$KEYCLOAK_URL/admin/realms/$REALM_NAME/users/$SERVICE_ACCOUNT/role-mappings/clients/$REALM_MANAGEMENT_CLIENT_ID" \
     [0][description]='${role_manage-users}' \
     [0][id]="${MANAGE_USER_ROLE_ID}" \
     [0][name]="manage-users"
@@ -150,12 +150,12 @@ configure_keycloak() {
 #  Here we assign the view-users role to the nonAdmin user, and subsequently to the admin user as well. The view-users role
 #  allows users to see their userInfo details.
    echo "Assigning View-Users Role to Non Admin User"
-   http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" POST "$KEYCLOAK_URL/admin/realms/$REALM_NAME/users/$NON_ADMIN_USER_ID/role-mappings/clients/$REAL_MANAGEMENT_CLIENT_ID" \
+   http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" POST "$KEYCLOAK_URL/admin/realms/$REALM_NAME/users/$NON_ADMIN_USER_ID/role-mappings/clients/$REALM_MANAGEMENT_CLIENT_ID" \
               [0][id]="$VIEW_USERS_ROLE_ID" \
               [0][name]="view-users"
 
    echo "Assigning View-Users Role to Admin User"
-   http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" POST "$KEYCLOAK_URL/admin/realms/$REALM_NAME/users/$ADMIN_USER_ID/role-mappings/clients/$REAL_MANAGEMENT_CLIENT_ID" \
+   http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" POST "$KEYCLOAK_URL/admin/realms/$REALM_NAME/users/$ADMIN_USER_ID/role-mappings/clients/$REALM_MANAGEMENT_CLIENT_ID" \
               [0][id]="$VIEW_USERS_ROLE_ID" \
               [0][name]="view-users"
 
