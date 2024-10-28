@@ -8,7 +8,7 @@ ARG KEYCLOAK_VERSION
 ENV PATH=${PATH}:/keycloak/bin:/lhctl
 
 RUN apt update && apt install -y jq openjdk-21-jdk python3-pip && apt clean
-RUN python3 -m pip install --upgrade pip wheel && python3 -m pip install httpie 
+RUN python3 -m pip install --upgrade pip wheel && python3 -m pip install httpie
 
 WORKDIR /keycloak
 RUN wget -q https://github.com/keycloak/keycloak/releases/download/${KEYCLOAK_VERSION}/keycloak-${KEYCLOAK_VERSION}.tar.gz -O /tmp/keycloak.tar.gz \
