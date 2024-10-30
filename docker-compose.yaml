@@ -61,10 +61,11 @@ services:
     ports:
       - '3000:3000'
     environment:
+      - NEXTAUTH_URL=http://localhost:3000
       - NEXTAUTH_SECRET=any-secret
-      - KEYCLOAK_HOST=http://keycloak:8888 # this is being called from the next js back side
+      - KEYCLOAK_HOST=http://keycloak:8888
       - KEYCLOAK_CLIENT_ID=user-tasks-client
       - KEYCLOAK_REALM=default
       - KEYCLOAK_CLIENT_SECRET=any-secret
-      - LHUT_API_URL=http://backend:8089 # this is being called from the next js front side
+      - LHUT_API_URL=http://backend:8089
       - LHUT_TENANT_ID=default
