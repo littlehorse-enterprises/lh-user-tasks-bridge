@@ -25,7 +25,11 @@ export KEYCLOAK_ADMIN_ACCESS_TOKEN=$(http --ignore-stdin --form "http://localhos
 lhctl run user-tasks user $(http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" "http://localhost:8888/admin/realms/default/users/?username=my-user" | jq -r ".[0].id")
 ```
 
-Open http://localhost:3000
+Open user task ui: http://localhost:3000
+
+Open lh dashboard: http://localhost:8080
+
+Open keycloak: http://localhost:8888
 
 Users:
 
