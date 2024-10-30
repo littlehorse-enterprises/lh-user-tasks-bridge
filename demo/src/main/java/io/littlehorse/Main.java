@@ -48,7 +48,7 @@ public class Main {
                 displayName = "Describe it",
                 description = "A string value."
         )
-        public double description;
+        public String description;
 
         @UserTaskField(
                 displayName = "Approved?",
