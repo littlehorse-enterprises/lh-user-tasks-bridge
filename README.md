@@ -112,7 +112,7 @@ When you have your oidc-properties.yml properly configured, you will be ready to
 This command will execute Spring Boot's run task:
 
   ```shell
-  ./gradlew :bootRun
+  ./gradlew api:bootRun
   ```
 
 > In case of using the standalone image update the `standalone/api-properties.yml` file.

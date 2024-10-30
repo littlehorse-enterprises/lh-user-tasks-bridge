@@ -14,6 +14,6 @@ fi
 
 cd "${CONTEXT_DIR}"
 
-./gradlew build
+./gradlew api:build
 "${UI_DIR}/local-dev/build.sh"
 docker compose up -d --build

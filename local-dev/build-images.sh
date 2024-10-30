@@ -15,7 +15,7 @@ fi
 cd "${CONTEXT_DIR}"
 
 echo "Building lh-user-tasks-api"
-./gradlew build
+./gradlew api:build
 docker build -t littlehorse/lh-user-tasks-api:latest .
 
 echo "Building lh-user-tasks-ui"

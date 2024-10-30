@@ -23,20 +23,9 @@ repos:
         args: ['-x', '--severity=error']
   - repo: local
     hooks:
-      # Formatters
-#
-#      - id: format-java
-#        name: Format Java Code
-#        language: system
-#        always_run: true
-#        pass_filenames: false
-#        entry: ./gradlew spotlessApply
-
-      # Tests
-
       - id: java-build
         name: Tests Java Projects
         language: system
         always_run: true
         pass_filenames: false
-        entry: ./gradlew build
+        entry: ./gradlew api:build
