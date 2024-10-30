@@ -25,7 +25,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: user-tasks-api-jar
-          path: build/libs
+          path: api/build/libs
 
   build-ui:
     runs-on: ubuntu-latest
