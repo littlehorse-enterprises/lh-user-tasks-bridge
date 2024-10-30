@@ -61,6 +61,7 @@ services:
     ports:
       - '3000:3000'
     environment:
+      - NEXTAUTH_URL=http://localhost:3000
       - NEXTAUTH_SECRET=any-secret
       - KEYCLOAK_HOST=http://keycloak:8888
       - KEYCLOAK_CLIENT_ID=user-tasks-client
