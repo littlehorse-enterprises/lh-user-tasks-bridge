@@ -35,7 +35,7 @@ COPY ./standalone/ui-entrypoint.sh /lh
 COPY ./local-dev/keycloak-configurer/configure-keycloak.sh /lh
 
 WORKDIR /user-task-api
-COPY ./build/libs/user-tasks.jar /user-task-api
+COPY ./api/build/libs/user-tasks.jar /user-task-api
 COPY ./standalone/api-properties.yml /user-task-api
 
 WORKDIR /user-task-ui
