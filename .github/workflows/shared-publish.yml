@@ -20,7 +20,7 @@ jobs:
           distribution: "corretto"
 
       - name: Test and Build Artifact
-        run: ./gradlew build
+        run: ./gradlew api:build
 
       - uses: actions/upload-artifact@v4
         with:
