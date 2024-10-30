@@ -17,7 +17,8 @@ lhctl run user-tasks
 
 Assign invalid ids:
 ```shell
-lhctl run user-tasks group $(uuidgen) user $(uuidgen)
+lhctl run user-tasks user $(uuidgen)
+lhctl run user-tasks group $(uuidgen)
 ```
 
 Export access token:

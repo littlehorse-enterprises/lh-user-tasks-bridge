@@ -58,7 +58,8 @@ public class Main {
 
         @UserTaskField(
                 displayName = "Approved?",
-                description = "Reply 'true' if this is an acceptable request."
+                description = "Reply 'true' if this is an acceptable request.",
+                required = false
         )
         public boolean isApproved;
     }
