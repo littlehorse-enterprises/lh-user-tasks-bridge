@@ -71,7 +71,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: user-tasks-api-jar
-          path: ./build/libs/
+          path: ./api/build/libs/
 
       - name: Download UI Artifact
         uses: actions/download-artifact@v4
