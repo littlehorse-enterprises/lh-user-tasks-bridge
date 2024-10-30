@@ -15,6 +15,11 @@ Assign a task to nobody:
 lhctl run user-tasks
 ```
 
+Assign invalid ids:
+```shell
+lhctl run user-tasks group $(uuidgen) user $(uuidgen)
+```
+
 Export access token:
 ```shell
 export KEYCLOAK_ADMIN_ACCESS_TOKEN=$(http --ignore-stdin --form "http://localhost:8888/realms/master/protocol/openid-connect/token" \
