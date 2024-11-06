@@ -919,6 +919,10 @@ class UserTaskServiceTest {
                                 "integer-field", UserTaskVariableValue.builder()
                                         .value(1)
                                         .type(UserTaskFieldType.INTEGER)
+                                        .build(),
+                                "double-field", UserTaskVariableValue.builder()
+                                        .type(UserTaskFieldType.DOUBLE)
+                                        .value(2.0)
                                         .build()
                         )
                 ).build();
