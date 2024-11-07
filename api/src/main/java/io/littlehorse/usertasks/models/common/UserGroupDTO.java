@@ -1,5 +1,6 @@
 package io.littlehorse.usertasks.models.common;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.littlehorse.sdk.common.proto.UserTaskRun;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
@@ -21,6 +22,7 @@ public class UserGroupDTO {
     private String id;
     @NotBlank
     private String name;
+    private boolean valid;
 
     /**
      * Transforms a {@code GroupRepresentation} into a {@code UserGroupDTO}
@@ -32,6 +34,7 @@ public class UserGroupDTO {
         return groupRepresentation -> UserGroupDTO.builder()
                 .id(groupRepresentation.getId())
                 .name(groupRepresentation.getName())
+                .valid(true)
                 .build();
     }
 

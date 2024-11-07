@@ -50,6 +50,11 @@ public class UserTaskRunListDTO {
 
             if (Objects.nonNull(userDTO)) {
                 userTaskRunDTO.setUser(userDTO);
+            } else {
+                userTaskRunDTO.setUser(UserDTO.builder()
+                        .id(userTaskRunDTO.getUser().getId())
+                        .valid(false)
+                        .build());
             }
         }
     }
@@ -61,6 +66,11 @@ public class UserTaskRunListDTO {
 
             if (Objects.nonNull(userGroupDTO)) {
                 userTaskRunDTO.setUserGroup(userGroupDTO);
+            } else {
+                userTaskRunDTO.setUserGroup(UserGroupDTO.builder()
+                        .id(userTaskRunDTO.getUserGroup().getId())
+                        .valid(false)
+                        .build());
             }
         }
     }
