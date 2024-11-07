@@ -2,7 +2,9 @@ package io.littlehorse.usertasks.models.common;
 
 import io.littlehorse.sdk.common.proto.VariableType;
 import io.littlehorse.sdk.common.proto.VariableValue;
+import io.littlehorse.usertasks.models.responses.AuditEventDTO;
 import io.littlehorse.usertasks.util.enums.UserTaskFieldType;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,6 +21,7 @@ public class UserTaskVariableValue {
     @NotNull
     private UserTaskFieldType type;
     @NotNull
+    @Schema(oneOf = {Double.class, String.class, Boolean.class, Integer.class})
     private Object value;
 
     public VariableValue toServerType() {
@@ -26,7 +29,7 @@ public class UserTaskVariableValue {
         switch (this.type) {
             case DOUBLE -> {
                 return VariableValue.newBuilder()
-                        .setDouble((Double) this.value)
+                        .setDouble(Double.parseDouble(this.value.toString()))
                         .build();
             }
             case STRING -> {
@@ -41,7 +44,7 @@ public class UserTaskVariableValue {
             }
             case INTEGER -> {
                 return VariableValue.newBuilder()
-                        .setInt((Integer) this.value)
+                        .setInt(Integer.parseInt(this.value.toString()))
                         .build();
             }
             default -> throw new IllegalArgumentException("No matching VariableValue found");
