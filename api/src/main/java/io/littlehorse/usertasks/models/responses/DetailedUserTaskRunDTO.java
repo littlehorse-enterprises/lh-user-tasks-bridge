@@ -102,6 +102,11 @@ public class DetailedUserTaskRunDTO {
 
             if (Objects.nonNull(userDTO)) {
                 detailedUserTaskRunDTO.setUser(userDTO);
+            } else {
+                detailedUserTaskRunDTO.setUser(UserDTO.builder()
+                        .id(detailedUserTaskRunDTO.getUser().getId())
+                        .valid(false)
+                        .build());
             }
         }
     }
@@ -114,6 +119,11 @@ public class DetailedUserTaskRunDTO {
 
             if (Objects.nonNull(userGroupDTO)) {
                 detailedUserTaskRunDTO.setUserGroup(userGroupDTO);
+            } else {
+                detailedUserTaskRunDTO.setUserGroup(UserGroupDTO.builder()
+                        .id(detailedUserTaskRunDTO.getUserGroup().getId())
+                        .valid(false)
+                        .build());
             }
         }
     }

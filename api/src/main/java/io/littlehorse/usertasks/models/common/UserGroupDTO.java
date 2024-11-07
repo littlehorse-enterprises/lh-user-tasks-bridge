@@ -21,6 +21,7 @@ public class UserGroupDTO {
     private String id;
     @NotBlank
     private String name;
+    private boolean valid;
 
     /**
      * Transforms a {@code GroupRepresentation} into a {@code UserGroupDTO}
@@ -32,6 +33,7 @@ public class UserGroupDTO {
         return groupRepresentation -> UserGroupDTO.builder()
                 .id(groupRepresentation.getId())
                 .name(groupRepresentation.getName())
+                .valid(true)
                 .build();
     }
 

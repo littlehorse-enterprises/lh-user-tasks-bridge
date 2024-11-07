@@ -23,6 +23,7 @@ public class UserDTO {
     private String username;
     private String firstName;
     private String lastName;
+    private boolean valid;
 
     /**
      * Transforms a {@code UserRepresentation} into a {@code UserDTO}
@@ -37,6 +38,7 @@ public class UserDTO {
                 .username(userRepresentation.getUsername())
                 .firstName(userRepresentation.getFirstName())
                 .lastName(userRepresentation.getLastName())
+                .valid(true)
                 .build();
     }
 

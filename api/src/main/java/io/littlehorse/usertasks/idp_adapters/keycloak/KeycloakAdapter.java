@@ -40,6 +40,7 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
     public static final String REALM_MAP_KEY = "realm";
     public static final String ACCESS_TOKEN_MAP_KEY = "accessToken";
     public static final String USER_ID_MAP_KEY = "userId";
+    public static final String USER_GROUP_ID_MAP_KEY = "userGroupId";
 
     @Override
     public UserGroupListDTO getUserGroups(Map<String, Object> params) {
@@ -105,7 +106,7 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
             var firstName = (String) params.get("firstName");
             var lastName = (String) params.get("lastName");
             var username = (String) params.get("username");
-            var userGroupId = (String) params.get("userGroupId");
+            var userGroupId = (String) params.get(USER_GROUP_ID_MAP_KEY);
             var firstResult = (Integer) params.get("firstResult");
             var maxResults = (Integer) params.get("maxResults");
 
@@ -171,7 +172,7 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
     @Override
     public UserGroupDTO getUserGroup(Map<String, Object> params) {
         try {
-            var userGroupId = (String) params.get("userGroupId");
+            var userGroupId = (String) params.get(USER_GROUP_ID_MAP_KEY);
             var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
 
             String realm = getRealmFromToken(accessToken);
