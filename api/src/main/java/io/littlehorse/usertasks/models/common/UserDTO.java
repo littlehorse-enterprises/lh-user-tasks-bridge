@@ -1,6 +1,5 @@
 package io.littlehorse.usertasks.models.common;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.littlehorse.sdk.common.proto.UserTaskRun;
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
