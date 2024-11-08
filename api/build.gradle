@@ -1,6 +1,6 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.2.5'
+    id 'org.springframework.boot' version '3.3.5'
     id 'io.spring.dependency-management' version '1.1.4'
 }
 
@@ -20,9 +20,7 @@ dependencies {
     compileOnly 'org.projectlombok:lombok:1.18.32'
     annotationProcessor 'org.projectlombok:lombok:1.18.32'
 
-    implementation 'com.c4-soft.springaddons:spring-addons-starter-oidc:7.8.8'
-    //Patches a vulnerability from an transitive dependency within spring-addons-starter-oidc
-    implementation 'com.nimbusds:nimbus-jose-jwt:9.40'
+    implementation 'com.c4-soft.springaddons:spring-addons-starter-oidc:7.8.12'
 
     implementation 'io.littlehorse:littlehorse-client:0.11.2'
     implementation 'jakarta.validation:jakarta.validation-api:3.1.0-M2'
