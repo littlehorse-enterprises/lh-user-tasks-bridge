@@ -1127,20 +1127,18 @@ class UserTaskServiceTest {
     }
 
     @Test
-    void getUserTasksDef_shouldThrowNotFoundExceptionIfNoUserTaskDefIsFound() {
+    void getUserTasksDef_shouldReturnEmptySetIfNoUserTaskDefIsFound() {
         var tenantId = "some-tenant-id";
         var requestLimit = 10;
         UserTaskDefIdList userTaskDefIdList = UserTaskDefIdList.newBuilder()
                 .addAllResults(Collections.emptyList())
                 .build();
-        var expectedException = "No UserTaskDefs were found for given tenant";
 
         when(lhTenantClient.searchUserTaskDef(any(SearchUserTaskDefRequest.class))).thenReturn(userTaskDefIdList);
 
-        NotFoundException exception = assertThrows(NotFoundException.class,
-                () -> userTaskService.getAllUserTasksDef(tenantId, requestLimit, null));
+        UserTaskDefListDTO result = userTaskService.getAllUserTasksDef(tenantId, requestLimit, null);
 
-        assertEquals(expectedException, exception.getMessage());
+        assertTrue(result.getUserTaskDefNames().isEmpty());
 
         verify(lhTenantClient).searchUserTaskDef(any(SearchUserTaskDefRequest.class));
     }

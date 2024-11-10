@@ -194,7 +194,7 @@ public class UserTaskService {
         UserTaskDefIdList searchResults = tenantClient.searchUserTaskDef(searchRequest.build());
 
         if (searchResults.getResultsList().isEmpty()) {
-            throw new NotFoundException("No UserTaskDefs were found for given tenant");
+            return UserTaskDefListDTO.builder().userTaskDefNames(Set.of()).build();
         }
 
         Set<String> setOfUserTaskDefNames = searchResults.getResultsList().stream()

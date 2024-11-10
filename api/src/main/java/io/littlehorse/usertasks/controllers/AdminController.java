@@ -189,13 +189,6 @@ public class AdminController {
                     description = "Not enough privileges to access this resource.",
                     content = {@Content}
             ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "No UserTasks were found for given tenant and/or search criteria.",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class))}
-            )
     })
     @GetMapping("/{tenant_id}/admin/taskTypes")
     @ResponseStatus(HttpStatus.OK)
@@ -214,8 +207,6 @@ public class AdminController {
             UserTaskDefListDTO allUserTasksDef = userTaskService.getAllUserTasksDef(tenantId, limit, parsedBookmark);
 
             return ResponseEntity.ok(allUserTasksDef);
-        } catch (NotFoundException e) {
-            return ResponseEntity.of(ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, e.getMessage())).build();
         } catch (Exception e) {
             return ResponseEntity.of(ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage())).build();
         }
