@@ -16,6 +16,10 @@ docker run --name lh-user-tasks-standalone --rm -d\
 
 > Keycloak user: `admin`, password: `admin`
 
+## Demo
+
+GO to [demo](../demo/README.md)
+
 ## Local build
 
 Local Build:

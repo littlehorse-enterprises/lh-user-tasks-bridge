@@ -33,8 +33,8 @@ jobs:
       - name: Clone UI
         uses: actions/checkout@v4
         with:
-          repository: littlehorse-enterprises/lh-user-tasks-ui
-          path: lh-user-tasks-ui
+          repository: littlehorse-enterprises/lh-user-tasks
+          path: lh-user-tasks
           ref: main
           token: ${{ secrets.PAT_LH_USER_TASKS_UI }}
 
@@ -44,7 +44,7 @@ jobs:
           node-version: 20
 
       - name: Build UI
-        working-directory: lh-user-tasks-ui
+        working-directory: lh-user-tasks/ui
         run: |
           npm ci
           npm run build
@@ -54,9 +54,9 @@ jobs:
           name: user-tasks-ui
           include-hidden-files: true
           path:  |
-            lh-user-tasks-ui/.next/standalone
-            lh-user-tasks-ui/.next/static
-            lh-user-tasks-ui/public
+            lh-user-tasks/ui/.next/standalone
+            lh-user-tasks/ui/.next/static
+            lh-user-tasks/ui/public
 
   docker:
     runs-on: ubuntu-latest

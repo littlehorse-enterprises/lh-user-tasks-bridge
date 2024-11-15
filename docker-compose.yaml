@@ -57,7 +57,7 @@ services:
       - LHC_API_PORT=2023
       - LHC_TENANT_ID=default
   frontend:
-    build: ../lh-user-tasks-ui
+    build: ../lh-user-tasks/ui
     ports:
       - '3000:3000'
     environment:
