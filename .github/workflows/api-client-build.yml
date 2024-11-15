@@ -7,7 +7,7 @@ permissions:
   contents: read
 
 jobs:
-  publish-npm:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -21,7 +21,9 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
+        working-directory: api-client
         run: npm install
 
       - name: Build
+        working-directory: api-client
         run: npm run build

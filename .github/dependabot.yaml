@@ -1,6 +1,10 @@
 version: 2
 updates:
   - package-ecosystem: npm
-    directory: "/"
+    directory: "/ui"
+    schedule:
+      interval: "monthly"
+  - package-ecosystem: npm
+    directory: "/api-client"
     schedule:
       interval: "monthly"
