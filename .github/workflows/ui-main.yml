@@ -40,4 +40,4 @@ jobs:
           image-name: lh-user-tasks-ui
           registry: ecr
           context: ui
-          docker-file: ui/Dockerfile
+          dockerfile: ui/Dockerfile
