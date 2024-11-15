@@ -19,16 +19,19 @@ jobs:
         uses: actions/setup-node@v4
         with:
           cache: npm
-          cache-dependency-path: package-lock.json
+          cache-dependency-path: ui/package-lock.json
           node-version: 20
 
       - name: Installing Dependencies
+        working-directory: ui
         run: npm install
 
       - name: Linting
+        working-directory: ui
         run: npm run lint
 
       - name: Build App
+        working-directory: ui
         run: npm run build
 
       - name: Build and Publish
@@ -36,3 +39,5 @@ jobs:
         with:
           image-name: lh-user-tasks-ui
           registry: ecr
+          context: ui
+          docker-file: ui/Dockerfile
