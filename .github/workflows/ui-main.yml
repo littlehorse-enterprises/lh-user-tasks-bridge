@@ -1,0 +1,38 @@
+name: Main
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          cache: npm
+          cache-dependency-path: package-lock.json
+          node-version: 20
+
+      - name: Installing Dependencies
+        run: npm install
+
+      - name: Linting
+        run: npm run lint
+
+      - name: Build App
+        run: npm run build
+
+      - name: Build and Publish
+        uses: littlehorse-enterprises/publish-image@v1
+        with:
+          image-name: lh-user-tasks-ui
+          registry: ecr
