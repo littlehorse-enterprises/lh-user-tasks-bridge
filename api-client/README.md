@@ -22,7 +22,7 @@ import { LittleHorseUserTasksApiClient } from "@littlehorse-enterprises/user-tas
 const client = new LittleHorseUserTasksApiClient({
   baseUrl: "http://localhost:8089",
   tenantId: "default",
-  accessToken: "your-oauth-access-token", 
+  accessToken: "your-oauth-access-token",
 });
 
 // List user tasks with pagination
@@ -88,7 +88,7 @@ type ListUserTasksResponse = {
     user?: User;
   }>;
   bookmark: string | null;
-}
+};
 ```
 
 ## API Methods

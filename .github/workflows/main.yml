@@ -19,7 +19,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           cache: npm
-          cache-dependency-path: ui/package-lock.json
+          cache-dependency-path: package-lock.json
           node-version: 20
 
       - name: Installing Dependencies

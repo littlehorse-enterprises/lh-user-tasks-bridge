@@ -1,0 +1,12 @@
+{
+	"name": "lh-user-tasks",
+	"author": "LittleHorse Enterprises",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/littlehorse-enterprises/lh-user-tasks.git"
+	},
+	"workspaces": [
+		"api-client",
+		"ui"
+	]
+}

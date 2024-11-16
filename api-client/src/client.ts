@@ -70,24 +70,33 @@ export class LittleHorseUserTasksApiClient {
           throw new UnauthorizedError(errorMessage);
         case 403:
           // Check if error is related to task state
-          if (errorMessage.includes('DONE')) {
-            throw new TaskStateError("Cannot modify a task that is already completed");
-          } else if (errorMessage.includes('CANCELLED')) {
-            throw new TaskStateError("Cannot modify a task that has been cancelled");
+          if (errorMessage.includes("DONE")) {
+            throw new TaskStateError(
+              "Cannot modify a task that is already completed",
+            );
+          } else if (errorMessage.includes("CANCELLED")) {
+            throw new TaskStateError(
+              "Cannot modify a task that has been cancelled",
+            );
           }
           throw new ForbiddenError(errorMessage);
         case 404:
           throw new NotFoundError(errorMessage);
         case 412:
           // Check if error is related to assignment
-          if (errorMessage.includes('assign') || errorMessage.includes('claim')) {
+          if (
+            errorMessage.includes("assign") ||
+            errorMessage.includes("claim")
+          ) {
             throw new AssignmentError(errorMessage);
           }
           throw new PreconditionFailedError(errorMessage);
         case 400:
           throw new ValidationError(errorMessage);
         default:
-          throw new LHUserTasksError(`HTTP error ${response.status}: ${response}`);
+          throw new LHUserTasksError(
+            `HTTP error ${response.status}: ${response}`,
+          );
       }
     }
 
@@ -97,7 +106,7 @@ export class LittleHorseUserTasksApiClient {
     } else if (!contentType && response.status === 204) {
       // Handle no-content responses explicitly
       return undefined as T;
-    } 
+    }
     return response as T;
   }
 
@@ -106,11 +115,11 @@ export class LittleHorseUserTasksApiClient {
       const contentType = response.headers.get("content-type");
       if (contentType && contentType.includes("application/json")) {
         const errorData = await response.json();
-        return errorData.detail || errorData.message || 'Unknown error';
+        return errorData.detail || errorData.message || "Unknown error";
       }
       return await response.text();
     } catch {
-      return 'Unknown error';
+      return "Unknown error";
     }
   }
 
@@ -149,8 +158,8 @@ export class LittleHorseUserTasksApiClient {
         .map(([key, value]) => [
           key,
           // Ensure value is properly encoded for URLs
-          encodeURIComponent(value.toString().trim())
-        ])
+          encodeURIComponent(value.toString().trim()),
+        ]),
     );
     const searchParams = new URLSearchParams(filteredSearch);
 
@@ -254,13 +263,12 @@ export class LittleHorseUserTasksApiClient {
         .map(([key, value]) => [
           key,
           // Ensure value is properly encoded for URLs
-          encodeURIComponent(value.toString().trim())
-        ])
+          encodeURIComponent(value.toString().trim()),
+        ]),
     );
     const searchParams = new URLSearchParams(filteredSearch);
     return await this.fetch(`/admin/taskTypes?${searchParams.toString()}`);
   }
-
 
   /**
    * Administrative method to get a user task
@@ -287,8 +295,8 @@ export class LittleHorseUserTasksApiClient {
         .map(([key, value]) => [
           key,
           // Ensure value is properly encoded for URLs
-          encodeURIComponent(value.toString().trim())
-        ])
+          encodeURIComponent(value.toString().trim()),
+        ]),
     );
     const searchParams = new URLSearchParams(filteredSearch);
 

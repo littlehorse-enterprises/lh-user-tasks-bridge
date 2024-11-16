@@ -1,4 +1,4 @@
-name: Publish User Tasks
+name: Publish User Tasks API Client
 
 on:
   push:
