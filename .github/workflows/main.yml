@@ -10,34 +10,19 @@ permissions:
 
 jobs:
   build:
+    uses: ./.github/workflows/build.yml
+  Publish:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          cache: npm
-          cache-dependency-path: package-lock.json
-          node-version: 20
-
-      - name: Installing Dependencies
-        run: npm install
-
-      - name: Linting
-        run: npm run lint -ws
-
-      - name: Build App
-        run: npm run build -ws
-
-      - name: Build and Publish
+      - name: Publish Image
         uses: littlehorse-enterprises/publish-image@v1
         with:
           image-name: lh-user-tasks-ui
           registry: ecr
-          context: ui
-          dockerfile: ui/Dockerfile
+          dockerfile: Dockerfile
 
       - name: Trigger API Build
         run: |

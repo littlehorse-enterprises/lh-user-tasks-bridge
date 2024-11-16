@@ -1,6 +1,5 @@
 {
-  "name": "user-tasks-ui",
-  "private": true,
+  "name": "@littlehorse-enterprises/user-tasks-ui",
   "scripts": {
     "dev": "next dev --turbo",
     "build": "next build",
