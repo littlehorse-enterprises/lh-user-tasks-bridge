@@ -10,12 +10,26 @@ permissions:
 
 jobs:
   build:
-    uses: ./.github/workflows/build.yml
-  Publish:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          cache: npm
+          cache-dependency-path: package-lock.json
+          node-version: 20
+
+      - name: Installing Dependencies
+        run: npm install
+
+      - name: Lint
+        run: npm run lint -ws
+
+      - name: Build
+        run: npm run build -ws
 
       - name: Publish Image
         uses: littlehorse-enterprises/publish-image@v1
