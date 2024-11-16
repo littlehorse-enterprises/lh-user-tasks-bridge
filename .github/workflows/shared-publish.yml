@@ -1,5 +1,8 @@
 name: build and publish
 on:
+  repository_dispatch:
+    types:
+      - build
   workflow_call:
     inputs:
       version:
