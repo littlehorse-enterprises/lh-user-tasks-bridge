@@ -47,7 +47,7 @@ jobs:
           node-version: 20
 
       - name: Build UI
-        working-directory: lh-user-tasks/ui
+        working-directory: lh-user-tasks
         run: |
           npm ci
           npm run build
