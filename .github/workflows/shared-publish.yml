@@ -50,7 +50,7 @@ jobs:
         working-directory: lh-user-tasks
         run: |
           npm ci
-          npm run build
+          npm run build -ws
 
       - uses: actions/upload-artifact@v4
         with:
