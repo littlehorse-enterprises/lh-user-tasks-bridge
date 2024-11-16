@@ -59,7 +59,7 @@ jobs:
           path:  |
             lh-user-tasks/ui/.next/standalone
             lh-user-tasks/ui/.next/static
-            lh-user-tasks/ui/public
+            lh-user-tasks/node_modules
 
   docker:
     runs-on: ubuntu-latest
