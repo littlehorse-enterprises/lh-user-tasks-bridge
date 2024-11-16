@@ -39,8 +39,8 @@ COPY ./api/build/libs/user-tasks.jar /user-task-api
 COPY ./standalone/api-properties.yml /user-task-api
 
 WORKDIR /user-task-ui
-COPY ./.next/standalone /user-task-ui
-COPY ./.next/static /user-task-ui/ui/.next/static
+COPY ./ui/.next/standalone /user-task-ui
+COPY ./ui/.next/static /user-task-ui/ui/.next/static
 COPY ./node_modules /user-task-ui/node_modules
 
 WORKDIR /

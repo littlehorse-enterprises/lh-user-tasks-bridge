@@ -22,8 +22,9 @@ echo "Building lh-user-tasks-ui"
 "${UI_DIR}/local-dev/build-image.sh"
 
 echo "Building lh-user-tasks-standalone"
-rm -rf ./.next
+mkdir -p ./ui
+rm -rf ./ui/.next
 rm -rf ./node_modules
-cp -r "${UI_DIR}/ui/.next" ./.next
+cp -r "${UI_DIR}/ui/.next" ./ui/.next
 cp -r "${UI_DIR}/node_modules" ./node_modules
 docker build -t littlehorse/lh-user-tasks-standalone:latest -f ./standalone/Dockerfile .
