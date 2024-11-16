@@ -16,4 +16,4 @@ export KEYCLOAK_CLIENT_SECRET="any-secret"
 export LHUT_API_URL="http://localhost:8089"
 export LHUT_TENANT_ID="default"
 
-node /user-task-ui/server.js
+node /user-task-ui/ui/server.js

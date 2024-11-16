@@ -40,6 +40,7 @@ COPY ./standalone/api-properties.yml /user-task-api
 
 WORKDIR /user-task-ui
 COPY ./.next/standalone /user-task-ui
-COPY ./.next/static /user-task-ui/.next/static
+COPY ./.next/static /user-task-ui/ui/.next/static
+COPY ./node_modules /user-task-ui/node_modules
 
 WORKDIR /
