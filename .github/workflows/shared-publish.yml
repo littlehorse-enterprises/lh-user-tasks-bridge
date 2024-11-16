@@ -57,8 +57,7 @@ jobs:
           name: user-tasks-ui
           include-hidden-files: true
           path:  |
-            lh-user-tasks/ui/.next/standalone
-            lh-user-tasks/ui/.next/static
+            lh-user-tasks/ui/.next
             lh-user-tasks/node_modules
 
   docker:
