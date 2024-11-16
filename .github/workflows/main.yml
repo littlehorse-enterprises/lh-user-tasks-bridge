@@ -23,16 +23,13 @@ jobs:
           node-version: 20
 
       - name: Installing Dependencies
-        working-directory: ui
         run: npm install
 
       - name: Linting
-        working-directory: ui
-        run: npm run lint
+        run: npm run lint -ws
 
       - name: Build App
-        working-directory: ui
-        run: npm run build
+        run: npm run build -ws
 
       - name: Build and Publish
         uses: littlehorse-enterprises/publish-image@v1
