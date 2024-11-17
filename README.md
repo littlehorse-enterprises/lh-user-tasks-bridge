@@ -12,7 +12,6 @@ The following environment variables are required to run the UserTask UI:
 - `KEYCLOAK_CLIENT_ID` Keycloack client id
 - `KEYCLOAK_CLIENT_SECRET` Keycloack client secret
 - `LHUT_API_URL` User-Task proxy Url
-- `LHUT_TENANT_ID` LH Tenant
 
 ## Prerequisites
 
@@ -64,6 +63,5 @@ docker run --name lh-user-tasks-ui -p 3000:3000 --rm -it \
   --env KEYCLOAK_CLIENT_ID='user-tasks-client' \
   --env KEYCLOAK_CLIENT_SECRET=' ' \
   --env LHUT_API_URL='http://localhost:8089' \
-  --env LHUT_TENANT_ID='default' \
   littlehorse/lh-user-tasks-ui:latest
 ```

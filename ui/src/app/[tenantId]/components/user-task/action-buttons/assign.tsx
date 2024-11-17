@@ -3,7 +3,8 @@ import {
   adminAssignUserTask,
   adminListUserGroups,
   adminListUsers,
-} from "@/app/actions/admin";
+} from "@/app/[tenantId]/actions/admin";
+import { useTenantId } from "@/app/[tenantId]/layout";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Dialog,
@@ -35,6 +36,7 @@ export default function AssignUserTaskButton({
 }: {
   userTask: UserTask;
 }) {
+  const tenantId = useTenantId();
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | undefined>(
     userTask.user,
@@ -47,7 +49,7 @@ export default function AssignUserTaskButton({
 
   useEffect(() => {
     // TODO: data from server
-    adminListUsers()
+    adminListUsers(tenantId)
       .then((data) => {
         if ("message" in data) {
           toast.error(data.message);
@@ -60,7 +62,7 @@ export default function AssignUserTaskButton({
         console.error(e);
       });
 
-    adminListUserGroups()
+    adminListUserGroups(tenantId)
       .then((data) => {
         if ("message" in data) {
           toast.error(data.message);
@@ -168,7 +170,7 @@ export default function AssignUserTaskButton({
                 );
 
               try {
-                const response = await adminAssignUserTask(userTask, {
+                const response = await adminAssignUserTask(tenantId, userTask, {
                   userId: selectedUser?.id,
                   userGroupId: selectedUserGroup?.id,
                 });

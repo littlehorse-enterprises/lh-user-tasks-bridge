@@ -36,6 +36,5 @@ docker run --name lh-user-tasks-ui -p 3000:3000 --rm \
   --env KEYCLOAK_CLIENT_ID='user-tasks-client' \
   --env KEYCLOAK_CLIENT_SECRET=' ' \
   --env LHUT_API_URL='http://localhost:8089' \
-  --env LHUT_TENANT_ID='default' \
   littlehorse/lh-user-tasks-ui:latest
 ```

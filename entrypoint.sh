@@ -37,9 +37,4 @@ if [ ! "${LHUT_API_URL+x}" ]; then
     exit 1
 fi
 
-if [ ! "${LHUT_TENANT_ID+x}" ]; then
-    echo "Provide the LHUT_TENANT_ID env variable"
-    exit 1
-fi
-
 node ui/server.js

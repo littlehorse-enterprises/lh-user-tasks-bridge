@@ -1,18 +1,23 @@
-import { adminListUserGroups, adminListUserTasks } from "@/app/actions/admin";
-import ListUserTasks from "@/app/components/user-task/list";
+import {
+  adminListUserGroups,
+  adminListUserTasks,
+} from "@/app/[tenantId]/actions/admin";
 import { ArrowLeftIcon } from "@radix-ui/react-icons";
 import Link from "next/link";
+import ListUserTasks from "../../components/user-task/list";
 
 export default async function TaskPage({
   params,
 }: {
-  params: { userTaskDefName: string };
+  params: { tenantId: string; userTaskDefName: string };
 }) {
-  const adminListUserGroupsResponse = await adminListUserGroups();
+  const adminListUserGroupsResponse = await adminListUserGroups(
+    params.tenantId,
+  );
   if ("message" in adminListUserGroupsResponse)
     throw new Error(adminListUserGroupsResponse.message);
 
-  const adminListUserTasksResponse = await adminListUserTasks({
+  const adminListUserTasksResponse = await adminListUserTasks(params.tenantId, {
     limit: 10,
     type: params.userTaskDefName,
   });
@@ -22,7 +27,7 @@ export default async function TaskPage({
   return (
     <div>
       <Link
-        href="/admin"
+        href={`/${params.tenantId}/admin`}
         className="mb-2 text-sm text-blue-500 flex items-center gap-2"
       >
         <ArrowLeftIcon className="size-4" />

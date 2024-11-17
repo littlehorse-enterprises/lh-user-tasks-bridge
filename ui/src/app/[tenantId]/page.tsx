@@ -1,10 +1,14 @@
 import { listUserGroups, listUserTasks } from "./actions/user";
 import ListUserTasks from "./components/user-task/list";
 
-export default async function Home() {
+export default async function Home({
+  params,
+}: {
+  params: { tenantId: string };
+}) {
   const [listUserGroupsResponse, listUserTasksResponse] = await Promise.all([
-    listUserGroups(),
-    listUserTasks({ limit: 10 }),
+    listUserGroups(params.tenantId),
+    listUserTasks(params.tenantId, { limit: 10 }),
   ]);
 
   if ("message" in listUserGroupsResponse)

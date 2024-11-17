@@ -1,11 +1,11 @@
-import { getServerSession, NextAuthOptions } from "next-auth";
-import KeycloakProvider from "next-auth/providers/keycloak";
 import { jwtDecode } from "jwt-decode";
 import {
   GetServerSidePropsContext,
   NextApiRequest,
   NextApiResponse,
 } from "next";
+import { getServerSession, NextAuthOptions } from "next-auth";
+import KeycloakProvider from "next-auth/providers/keycloak";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -17,7 +17,6 @@ export const authOptions: NextAuthOptions = {
   ],
 
   callbacks: {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     async jwt({ token, account }: any) {
       const nowTimeStamp = Math.floor(Date.now() / 1000);
 
@@ -27,13 +26,14 @@ export const authOptions: NextAuthOptions = {
         token.id_token = account.id_token;
         token.expires_at = account.expires_at;
         token.refresh_token = account.refresh_token;
+
         return token;
       }
       if (nowTimeStamp < token.expires_at) {
         return token;
       }
     },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     async session({ session, token }: any) {
       session.access_token = token.access_token;
       session.id_token = token.id_token;
@@ -45,7 +45,7 @@ export const authOptions: NextAuthOptions = {
   },
   events: {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    signOut: async ({ token: { id_token } }: any) => {
+    signOut: async ({ token: { id_token } }) => {
       const url = `${process.env.KEYCLOAK_HOST}/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/logout?id_token_hint=${id_token}`;
       await fetch(url, {
         method: "GET",

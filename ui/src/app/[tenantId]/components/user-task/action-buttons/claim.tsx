@@ -1,6 +1,7 @@
 "use client";
 
-import { claimUserTask } from "@/app/actions/user";
+import { claimUserTask } from "@/app/[tenantId]/actions/user";
+import { useTenantId } from "@/app/[tenantId]/layout";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,6 +22,8 @@ export default function ClaimUserTaskButton({
 }: {
   userTask: UserTask;
 }) {
+  const tenantId = useTenantId();
+
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
@@ -42,7 +45,7 @@ export default function ClaimUserTaskButton({
             className={buttonVariants({ variant: "default" })}
             onClick={async () => {
               try {
-                const response = await claimUserTask(userTask);
+                const response = await claimUserTask(tenantId, userTask);
 
                 if (response && "message" in response)
                   return toast.error(response.message);

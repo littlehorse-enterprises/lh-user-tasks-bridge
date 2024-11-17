@@ -1,7 +1,7 @@
 "use client";
-import { adminListUserTasks } from "@/app/actions/admin";
-import { listUserTasks } from "@/app/actions/user";
-import UserTask from "@/app/components/user-task";
+import { adminListUserTasks } from "@/app/[tenantId]/actions/admin";
+import { listUserTasks } from "@/app/[tenantId]/actions/user";
+import UserTask from "../../components/user-task";
 import { Button } from "@/components/ui/button";
 import { DateRangePicker } from "@/components/ui/data-range-picker";
 import { Input } from "@/components/ui/input";
@@ -29,6 +29,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useLayoutEffect, useState } from "react";
 import { toast } from "sonner";
 import Loading from "../loading";
+import { useTenantId } from "../../layout";
 
 type Query = {
   user_group_id?: UserGroup["id"];
@@ -49,6 +50,7 @@ export default function ListUserTasks({
   const [query, setQuery] = useState<Query>({});
   const [search, setSearch] = useState("");
   const [limit, setLimit] = useState(10);
+  const tenantId = useTenantId();
 
   const router = useRouter();
 
@@ -83,13 +85,13 @@ export default function ListUserTasks({
         pageParam: bookmark,
       }): Promise<ListUserTasksResponse> => {
         const response = await (userTaskDefName
-          ? adminListUserTasks({
+          ? adminListUserTasks(tenantId, {
               ...query,
               limit,
               type: userTaskDefName,
               bookmark,
             })
-          : listUserTasks({
+          : listUserTasks(tenantId, {
               ...query,
               limit,
               bookmark,
