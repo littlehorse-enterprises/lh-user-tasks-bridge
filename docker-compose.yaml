@@ -66,6 +66,5 @@ services:
       - KEYCLOAK_HOST=http://keycloak:8888
       - KEYCLOAK_CLIENT_ID=user-tasks-client
       - KEYCLOAK_REALM=default
-      - KEYCLOAK_CLIENT_SECRET=any-secret
-      - LHUT_API_URL=http://backend:8089
-      - LHUT_TENANT_ID=default
+      - KEYCLOAK_CLIENT_SECRET=
+      - LHUT_API_URL=http://localhost:8089
