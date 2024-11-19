@@ -67,4 +67,4 @@ services:
       - KEYCLOAK_CLIENT_ID=user-tasks-client
       - KEYCLOAK_REALM=default
       - KEYCLOAK_CLIENT_SECRET=
-      - LHUT_API_URL=http://localhost:8089
+      - LHUT_API_URL=http://backend:8089
