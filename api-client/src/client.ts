@@ -23,8 +23,8 @@ import {
 } from "./errors";
 
 /**
- * Client for interacting with the LittleHorse User Tasks API.
- * Provides methods for managing user tasks, including claiming, canceling, and completing tasks,
+ * Client for interacting with the LittleHorse UserTasks API.
+ * Provides methods for managing UserTasks, including claiming, canceling, and completing tasks,
  * as well as administrative functions.
  */
 export class LittleHorseUserTasksApiClient {
@@ -33,7 +33,7 @@ export class LittleHorseUserTasksApiClient {
   private accessToken: string;
 
   /**
-   * Creates a new instance of the LittleHorse User Tasks API client
+   * Creates a new instance of the LittleHorse UserTasks API client
    * @param config Configuration object containing baseUrl, tenantId, and accessToken
    */
   constructor(config: {
@@ -110,12 +110,18 @@ export class LittleHorseUserTasksApiClient {
     return response as T;
   }
 
+  /**
+   * Internal method to get the error message from a response
+   * @param response The response to get the error message from
+   * @returns Promise resolving to the error message
+   * @private
+   */
   private async getErrorMessage(response: Response): Promise<string> {
     try {
       const contentType = response.headers.get("content-type");
       if (contentType && contentType.includes("application/json")) {
         const errorData = await response.json();
-        return errorData.detail || errorData.message || "Unknown error";
+        return errorData.message || "Unknown error";
       }
       return await response.text();
     } catch {
@@ -125,8 +131,8 @@ export class LittleHorseUserTasksApiClient {
 
   // User Methods
   /**
-   * Claims a user task for the authenticated user
-   * @param userTask The user task to claim
+   * Claims a UserTask for the authenticated user
+   * @param userTask The UserTask to claim
    */
   async claimUserTask(userTask: UserTask): Promise<void> {
     await this.fetch(`/tasks/${userTask.wfRunId}/${userTask.id}/claim`, {
@@ -135,8 +141,8 @@ export class LittleHorseUserTasksApiClient {
   }
 
   /**
-   * Cancels a user task
-   * @param userTask The user task to cancel
+   * Cancels a UserTask
+   * @param userTask The UserTask to cancel
    */
   async cancelUserTask(userTask: UserTask): Promise<void> {
     await this.fetch(`/tasks/${userTask.wfRunId}/${userTask.id}/cancel`, {
@@ -145,9 +151,9 @@ export class LittleHorseUserTasksApiClient {
   }
 
   /**
-   * Lists user tasks based on search criteria
+   * Lists UserTasks based on search criteria
    * @param search Search parameters (excluding user_task_def_name)
-   * @returns Promise resolving to the list of user tasks
+   * @returns Promise resolving to the list of UserTasks
    */
   async listUserTasks(
     search: Omit<ListUserTasksRequest, "type">,
@@ -175,17 +181,17 @@ export class LittleHorseUserTasksApiClient {
   }
 
   /**
-   * Retrieves a specific user task by ID
-   * @param userTask The user task to retrieve
-   * @returns Promise resolving to the user task details
+   * Retrieves a specific UserTask by ID
+   * @param userTask The UserTask to retrieve
+   * @returns Promise resolving to the UserTask details
    */
   async getUserTask(userTask: UserTask): Promise<GetUserTaskResponse> {
     return await this.fetch(`/tasks/${userTask.wfRunId}/${userTask.id}`);
   }
 
   /**
-   * Completes a user task with the provided values
-   * @param userTask The user task to complete
+   * Completes a UserTask with the provided values
+   * @param userTask The UserTask to complete
    * @param values The result values for the task
    */
   async completeUserTask(
@@ -203,8 +209,8 @@ export class LittleHorseUserTasksApiClient {
 
   // Admin Methods
   /**
-   * Administrative method to cancel a user task
-   * @param userTask The user task to cancel
+   * Administrative method to cancel a UserTask
+   * @param userTask The UserTask to cancel
    */
   async adminCancelUserTask(userTask: UserTask): Promise<void> {
     await this.fetch(`/admin/tasks/${userTask.wfRunId}/${userTask.id}/cancel`, {
@@ -213,13 +219,13 @@ export class LittleHorseUserTasksApiClient {
   }
 
   /**
-   * Administrative method to assign a user task to a specific user or group
-   * @param userTask The user task to assign
-   * @param param1 Object containing userId and/or userGroupId
+   * Administrative method to assign a UserTask to a specific user or group
+   * @param userTask The UserTask to assign
+   * @param assignTo Object containing userId and/or userGroupId
    */
   async adminAssignUserTask(
     userTask: UserTask,
-    { userId, userGroupId }: { userId?: string; userGroupId?: string },
+    assignTo: { userId?: string; userGroupId?: string },
   ): Promise<void> {
     await this.fetch(`/admin/tasks/${userTask.wfRunId}/${userTask.id}/assign`, {
       method: "POST",
@@ -227,8 +233,8 @@ export class LittleHorseUserTasksApiClient {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        userId: userId ?? "",
-        userGroup: userGroupId ?? "",
+        userId: assignTo.userId ?? "",
+        userGroup: assignTo.userGroupId ?? "",
       }),
     });
   }
@@ -250,7 +256,7 @@ export class LittleHorseUserTasksApiClient {
   }
 
   /**
-   * Administrative method to list user task definition names
+   * Administrative method to list UserTask definition names
    * @param search Search parameters for task definitions
    * @returns Promise resolving to the list of task definition names
    */
@@ -271,9 +277,9 @@ export class LittleHorseUserTasksApiClient {
   }
 
   /**
-   * Administrative method to get a user task
-   * @param userTask The user task to get the details of
-   * @returns Promise resolving to the user task details
+   * Administrative method to get a UserTask
+   * @param userTask The UserTask to get the details of
+   * @returns Promise resolving to the UserTask details
    */
   async adminGetUserTask(
     userTask: UserTask,
@@ -282,9 +288,9 @@ export class LittleHorseUserTasksApiClient {
   }
 
   /**
-   * Administrative method to list all user tasks
+   * Administrative method to list all UserTasks
    * @param search Search parameters for tasks
-   * @returns Promise resolving to the list of user tasks
+   * @returns Promise resolving to the list of UserTasks
    */
   async adminListUserTasks(
     search: ListUserTasksRequest,
@@ -304,8 +310,8 @@ export class LittleHorseUserTasksApiClient {
   }
 
   /**
-   * Administrative method to complete a user task
-   * @param userTask The user task to complete
+   * Administrative method to complete a UserTask
+   * @param userTask The UserTask to complete
    * @param values The result values for the task
    */
   async adminCompleteUserTask(

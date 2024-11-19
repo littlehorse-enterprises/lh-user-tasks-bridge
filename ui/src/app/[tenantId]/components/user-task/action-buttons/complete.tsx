@@ -4,6 +4,7 @@ import {
   adminGetUserTask,
 } from "@/app/[tenantId]/actions/admin";
 import { completeUserTask, getUserTask } from "@/app/[tenantId]/actions/user";
+import { useTenantId } from "@/app/[tenantId]/layout";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Dialog,
@@ -23,7 +24,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import {
   GetUserTaskResponse,
   UserTask,
@@ -32,7 +32,7 @@ import {
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import Loading from "../../loading";
-import { useTenantId } from "@/app/[tenantId]/layout";
+import NotesTextArea from "../notes";
 
 export default function CompleteUserTaskButton({
   userTask,
@@ -73,7 +73,7 @@ export default function CompleteUserTaskButton({
           {readOnly ? "View Results" : "Complete"}
         </Button>
       </DialogTrigger>
-      <DialogContent>
+      <DialogContent className="gap-2">
         <DialogHeader>
           <DialogTitle>
             {readOnly ? "View Results for" : "Complete"}{" "}
@@ -85,12 +85,11 @@ export default function CompleteUserTaskButton({
           <>
             <div className="space-y-2">
               <Label>Notes:</Label>
-              <Textarea
-                placeholder="Notes"
-                value={userTaskDetails.notes ?? "N/A"}
-                readOnly
-              />
+              <NotesTextArea notes={userTaskDetails.notes} />
             </div>
+            <h1 className="text-lg font-semibold text-center">
+              Fill out the form
+            </h1>
             {userTaskDetails.fields.map((field) => (
               <div key={field.name} className="space-y-2">
                 <Label>

@@ -6,6 +6,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { UserTask } from "@littlehorse-enterprises/user-tasks-api-client";
 import { useSession } from "next-auth/react";
 import { ReactNode, useEffect, useRef, useState } from "react";
@@ -13,12 +20,7 @@ import AssignUserTaskButton from "./action-buttons/assign";
 import CancelUserTaskButton from "./action-buttons/cancel";
 import ClaimUserTaskButton from "./action-buttons/claim";
 import CompleteUserTaskButton from "./action-buttons/complete";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import NotesTextArea from "./notes";
 
 export default function UserTask({
   userTask,
@@ -41,6 +43,7 @@ export default function UserTask({
         <CardTitle>{userTask.userTaskDefName}</CardTitle>
       </CardHeader>
       <CardContent className="grid gap-2 p-0">
+        <Metadata label="Workflow Run ID" value={userTask.wfRunId} />
         <Metadata label="UserTask Run ID" value={userTask.id} />
         <Metadata label="Status" value={userTask.status} />
         <Metadata
@@ -48,45 +51,39 @@ export default function UserTask({
           value={new Date(userTask.scheduledTime).toLocaleString()}
         />
         <Metadata
-          label="Assigned To ID"
+          label="Assigned To (User)"
           value={
             userTask.user && (
               <>
-                {userTask.user.id}
-                <span className="text-red-500">
-                  {userTask.user.valid === false && " INVALID USER"}
-                </span>
+                {userTask.user.firstName} {userTask.user.lastName}{" "}
+                <span className="font-medium">{userTask.user.email}</span>
+                {userTask.user.valid === false && (
+                  <>
+                    {userTask.user.id}{" "}
+                    <span className="text-destructive">INVALID USER</span>
+                  </>
+                )}
               </>
             )
           }
         />
-        <Metadata label="Assigned To Email" value={userTask.user?.email} />
         <Metadata
-          label="Assigned To Username"
-          value={userTask.user?.username}
-        />
-        <Metadata
-          label="Assigned To Full Name"
-          value={
-            userTask.user?.firstName &&
-            userTask.user?.lastName &&
-            `${userTask.user.firstName} ${userTask.user.lastName}`
-          }
-        />
-        <Metadata
-          label="User Group"
+          label="Assigned To (Group)"
           value={
             userTask.userGroup && (
               <>
                 {userTask.userGroup.name ?? userTask.userGroup.id}{" "}
-                <span className="text-red-500">
+                <span className="text-destructive">
                   {userTask.userGroup.valid === false && "INVALID USER GROUP"}
                 </span>
               </>
             )
           }
         />
-        <Metadata label="Workflow Run ID" value={userTask.wfRunId} />
+        <div>
+          <Label>Notes:</Label>
+          <NotesTextArea notes={userTask.notes} />
+        </div>
       </CardContent>
       <CardFooter className="w-full flex items-center justify-end gap-2 flex-wrap p-0">
         {userTask.status !== "CANCELLED" && userTask.status !== "DONE" && (

@@ -6,13 +6,14 @@ export default async function Home({
 }: {
   params: { tenantId: string };
 }) {
-  const [listUserGroupsResponse, listUserTasksResponse] = await Promise.all([
-    listUserGroups(params.tenantId),
-    listUserTasks(params.tenantId, { limit: 10 }),
-  ]);
+  const listUserGroupsResponse = await listUserGroups(params.tenantId);
 
   if ("message" in listUserGroupsResponse)
     throw new Error(listUserGroupsResponse.message);
+
+  const listUserTasksResponse = await listUserTasks(params.tenantId, {
+    limit: 10,
+  });
 
   if ("message" in listUserTasksResponse)
     throw new Error(listUserTasksResponse.message);
