@@ -38,10 +38,7 @@ jobs:
           registry: ecr
           dockerfile: Dockerfile
 
-      - name: Trigger API Build
-        run: |
-          curl -X POST \
-            -H "Accept: application/vnd.github.v3+json" \
-            -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            https://api.github.com/repos/littlehorse-enterprises/lh-user-tasks-api/dispatches \
-            -d '{"event_type":"build","client_payload":{"repository":"${{ github.repository }}","sha":"${{ github.sha }}"}}'
+      - name: Trigger Build Standalone
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT_USER_TASKS }}
+        run: gh workflow run main.yml -R littlehorse-enterprises/lh-user-tasks-api
