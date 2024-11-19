@@ -18,8 +18,6 @@ export const authOptions: NextAuthOptions = {
 
   callbacks: {
     async jwt({ token, account }: any) {
-      const nowTimeStamp = Math.floor(Date.now() / 1000);
-
       if (account) {
         token.decoded = jwtDecode(account.access_token);
         token.access_token = account.access_token;
@@ -29,6 +27,8 @@ export const authOptions: NextAuthOptions = {
 
         return token;
       }
+
+      const nowTimeStamp = Math.floor(Date.now() / 1000);
       if (nowTimeStamp < token.expires_at) {
         return token;
       }

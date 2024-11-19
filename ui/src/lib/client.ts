@@ -8,7 +8,7 @@ import { auth } from "../app/api/auth/[...nextauth]/authOptions";
 export async function getClient(tenantId: string) {
   const session = await auth();
 
-  if (!session) redirect("/api/auth/signout");
+  if (!session) redirect(`/api/auth/signin?callbackUrl=/`);
 
   return new LittleHorseUserTasksApiClient({
     baseUrl: process.env.LHUT_API_URL!,

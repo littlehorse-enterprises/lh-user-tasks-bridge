@@ -11,6 +11,23 @@ const withAuth = nextAuth(async (req) => {
       `${baseUrl}/api/auth/signin?callbackUrl=${currentPath}`,
     );
   }
+
+  // Call keycloak to check if token is valid
+  const keycloakResponse = await fetch(
+    `${process.env.KEYCLOAK_HOST}/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/userinfo`,
+    {
+      headers: {
+        Authorization: `Bearer ${token.access_token}`,
+      },
+    },
+  );
+
+  if (!keycloakResponse.ok) {
+    return NextResponse.redirect(
+      `${baseUrl}/api/auth/signin?callbackUrl=${currentPath}`,
+    );
+  }
+
   // Redirect to tenant after login
   if (currentPath === "/" && token.decoded.allowed_tenant) {
     if (token.decoded.realm_access.roles.includes("lh-user-tasks-admin"))
