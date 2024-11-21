@@ -37,4 +37,4 @@ if [ ! "${LHUT_API_URL+x}" ]; then
     exit 1
 fi
 
-node ui/server.js
+/entrypoint.sh

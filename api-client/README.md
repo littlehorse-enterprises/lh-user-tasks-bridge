@@ -47,7 +47,8 @@ console.log(response);
        scheduledTime: "2024-03-20T15:30:00Z",
        userGroup: {
          id: "550e8400-e29b-41d4-a716-446655440000",
-         name: "Finance Team"
+         name: "Finance Team",
+         valid: true
        }
      },
      {
@@ -58,14 +59,16 @@ console.log(response);
        notes: "Document needs final approval",
        scheduledTime: "2024-03-20T14:00:00Z",
        userGroup: {
-         id: "550e8400-e29b-41d4-a716-446655440002",
-         name: "Legal Team"
+         id: "legal",
+         name: null,
+         valid: false // This means the user group does not exist in the OIDC provider the api is configured with
        },
        user: {
          id: "123e4567-e89b-12d3-a456-426614174002",
          email: "john.doe@company.com",
          firstName: "John",
-         lastName: "Doe"
+         lastName: "Doe",
+         valid: true
        }
      }
    ],
