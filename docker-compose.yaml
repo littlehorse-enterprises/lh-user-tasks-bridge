@@ -11,12 +11,12 @@ services:
       start_period: 5s
     command: [ "start-dev" ]
     environment:
-      KC_BOOTSTRAP_ADMIN_USERNAME: admin
-      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
-      KC_HEALTH_ENABLED: true
-      KC_METRICS_ENABLED: true
-      KC_HTTP_PORT: 8888
-      KC_HOSTNAME_STRICT: false
+      - KC_BOOTSTRAP_ADMIN_USERNAME=admin
+      - KC_BOOTSTRAP_ADMIN_PASSWORD=admin
+      - KC_HEALTH_ENABLED=true
+      - KC_METRICS_ENABLED=true
+      - KC_HTTP_PORT=8888
+      - KC_HOSTNAME_STRICT=false
   keycloak-configurer:
     build: ./local-dev/keycloak-configurer
     depends_on:
