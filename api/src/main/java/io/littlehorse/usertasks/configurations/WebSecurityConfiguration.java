@@ -37,7 +37,7 @@ public class WebSecurityConfiguration {
             throws Exception {
         http.authorizeHttpRequests(
                         auth -> auth
-                                .requestMatchers(HttpMethod.GET, new String[]{"/api-docs/**", "/swagger-ui/**"})
+                                .requestMatchers(HttpMethod.GET, new String[]{"/api-docs/**", "/swagger-ui/**", "/actuator/**"})
                                 .permitAll()
                                 .anyRequest()
                                 .authenticated())

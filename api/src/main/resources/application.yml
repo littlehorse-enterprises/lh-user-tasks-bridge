@@ -12,6 +12,12 @@ spring:
   config:
     import: file:${LHUT_OIDC_CONFIG_FILE_LOCATION:../ut-config/oidc-properties.yml}
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: [ "prometheus", "health" ]
+
 springdoc:
   api-docs:
     path: /api-docs

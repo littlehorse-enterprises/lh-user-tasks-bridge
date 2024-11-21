@@ -49,6 +49,11 @@ services:
       - LHC_API_PORT=2023
   backend:
     build: .
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8089/actuator/health" ]
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     depends_on:
       - keycloak
       - littlehorse
