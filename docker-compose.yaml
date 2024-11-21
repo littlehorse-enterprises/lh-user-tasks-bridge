@@ -2,17 +2,21 @@ services:
   keycloak:
     ports:
       - "8888:8888"
+      - "9000:9000"
     image: quay.io/keycloak/keycloak:${KEYCLOAK_VERSION}
     healthcheck:
       test: "timeout 5s bash -c ':> /dev/tcp/localhost/8888'"
       timeout: 5s
       retries: 3
       start_period: 5s
-    command: [ "start-dev", "--http-port=8888", "--hostname-strict=false" ]
+    command: [ "start-dev" ]
     environment:
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
       KC_HEALTH_ENABLED: true
+      KC_METRICS_ENABLED: true
+      KC_HTTP_PORT: 8888
+      KC_HOSTNAME_STRICT: false
   keycloak-configurer:
     build: ./local-dev/keycloak-configurer
     depends_on:

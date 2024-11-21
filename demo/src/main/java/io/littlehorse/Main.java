@@ -25,7 +25,7 @@ public class Main {
                 USER_TASKS_FORM,
                 user,
                 group
-        );
+        ).withNotes("This is a demo form");
     });
     private static final LHConfig config = new LHConfig();
     private static final LittleHorseGrpc.LittleHorseBlockingStub client = config.getBlockingStub();
