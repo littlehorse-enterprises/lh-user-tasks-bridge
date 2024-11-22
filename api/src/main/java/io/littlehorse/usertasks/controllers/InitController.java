@@ -57,4 +57,5 @@ public class InitController {
 
         log.info("Integration successfully initiated!");
     }
+
 }
