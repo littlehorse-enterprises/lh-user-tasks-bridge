@@ -144,7 +144,7 @@ configure_keycloak() {
    ADMIN_USER_ID=$(http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/users/?username=my-admin-user" | jq -r ".[0].id")
 
    echo "Fetching Roles' IDs"
-   VIEW_USERS_ROLE_ID=$(http --ignore-stdin -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" "${KEYCLOAK_URL}/admin/realms/default/ui-ext/available-roles/users/${NON_ADMIN_USER_ID}?first=0&max=1&search=view-users" | jq -r ".[0].id")
+   VIEW_USERS_ROLE_ID=$(http --ignore-stdin -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/ui-ext/available-roles/users/${NON_ADMIN_USER_ID}?first=0&max=1&search=view-users" | jq -r ".[0].id")
    USER_TASKS_ADMIN_ROLE_ID=$(http --ignore-stdin -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/roles/lh-user-tasks-admin" | jq -r ".id")
 
 #  Here we assign the view-users role to the nonAdmin user, and subsequently to the admin user as well. The view-users role
