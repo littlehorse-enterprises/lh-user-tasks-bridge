@@ -10,5 +10,6 @@ com:
               - path: $.resource_access.*.roles
             vendor: keycloak
             tenant-id: default
+            client-id-claim: azp
             clients:
               - user-tasks-client

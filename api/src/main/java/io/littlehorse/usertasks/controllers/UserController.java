@@ -51,9 +51,6 @@ import java.util.Map;
 import java.util.Objects;
 
 import static io.littlehorse.usertasks.configurations.CustomIdentityProviderProperties.getCustomIdentityProviderProperties;
-import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.ALLOWED_TOKEN_CUSTOM_CLAIM;
-import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.AUTHORIZED_PARTY_CLAIM;
-import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.ISSUER_URL_CLAIM;
 import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.USER_ID_CLAIM;
 
 @Tag(
@@ -125,12 +122,10 @@ public class UserController {
             var userIdFromToken = (String) tokenClaims.get(USER_ID_CLAIM);
             var additionalFilters = UserTaskRequestFilter.buildUserTaskRequestFilter(earliestStartDate, latestStartDate, status, type);
             var parsedBookmark = Objects.nonNull(bookmark) ? Base64.decodeBase64(bookmark) : null;
-            var issuerUrl = (String) tokenClaims.get(ISSUER_URL_CLAIM);
-            var allowedTenant = (String) tokenClaims.get(ALLOWED_TOKEN_CUSTOM_CLAIM);
-            var client = (String) tokenClaims.get(AUTHORIZED_PARTY_CLAIM);
 
-            CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(issuerUrl, allowedTenant,
-                    client, identityProviderConfigProperties);
+            CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(accessToken,
+                    identityProviderConfigProperties);
+
             IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor(), false);
 
             boolean hasIdPAdapter = Objects.nonNull(identityProviderHandler);
@@ -431,13 +426,8 @@ public class UserController {
         }
 
         try {
-            Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
-            var issuerUrl = (String) tokenClaims.get(ISSUER_URL_CLAIM);
-            var allowedTenant = (String) tokenClaims.get(ALLOWED_TOKEN_CUSTOM_CLAIM);
-            var client = (String) tokenClaims.get(AUTHORIZED_PARTY_CLAIM);
-
-            CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(issuerUrl, allowedTenant,
-                    client, identityProviderConfigProperties);
+            CustomIdentityProviderProperties actualProperties = CustomIdentityProviderProperties.getCustomIdentityProviderProperties(accessToken,
+                    identityProviderConfigProperties);
 
             Map<String, Object> params = Map.of("accessToken", accessToken);
             IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor(), true);
@@ -445,9 +435,6 @@ public class UserController {
             var response = identityProviderHandler.getMyUserGroups(params);
 
             return ResponseEntity.ok(response);
-        } catch (JsonProcessingException e) {
-            log.error("Something went wrong when getting claims from token while trying to fetch userGroups.");
-            return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR)).build();
         } catch (ResponseStatusException e) {
             throw e;
         } catch (Exception e) {
@@ -498,13 +485,10 @@ public class UserController {
 
         try {
             Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
-            var issuerUrl = (String) tokenClaims.get(ISSUER_URL_CLAIM);
             var userId = (String) tokenClaims.get(USER_ID_CLAIM);
-            var allowedTenant = (String) tokenClaims.get(ALLOWED_TOKEN_CUSTOM_CLAIM);
-            var client = (String) tokenClaims.get(AUTHORIZED_PARTY_CLAIM);
 
-            CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(issuerUrl, allowedTenant,
-                    client, identityProviderConfigProperties);
+            CustomIdentityProviderProperties actualProperties = CustomIdentityProviderProperties.getCustomIdentityProviderProperties(accessToken,
+                    identityProviderConfigProperties);
 
             Map<String, Object> params = Map.of("userId", userId, "accessToken", accessToken);
             IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor(), true);

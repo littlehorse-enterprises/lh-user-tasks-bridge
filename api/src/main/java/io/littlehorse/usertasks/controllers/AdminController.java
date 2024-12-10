@@ -55,9 +55,6 @@ import java.util.Objects;
 
 import static io.littlehorse.usertasks.configurations.CustomIdentityProviderProperties.getCustomIdentityProviderProperties;
 import static io.littlehorse.usertasks.util.constants.AuthoritiesConstants.USER_TASKS_ADMIN;
-import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.ALLOWED_TOKEN_CUSTOM_CLAIM;
-import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.AUTHORIZED_PARTY_CLAIM;
-import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.ISSUER_URL_CLAIM;
 import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.USER_ID_CLAIM;
 
 @Tag(
@@ -131,11 +128,6 @@ public class AdminController {
                 return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.UNAUTHORIZED)).build();
             }
 
-            Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
-            var issuerUrl = (String) tokenClaims.get(ISSUER_URL_CLAIM);
-            var allowedTenant = (String) tokenClaims.get(ALLOWED_TOKEN_CUSTOM_CLAIM);
-            var client = (String) tokenClaims.get(AUTHORIZED_PARTY_CLAIM);
-
             var additionalFilters = UserTaskRequestFilter.buildUserTaskRequestFilter(earliestStartDate, latestStartDate,
                     status, type);
             byte[] parsedBookmark = Objects.nonNull(bookmark) ? Base64.decodeBase64(bookmark) : null;
@@ -143,8 +135,8 @@ public class AdminController {
             UserTaskRunListDTO response = userTaskService.getTasks(tenantId, userId, userGroup, additionalFilters,
                     limit, parsedBookmark, true);
 
-            CustomIdentityProviderProperties customIdentityProviderProperties = getCustomIdentityProviderProperties(issuerUrl,
-                    allowedTenant, client, identityProviderConfigProperties);
+            CustomIdentityProviderProperties customIdentityProviderProperties = getCustomIdentityProviderProperties(accessToken,
+                    identityProviderConfigProperties);
 
             IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(customIdentityProviderProperties.getVendor(), false);
 
@@ -157,9 +149,6 @@ public class AdminController {
             return ResponseEntity.ok(response);
         } catch (NotFoundException e) {
             return ResponseEntity.of(ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, e.getMessage())).build();
-        } catch (JsonProcessingException e) {
-            log.error("Something went wrong when getting claims from token while trying to fetch all tasks.");
-            return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR)).build();
         } catch (Exception e) {
             return ResponseEntity.of(ProblemDetail.forStatusAndDetail(HttpStatus.INTERNAL_SERVER_ERROR, e.getMessage())).build();
         }
@@ -256,13 +245,8 @@ public class AdminController {
                 return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.UNAUTHORIZED)).build();
             }
 
-            Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
-            var issuerUrl = (String) tokenClaims.get(ISSUER_URL_CLAIM);
-            var allowedTenant = (String) tokenClaims.get(ALLOWED_TOKEN_CUSTOM_CLAIM);
-            var client = (String) tokenClaims.get(AUTHORIZED_PARTY_CLAIM);
-
-            CustomIdentityProviderProperties customIdentityProviderProperties = getCustomIdentityProviderProperties(issuerUrl,
-                    allowedTenant, client, identityProviderConfigProperties);
+            CustomIdentityProviderProperties customIdentityProviderProperties = getCustomIdentityProviderProperties(accessToken,
+                    identityProviderConfigProperties);
 
             IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(customIdentityProviderProperties.getVendor(), false);
             boolean hasIdpAdapter = Objects.nonNull(identityProviderHandler);
@@ -383,14 +367,7 @@ public class AdminController {
         }
 
         try {
-            Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
-
-            var issuerUrl = (String) tokenClaims.get(ISSUER_URL_CLAIM);
-            var allowedTenant = (String) tokenClaims.get(ALLOWED_TOKEN_CUSTOM_CLAIM);
-            var client = (String) tokenClaims.get(AUTHORIZED_PARTY_CLAIM);
-
-            CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(issuerUrl, allowedTenant,
-                    client, identityProviderConfigProperties);
+            CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
 
             //TODO: This condition MUST be updated in the event that we add support to more IdP adapters
             if (actualProperties.getVendor() == IdentityProviderVendor.KEYCLOAK) {
@@ -518,13 +495,7 @@ public class AdminController {
         }
 
         try {
-            Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
-            var issuerUrl = (String) tokenClaims.get(ISSUER_URL_CLAIM);
-            var allowedTenant = (String) tokenClaims.get(ALLOWED_TOKEN_CUSTOM_CLAIM);
-            var client = (String) tokenClaims.get(AUTHORIZED_PARTY_CLAIM);
-
-            CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(issuerUrl, allowedTenant,
-                    client, identityProviderConfigProperties);
+            CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
 
             Map<String, Object> params = Map.of("accessToken", accessToken);
             IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor(), true);
@@ -532,9 +503,6 @@ public class AdminController {
             var response = identityProviderHandler.getUserGroups(params);
 
             return ResponseEntity.ok(response);
-        } catch (JsonProcessingException e) {
-            log.error("Something went wrong when getting claims from token while trying to fetch userGroups.");
-            return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR)).build();
         } catch (ResponseStatusException e) {
             throw e;
         } catch (Exception e) {
@@ -596,13 +564,7 @@ public class AdminController {
         }
 
         try {
-            Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
-            var issuerUrl = (String) tokenClaims.get(ISSUER_URL_CLAIM);
-            var allowedTenant = (String) tokenClaims.get(ALLOWED_TOKEN_CUSTOM_CLAIM);
-            var client = (String) tokenClaims.get(AUTHORIZED_PARTY_CLAIM);
-
-            CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(issuerUrl, allowedTenant,
-                    client, identityProviderConfigProperties);
+            CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
 
             Map<String, Object> params = new HashMap<>();
             params.put("accessToken", accessToken);
@@ -619,9 +581,6 @@ public class AdminController {
             UserListDTO response = identityProviderHandler.getUsers(params);
 
             return ResponseEntity.ok(response);
-        } catch (JsonProcessingException e) {
-            log.error("Something went wrong when getting claims from token while trying to fetch list of users.");
-            return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR)).build();
         } catch (ResponseStatusException e) {
             throw e;
         } catch (Exception e) {
@@ -682,13 +641,7 @@ public class AdminController {
         }
 
         try {
-            Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
-            var issuerUrl = (String) tokenClaims.get(ISSUER_URL_CLAIM);
-            var allowedTenant = (String) tokenClaims.get(ALLOWED_TOKEN_CUSTOM_CLAIM);
-            var client = (String) tokenClaims.get(AUTHORIZED_PARTY_CLAIM);
-
-            CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(issuerUrl, allowedTenant,
-                    client, identityProviderConfigProperties);
+            CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
 
             Map<String, Object> params = Map.of("userId", userId, "accessToken", accessToken);
             IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor(), true);
@@ -698,9 +651,6 @@ public class AdminController {
             return Objects.nonNull(response)
                     ? ResponseEntity.ok(response)
                     : ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.NOT_FOUND)).build();
-        } catch (JsonProcessingException e) {
-            log.error("Something went wrong when getting claims from token while trying to fetch a User's info.");
-            return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR)).build();
         } catch (ResponseStatusException e) {
             throw e;
         } catch (Exception e) {

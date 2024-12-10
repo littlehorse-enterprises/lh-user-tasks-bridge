@@ -104,6 +104,7 @@ Here's what you need to modify in that file:
   the previously set issuer. For now, Keycloak is the only vendor with access to all the features that this API
   provides.
 - **tenant-id**: This property must match your Tenant that MUST be already created within LittleHorse Server.
+- **client-id-claim**: This property specifies what claim should be used to fetch the corresponding client id from the access token.
 - **clients**: Within this property you MUST set at least one client-id from your Keycloak realm from which your
   access tokens will be generated.
 
