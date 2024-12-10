@@ -20,8 +20,6 @@ import java.util.Objects;
 
 import static io.littlehorse.usertasks.configurations.CustomIdentityProviderProperties.getCustomIdentityProviderProperties;
 import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.ALLOWED_TOKEN_CUSTOM_CLAIM;
-import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.AUTHORIZED_PARTY_CLAIM;
-import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.ISSUER_URL_CLAIM;
 
 @Service
 @Slf4j
@@ -63,12 +61,10 @@ public class TenantService {
 
     private boolean isMatchingPropertiesConfiguration(String requestTenantId, String accessToken) throws JsonProcessingException {
         Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
-        var issuerUrl = (String) tokenClaims.get(ISSUER_URL_CLAIM);
         var tokenTenantId = (String) tokenClaims.get(ALLOWED_TOKEN_CUSTOM_CLAIM);
-        var client = (String) tokenClaims.get(AUTHORIZED_PARTY_CLAIM);
 
         //Here we make sure that valid configuration properties actually exist
-        getCustomIdentityProviderProperties(issuerUrl, tokenTenantId, client, identityProviderConfigProperties);
+        getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
 
         return StringUtils.equalsIgnoreCase(requestTenantId, tokenTenantId);
     }

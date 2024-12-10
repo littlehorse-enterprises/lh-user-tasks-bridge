@@ -1,6 +1,8 @@
 package io.littlehorse.usertasks.configurations;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import io.littlehorse.usertasks.idp_adapters.IdentityProviderVendor;
+import io.littlehorse.usertasks.util.TokenUtil;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NonNull;
@@ -10,9 +12,12 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.net.URI;
-import java.util.Optional;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
+
+import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.ALLOWED_TOKEN_CUSTOM_CLAIM;
+import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.ISSUER_URL_CLAIM;
 
 @Data
 @AllArgsConstructor
@@ -22,22 +27,33 @@ public class CustomIdentityProviderProperties {
     private IdentityProviderVendor vendor;
     private String tenantId;
     private Set<String> clients;
+    private String clientIdClaim;
 
-    public static CustomIdentityProviderProperties getCustomIdentityProviderProperties(@NonNull String issuerUrl,
-                                                                                       @NonNull String tenantId,
-                                                                                       @NonNull String clientId,
-                                                                                       @NonNull IdentityProviderConfigProperties identityProviderConfigProperties) {
-        Optional<CustomIdentityProviderProperties> actualProperties = identityProviderConfigProperties.getOps().stream()
-                .filter(matchingConfigurations(issuerUrl, tenantId, clientId))
-                .findFirst();
+    public static CustomIdentityProviderProperties getCustomIdentityProviderProperties(@NonNull String accessToken,
+                                                                                       @NonNull IdentityProviderConfigProperties identityProviderConfigProperties) throws JsonProcessingException {
+        Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
+        var issuerUrl = (String) tokenClaims.get(ISSUER_URL_CLAIM);
+        var tenantId = (String) tokenClaims.get(ALLOWED_TOKEN_CUSTOM_CLAIM);
 
-        return actualProperties.orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
+        CustomIdentityProviderProperties foundIdPProperties = identityProviderConfigProperties.getOps().stream()
+                .filter(matchesIssuerAndTenantPredicate(issuerUrl, tenantId))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
+
+        String clientIdClaim = foundIdPProperties.getClientIdClaim();
+        var clientId = (String) tokenClaims.get(clientIdClaim);
+
+        boolean hasValidIdPConfiguration = !CollectionUtils.isEmpty(foundIdPProperties.getClients()) && foundIdPProperties.getClients().contains(clientId);
+
+        if (!hasValidIdPConfiguration) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+
+        return foundIdPProperties;
     }
 
-    private static Predicate<CustomIdentityProviderProperties> matchingConfigurations(String issuerUrl, String tenantId,
-                                                                                      String clientId) {
-        return customProperties -> StringUtils.equalsIgnoreCase(customProperties.getIss().toString(), issuerUrl)
-                && StringUtils.equalsIgnoreCase(customProperties.getTenantId(), tenantId)
-                && !CollectionUtils.isEmpty(customProperties.getClients()) && customProperties.getClients().contains(clientId);
+    private static Predicate<CustomIdentityProviderProperties> matchesIssuerAndTenantPredicate(String issuerUrl, String tenantId) {
+        return customProperties -> StringUtils.equalsIgnoreCase(issuerUrl, customProperties.getIss().toString())
+                && StringUtils.equalsIgnoreCase(tenantId, customProperties.getTenantId());
     }
 }

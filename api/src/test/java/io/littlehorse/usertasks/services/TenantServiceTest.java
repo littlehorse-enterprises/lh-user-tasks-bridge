@@ -59,6 +59,16 @@ class TenantServiceTest {
             "I7n-SUzXtw6cJYTeeZHLgfTdYIH3k1sGxw6bpTkk0_lkvba9tmjCD4PwxsQvaoKcz1-32JSMsAe2Cx7MktXXljp1c-G7MnSr4Ina1-3iV0C" +
             "z022L-8Mr3WMLhplRnXOQN3UcE1QWHIAoxyJV8-uc5Ob8-RIL3qG0v60J52l5SZj6dheNtCpObUYrYMfs3abCa5o7SNpPjOuuJ8Qqbe5Yvl" +
             "OsX_bA";
+    private final String OKTA_ACCESS_TOKEN = "eyJraWQiOiJHWFJic1c2clV4S3J5SGJ1NjNhU0tNX1pQb1FQOF9IdTBoVng0NUViRlNJIiwiYWxnIjoi" +
+            "UlMyNTYifQ.eyJ2ZXIiOjEsImp0aSI6IkFULlpWUjFiNmN4cmFRMjVzRmJvVGFEU0twLU9yTTlPcVJZY3lueW1VbjVHRVEiLCJpc3MiOiJod" +
+            "HRwczovL3RyaWFsLTU5MDM4NzUub2t0YS5jb20vb2F1dGgyL2RlZmF1bHQiLCJhdWQiOiJhcGk6Ly9kZWZhdWx0IiwiaWF0IjoxNzMzODY1N" +
+            "DgyLCJleHAiOjE3MzM4NjkwODIsImNpZCI6IjBvYW03NTd4aXVGdlIwdjhRNjk3IiwidWlkIjoiMDB1bTczcnh0ZnhqbklWUUI2OTciLCJzY" +
+            "3AiOlsicHJvZmlsZSIsImVtYWlsIiwib3BlbmlkIl0sImF1dGhfdGltZSI6MTczMzg2NTQ4MCwic3ViIjoiamhvc2VwQGxpdHRsZWhvcnNlL" +
+            "mlvIiwiYWxsb3dlZF90ZW5hbnQiOiJkZWZhdWx0In0.btq3Iuvqo57UZDvsO_xtp2Sra502GrAPJvq_7SRqZ6xFtmM36T5yIDKfyC0LG0Dhy" +
+            "XPLe66ZAumukMVXRhzdaHHLNcUK5U4X3Y5rn_nd1ptiYNKwRyzGpMcRpY2Eid4yo5nx9z9B4MTa5lhHj0KwGnkqSJfZkNW_-I1gJt0zKca783" +
+            "kOTPdoAbfSdNCayJ8WlGqmKr_-zA7hmjRIGs2ZHA5KfDH_81SzFPBrJyFGaAzwHaRmHbk1K3fg6eJC4Uw07oixw7TPiaSla47p6NDG-kzshi" +
+            "NgR9sJHYf2ALHATYYTkV6IKLNbjoXuo-vuqus9kqkoXNb_QyR43hw6qZaH_A";
+    private final String defaultClientIdClaim = "azp";
 
     @Test
     void isValidTenant_shouldThrowNullPointerExceptionWhenTenantIdIsNull() {
@@ -152,7 +162,7 @@ class TenantServiceTest {
         IdentityProviderVendor fakeVendor = IdentityProviderVendor.KEYCLOAK;
         Set<String> clients = Set.of("user-tasks-client-2");
 
-        var properties = new CustomIdentityProviderProperties(fakeUri, fakeUsernameClaim, fakeVendor, tenantIdToValidate, clients);
+        var properties = new CustomIdentityProviderProperties(fakeUri, fakeUsernameClaim, fakeVendor, tenantIdToValidate, clients, defaultClientIdClaim);
 
         when(lhClient.getTenant(any(TenantId.class))).thenReturn(Tenant.getDefaultInstance());
         when(identityProviderConfigProperties.getOps()).thenReturn(List.of(properties));
@@ -171,12 +181,35 @@ class TenantServiceTest {
         IdentityProviderVendor fakeVendor = IdentityProviderVendor.KEYCLOAK;
         Set<String> clients = Set.of("user-tasks-client-2");
 
-        var properties = new CustomIdentityProviderProperties(fakeUri, fakeUsernameClaim, fakeVendor, configuredTenant, clients);
+        var properties = new CustomIdentityProviderProperties(fakeUri, fakeUsernameClaim, fakeVendor, configuredTenant, clients, defaultClientIdClaim);
 
         when(lhClient.getTenant(any(TenantId.class))).thenReturn(Tenant.getDefaultInstance());
         when(identityProviderConfigProperties.getOps()).thenReturn(List.of(properties));
 
         assertFalse(tenantService.isValidTenant(tenantIdToValidate, STUBBED_ACCESS_TOKEN));
+
+        verify(lhClient).getTenant(any(TenantId.class));
+    }
+
+    @Test
+    void isValidTenant_shouldReturnFalseWhenClientIdDoesNotMatchConfigurationProperties() {
+        var configuredTenant = "default";
+        var tenantIdToValidate = "default";
+        URI fakeUri = URI.create("https://trial-5903875.okta.com/oauth2/default");
+        var fakeUsernameClaim = "preferred_username";
+        IdentityProviderVendor fakeVendor = IdentityProviderVendor.OKTA;
+        Set<String> configuredClients = Set.of("user-tasks-client");
+
+        var properties = new CustomIdentityProviderProperties(fakeUri, fakeUsernameClaim, fakeVendor, configuredTenant, configuredClients, "cid");
+
+        when(lhClient.getTenant(any(TenantId.class))).thenReturn(Tenant.getDefaultInstance());
+        when(identityProviderConfigProperties.getOps()).thenReturn(List.of(properties));
+
+        ResponseStatusException responseStatusException = assertThrows(ResponseStatusException.class,
+                () -> tenantService.isValidTenant(tenantIdToValidate, OKTA_ACCESS_TOKEN));
+
+        int expectedErrorCode = HttpStatus.UNAUTHORIZED.value();
+        assertEquals(expectedErrorCode, responseStatusException.getBody().getStatus());
 
         verify(lhClient).getTenant(any(TenantId.class));
     }
