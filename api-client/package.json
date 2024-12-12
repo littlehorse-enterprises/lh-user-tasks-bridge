@@ -2,7 +2,7 @@
   "name": "@littlehorse-enterprises/user-tasks-api-client",
   "homepage": "https://github.com/littlehorse-enterprises/lh-user-tasks",
   "bugs": "https://github.com/littlehorse-enterprises/lh-user-tasks/issues",
-  "version": "0.11.2",
+  "version": "0.12.0",
   "description": "Node.js client for LittleHorse User Tasks API",
   "license": "Apache-2.0",
   "author": "LittleHorse Enterprises",

@@ -111,4 +111,4 @@ To contribute to this project, please follow our [contribution guidelines](https
 
 ## License
 
-This project is licensed under the [Apache 2.0 License](LICENSE).
+This project is licensed under the [Apache 2.0 License](LICENSE.md).
