@@ -23,7 +23,7 @@ services:
       keycloak:
         condition: service_healthy
   littlehorse:
-    image: ghcr.io/littlehorse-enterprises/littlehorse/lh-standalone:${LH_VERSION}
+    image: ghcr.io/littlehorse-enterprises/littlehorse/lh-standalone:latest
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:1822/liveness" ]
       timeout: 10s
@@ -39,7 +39,7 @@ services:
       - LHS_LISTENERS=PLAIN:2023
       - LHS_ADVERTISED_LISTENERS=PLAIN://littlehorse:2023
   littlehorse-configurer:
-    image: ghcr.io/littlehorse-enterprises/littlehorse/lhctl:${LH_VERSION}
+    image: ghcr.io/littlehorse-enterprises/littlehorse/lhctl:latest
     command: [ "put", "tenant", "default" ]
     depends_on:
       littlehorse:
