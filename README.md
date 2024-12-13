@@ -3,7 +3,7 @@
 This repository contains the code for:
 
 - `UserTasks UI` (Next.js)
-- `@littlehorse-enterprises/lh-user-tasks-api-client` (Node Package That Interacts With The UserTasks API)
+- `@littlehorse-enterprises/user-tasks-api-client` (Node Package That Interacts With The UserTasks API)
 
 This repository will help you interact with LittleHorse's UserTask API.
 
