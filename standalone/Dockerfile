@@ -1,7 +1,7 @@
-ARG LH_VERSION="0.11.2"
+ARG LH_VERSION="0.12.1"
 ARG KEYCLOAK_VERSION="26.0.1"
 
-FROM ghcr.io/littlehorse-enterprises/littlehorse/lh-standalone:${LH_VERSION}
+FROM ghcr.io/littlehorse-enterprises/littlehorse/lh-standalone:latest
 
 ARG LH_VERSION
 ARG KEYCLOAK_VERSION
