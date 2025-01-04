@@ -1,5 +1,5 @@
 "use client";
-import logo from "@/../public/images/logo.png";
+import logo from "@/../public/images/logo.svg";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -32,9 +32,8 @@ export default function Header() {
         )}
       <header className="flex px-4 md:px-8 lg:px-16 py-4 bg-foreground/10">
         <div className="flex-1 flex items-center">
-          <div>
-            <Image src={logo} alt="Logo" width={100} height={50} priority />
-          </div>
+          <Image src={logo} alt="Logo" height={50} priority className="mr-2" />
+
           <h1 className="text-xl font-bold">LittleHorse UserTasks</h1>
         </div>
         <div className="flex-1 flex justify-end gap-2 items-center">
