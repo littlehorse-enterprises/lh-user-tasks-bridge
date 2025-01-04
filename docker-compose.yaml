@@ -70,10 +70,10 @@ services:
     ports:
       - '3000:3000'
     environment:
-      - NEXTAUTH_URL=http://localhost:3000
-      - NEXTAUTH_SECRET=any-secret
-      - KEYCLOAK_HOST=http://keycloak:8888
-      - KEYCLOAK_CLIENT_ID=user-tasks-client
-      - KEYCLOAK_REALM=default
-      - KEYCLOAK_CLIENT_SECRET=
+      - AUTH_URL=http://localhost:3000
+      - AUTH_SECRET=any-secret
+      - AUTH_KEYCLOAK_HOST=http://keycloak:8888
+      - AUTH_KEYCLOAK_CLIENT_ID=user-tasks-client
+      - AUTH_KEYCLOAK_REALM=default
+      - AUTH_KEYCLOAK_CLIENT_SECRET=
       - LHUT_API_URL=http://backend:8089
