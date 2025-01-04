@@ -1,9 +1,9 @@
+import { auth } from "@/auth";
 import {
   LHUserTasksError,
   LittleHorseUserTasksApiClient,
 } from "@littlehorse-enterprises/user-tasks-api-client";
 import { redirect } from "next/navigation";
-import { auth } from "../app/api/auth/[...nextauth]/authOptions";
 
 export class LHUserTasksClientSingleton {
   private static instance: LittleHorseUserTasksApiClient | null = null;

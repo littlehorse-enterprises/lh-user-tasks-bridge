@@ -6,11 +6,10 @@ import { ArrowLeftIcon } from "@radix-ui/react-icons";
 import Link from "next/link";
 import ListUserTasks from "../../components/user-task/list";
 
-export default async function TaskPage({
-  params,
-}: {
-  params: { tenantId: string; userTaskDefName: string };
+export default async function TaskPage(props: {
+  params: Promise<{ tenantId: string; userTaskDefName: string }>;
 }) {
+  const params = await props.params;
   const adminListUserGroupsResponse = await adminListUserGroups(
     params.tenantId,
   );

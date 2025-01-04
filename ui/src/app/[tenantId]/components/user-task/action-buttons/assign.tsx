@@ -74,7 +74,7 @@ export default function AssignUserTaskButton({
         toast.error("Failed to get user groups");
         console.error(e);
       });
-  }, []);
+  }, [tenantId]);
 
   return (
     <Dialog>
@@ -155,7 +155,7 @@ export default function AssignUserTaskButton({
 
           <DialogClose
             className={buttonVariants()}
-            onClick={async (e) => {
+            onClick={async () => {
               if (!selectedUser && !selectedUserGroup)
                 return toast.warning(
                   "No user or group selected. Please select a user or group to assign the UserTask to.",

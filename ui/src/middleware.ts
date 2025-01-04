@@ -1,9 +1,9 @@
 import { getToken } from "next-auth/jwt";
-import nextAuth from "next-auth/middleware";
 import { NextResponse } from "next/server";
+import { auth as middleware } from "./auth";
 
-const withAuth = nextAuth(async (req) => {
-  const token = await getToken({ req });
+const withAuth = middleware(async (req) => {
+  const token = await getToken({ req, secret: process.env.AUTH_SECRET });
   const baseUrl = req.nextUrl.origin;
   const currentPath = req.nextUrl.pathname;
   if (!token || token.expires_at < Date.now() / 1000) {
@@ -14,7 +14,7 @@ const withAuth = nextAuth(async (req) => {
 
   // Call keycloak to check if token is valid
   const keycloakResponse = await fetch(
-    `${process.env.KEYCLOAK_HOST}/realms/${process.env.KEYCLOAK_REALM}/protocol/openid-connect/userinfo`,
+    `${process.env.AUTH_KEYCLOAK_HOST}/realms/${process.env.AUTH_KEYCLOAK_REALM}/protocol/openid-connect/userinfo`,
     {
       headers: {
         Authorization: `Bearer ${token.access_token}`,

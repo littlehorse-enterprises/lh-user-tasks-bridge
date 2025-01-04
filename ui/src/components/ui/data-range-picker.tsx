@@ -1,12 +1,17 @@
 /* eslint-disable max-lines */
 "use client";
 
-import React, { type FC, useState, useEffect, useRef } from "react";
+import { cn } from "@/lib/utils";
+import {
+  CheckIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+} from "@radix-ui/react-icons";
+import { type FC, useEffect, useRef, useState, type JSX } from "react";
 import { Button } from "./button";
-import { Popover, PopoverContent, PopoverTrigger } from "./popover";
 import { Calendar } from "./calendar";
 import { DateInput } from "./date-input";
-import { Label } from "./label";
+import { Popover, PopoverContent, PopoverTrigger } from "./popover";
 import {
   Select,
   SelectContent,
@@ -14,12 +19,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "./select";
-import {
-  ChevronUpIcon,
-  ChevronDownIcon,
-  CheckIcon,
-} from "@radix-ui/react-icons";
-import { cn } from "@/lib/utils";
 
 export interface DateRangePickerProps {
   /** Click handler for applying the updates from DateRangePicker. */
@@ -115,8 +114,8 @@ export const DateRangePicker: FC<DateRangePickerProps> = ({
   );
 
   // Refs to store the values of range and rangeCompare when the date picker is opened
-  const openedRangeRef = useRef<DateRange | undefined>();
-  const openedRangeCompareRef = useRef<DateRange | undefined>();
+  const openedRangeRef = useRef<DateRange | undefined>(undefined);
+  const openedRangeCompareRef = useRef<DateRange | undefined>(undefined);
 
   const [selectedPreset, setSelectedPreset] = useState<string | undefined>(
     undefined,

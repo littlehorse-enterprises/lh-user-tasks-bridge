@@ -1,11 +1,10 @@
 import Link from "next/link";
 import { adminListUserTaskDefNames } from "../actions/admin";
 
-export default async function AdminPage({
-  params,
-}: {
-  params: { tenantId: string };
+export default async function AdminPage(props: {
+  params: Promise<{ tenantId: string }>;
 }) {
+  const params = await props.params;
   const adminListUserTaskDefNamesResponse = await adminListUserTaskDefNames(
     params.tenantId,
     {

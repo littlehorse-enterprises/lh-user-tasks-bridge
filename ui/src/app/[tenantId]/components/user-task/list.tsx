@@ -1,7 +1,6 @@
 "use client";
 import { adminListUserTasks } from "@/app/[tenantId]/actions/admin";
 import { listUserTasks } from "@/app/[tenantId]/actions/user";
-import UserTask from "../../components/user-task";
 import { Button } from "@/components/ui/button";
 import { DateRangePicker } from "@/components/ui/data-range-picker";
 import { Input } from "@/components/ui/input";
@@ -28,8 +27,9 @@ import { FilterIcon } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useLayoutEffect, useState } from "react";
 import { toast } from "sonner";
-import Loading from "../loading";
+import UserTask from "../../components/user-task";
 import { useTenantId } from "../../layout";
+import Loading from "../loading";
 
 type Query = {
   user_group_id?: UserGroup["id"];
@@ -49,7 +49,7 @@ export default function ListUserTasks({
 }) {
   const [query, setQuery] = useState<Query>({});
   const [search, setSearch] = useState("");
-  const [limit, setLimit] = useState(10);
+  const [limit] = useState(10);
   const tenantId = useTenantId();
 
   const router = useRouter();
@@ -65,7 +65,7 @@ export default function ListUserTasks({
   useLayoutEffect(() => {
     const searchParams = new URLSearchParams();
     Object.entries(query)
-      .filter(([_, value]) => value !== undefined)
+      .filter(([, value]) => value !== undefined)
       .forEach(([key, value]) => searchParams.set(key, value.toString()));
     router.replace(
       `${window.location.pathname.split("?")[0]}?${searchParams.toString()}`,

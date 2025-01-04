@@ -64,7 +64,7 @@ export default function CompleteUserTaskButton({
         toast.error("Failed to get UserTask");
         console.error(err);
       });
-  }, []);
+  }, [tenantId, userTask, admin]);
 
   return (
     <Dialog>

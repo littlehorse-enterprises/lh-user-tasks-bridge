@@ -2,33 +2,33 @@
 
 set -e
 
-if [ ! "${NEXTAUTH_URL+x}" ]; then
-    echo "Provide the NEXTAUTH_URL env variable"
+if [ ! "${AUTH_URL+x}" ]; then
+    echo "Provide the AUTH_URL env variable"
     exit 1
 fi
 
-if [ ! "${NEXTAUTH_SECRET+x}" ]; then
-    echo "Provide the NEXTAUTH_SECRET env variable"
+if [ ! "${AUTH_SECRET+x}" ]; then
+    echo "Provide the AUTH_SECRET env variable"
     exit 1
 fi
 
-if [ ! "${KEYCLOAK_HOST+x}" ]; then
-    echo "Provide the KEYCLOAK_HOST env variable"
+if [ ! "${AUTH_KEYCLOAK_HOST+x}" ]; then
+    echo "Provide the AUTH_KEYCLOAK_HOST env variable"
     exit 1
 fi
 
-if [ ! "${KEYCLOAK_CLIENT_ID+x}" ]; then
-    echo "Provide the KEYCLOAK_CLIENT_ID env variable"
+if [ ! "${AUTH_KEYCLOAK_CLIENT_ID+x}" ]; then
+    echo "Provide the AUTH_KEYCLOAK_CLIENT_ID env variable"
     exit 1
 fi
 
-if [ ! "${KEYCLOAK_CLIENT_SECRET+x}" ]; then
-    echo "Provide the KEYCLOAK_CLIENT_SECRET env variable"
+if [ ! "${AUTH_KEYCLOAK_CLIENT_SECRET+x}" ]; then
+    echo "Provide the AUTH_KEYCLOAK_CLIENT_SECRET env variable"
     exit 1
 fi
 
-if [ ! "${KEYCLOAK_REALM+x}" ]; then
-    echo "Provide the KEYCLOAK_REALM env variable"
+if [ ! "${AUTH_KEYCLOAK_REALM+x}" ]; then
+    echo "Provide the AUTH_KEYCLOAK_REALM env variable"
     exit 1
 fi
 
