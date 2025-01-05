@@ -18,6 +18,9 @@ while ! lhctl version >/dev/null 2>&1; do
     sleep 1
 done
 
+echo "Configuring LittleHorse"
+/lh/configure-littlehorse.sh &
+
 /lh/keycloak-entrypoint.sh &
 
 while ! curl --silent --fail --output /dev/null http://localhost:8888; do
@@ -25,9 +28,7 @@ while ! curl --silent --fail --output /dev/null http://localhost:8888; do
     sleep 1
 done
 
-# configure keycloak and lh tenant
 /lh/configure-keycloak.sh http://localhost:8888
-lhctl put tenant default
 
 /lh/api-entrypoint.sh &
 /lh/ui-entrypoint.sh &

@@ -18,7 +18,7 @@ public class Main {
             USER_TASKS_FORM
     );
     private static final String GROUP_VAR = "group";
-    private static final Workflow workflow = new WorkflowImpl("user-tasks", wf -> {
+    private static final Workflow workflow = new WorkflowImpl("user-tasks-demo", wf -> {
         WfRunVariable group = wf.addVariable(GROUP_VAR, VariableType.STR);
         WfRunVariable user = wf.addVariable(USER_VAR, VariableType.STR);
         wf.assignUserTask(
