@@ -35,75 +35,6 @@ export type ListUserGroupsResponse = {
 };
 
 /**
- * Represents a user task in the system
- */
-export type UserTask = {
-  /** Unique identifier for the task */
-  id: string;
-  /** Workflow run identifier associated with this task */
-  wfRunId: string;
-  /** Name of the user task definition */
-  userTaskDefName: string;
-  /** User group assigned to this task, if any */
-  userGroup?: UserGroup;
-  /** User assigned to this task, if any */
-  user?: User;
-  /** Current status of the task */
-  status: Status;
-  /** Additional notes or description for the task */
-  notes: string;
-  /** ISO 8601 timestamp when the task was scheduled */
-  scheduledTime: string;
-};
-
-/** Possible states of a user task */
-export type Status = "UNASSIGNED" | "ASSIGNED" | "DONE" | "CANCELLED";
-
-/** Supported field types for task inputs/outputs
- * UNRECOGNIZED is used when the server returns an unknown field type
- * that wasn't available when this client was built
- */
-export type FieldType =
-  | "DOUBLE"
-  | "BOOLEAN"
-  | "STRING"
-  | "INTEGER"
-  | "UNRECOGNIZED";
-
-/** Valid field values based on FieldType */
-export type FieldValue = number | boolean | string;
-
-/**
- * Represents a user group in the system
- */
-export type UserGroup = {
-  /** Unique identifier for the group */
-  id: string;
-  /** Display name of the group */
-  name: string;
-  /** Whether the group exists in the configured OIDC provider */
-  valid: boolean;
-};
-
-/**
- * Represents a user in the system
- */
-export type User = {
-  /** Unique identifier for the user */
-  id: string;
-  /** User's email address */
-  email: string | null;
-  /** Username, if different from email */
-  username: string | null;
-  /** User's first name */
-  firstName: string | null;
-  /** User's last name */
-  lastName: string | null;
-  /** Whether the user exists in the configured OIDC provider */
-  valid: boolean;
-};
-
-/**
  * Request parameters for listing user tasks
  */
 export type ListUserTasksRequest = {
@@ -195,6 +126,75 @@ export type GetUserTaskResponse = {
 export type AdminGetUserTaskResponse = GetUserTaskResponse & {
   /** Array of events that occurred on this task */
   events: UserTaskEvent[];
+};
+
+/**
+ * Represents a user task in the system
+ */
+export type UserTask = {
+  /** Unique identifier for the task */
+  id: string;
+  /** Workflow run identifier associated with this task */
+  wfRunId: string;
+  /** Name of the user task definition */
+  userTaskDefName: string;
+  /** User group assigned to this task, if any */
+  userGroup?: UserGroup;
+  /** User assigned to this task, if any */
+  user?: User;
+  /** Current status of the task */
+  status: Status;
+  /** Additional notes or description for the task */
+  notes: string;
+  /** ISO 8601 timestamp when the task was scheduled */
+  scheduledTime: string;
+};
+
+/** Possible states of a user task */
+export type Status = "UNASSIGNED" | "ASSIGNED" | "DONE" | "CANCELLED";
+
+/** Supported field types for task inputs/outputs
+ * UNRECOGNIZED is used when the server returns an unknown field type
+ * that wasn't available when this client was built
+ */
+export type FieldType =
+  | "DOUBLE"
+  | "BOOLEAN"
+  | "STRING"
+  | "INTEGER"
+  | "UNRECOGNIZED";
+
+/** Valid field values based on FieldType */
+export type FieldValue = number | boolean | string;
+
+/**
+ * Represents a user group in the system
+ */
+export type UserGroup = {
+  /** Unique identifier for the group */
+  id: string;
+  /** Display name of the group */
+  name: string;
+  /** Whether the group exists in the configured OIDC provider */
+  valid: boolean;
+};
+
+/**
+ * Represents a user in the system
+ */
+export type User = {
+  /** Unique identifier for the user */
+  id: string;
+  /** User's email address */
+  email: string | null;
+  /** Username, if different from email */
+  username: string | null;
+  /** User's first name */
+  firstName: string | null;
+  /** User's last name */
+  lastName: string | null;
+  /** Whether the user exists in the configured OIDC provider */
+  valid: boolean;
 };
 
 /**

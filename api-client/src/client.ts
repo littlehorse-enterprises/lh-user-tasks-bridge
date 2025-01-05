@@ -27,7 +27,7 @@ import {
  * @interface
  */
 export interface ClientConfig {
-  /** Base URL of the API endpoint (e.g., "https://api.example.com/v1") */
+  /** Base URL of the API endpoint (e.g., "http://localhost:8089") */
   baseUrl: string;
   /** Tenant identifier for multi-tenant environments */
   tenantId: string;
@@ -36,26 +36,21 @@ export interface ClientConfig {
 }
 
 /**
- * Client for interacting with the LittleHorse UserTasks API.
+ * Client for interacting with the LittleHorse User Tasks API.
  *
- * This client provides a comprehensive interface for managing user tasks, including:
- * - Basic task operations (claim, cancel, complete)
+ * This client provides methods for managing user tasks in LittleHorse, including:
+ * - Task operations (claim, complete, cancel)
  * - Task listing and filtering
- * - Administrative functions
+ * - Administrative functions (assign, force complete)
  * - User and group management
- *
- * All methods automatically handle authentication and error handling.
  *
  * @example
  * ```typescript
  * const client = new LittleHorseUserTasksApiClient({
- *   baseUrl: 'https://api.example.com',
- *   tenantId: 'tenant1',
- *   accessToken: 'oauth-token'
+ *   baseUrl: 'http://localhost:8089',  // UserTasks API endpoint
+ *   tenantId: 'default',              // Your LittleHorse tenant
+ *   accessToken: 'your-oidc-token'    // Valid OIDC access token
  * });
- *
- * // List available tasks
- * const tasks = await client.listUserTasks({ limit: 10 });
  * ```
  */
 export class LittleHorseUserTasksApiClient {
@@ -297,23 +292,21 @@ export class LittleHorseUserTasksApiClient {
   }
 
   /**
-   * Completes a UserTask by submitting the required result values.
+   * Completes a user task by submitting the task result.
    *
-   * @param userTask - The UserTask to complete, must contain wfRunId and id
-   * @param values - The result values for the task fields
-   * @throws {UnauthorizedError} If the user is not authenticated
-   * @throws {ForbiddenError} If the user doesn't have permission to complete the task
-   * @throws {TaskStateError} If the task is already completed or cancelled
-   * @throws {ValidationError} If the provided values don't match the task's field definitions
+   * @param userTask - Object containing task identifiers
+   * @param values - Task result values matching the task's variable definitions
+   * @throws {UnauthorizedError} If the user doesn't have permission to complete the task
    * @throws {NotFoundError} If the task doesn't exist
+   * @throws {PreconditionFailedError} If the task cannot be completed in its current state
    *
    * @example
    * ```typescript
    * await client.completeUserTask(
-   *   { id: 'task-123', wfRunId: 'workflow-456' },
+   *   { id: 'task-123', wfRunId: 'wf-456' },
    *   {
    *     approved: { type: 'BOOLEAN', value: true },
-   *     comment: { type: 'STRING', value: 'Looks good!' }
+   *     comment: { type: 'STR', value: 'Looks good!' }
    *   }
    * );
    * ```
@@ -355,24 +348,19 @@ export class LittleHorseUserTasksApiClient {
   }
 
   /**
-   * Administrative method to assign a UserTask to a specific user or group.
-   * If both userId and userGroupId are provided, the user must be a member of the group but
-   * the task will be assigned to the user.
+   * Assigns a user task to a specific user or group (admin only).
    *
-   * @param userTask - The UserTask to assign
-   * @param assignTo - Object containing userId and/or userGroupId
-   * @param assignTo.userId - Optional user ID to assign the task to
-   * @param assignTo.userGroupId - Optional user group ID to assign the task to
-   * @throws {UnauthorizedError} If the user is not authenticated
-   * @throws {ForbiddenError} If the user doesn't have administrative permissions
-   * @throws {ValidationError} If neither userId nor userGroupId is provided
-   * @throws {NotFoundError} If the task, user, or group doesn't exist
+   * @param userTask - Object containing task identifiers
+   * @param assignTo - Object specifying user ID and/or group ID to assign
+   * @throws {UnauthorizedError} If the caller lacks admin privileges
+   * @throws {NotFoundError} If the task doesn't exist
+   * @throws {AssignmentError} If the assignment cannot be completed
    *
    * @example
    * ```typescript
    * await client.adminAssignUserTask(
-   *   { id: 'task-123', wfRunId: 'workflow-456' },
-   *   { userId: 'user-789', userGroupId: 'group-101' }
+   *   { id: 'task-123', wfRunId: 'wf-456' },
+   *   { userId: 'user-789', userGroupId: 'group-123' }
    * );
    * ```
    */
