@@ -39,8 +39,7 @@ services:
       - LHS_LISTENERS=PLAIN:2023
       - LHS_ADVERTISED_LISTENERS=PLAIN://littlehorse:2023
   littlehorse-configurer:
-    image: ghcr.io/littlehorse-enterprises/littlehorse/lhctl:latest
-    command: [ "put", "tenant", "default" ]
+    build: ./local-dev/littlehorse-configurer
     depends_on:
       littlehorse:
         condition: service_healthy

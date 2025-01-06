@@ -12,13 +12,13 @@ Register workflow:
 
 Assign a task to nobody:
 ```shell
-lhctl run user-tasks
+lhctl run user-tasks-demo
 ```
 
 Assign invalid ids:
 ```shell
-lhctl run user-tasks user $(uuidgen)
-lhctl run user-tasks group $(uuidgen)
+lhctl run user-tasks-demo user $(uuidgen)
+lhctl run user-tasks-demo group $(uuidgen)
 ```
 
 Export access token:
@@ -32,22 +32,22 @@ export KEYCLOAK_ADMIN_ACCESS_TOKEN=$(http --ignore-stdin --form "http://localhos
 
 Assign a task to `users`:
 ```shell
-lhctl run user-tasks group $(http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" "http://localhost:8888/admin/realms/default/groups/?exact=true&search=users" | jq -r ".[0].id")
+lhctl run user-tasks-demo group $(http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" "http://localhost:8888/admin/realms/default/groups/?exact=true&search=users" | jq -r ".[0].id")
 ```
 
 Assign a task to `admins`:
 ```shell
-lhctl run user-tasks group $(http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" "http://localhost:8888/admin/realms/default/groups/?exact=true&search=admins" | jq -r ".[0].id")
+lhctl run user-tasks-demo group $(http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" "http://localhost:8888/admin/realms/default/groups/?exact=true&search=admins" | jq -r ".[0].id")
 ```
 
 Assign a task to `my-user`:
 ```shell
-lhctl run user-tasks user $(http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" "http://localhost:8888/admin/realms/default/users/?username=my-user" | jq -r ".[0].id")
+lhctl run user-tasks-demo user $(http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" "http://localhost:8888/admin/realms/default/users/?username=my-user" | jq -r ".[0].id")
 ```
 
 Assign a task to `my-admin-user`:
 ```shell
-lhctl run user-tasks user $(http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" "http://localhost:8888/admin/realms/default/users/?username=my-admin-user" | jq -r ".[0].id")
+lhctl run user-tasks-demo user $(http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" "http://localhost:8888/admin/realms/default/users/?username=my-admin-user" | jq -r ".[0].id")
 ```
 
 Open user task ui: http://localhost:3000
