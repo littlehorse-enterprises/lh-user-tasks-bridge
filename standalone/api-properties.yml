@@ -12,4 +12,4 @@ com:
             tenant-id: default
             client-id-claim: azp
             clients:
-              - user-tasks-client
+              - sso-workflow-bridge-client

@@ -17,6 +17,6 @@ public class OpenAPIConfiguration {
                         .version("0.0.1"))
                 .externalDocs(new ExternalDocumentation()
                         .description("Documentation")
-                        .url("https://littlehorse.dev/docs/concepts/user-tasks/"));
+                        .url("https://littlehorse.io/docs/concepts/user-tasks/"));
     }
 }

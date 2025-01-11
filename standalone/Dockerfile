@@ -33,13 +33,13 @@ COPY ./local-dev/keycloak-configurer/configure-keycloak.sh /lh
 COPY ./local-dev/littlehorse-configurer /lh
 RUN chmod +x /lh/configure-littlehorse.sh
 
-WORKDIR /user-task-api
-COPY ./api/build/libs/user-tasks.jar /user-task-api
-COPY ./standalone/api-properties.yml /user-task-api
+WORKDIR /sso-workflow-bridge-api
+COPY ./api/build/libs/sso-workflow-bridge-api.jar /sso-workflow-bridge-api
+COPY ./standalone/api-properties.yml /sso-workflow-bridge-api
 
-WORKDIR /user-task-ui
-COPY ./ui/.next/standalone /user-task-ui
-COPY ./ui/.next/static /user-task-ui/ui/.next/static
-COPY ./node_modules /user-task-ui/node_modules
+WORKDIR /sso-workflow-bridge-ui
+COPY ./ui/.next/standalone /sso-workflow-bridge-ui
+COPY ./ui/.next/static /sso-workflow-bridge-ui/ui/.next/static
+COPY ./node_modules /sso-workflow-bridge-ui/node_modules
 
 WORKDIR /

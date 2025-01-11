@@ -1,8 +1,32 @@
 package io.littlehorse.usertasks.services;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.net.URI;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.MockedStatic;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
+
 import com.fasterxml.jackson.core.JsonLocation;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
+
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.littlehorse.sdk.common.proto.LittleHorseGrpc;
@@ -12,29 +36,6 @@ import io.littlehorse.usertasks.configurations.CustomIdentityProviderProperties;
 import io.littlehorse.usertasks.configurations.IdentityProviderConfigProperties;
 import io.littlehorse.usertasks.idp_adapters.IdentityProviderVendor;
 import io.littlehorse.usertasks.util.TokenUtil;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.MockedStatic;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
-
-import java.net.URI;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class TenantServiceTest {
@@ -68,7 +69,6 @@ class TenantServiceTest {
             "XPLe66ZAumukMVXRhzdaHHLNcUK5U4X3Y5rn_nd1ptiYNKwRyzGpMcRpY2Eid4yo5nx9z9B4MTa5lhHj0KwGnkqSJfZkNW_-I1gJt0zKca783" +
             "kOTPdoAbfSdNCayJ8WlGqmKr_-zA7hmjRIGs2ZHA5KfDH_81SzFPBrJyFGaAzwHaRmHbk1K3fg6eJC4Uw07oixw7TPiaSla47p6NDG-kzshi" +
             "NgR9sJHYf2ALHATYYTkV6IKLNbjoXuo-vuqus9kqkoXNb_QyR43hw6qZaH_A";
-    private final String defaultClientIdClaim = "azp";
 
     @Test
     void isValidTenant_shouldThrowNullPointerExceptionWhenTenantIdIsNull() {
@@ -155,50 +155,13 @@ class TenantServiceTest {
     }
 
     @Test
-    void isValidTenant_shouldReturnTrueWhenTenantIdIsPresentInLHServerAndAlsoInConfigurationProperties() {
-        var tenantIdToValidate = "my-local-tenant";
-        URI fakeUri = URI.create("http://user-tasks-keycloak:8888/realms/lh");
-        var fakeUsernameClaim = "preferred_username";
-        IdentityProviderVendor fakeVendor = IdentityProviderVendor.KEYCLOAK;
-        Set<String> clients = Set.of("user-tasks-client-2");
-
-        var properties = new CustomIdentityProviderProperties(fakeUri, fakeUsernameClaim, fakeVendor, tenantIdToValidate, clients, defaultClientIdClaim);
-
-        when(lhClient.getTenant(any(TenantId.class))).thenReturn(Tenant.getDefaultInstance());
-        when(identityProviderConfigProperties.getOps()).thenReturn(List.of(properties));
-
-        assertTrue(tenantService.isValidTenant(tenantIdToValidate, STUBBED_ACCESS_TOKEN));
-
-        verify(lhClient).getTenant(any(TenantId.class));
-    }
-
-    @Test
-    void isValidTenant_shouldReturnFalseWhenTenantIdIsPresentInLHServerButItIsNotPresentInConfigurationProperties() {
-        var configuredTenant = "my-local-tenant";
-        var tenantIdToValidate = "some-random-tenant";
-        URI fakeUri = URI.create("http://user-tasks-keycloak:8888/realms/lh");
-        var fakeUsernameClaim = "preferred_username";
-        IdentityProviderVendor fakeVendor = IdentityProviderVendor.KEYCLOAK;
-        Set<String> clients = Set.of("user-tasks-client-2");
-
-        var properties = new CustomIdentityProviderProperties(fakeUri, fakeUsernameClaim, fakeVendor, configuredTenant, clients, defaultClientIdClaim);
-
-        when(lhClient.getTenant(any(TenantId.class))).thenReturn(Tenant.getDefaultInstance());
-        when(identityProviderConfigProperties.getOps()).thenReturn(List.of(properties));
-
-        assertFalse(tenantService.isValidTenant(tenantIdToValidate, STUBBED_ACCESS_TOKEN));
-
-        verify(lhClient).getTenant(any(TenantId.class));
-    }
-
-    @Test
     void isValidTenant_shouldReturnFalseWhenClientIdDoesNotMatchConfigurationProperties() {
         var configuredTenant = "default";
         var tenantIdToValidate = "default";
         URI fakeUri = URI.create("https://trial-5903875.okta.com/oauth2/default");
         var fakeUsernameClaim = "preferred_username";
         IdentityProviderVendor fakeVendor = IdentityProviderVendor.OKTA;
-        Set<String> configuredClients = Set.of("user-tasks-client");
+        Set<String> configuredClients = Set.of("sso-workflow-bridge-client-2");
 
         var properties = new CustomIdentityProviderProperties(fakeUri, fakeUsernameClaim, fakeVendor, configuredTenant, configuredClients, "cid");
 

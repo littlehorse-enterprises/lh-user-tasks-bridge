@@ -27,7 +27,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: user-tasks-api-jar
+          name: sso-workflow-bridge-api-jar
           path: api/build/libs
 
   build-ui:
@@ -36,8 +36,8 @@ jobs:
       - name: Clone UI
         uses: actions/checkout@v4
         with:
-          repository: littlehorse-enterprises/lh-user-tasks
-          path: lh-user-tasks
+          repository: littlehorse-enterprises/lh-sso-workflow-bridge
+          path: lh-sso-workflow-bridge
           ref: main
           token: ${{ secrets.PAT_LH_USER_TASKS_UI }}
 
@@ -47,19 +47,19 @@ jobs:
           node-version: 20
 
       - name: Build UI
-        working-directory: lh-user-tasks
+        working-directory: lh-sso-workflow-bridge
         run: |
           npm ci
           npm run build -ws
 
       - uses: actions/upload-artifact@v4
         with:
-          name: user-tasks-ui
+          name: sso-workflow-bridge-ui
           include-hidden-files: true
           path:  |
-            lh-user-tasks/ui/.next/standalone
-            lh-user-tasks/ui/.next/static
-            lh-user-tasks/node_modules
+            lh-sso-workflow-bridge/ui/.next/standalone
+            lh-sso-workflow-bridge/ui/.next/static
+            lh-sso-workflow-bridge/node_modules
 
   docker:
     runs-on: ubuntu-latest
@@ -73,20 +73,20 @@ jobs:
       - name: Download API Artifact
         uses: actions/download-artifact@v4
         with:
-          name: user-tasks-api-jar
+          name: sso-workflow-bridge-api-jar
           path: ./api/build/libs/
 
       - name: Download UI Artifact
         uses: actions/download-artifact@v4
         with:
-          name: user-tasks-ui
+          name: sso-workflow-bridge-ui
           path: ./
 
       - name: Build and Publish
         id: publish-image
         uses: littlehorse-enterprises/publish-image@v1
         with:
-          image-name: lh-user-tasks-api
+          image-name: lh-sso-workflow-bridge-api
           registry: ecr
           tags: |
             type=semver,pattern={{version}}
@@ -96,7 +96,7 @@ jobs:
         id: publish-standalone-image
         uses: littlehorse-enterprises/publish-image@v1
         with:
-          image-name: lh-user-tasks-standalone
+          image-name: lh-sso-workflow-bridge-standalone
           dockerfile: standalone/Dockerfile
           github-token: ${{ secrets.GITHUB_TOKEN }}
           tags: |
@@ -118,5 +118,5 @@ jobs:
       - name: Push image to Quay
         run: |
           docker buildx imagetools create \
-            --tag quay.io/littlehorse/lh-user-tasks-api:${{ inputs.version }} \
+            --tag quay.io/littlehorse/lh-sso-workflow-bridge-api:${{ inputs.version }} \
             ${IMAGE}
