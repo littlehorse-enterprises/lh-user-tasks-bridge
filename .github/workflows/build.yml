@@ -1,4 +1,4 @@
-name: Build User Tasks
+name: Build
 
 on:
   pull_request:

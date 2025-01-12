@@ -8,7 +8,7 @@
   "author": "LittleHorse Enterprises",
   "repository": {
     "type": "git",
-    "url": "https://github.com/littlehorse-enterprises/sso-workflow-bridge.git"
+    "url": "git+https://github.com/littlehorse-enterprises/sso-workflow-bridge.git"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
