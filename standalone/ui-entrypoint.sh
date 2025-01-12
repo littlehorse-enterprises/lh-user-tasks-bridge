@@ -11,8 +11,8 @@ export AUTH_URL="http://localhost:3000"
 export AUTH_SECRET="any-secret"
 export AUTH_KEYCLOAK_HOST="http://localhost:8888"
 export AUTH_KEYCLOAK_REALM="default"
-export AUTH_KEYCLOAK_CLIENT_ID="user-tasks-client"
+export AUTH_KEYCLOAK_CLIENT_ID="sso-workflow-bridge-client"
 export AUTH_KEYCLOAK_CLIENT_SECRET="any-secret"
 export LHUT_API_URL="http://localhost:8089"
 
-node /user-task-ui/ui/server.js
+node /sso-workflow-bridge-ui/ui/server.js

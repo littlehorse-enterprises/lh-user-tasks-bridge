@@ -10,4 +10,4 @@ done
 cd /lh/demo
 gradle run
 lhctl put tenant default
-lhctl run user-tasks-demo
+lhctl run sso-workflow-bridge-demo

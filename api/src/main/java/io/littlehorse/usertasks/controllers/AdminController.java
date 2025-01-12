@@ -54,7 +54,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import static io.littlehorse.usertasks.configurations.CustomIdentityProviderProperties.getCustomIdentityProviderProperties;
-import static io.littlehorse.usertasks.util.constants.AuthoritiesConstants.USER_TASKS_ADMIN;
+import static io.littlehorse.usertasks.util.constants.AuthoritiesConstants.SSO_WORKFLOW_BRIDGE_ADMIN;
 import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.USER_ID_CLAIM;
 
 @Tag(
@@ -63,7 +63,7 @@ import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.USER_I
 )
 @RestController
 @CrossOrigin
-@PreAuthorize("isAuthenticated() && hasAuthority('" + USER_TASKS_ADMIN + "')")
+@PreAuthorize("isAuthenticated() && hasAuthority('" + SSO_WORKFLOW_BRIDGE_ADMIN + "')")
 @Slf4j
 public class AdminController {
     private final TenantService tenantService;

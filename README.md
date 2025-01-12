@@ -1,6 +1,6 @@
-# UserTasks API
+# SSO Workflow Bridge API
 
-Backend component that serves as a proxy between User Tasks' UI component and a LittleHorse Server.
+Backend component that serves as a proxy between any OIDC compliant identity provider and LittleHorse Server `UserTasks`.
 
 ## Getting Started
 
@@ -25,9 +25,9 @@ First update your `/etc/hosts` file with next hostnames:
 127.0.0.1 littlehorse
 ```
 
-We are using Keycloak to work as a sample Identity Provider that will support UserTasks API by having a basic
+We are using Keycloak to work as a sample Identity Provider that will support SSO Workflow Bridge API by having a basic
 identity provider configured. You can find a Docker Compose configuration
-in `docker-compose.yaml`. You can run Keycloak, a local LH Server and the UserTasks API locally with this command:
+in `docker-compose.yaml`. You can run Keycloak, a local LH Server and the SSO Workflow Bridge API locally with this command:
 
   ```shell
   ./local-dev/run.sh
@@ -39,19 +39,20 @@ If the command above ended successfully, then you should see 4 containers runnin
 
 - 1 for Keycloak
 - 1 for LittleHorse Standalone (LH Server and LH Dashboard)
-- 1 for user-tasks-api
-- 1 for user-tasks-ui
+- 1 for sso-workflow-bridge-api
+- 1 for sso-workflow-bridge-ui
 
-After that, the UserTasks API should be available on http://localhost:8089
+After that, the SSO Workflow Bridge API should be available on <http://localhost:8089>
 
 Verify that Keycloak is up and running, and if that is the case, you can now access it through your browser
-on http://localhost:8888
+on <http://localhost:8888>
 
 Keycloak's admin credentials:
+
 - username: **admin**
 - password: **admin**
 
-Also, you will need an access token to be able to be granted authorized access into user-tasks backend endpoints.
+Also, you will need an access token to be able to be granted authorized access into sso-workflow-bridge-api backend endpoints.
 In order to fetch said token, you can use the following cURL as is from the terminal, or you can import it
 to your REST client tool of preference (Postman, Insomnia, Bruno, etc.)
 
@@ -59,14 +60,14 @@ to your REST client tool of preference (Postman, Insomnia, Bruno, etc.)
 curl --request POST \
 --url http://localhost:8888/realms/default/protocol/openid-connect/token \
 --header 'Content-Type: application/x-www-form-urlencoded' \
---data client_id=user-tasks-client \
+--data client_id=sso-workflow-bridge-client \
 --data client_secret= \
 --data username=my-user \
 --data password=1234 \
 --data grant_type=password
 ```
 
-Once you have your access token handy, you are ready to hit user-tasks endpoints.
+Once you have your access token handy, you are ready to hit sso-workflow-bridge-api endpoints.
 
 For example, you can hit the `/<tenant_id>/init` endpoint with the following cURL:
 
@@ -90,7 +91,7 @@ This is just an example, use the values that match your LittleHorse config
 
 ### OIDC Configuration
 
-Make sure that you edit the `oidc-properties.yml` file located at `./ut-config/` directory.
+Make sure that you edit the `oidc-properties.yml` file located at `./config/` directory.
 
 Here's what you need to modify in that file:
 
@@ -108,7 +109,7 @@ Here's what you need to modify in that file:
 - **clients**: Within this property you MUST set at least one client-id from your Keycloak realm from which your
   access tokens will be generated.
 
-When you have your oidc-properties.yml properly configured, you will be ready to run UserTasks API from the source code.
+When you have your oidc-properties.yml properly configured, you will be ready to run SSO Workflow Bridge API from the source code.
 
 This command will execute Spring Boot's run task:
 
@@ -120,5 +121,5 @@ This command will execute Spring Boot's run task:
 
 ### Access Swagger UI
 
-In order to see OpenAPI Specs with Swagger UI, and after having UserTasks API running, you just need to go to your
-web browser and access the following URL: http://localhost:8089/swagger-ui/index.html
+In order to see OpenAPI Specs with Swagger UI, and after having SSO Workflow Bridge API running, you just need to go to your
+web browser and access the following URL: <http://localhost:8089/swagger-ui/index.html>

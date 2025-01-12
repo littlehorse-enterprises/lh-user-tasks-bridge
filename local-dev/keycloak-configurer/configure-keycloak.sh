@@ -3,7 +3,7 @@
 set -ex
 
 configure_keycloak() {
-    echo "Proceeding to create lh realm in keycloak and the client for user-tasks as sample OIDC provider"
+    echo "Proceeding to create lh realm in keycloak and the client for sso-workflow-bridge as sample OIDC provider"
 
     if ! command -v http &>/dev/null; then
         echo "'http' command not found. Install httpie https://httpie.io/cli"
@@ -21,7 +21,7 @@ configure_keycloak() {
     REALM_NAME="default"
     KEYCLOAK_ADMIN_USER="admin"
     KEYCLOAK_ADMIN_PASSWORD="admin"
-    KEYCLOAK_CLIENT_ID="user-tasks-client"
+    KEYCLOAK_CLIENT_ID="sso-workflow-bridge-client"
     KEYCLOAK_CLIENT_SECRET="any-secret"
 
     echo "Getting admin access token"
@@ -75,7 +75,7 @@ configure_keycloak() {
 
    echo "Client successfully created"
 
-#  Here we create a custom claim that is also added to the accessToken. This custom claim is used by the lh-user-tasks-api
+#  Here we create a custom claim that is also added to the accessToken. This custom claim is used by the lh-sso-workflow-bridge-api
 #  to verify that the users accessing its endpoints are allowed to see resources from a given tenant.
    echo "Creating tenant custom claim"
    http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" POST "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/clients/${KEYCLOAK_CLIENT_ID}/protocol-mappers/models" \
@@ -108,13 +108,13 @@ configure_keycloak() {
    echo "Keycloak Client Secret '${KEYCLOAK_CLIENT_SECRET}' created"
 
 #  Here we create a role that will later on be used to identify admin users.
-   echo "Creating UserTasks Admin Role"
+   echo "Creating SSO Workflow Bridge Admin Role"
    http --ignore-stdin -q -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" POST "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/roles" \
-    name="lh-user-tasks-admin" \
-    description="This role is used to let UserTasks API know about which users are allowed to perform ADMIN actions."
+    name="lh-sso-workflow-bridge-admin" \
+    description="This role is used to let SSO Workflow Bridge API know about which users are allowed to perform ADMIN actions."
 
 #  Here we create a user that will not have the admin role.
-   echo "Creating UserTasks NonAdmin User"
+   echo "Creating SSO Workflow Bridge NonAdmin User"
    http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" POST "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/users" \
            emailVerified:=true \
            username="my-user" \
@@ -127,7 +127,7 @@ configure_keycloak() {
            credentials[0][temporary]:=false
 
 #  Here we create a user that will have the admin role.
-   echo "Creating UserTasks Admin User"
+   echo "Creating SSO Workflow Bridge Admin User"
    http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" POST "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/users" \
                emailVerified:=true \
                username="my-admin-user" \
@@ -145,7 +145,7 @@ configure_keycloak() {
 
    echo "Fetching Roles' IDs"
    VIEW_USERS_ROLE_ID=$(http --ignore-stdin -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/ui-ext/available-roles/users/${NON_ADMIN_USER_ID}?first=0&max=1&search=view-users" | jq -r ".[0].id")
-   USER_TASKS_ADMIN_ROLE_ID=$(http --ignore-stdin -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/roles/lh-user-tasks-admin" | jq -r ".id")
+   SSO_WORKFLOW_BRIDGE_ADMIN_ROLE_ID=$(http --ignore-stdin -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/roles/lh-sso-workflow-bridge-admin" | jq -r ".id")
 
 #  Here we assign the view-users role to the nonAdmin user, and subsequently to the admin user as well. The view-users role
 #  allows users to see their userInfo details.
@@ -162,8 +162,8 @@ configure_keycloak() {
 #  Here we assign the admin role to the admin user.
    echo "Assigning Admin Role to Admin User"
    http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" POST "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/users/${ADMIN_USER_ID}/role-mappings/realm" \
-              [0][id]="$USER_TASKS_ADMIN_ROLE_ID" \
-              [0][name]="lh-user-tasks-admin"
+              [0][id]="$SSO_WORKFLOW_BRIDGE_ADMIN_ROLE_ID" \
+              [0][name]="lh-sso-workflow-bridge-admin"
 
    echo "Roles successfully assigned to users!"
 
@@ -181,7 +181,7 @@ configure_keycloak() {
 #  Here we make the created client public, and also disabled the serviceAccounts. This is done so that users can be properly
 #  authenticated when using the created client's credential when fetching access tokens.
    echo "Making the client public"
-   http --ignore-stdin -q -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" PUT "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/clients/user-tasks-client" \
+   http --ignore-stdin -q -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" PUT "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/clients/sso-workflow-bridge-client" \
              id="${KEYCLOAK_CLIENT_ID}"  \
              enabled:=true \
              serviceAccountsEnabled:=false \

@@ -1,5 +1,5 @@
 package io.littlehorse.usertasks.util.constants;
 
 public class AuthoritiesConstants {
-    public static final String USER_TASKS_ADMIN = "lh-user-tasks-admin";
+    public static final String SSO_WORKFLOW_BRIDGE_ADMIN = "lh-sso-workflow-bridge-admin";
 }

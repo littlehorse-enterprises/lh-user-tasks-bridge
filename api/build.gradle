@@ -44,5 +44,5 @@ tasks.named('test') {
 }
 
 bootJar {
-    archiveFileName = "user-tasks.${archiveExtension.get()}"
+    archiveFileName = "sso-workflow-bridge-api.${archiveExtension.get()}"
 }
