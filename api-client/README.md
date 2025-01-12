@@ -1,23 +1,16 @@
-# LH User Tasks API Client
+# LittleHorse SSO Workflow Bridge API Client
 
-A lightweight TypeScript client for interacting with LittleHorse [User Tasks API](https://littlehorse.io/docs/user-tasks/api).
+A lightweight client for interacting with LittleHorse [SSO Workflow Bridge API](https://littlehorse.io/docs/sso-workflow-bridge/api).
 
 ## Installation
 
 ```bash
-npm install @littlehorse-enterprises/user-tasks-api-client
+npm install @littlehorse-enterprises/sso-workflow-bridge-api-client
 ```
 
 ## Documentation
 
-For detailed documentation, including:
-
-- Complete API reference
-- Advanced usage examples
-- Error handling guides
-- Type definitions
-
-Visit our [official documentation](https://littlehorse.io/docs/user-tasks/api-client).
+Visit our [official documentation](https://littlehorse.io/docs/sso-workflow-bridge/api-client).
 
 ## License
 

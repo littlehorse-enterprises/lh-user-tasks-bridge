@@ -24,7 +24,7 @@ export default function Header() {
 
   return (
     <>
-      {session.data?.roles.includes("lh-user-tasks-admin") &&
+      {session.data?.roles.includes("lh-sso-workflow-bridge-admin") &&
         pathname == `/${tenantId}` && (
           <p className="text-sm text-destructive-foreground bg-destructive text-center py-2">
             Viewing as User
@@ -56,7 +56,9 @@ export default function Header() {
                 </DropdownMenuLabel>
 
                 <DropdownMenuSeparator />
-                {session.data?.roles.includes("lh-user-tasks-admin") && (
+                {session.data?.roles.includes(
+                  "lh-sso-workflow-bridge-admin",
+                ) && (
                   <>
                     {pathname.startsWith(`/${tenantId}/admin`) ? (
                       <DropdownMenuItem asChild>

@@ -28,7 +28,7 @@ import {
   GetUserTaskResponse,
   UserTask,
   UserTaskResult,
-} from "@littlehorse-enterprises/user-tasks-api-client";
+} from "@littlehorse-enterprises/sso-workflow-bridge-api-client";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import Loading from "../../loading";

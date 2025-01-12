@@ -14,7 +14,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { UserTask } from "@littlehorse-enterprises/user-tasks-api-client";
+import { UserTask } from "@littlehorse-enterprises/sso-workflow-bridge-api-client";
 import { toast } from "sonner";
 
 export default function CancelUserTaskButton({

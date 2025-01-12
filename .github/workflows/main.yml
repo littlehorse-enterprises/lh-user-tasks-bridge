@@ -34,11 +34,11 @@ jobs:
       - name: Publish Image
         uses: littlehorse-enterprises/publish-image@v1
         with:
-          image-name: lh-user-tasks-ui
+          image-name: lh-sso-workflow-bridge-ui
           registry: ecr
           dockerfile: Dockerfile
 
       - name: Trigger Build Standalone
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT_USER_TASKS }}
-        run: gh workflow run main.yml -R littlehorse-enterprises/lh-user-tasks-api
+        run: gh workflow run main.yml -R littlehorse-enterprises/sso-workflow-bridge-api

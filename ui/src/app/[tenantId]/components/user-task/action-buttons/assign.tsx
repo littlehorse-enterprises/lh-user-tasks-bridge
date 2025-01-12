@@ -27,7 +27,7 @@ import {
   User,
   UserGroup,
   UserTask,
-} from "@littlehorse-enterprises/user-tasks-api-client";
+} from "@littlehorse-enterprises/sso-workflow-bridge-api-client";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 

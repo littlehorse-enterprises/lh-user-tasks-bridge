@@ -1,11 +1,11 @@
-# LH UserTask UI
+# LittleHorse SSO Workflow Bridge
 
 This repository contains the code for:
 
-- `UserTasks UI` (Next.js)
-- `@littlehorse-enterprises/user-tasks-api-client` (Node Package That Interacts With The UserTasks API)
+- `SSO Workflow Bridge UI` (Next.js)
+- `@littlehorse-enterprises/sso-workflow-bridge-api-client` (Node Package That Interacts With The SSO Workflow Bridge API)
 
-This repository will help you interact with LittleHorse's UserTask API.
+This repository will help you interact with LittleHorse's SSO Workflow Bridge API.
 
 ## Overview
 
@@ -35,13 +35,13 @@ This project is designed to work seamlessly with LittleHorse's workflow engine, 
 The fastest way to get started is using our standalone image that includes all necessary components:
 
 ```bash
-docker run --name lh-user-tasks-standalone --rm -d \
+docker run --name lh-sso-workflow-bridge-standalone --rm -d \
         -p 2023:2023 \
         -p 8080:8080 \
         -p 8888:8888 \
         -p 8089:8089 \
         -p 3000:3000 \
-        ghcr.io/littlehorse-enterprises/lh-user-tasks-api/lh-user-tasks-standalone:main
+        ghcr.io/littlehorse-enterprises/sso-workflow-bridge/sso-workflow-bridge-standalone:main
 ```
 
 This will start:
@@ -88,13 +88,13 @@ export KEYCLOAK_ADMIN_ACCESS_TOKEN=$(http --ignore-stdin --form "http://localhos
 
 ```bash
 # Assign to specific user
-lhctl run user-tasks user $(http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" "http://localhost:8888/admin/realms/default/users/?username=my-user" | jq -r ".[0].id")
+lhctl run sso-workflow-bridge-demo user $(http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" "http://localhost:8888/admin/realms/default/users/?username=my-user" | jq -r ".[0].id")
 
 # Assign to users group
-lhctl run user-tasks group $(http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" "http://localhost:8888/admin/realms/default/groups/?exact=true&search=users" | jq -r ".[0].id")
+lhctl run sso-workflow-bridge-demo group $(http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" "http://localhost:8888/admin/realms/default/groups/?exact=true&search=users" | jq -r ".[0].id")
 
 # Assign to admins group
-lhctl run user-tasks group $(http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" "http://localhost:8888/admin/realms/default/groups/?exact=true&search=admins" | jq -r ".[0].id")
+lhctl run sso-workflow-bridge-demo group $(http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" "http://localhost:8888/admin/realms/default/groups/?exact=true&search=admins" | jq -r ".[0].id")
 ```
 
 ## Development Setup
@@ -112,8 +112,8 @@ If you want to develop the UI locally:
 1. Clone this repository:
 
 ```bash
-git clone https://github.com/littlehorse-enterprises/lh-user-tasks.git
-cd lh-user-tasks
+git clone https://github.com/littlehorse-enterprises/sso-workflow-bridge.git
+cd sso-workflow-bridge
 ```
 
 2. Install git hooks:
@@ -131,7 +131,7 @@ NEXTAUTH_URL='http://localhost:3000'
 NEXTAUTH_SECRET='<any secret here>'
 KEYCLOAK_HOST='http://localhost:8888'
 KEYCLOAK_REALM='default'
-KEYCLOAK_CLIENT_ID='user-tasks-client'
+KEYCLOAK_CLIENT_ID='sso-workflow-bridge-client'
 KEYCLOAK_CLIENT_SECRET=' '
 LHUT_API_URL='http://localhost:8089'
 ```
@@ -143,7 +143,7 @@ npm install
 ```
 
 ```shell
-npm run dev -ws ui -- --port 3001 # We use port 3001 to avoid conflict with the standalone image
+npm run dev -ws ui
 ```
 
 In another terminal, start the API Client:
@@ -154,11 +154,11 @@ npm run dev -ws api-client
 
 The API Client will start listening to any live changes in the `api-client` folder and recompile it.
 
-The UI will start with watch mode on <http://localhost:3001>
+The UI will start with watch mode on <http://localhost:3000>
 
 ### Useful Links
 
-- User Tasks UI: <http://localhost:3001>
+- SSO Workflow Bridge UI: <http://localhost:3000>
 - LittleHorse Dashboard: <http://localhost:8080>
 - Keycloak Admin Console: <http://localhost:8888>
 
@@ -189,11 +189,11 @@ docker run --rm -d \
     -e NEXTAUTH_SECRET='your-secret-here' \
     -e KEYCLOAK_HOST='http://localhost:8888' \
     -e KEYCLOAK_REALM='default' \
-    -e KEYCLOAK_CLIENT_ID='user-tasks-client' \
+    -e KEYCLOAK_CLIENT_ID='sso-workflow-bridge-client' \
     -e KEYCLOAK_CLIENT_SECRET=' ' \
     -e LHUT_API_URL='http://localhost:8089' \
     -p 3000:3000 -p 3443:3443 \
-    ghcr.io/littlehorse-enterprises/lh-user-tasks-api/lh-user-tasks-ui:main
+    ghcr.io/littlehorse-enterprises/sso-workflow-bridge/sso-workflow-bridge-ui:main
 ```
 
 When SSL is enabled, the UI will be available on:

@@ -21,7 +21,7 @@ import {
   ListUserTasksResponse,
   Status,
   UserGroup,
-} from "@littlehorse-enterprises/user-tasks-api-client";
+} from "@littlehorse-enterprises/sso-workflow-bridge-api-client";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { FilterIcon } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";

@@ -13,7 +13,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { UserTask } from "@littlehorse-enterprises/user-tasks-api-client";
+import type { UserTask } from "@littlehorse-enterprises/sso-workflow-bridge-api-client";
 import { useSession } from "next-auth/react";
 import { ReactNode, useEffect, useRef, useState } from "react";
 import AssignUserTaskButton from "./action-buttons/assign";

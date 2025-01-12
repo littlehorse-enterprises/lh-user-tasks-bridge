@@ -9,4 +9,4 @@ cd "${CONTEXT_DIR}"
 
 ./local-dev/build.sh
 
-docker build -t littlehorse/lh-user-tasks-ui:latest .
+docker build -t littlehorse/lh-sso-workflow-bridge-ui:latest .
