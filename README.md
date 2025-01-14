@@ -127,12 +127,12 @@ pre-commit install
    Copy `ui/.env.sample` as `ui/.env.local` and configure with:
 
 ```bash
-NEXTAUTH_URL='http://localhost:3000'
-NEXTAUTH_SECRET='<any secret here>'
-KEYCLOAK_HOST='http://localhost:8888'
-KEYCLOAK_REALM='default'
-KEYCLOAK_CLIENT_ID='sso-workflow-bridge-client'
-KEYCLOAK_CLIENT_SECRET=' '
+AUTH_URL='http://localhost:3000'
+AUTH_SECRET='<any secret here>'
+AUTH_KEYCLOAK_HOST='http://localhost:8888'
+AUTH_KEYCLOAK_REALM='default'
+AUTH_KEYCLOAK_CLIENT_ID='sso-workflow-bridge-client'
+AUTH_KEYCLOAK_CLIENT_SECRET=' '
 LHUT_API_URL='http://localhost:8089'
 ```
 
@@ -143,13 +143,13 @@ npm install
 ```
 
 ```shell
-npm run dev -ws ui
+npm run dev -w ui
 ```
 
 In another terminal, start the API Client:
 
 ```shell
-npm run dev -ws api-client
+npm run dev -w api-client
 ```
 
 The API Client will start listening to any live changes in the `api-client` folder and recompile it.
