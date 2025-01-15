@@ -20,7 +20,7 @@ mkdir -p $SSL_PATH
 echo "Creating SSL Certificates"
 openssl req -x509 -sha256 -nodes \
     -days 3650 -newkey rsa:2048 \
-    -subj '/O=LH User Tasks/CN=localhost' \
+    -subj '/O=LittleHorse SSO Workflow Bridge/CN=localhost' \
     -keyout "$SSL_PATH/tls.key" \
     -out "$SSL_PATH/tls.crt" \
     -addext "subjectAltName = DNS:localhost" > /dev/null 2>&1

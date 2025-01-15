@@ -2,14 +2,15 @@ import {
   adminListUserGroups,
   adminListUserTasks,
 } from "@/app/[tenantId]/actions/admin";
-import { ArrowLeftIcon } from "@radix-ui/react-icons";
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import ListUserTasks from "../../components/user-task/list";
 
-export default async function TaskPage(props: {
-  params: Promise<{ tenantId: string; userTaskDefName: string }>;
+export default async function TaskPage({
+  params,
+}: {
+  params: { tenantId: string; userTaskDefName: string };
 }) {
-  const params = await props.params;
   const adminListUserGroupsResponse = await adminListUserGroups(
     params.tenantId,
   );
@@ -29,7 +30,7 @@ export default async function TaskPage(props: {
         href={`/${params.tenantId}/admin`}
         className="mb-2 text-sm text-blue-500 flex items-center gap-2"
       >
-        <ArrowLeftIcon className="size-4" />
+        <ArrowLeft className="size-4" />
         Back to UserTask Definitions
       </Link>
       <ListUserTasks

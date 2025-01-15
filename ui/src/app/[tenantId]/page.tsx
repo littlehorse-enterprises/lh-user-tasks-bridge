@@ -1,10 +1,11 @@
 import { listUserGroups, listUserTasks } from "./actions/user";
 import ListUserTasks from "./components/user-task/list";
 
-export default async function Home(props: {
-  params: Promise<{ tenantId: string }>;
+export default async function Home({
+  params,
+}: {
+  params: { tenantId: string };
 }) {
-  const params = await props.params;
   const listUserGroupsResponse = await listUserGroups(params.tenantId);
 
   if ("message" in listUserGroupsResponse)

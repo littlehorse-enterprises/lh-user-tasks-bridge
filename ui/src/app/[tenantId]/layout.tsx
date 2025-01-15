@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, use } from "react";
+import { createContext, useContext } from "react";
 import Footer from "./components/footer";
 import Header from "./components/header";
 
@@ -10,14 +10,13 @@ export function useTenantId() {
   return useContext(TenantContext);
 }
 
-export default function Layout(props: {
+export default function Layout({
+  children,
+  params,
+}: {
   children: React.ReactNode;
-  params: Promise<{ tenantId: string }>;
+  params: { tenantId: string };
 }) {
-  const params = use(props.params);
-
-  const { children } = props;
-
   return (
     <TenantContext.Provider value={params.tenantId}>
       <Header />

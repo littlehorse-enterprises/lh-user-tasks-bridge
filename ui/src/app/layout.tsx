@@ -7,8 +7,8 @@ import { cn } from "@/lib/utils";
 import { Inter } from "next/font/google";
 
 export const metadata: Metadata = {
-  title: "LittleHorse UserTasks",
-  description: "LittleHorse UserTasks",
+  title: "LittleHorse SSO Workflow Bridge",
+  description: "LittleHorse SSO Workflow Bridge",
 };
 
 const inter = Inter({

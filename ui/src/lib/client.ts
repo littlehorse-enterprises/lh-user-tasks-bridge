@@ -1,9 +1,9 @@
-import { auth } from "@/auth";
 import {
   LHUserTasksError,
   LHSWBApiClient,
 } from "@littlehorse-enterprises/sso-workflow-bridge-api-client";
 import { redirect } from "next/navigation";
+import { auth } from "../app/api/auth/[...nextauth]/authOptions";
 
 export class LHSWBApiClientSingleton {
   private static instance: LHSWBApiClient | null = null;

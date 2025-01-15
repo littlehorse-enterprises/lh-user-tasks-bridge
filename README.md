@@ -112,8 +112,8 @@ If you want to develop the UI locally:
 1. Clone this repository:
 
 ```bash
-git clone https://github.com/littlehorse-enterprises/sso-workflow-bridge.git
-cd sso-workflow-bridge
+git clone https://github.com/littlehorse-enterprises/lh-sso-workflow-bridge.git
+cd lh-sso-workflow-bridge
 ```
 
 2. Install git hooks:
@@ -128,11 +128,13 @@ pre-commit install
 
 ```bash
 AUTH_URL='http://localhost:3000'
+NEXTAUTH_URL='http://localhost:3000'
 AUTH_SECRET='<any secret here>'
-AUTH_KEYCLOAK_HOST='http://localhost:8888'
-AUTH_KEYCLOAK_REALM='default'
-AUTH_KEYCLOAK_CLIENT_ID='sso-workflow-bridge-client'
-AUTH_KEYCLOAK_CLIENT_SECRET=' '
+
+AUTH_KEYCLOAK_ID='sso-workflow-bridge-client'
+AUTH_KEYCLOAK_SECRET=' '
+AUTH_KEYCLOAK_ISSUER='http://localhost:8888/realms/default'
+
 LHUT_API_URL='http://localhost:8089'
 ```
 
@@ -186,11 +188,11 @@ docker run --rm \
     -e SSL=enabled \
     -v ./local-dev/ssl:/ssl \
     -e AUTH_URL='https://localhost:3443' \
+    -e NEXTAUTH_URL='https://localhost:3443' \
     -e AUTH_SECRET='your-secret-here' \
-    -e AUTH_KEYCLOAK_HOST='http://localhost:8888' \
-    -e AUTH_KEYCLOAK_REALM='default' \
-    -e AUTH_KEYCLOAK_CLIENT_ID='sso-workflow-bridge-client' \
-    -e AUTH_KEYCLOAK_CLIENT_SECRET=' ' \
+    -e AUTH_KEYCLOAK_ID='sso-workflow-bridge-client' \
+    -e AUTH_KEYCLOAK_SECRET=' ' \
+    -e AUTH_KEYCLOAK_ISSUER='http://localhost:8888/realms/default' \
     -e LHUT_API_URL='http://localhost:8089' \
     -p 3000:3000 -p 3443:3443 \
     ghcr.io/littlehorse-enterprises/lh-sso-workflow-bridge/lh-sso-workflow-bridge-ui:main
@@ -206,12 +208,11 @@ When SSL is enabled, the UI will be available on:
 | Variable | Description | Required |
 |----------|-------------|----------|
 | `SSL` | Set to `enabled` to enable SSL | Yes |
-| `NEXTAUTH_URL` | Full URL where the app will be accessible (use HTTPS port) | Yes |
-| `NEXTAUTH_SECRET` | Random string used to hash tokens | Yes |
-| `KEYCLOAK_HOST` | Keycloak server URL | Yes |
-| `KEYCLOAK_REALM` | Keycloak realm name | Yes |
-| `KEYCLOAK_CLIENT_ID` | Client ID from Keycloak | Yes |
-| `KEYCLOAK_CLIENT_SECRET` | Client secret from Keycloak | Yes |
+| `AUTH_URL` | Full URL where the app will be accessible (use HTTPS port) | Yes |
+| `AUTH_SECRET` | Random string used to hash tokens | Yes |
+| `AUTH_KEYCLOAK_ID` | Client ID from Keycloak | Yes |
+| `AUTH_KEYCLOAK_SECRET` | Client secret from Keycloak | Yes |
+| `AUTH_KEYCLOAK_ISSUER` | Keycloak server URL | Yes |
 | `LHUT_API_URL` | URL of the User Tasks API | Yes |
 
 ### Notes

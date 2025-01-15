@@ -1,13 +1,18 @@
 import { jwtDecode } from "jwt-decode";
-import NextAuth from "next-auth";
+import {
+  GetServerSidePropsContext,
+  NextApiRequest,
+  NextApiResponse,
+} from "next";
+import { getServerSession, NextAuthOptions } from "next-auth";
 import KeycloakProvider from "next-auth/providers/keycloak";
 
-export const { handlers, signIn, signOut, auth } = NextAuth({
+export const authOptions: NextAuthOptions = {
   providers: [
     KeycloakProvider({
-      clientId: process.env.AUTH_KEYCLOAK_CLIENT_ID,
-      clientSecret: process.env.AUTH_KEYCLOAK_CLIENT_SECRET,
-      issuer: `${process.env.AUTH_KEYCLOAK_HOST}/realms/${process.env.AUTH_KEYCLOAK_REALM}`,
+      clientId: `${process.env.AUTH_KEYCLOAK_ID}`,
+      clientSecret: `${process.env.AUTH_KEYCLOAK_SECRET}`,
+      issuer: `${process.env.AUTH_KEYCLOAK_ISSUER}`,
     }),
   ],
 
@@ -28,6 +33,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         return token;
       }
     },
+
     async session({ session, token }: any) {
       session.access_token = token.access_token;
       session.id_token = token.id_token;
@@ -38,12 +44,23 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     },
   },
   events: {
-    signOut: async ({ token: { id_token } }: any) => {
-      const url = `${process.env.AUTH_KEYCLOAK_HOST}/realms/${process.env.AUTH_KEYCLOAK_REALM}/protocol/openid-connect/logout?id_token_hint=${id_token}`;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    signOut: async ({ token: { id_token } }) => {
+      const url = `${process.env.AUTH_KEYCLOAK_ISSUER}/protocol/openid-connect/logout?id_token_hint=${id_token}`;
       await fetch(url, {
         method: "GET",
         headers: { Accept: "application/json" },
       });
     },
   },
-});
+};
+
+// Use it in server contexts
+export async function auth(
+  ...args:
+    | [GetServerSidePropsContext["req"], GetServerSidePropsContext["res"]]
+    | [NextApiRequest, NextApiResponse]
+    | []
+) {
+  return await getServerSession(...args, authOptions);
+}
