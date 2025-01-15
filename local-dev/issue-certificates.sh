@@ -21,10 +21,10 @@ echo "Creating SSL Certificates"
 openssl req -x509 -sha256 -nodes \
     -days 3650 -newkey rsa:2048 \
     -subj '/O=LH User Tasks/CN=localhost' \
-    -keyout "$SSL_PATH/key.pem" \
-    -out "$SSL_PATH/cert.pem" \
+    -keyout "$SSL_PATH/tls.key" \
+    -out "$SSL_PATH/tls.crt" \
     -addext "subjectAltName = DNS:localhost" > /dev/null 2>&1
 
 echo "Certificates generated successfully in $SSL_PATH/"
-echo "- cert.pem: SSL certificate"
-echo "- key.pem: Private key"
+echo "- tls.crt: SSL certificate"
+echo "- tls.key: Private key"

@@ -182,18 +182,18 @@ This script will:
 2. Run the container with SSL enabled:
 
 ```bash
-docker run --rm -d \
+docker run --rm \
     -e SSL=enabled \
-    -v $(pwd)/ssl:/ssl \
-    -e NEXTAUTH_URL='https://localhost:3443' \
-    -e NEXTAUTH_SECRET='your-secret-here' \
-    -e KEYCLOAK_HOST='http://localhost:8888' \
-    -e KEYCLOAK_REALM='default' \
-    -e KEYCLOAK_CLIENT_ID='sso-workflow-bridge-client' \
-    -e KEYCLOAK_CLIENT_SECRET=' ' \
+    -v ./local-dev/ssl:/ssl \
+    -e AUTH_URL='https://localhost:3443' \
+    -e AUTH_SECRET='your-secret-here' \
+    -e AUTH_KEYCLOAK_HOST='http://localhost:8888' \
+    -e AUTH_KEYCLOAK_REALM='default' \
+    -e AUTH_KEYCLOAK_CLIENT_ID='sso-workflow-bridge-client' \
+    -e AUTH_KEYCLOAK_CLIENT_SECRET=' ' \
     -e LHUT_API_URL='http://localhost:8089' \
     -p 3000:3000 -p 3443:3443 \
-    ghcr.io/littlehorse-enterprises/sso-workflow-bridge/sso-workflow-bridge-ui:main
+    ghcr.io/littlehorse-enterprises/lh-sso-workflow-bridge/lh-sso-workflow-bridge-ui:main
 ```
 
 When SSL is enabled, the UI will be available on:
