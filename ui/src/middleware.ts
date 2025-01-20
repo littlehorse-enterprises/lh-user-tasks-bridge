@@ -30,9 +30,7 @@ const withAuth = nextAuth(async (req) => {
 
   // Redirect to tenant after login
   if (currentPath === "/" && token.decoded.allowed_tenant) {
-    if (
-      token.decoded.realm_access.roles.includes("lh-sso-workflow-bridge-admin")
-    )
+    if (token.decoded.realm_access.roles.includes("lh-user-tasks-admin"))
       return NextResponse.redirect(
         `${baseUrl}/${token.decoded.allowed_tenant}/admin`,
       );
@@ -49,7 +47,7 @@ const withAuth = nextAuth(async (req) => {
   // Check if current path is admin and user is not admin
   if (
     currentPath.includes("/admin") &&
-    !token.decoded.realm_access.roles.includes("lh-sso-workflow-bridge-admin")
+    !token.decoded.realm_access.roles.includes("lh-user-tasks-admin")
   ) {
     return NextResponse.redirect(`${baseUrl}/${token.decoded.allowed_tenant}`);
   }
