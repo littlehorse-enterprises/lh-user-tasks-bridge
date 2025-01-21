@@ -1,14 +1,12 @@
-FROM ghcr.io/littlehorse-enterprises/littlehorse/lh-standalone:latest
+FROM ghcr.io/littlehorse-enterprises/littlehorse/lh-standalone:master
 
-ARG LH_VERSION="0.12.1"
 ARG KEYCLOAK_VERSION="26.0.1"
 ARG GRADLE_VERSION="8.12"
 ENV PATH=${PATH}:/keycloak/bin
 
 COPY --from=ghcr.io/littlehorse-enterprises/littlehorse/lhctl:latest /usr/local/bin/lhctl /usr/local/bin/lhctl
 
-RUN apt update && apt install -y jq openjdk-21-jdk python3-pip unzip && apt clean
-RUN python3 -m pip install --upgrade pip wheel && python3 -m pip install httpie
+RUN apt update && apt install -y jq httpie && apt clean
 
 WORKDIR /keycloak
 RUN wget -q https://github.com/keycloak/keycloak/releases/download/${KEYCLOAK_VERSION}/keycloak-${KEYCLOAK_VERSION}.tar.gz -O /tmp/keycloak.tar.gz \

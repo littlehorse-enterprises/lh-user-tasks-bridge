@@ -161,7 +161,7 @@ class TenantServiceTest {
         URI fakeUri = URI.create("https://trial-5903875.okta.com/oauth2/default");
         var fakeUsernameClaim = "preferred_username";
         IdentityProviderVendor fakeVendor = IdentityProviderVendor.OKTA;
-        Set<String> configuredClients = Set.of("sso-workflow-bridge-client-2");
+        Set<String> configuredClients = Set.of("user-tasks-client");
 
         var properties = new CustomIdentityProviderProperties(fakeUri, fakeUsernameClaim, fakeVendor, configuredTenant, configuredClients, "cid");
 

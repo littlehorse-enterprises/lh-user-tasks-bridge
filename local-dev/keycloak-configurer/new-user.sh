@@ -6,7 +6,7 @@ KEYCLOAK_URL=${KEYCLOAK_URL:-"http://localhost:8888"}
 REALM_NAME=${REALM_NAME:-"default"}
 KEYCLOAK_ADMIN_USER="admin"
 KEYCLOAK_ADMIN_PASSWORD="admin"
-KEYCLOAK_CLIENT_ID="sso-workflow-bridge -client"
+KEYCLOAK_CLIENT_ID="user-tasks-client"
 
 wait_for_keycloak() {
     while ! curl --silent --fail --output /dev/null "${KEYCLOAK_URL}"; do
@@ -61,7 +61,7 @@ create_user() {
 
     echo "Fetching Roles' IDs"
     VIEW_USERS_ROLE_ID=$(http --ignore-stdin -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" "${KEYCLOAK_URL}/admin/realms/default/ui-ext/available-roles/users/${USER_ID}?first=0&max=1&search=view-users" | jq -r ".[0].id")
-    SSO_WORKFLOW_BRIDGE_ADMIN_ROLE_ID=$(http --ignore-stdin -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/roles/lh-sso-workflow-bridge-admin" | jq -r ".id")
+    USER_TASKS_BRIDGE_ADMIN_ROLE_ID=$(http --ignore-stdin -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/roles/lh-user-tasks-admin" | jq -r ".id")
 
     echo "Fetching Realm Management Client (realm-management) ID"
     REALM_MANAGEMENT_CLIENT_ID=$(http --ignore-stdin -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/clients?first=0&max=11&clientId=realm-management&search=true" | jq -r ".[0].id")
@@ -69,13 +69,13 @@ create_user() {
     echo "Assigning View-Users Role to ${USERNAME}"
     http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" POST "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/users/${USER_ID}/role-mappings/clients/${REALM_MANAGEMENT_CLIENT_ID}" \
         [0][id]="${VIEW_USERS_ROLE_ID}" \
-        [0][name]="view-users"
+        [0][name]="view-users"file
 
     if [ "${IS_ADMIN}" == "true" ]; then
         echo "Assigning Admin Role to ${USERNAME}"
         http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" POST "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/users/${USER_ID}/role-mappings/realm" \
-            [0][id]="${SSO_WORKFLOW_BRIDGE_ADMIN_ROLE_ID}" \
-            [0][name]="lh-sso-workflow-bridge-admin"
+            [0][id]="${USER_TASKS_BRIDGE_ADMIN_ROLE_ID}" \
+            [0][name]="lh-user-tasks-admin"
     fi
 }
 
