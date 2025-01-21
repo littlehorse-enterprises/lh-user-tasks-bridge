@@ -1,4 +1,4 @@
-FROM littlehorse/lh-standalone:latest
+FROM ghcr.io/littlehorse-enterprises/littlehorse/lh-standalone:master
 
 ARG LH_VERSION="0.12.1"
 ARG KEYCLOAK_VERSION="26.0.1"
