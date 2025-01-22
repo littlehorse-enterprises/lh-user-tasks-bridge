@@ -1,3 +1,4 @@
+import { getRoles } from "@/lib/utils";
 import { jwtDecode } from "jwt-decode";
 import {
   GetServerSidePropsContext,
@@ -37,7 +38,7 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }: any) {
       session.access_token = token.access_token;
       session.id_token = token.id_token;
-      session.roles = token.decoded.realm_access.roles;
+      session.roles = getRoles(token.decoded);
       session.error = token.error;
       session.user = { ...session.user, id: token.decoded.sub };
       return session;

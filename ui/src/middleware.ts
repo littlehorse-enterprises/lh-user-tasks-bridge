@@ -1,6 +1,7 @@
 import { getToken } from "next-auth/jwt";
 import nextAuth from "next-auth/middleware";
 import { NextResponse } from "next/server";
+import { getRoles } from "./lib/utils";
 
 const withAuth = nextAuth(async (req) => {
   const token = await getToken({ req, secret: process.env.AUTH_SECRET });
@@ -12,25 +13,9 @@ const withAuth = nextAuth(async (req) => {
     );
   }
 
-  // Call keycloak to check if token is valid
-  const keycloakResponse = await fetch(
-    `${process.env.AUTH_KEYCLOAK_ISSUER}/protocol/openid-connect/userinfo`,
-    {
-      headers: {
-        Authorization: `Bearer ${token.access_token}`,
-      },
-    },
-  );
-
-  if (!keycloakResponse.ok) {
-    return NextResponse.redirect(
-      `${baseUrl}/api/auth/signin?callbackUrl=${currentPath}`,
-    );
-  }
-
   // Redirect to tenant after login
   if (currentPath === "/" && token.decoded.allowed_tenant) {
-    if (token.decoded.realm_access.roles.includes("lh-user-tasks-admin"))
+    if (getRoles(token.decoded).includes("lh-user-tasks-admin"))
       return NextResponse.redirect(
         `${baseUrl}/${token.decoded.allowed_tenant}/admin`,
       );
@@ -47,7 +32,7 @@ const withAuth = nextAuth(async (req) => {
   // Check if current path is admin and user is not admin
   if (
     currentPath.includes("/admin") &&
-    !token.decoded.realm_access.roles.includes("lh-user-tasks-admin")
+    !getRoles(token.decoded).includes("lh-user-tasks-admin")
   ) {
     return NextResponse.redirect(`${baseUrl}/${token.decoded.allowed_tenant}`);
   }
