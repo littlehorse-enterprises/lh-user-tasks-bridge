@@ -131,7 +131,7 @@ AUTH_URL='http://localhost:3000'
 NEXTAUTH_URL='http://localhost:3000'
 AUTH_SECRET='<any secret here>'
 
-AUTH_KEYCLOAK_ID='user-tasks-client'
+AUTH_KEYCLOAK_CLIENT_ID='user-tasks-client'
 AUTH_KEYCLOAK_SECRET=' '
 AUTH_KEYCLOAK_ISSUER='http://localhost:8888/realms/default'
 
@@ -192,7 +192,7 @@ docker run --rm \
     -e AUTH_URL='https://localhost:3443' \
     -e NEXTAUTH_URL='https://localhost:3443' \
     -e AUTH_SECRET='your-secret-here' \
-    -e AUTH_KEYCLOAK_ID='user-tasks-client' \
+    -e AUTH_KEYCLOAK_CLIENT_ID='user-tasks-client' \
     -e AUTH_KEYCLOAK_SECRET=' ' \
     -e AUTH_KEYCLOAK_ISSUER='http://localhost:8888/realms/default' \
     -e LHUT_API_URL='http://localhost:8089' \
@@ -208,16 +208,16 @@ When SSL is enabled, the UI will be available on:
 
 ### Environment Variables for SSL
 
-| Variable               | Description                                                | Required |
-| ---------------------- | ---------------------------------------------------------- | -------- |
-| `SSL`                  | Set to `enabled` to enable SSL                             | Yes      |
-| `AUTH_URL`             | Full URL where the app will be accessible (use HTTPS port) | Yes      |
-| `AUTH_SECRET`          | Random string used to hash tokens                          | Yes      |
-| `AUTH_KEYCLOAK_ID`     | Client ID from Keycloak                                    | Yes      |
-| `AUTH_KEYCLOAK_SECRET` | Client secret from Keycloak                                | Yes      |
-| `AUTH_KEYCLOAK_ISSUER` | Keycloak server URL                                        | Yes      |
-| `LHUT_API_URL`         | URL of the User Tasks API                                  | Yes      |
-| `AUTHORITIES`          | Paths to extract roles from the token                      | Yes      |
+| Variable                  | Description                                                | Required |
+| ------------------------- | ---------------------------------------------------------- | -------- |
+| `SSL`                     | Set to `enabled` to enable SSL                             | Yes      |
+| `AUTH_URL`                | Full URL where the app will be accessible (use HTTPS port) | Yes      |
+| `AUTH_SECRET`             | Random string used to hash tokens                          | Yes      |
+| `AUTH_KEYCLOAK_CLIENT_ID` | Client ID from Keycloak                                    | Yes      |
+| `AUTH_KEYCLOAK_SECRET`    | Client secret from Keycloak                                | Yes      |
+| `AUTH_KEYCLOAK_ISSUER`    | Keycloak server URL                                        | Yes      |
+| `LHUT_API_URL`            | URL of the User Tasks API                                  | Yes      |
+| `AUTHORITIES`             | Paths to extract roles from the token                      | Yes      |
 
 ### Notes
 

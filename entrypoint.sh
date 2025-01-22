@@ -12,8 +12,8 @@ if [ ! "${AUTH_SECRET+x}" ]; then
     exit 1
 fi
 
-if [ ! "${AUTH_KEYCLOAK_ID+x}" ]; then
-    echo "Provide the AUTH_KEYCLOAK_ID env variable"
+if [ ! "${AUTH_KEYCLOAK_CLIENT_ID+x}" ]; then
+    echo "Provide the AUTH_KEYCLOAK_CLIENT_ID env variable"
     exit 1
 fi
 
