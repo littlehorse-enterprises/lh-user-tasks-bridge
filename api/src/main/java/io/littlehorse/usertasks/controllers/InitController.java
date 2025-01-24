@@ -18,7 +18,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Tag(
         name = "Init Controller",
-        description = "This is a controller that exposes an endpoint in charge verifying Tenant-OIDC configuration"
+        description = "This is a controller that exposes an endpoint in charge of verifying the Tenant-OIDC configuration"
 )
 @RestController
 @CrossOrigin
@@ -33,8 +33,8 @@ public class InitController {
     }
 
     @Operation(
-            summary = "Initializes the integration between UI components and LittleHorse server after verifying " +
-                    "that there is a valid Tenant-OIDC configuration"
+            summary = "Initialize Tenant-OIDC integration",
+            description = "Checks that the integration between your Identity Provider and LittleHorse Server is valid"
     )
     @ApiResponses(value = {
             @ApiResponse(

@@ -12,11 +12,13 @@ public class OpenAPIConfiguration {
     @Bean
     public OpenAPI apiDocConfig() {
         return new OpenAPI().info(new Info()
-                        .title("UserTasks API")
-                        .description("LittleHorse's custom API to manage UserTaskRuns existing in LittleHorse's Server.")
+                        .title("UserTasks Bridge API")
+                        .description("This is LittleHorse's custom API to handle UserTaskRuns existing in LittleHorse " +
+                                "Server and provide a seamless experience between LittleHorse Server and any OIDC-compliant " +
+                                "Identity Provider when working with LH UserTasks.")
                         .version("0.0.1"))
                 .externalDocs(new ExternalDocumentation()
                         .description("Documentation")
-                        .url("https://littlehorse.io/docs/concepts/user-tasks/"));
+                        .url("https://littlehorse.io/docs/server/concepts/user-tasks"));
     }
 }

@@ -73,7 +73,8 @@ public class UserController {
     }
 
     @Operation(
-            summary = "Gets all UserTasks assigned to a user and/or userGroup that the user belongs to."
+            summary = "Get UserTasks",
+            description = "Gets all UserTasks assigned to a user and/or userGroup that the user belongs to."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -154,7 +155,8 @@ public class UserController {
     }
 
     @Operation(
-            summary = "Gets a UserTask's details, including its definition (UserTaskDef)."
+            summary = "Get UserTask details",
+            description = "Gets a UserTask's details, including its definition (UserTaskDef)."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -216,7 +218,8 @@ public class UserController {
     }
 
     @Operation(
-            summary = "Completes a UserTask by making it transition to DONE status if the request is successfully processed in " +
+            summary = "Complete UserTask",
+            description = "Completes a UserTask by making it transition to DONE status if the request is successfully processed in " +
                     "LittleHorse Server."
     )
     @ApiResponses(value = {
@@ -264,7 +267,8 @@ public class UserController {
     }
 
     @Operation(
-            summary = "Cancels a UserTask by making it transition to CANCELLED status if the request is successfully " +
+            summary = "Cancel UserTask",
+            description = "Cancels a UserTask by making it transition to CANCELLED status if the request is successfully " +
                     "processed in LittleHorse Server."
     )
     @ApiResponses(value = {
@@ -324,7 +328,8 @@ public class UserController {
     }
 
     @Operation(
-            summary = "Claims a UserTaskRun by assigning it to the requester user."
+            summary = "Claim UserTask",
+            description = "Claims a UserTaskRun by assigning it to the requester user."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -386,7 +391,8 @@ public class UserController {
     }
 
     @Operation(
-            summary = "Gets all Groups from a specific identity provider of a specific tenant for the requesting user."
+            summary = "Get Groups",
+            description = "Gets all Groups from a specific identity provider of a specific tenant for the requesting user."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -444,7 +450,8 @@ public class UserController {
     }
 
     @Operation(
-            summary = "Gets the requesting user's info."
+            summary = "Get User Info",
+            description = "Gets the requesting user's info."
     )
     @ApiResponses(value = {
             @ApiResponse(
