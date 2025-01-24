@@ -77,7 +77,8 @@ public class AdminController {
     }
 
     @Operation(
-            summary = "Gets all UserTasks from a specific tenant."
+            summary = "Get UserTasks",
+            description = "Gets all UserTasks from a specific tenant."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -155,7 +156,8 @@ public class AdminController {
     }
 
     @Operation(
-            summary = "Gets all UserTaskDef from a specific tenant."
+            summary = "Get UserTaskDef",
+            description = "Gets all UserTaskDef from a specific tenant."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -202,7 +204,8 @@ public class AdminController {
     }
 
     @Operation(
-            summary = "Gets a UserTask's details, including its definition (UserTaskDef) and events."
+            summary = "Get UserTask details",
+            description = "Gets a UserTask's details, including its definition (UserTaskDef) and events."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -272,7 +275,8 @@ public class AdminController {
     }
 
     @Operation(
-            summary = "Completes a UserTask by making it transition to DONE status if the request is successfully processed in " +
+            summary = "Complete UserTask",
+            description = "Completes a UserTask by making it transition to DONE status if the request is successfully processed in " +
                     "LittleHorse Server."
     )
     @ApiResponses(value = {
@@ -318,7 +322,8 @@ public class AdminController {
     }
 
     @Operation(
-            summary = "Assigns a UserTaskRun to a User and/or UserGroup."
+            summary = "Assign UserTask",
+            description = "Assigns a UserTaskRun to a User and/or UserGroup."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -394,8 +399,9 @@ public class AdminController {
     }
 
     @Operation(
-            summary = "Cancels a UserTaskRun by making it transition to CANCELLED status without verifying to whom the " +
-                    "UserTaskRun is assigned to."
+            summary = "Cancel UserTask",
+            description = "Cancels a UserTaskRun by making it transition to CANCELLED status without verifying to whom the " +
+            "UserTaskRun is assigned to."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -450,7 +456,8 @@ public class AdminController {
     }
 
     @Operation(
-            summary = "Gets all Groups from a specific identity provider of a specific tenant."
+            summary = "Get Groups",
+            description = "Gets all Groups from a specific identity provider of a specific tenant."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -512,7 +519,8 @@ public class AdminController {
     }
 
     @Operation(
-            summary = "Gets all active Users from a specific identity provider of a specific tenant."
+            summary = "Get Users",
+            description = "Gets all active Users from a specific identity provider of a specific tenant."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -590,7 +598,8 @@ public class AdminController {
     }
 
     @Operation(
-            summary = "Gets a User's basic info."
+            summary = "Get User Info",
+            description = "Gets a User's basic info."
     )
     @ApiResponses(value = {
             @ApiResponse(
