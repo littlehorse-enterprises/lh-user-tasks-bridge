@@ -30,7 +30,7 @@ done
 
 /lh/configure-keycloak.sh http://localhost:8888
 
-/lh/api-entrypoint.sh &
-/lh/ui-entrypoint.sh &
+/lh/backend-entrypoint.sh &
+/lh/console-entrypoint.sh &
 
 tail -f /dev/null

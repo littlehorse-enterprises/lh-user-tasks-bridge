@@ -27,17 +27,17 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: sso-workflow-bridge-api-jar
+          name: lh-user-tasks-bridge-backend-jar
           path: api/build/libs
 
-  build-ui:
+  build-console:
     runs-on: ubuntu-latest
     steps:
-      - name: Clone UI
+      - name: Clone Console
         uses: actions/checkout@v4
         with:
-          repository: littlehorse-enterprises/lh-sso-workflow-bridge
-          path: lh-sso-workflow-bridge
+          repository: littlehorse-enterprises/lh-user-tasks-bridge
+          path: lh-user-tasks-bridge
           ref: main
           token: ${{ secrets.PAT_LH_USER_TASKS_UI }}
 
@@ -46,26 +46,26 @@ jobs:
         with:
           node-version: 20
 
-      - name: Build UI
-        working-directory: lh-sso-workflow-bridge
+      - name: Build Console
+        working-directory: lh-user-tasks-bridge
         run: |
           npm ci
           npm run build -ws
 
       - uses: actions/upload-artifact@v4
         with:
-          name: sso-workflow-bridge-ui
+          name: user-tasks-bridge-console
           include-hidden-files: true
           path:  |
-            lh-sso-workflow-bridge/ui/.next/standalone
-            lh-sso-workflow-bridge/ui/.next/static
-            lh-sso-workflow-bridge/node_modules
+            lh-user-tasks-bridge/console/.next/standalone
+            lh-user-tasks-bridge/console/.next/static
+            lh-user-tasks-bridge/node_modules
 
   docker:
     runs-on: ubuntu-latest
     needs:
       - test-and-build
-      - build-ui
+      - build-console
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -73,20 +73,20 @@ jobs:
       - name: Download API Artifact
         uses: actions/download-artifact@v4
         with:
-          name: sso-workflow-bridge-api-jar
-          path: ./api/build/libs/
+          name: lh-user-tasks-bridge-backend-jar
+          path: ./backend/build/libs/
 
-      - name: Download UI Artifact
+      - name: Download Console Artifact
         uses: actions/download-artifact@v4
         with:
-          name: sso-workflow-bridge-ui
+          name: user-tasks-bridge-console
           path: ./
 
       - name: Build and Publish
         id: publish-image
         uses: littlehorse-enterprises/publish-image@v1
         with:
-          image-name: lh-sso-workflow-bridge-api
+          image-name: lh-user-tasks-bridge-backend
           registry: ecr
           tags: |
             type=semver,pattern={{version}}
@@ -96,7 +96,7 @@ jobs:
         id: publish-standalone-image
         uses: littlehorse-enterprises/publish-image@v1
         with:
-          image-name: lh-sso-workflow-bridge-standalone
+          image-name: lh-user-tasks-bridge-standalone
           dockerfile: standalone/Dockerfile
           github-token: ${{ secrets.GITHUB_TOKEN }}
           tags: |
@@ -118,5 +118,5 @@ jobs:
       - name: Push image to Quay
         run: |
           docker buildx imagetools create \
-            --tag quay.io/littlehorse/lh-sso-workflow-bridge-api:${{ inputs.version }} \
+            --tag quay.io/littlehorse/lh-user-tasks-bridge-backend:${{ inputs.version }} \
             ${IMAGE}

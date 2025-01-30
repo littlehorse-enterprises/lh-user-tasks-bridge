@@ -1,4 +1,4 @@
-# User Tasks Bridge API
+# User Tasks Bridge Backend
 
 Backend component that serves as a proxy between any OIDC compliant identity provider and LittleHorse Server `UserTasks`.
 
@@ -39,10 +39,10 @@ If the command above ended successfully, then you should see 4 containers runnin
 
 - 1 for Keycloak
 - 1 for LittleHorse Standalone (LH Server and LH Dashboard)
-- 1 for user-tasks-bridge-api
-- 1 for user-tasks-bridge-ui
+- 1 for lh-user-tasks-bridge-backend
+- 1 for user-tasks-bridge-console
 
-After that, the User Tasks Bridge API should be available on <http://localhost:8089>
+After that, the User Tasks Bridge Backend should be available on <http://localhost:8089>
 
 Verify that Keycloak is up and running, and if that is the case, you can now access it through your browser
 on <http://localhost:8888>
@@ -52,7 +52,7 @@ Keycloak's admin credentials:
 - username: **admin**
 - password: **admin**
 
-Also, you will need an access token to be able to be granted authorized access into user-tasks-bridge-api backend endpoints.
+Also, you will need an access token to be able to be granted authorized access into lh-user-tasks-bridge-backend endpoints.
 In order to fetch said token, you can use the following cURL as is from the terminal, or you can import it
 to your REST client tool of preference (Postman, Insomnia, Bruno, etc.)
 
@@ -60,14 +60,14 @@ to your REST client tool of preference (Postman, Insomnia, Bruno, etc.)
 curl --request POST \
 --url http://localhost:8888/realms/default/protocol/openid-connect/token \
 --header 'Content-Type: application/x-www-form-urlencoded' \
---data client_id=user-tasks-client \
+--data client_id=user-tasks-bridge-client \
 --data client_secret= \
 --data username=my-user \
 --data password=1234 \
 --data grant_type=password
 ```
 
-Once you have your access token handy, you are ready to hit user-tasks-bridge-api endpoints.
+Once you have your access token handy, you are ready to hit lh-user-tasks-bridge-backend endpoints.
 
 For example, you can hit the `/<tenant_id>/init` endpoint with the following cURL:
 
@@ -114,12 +114,12 @@ When you have your oidc-properties.yml properly configured, you will be ready to
 This command will execute Spring Boot's run task:
 
   ```shell
-  ./gradlew api:bootRun
+  ./gradlew backend:bootRun
   ```
 
-> In case of using the standalone image update the `standalone/api-properties.yml` file.
+> In case of using the standalone image update the `standalone/backend-properties.yml` file.
 
 ### Access Swagger UI
 
-In order to see OpenAPI Specs with Swagger UI, and after having User Tasks Bridge API running, you just need to go to your
+In order to see OpenAPI Specs with Swagger UI, and after having User Tasks Bridge Backend running, you just need to go to your
 web browser and access the following URL: <http://localhost:8089/swagger-ui/index.html>

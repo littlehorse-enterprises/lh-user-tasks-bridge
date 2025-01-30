@@ -1,4 +1,4 @@
-FROM ghcr.io/littlehorse-enterprises/littlehorse/lh-standalone:master
+FROM ghcr.io/littlehorse-enterprises/littlehorse/lh-standalone:latest
 
 ARG KEYCLOAK_VERSION="26.0.1"
 ARG GRADLE_VERSION="8.12"
@@ -24,20 +24,21 @@ RUN wget -q https://services.gradle.org/distributions/gradle-${GRADLE_VERSION}-b
 WORKDIR /lh
 COPY ./standalone/keycloak-entrypoint.sh /lh
 COPY ./standalone/docker-entrypoint.sh /lh
-COPY ./standalone/api-entrypoint.sh /lh
-COPY ./standalone/ui-entrypoint.sh /lh
+COPY ./standalone/backend-entrypoint.sh /lh
+COPY ./standalone/console-entrypoint.sh /lh
 COPY ./local-dev/keycloak-configurer/configure-keycloak.sh /lh
+
 # Configure LittleHorse with Demo Workflow
-COPY ./local-dev/littlehorse-configurer /lh
+COPY ./demo-workflow /lh
 RUN chmod +x /lh/configure-littlehorse.sh
 
-WORKDIR /sso-workflow-bridge-api
-COPY ./api/build/libs/sso-workflow-bridge-api.jar /sso-workflow-bridge-api
-COPY ./standalone/api-properties.yml /sso-workflow-bridge-api
+WORKDIR /lh-user-tasks-bridge-backend
+COPY ./backend/build/libs/lh-user-tasks-bridge-backend.jar /lh-user-tasks-bridge-backend
+COPY ./standalone/backend-properties.yml /lh-user-tasks-bridge-backend
 
-WORKDIR /sso-workflow-bridge-ui
-COPY ./ui/.next/standalone /sso-workflow-bridge-ui
-COPY ./ui/.next/static /sso-workflow-bridge-ui/ui/.next/static
-COPY ./node_modules /sso-workflow-bridge-ui/node_modules
+WORKDIR /lh-user-tasks-bridge-console
+COPY ./console/.next/standalone /lh-user-tasks-bridge-console
+COPY ./console/.next/static /lh-user-tasks-bridge-console/console/.next/static
+COPY ./node_modules /lh-user-tasks-bridge-console/node_modules
 
 WORKDIR /

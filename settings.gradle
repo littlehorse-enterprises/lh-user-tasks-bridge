@@ -1,2 +1,2 @@
-rootProject.name = 'lh-sso-workflow-bridge-api'
-include("api")
+rootProject.name = 'lh-user-tasks-bridge-backend'
+include("backend")

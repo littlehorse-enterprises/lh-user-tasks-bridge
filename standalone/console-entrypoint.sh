@@ -8,12 +8,14 @@ export HOSTNAME="0.0.0.0"
 
 # app env variables
 export AUTH_URL="http://localhost:3000"
-export AUTH_SECRET="any-secret"
-export AUTH_KEYCLOAK_HOST="http://localhost:8888"
-export AUTH_KEYCLOAK_REALM="default"
-export AUTH_KEYCLOAK_CLIENT_ID="user-tasks-client"
-export AUTH_KEYCLOAK_CLIENT_SECRET="any-secret"
-export AUTH_KEYCLOAK_ISSUER='http://localhost:8888/realms/default'
-export LHUT_API_URL="http://localhost:8089"
+export NEXTAUTH_URL="http://localhost:3000"
 
-node /sso-workflow-bridge-ui/ui/server.js
+export AUTH_SECRET="any-secret"
+export AUTH_KEYCLOAK_ID="user-tasks-bridge-client"
+export AUTH_KEYCLOAK_SECRET="any-secret"
+export AUTH_KEYCLOAK_ISSUER='http://localhost:8888/realms/default'
+
+export LHUT_API_URL="http://localhost:8089"
+export LHUT_AUTHORITIES='$.realm_access.roles,$.resource_access.*.roles'
+
+node /lh-user-tasks-bridge-console/console/server.js

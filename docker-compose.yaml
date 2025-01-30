@@ -39,7 +39,7 @@ services:
       - LHS_LISTENERS=PLAIN:2023
       - LHS_ADVERTISED_LISTENERS=PLAIN://littlehorse:2023
   littlehorse-configurer:
-    build: ./local-dev/littlehorse-configurer
+    build: ../lh-user-tasks-bridge/demo-workflow
     depends_on:
       littlehorse:
         condition: service_healthy
@@ -64,16 +64,18 @@ services:
       - LHC_API_HOST=littlehorse
       - LHC_API_PORT=2023
       - LHC_TENANT_ID=default
-  frontend:
-    build: ../lh-sso-workflow-bridge
+  console:
+    build: ../lh-user-tasks-bridge/console
     ports:
       - '3000:3000'
     environment:
       - AUTH_URL=http://localhost:3000
+      - NEXTAUTH_URL=http://localhost:3000
       - AUTH_SECRET=any-secret
-      - AUTH_KEYCLOAK_HOST=http://keycloak:8888
-      - AUTH_KEYCLOAK_CLIENT_ID=user-tasks-client
-      - AUTH_KEYCLOAK_REALM=default
-      - AUTH_KEYCLOAK_CLIENT_SECRET=
-      - AUTH_KEYCLOAK_ISSUER=http://localhost:8888/realms/default
+
+      - AUTH_KEYCLOAK_ID=user-tasks-bridge-client
+      - AUTH_KEYCLOAK_SECRET=
+      - AUTH_KEYCLOAK_ISSUER=http://keycloak:8888/realms/default
+
       - LHUT_API_URL=http://backend:8089
+      - LHUT_AUTHORITIES=$.realm_access.roles,$.resource_access.*.roles

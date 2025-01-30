@@ -21,7 +21,7 @@ configure_keycloak() {
     REALM_NAME="default"
     KEYCLOAK_ADMIN_USER="admin"
     KEYCLOAK_ADMIN_PASSWORD="admin"
-    KEYCLOAK_CLIENT_ID="user-tasks-client"
+    KEYCLOAK_CLIENT_ID="user-tasks-bridge-client"
     KEYCLOAK_CLIENT_SECRET="any-secret"
 
     echo "Getting admin access token"
@@ -181,7 +181,7 @@ configure_keycloak() {
 #  Here we make the created client public, and also disabled the serviceAccounts. This is done so that users can be properly
 #  authenticated when using the created client's credential when fetching access tokens.
    echo "Making the client public"
-   http --ignore-stdin -q -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" PUT "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/clients/user-tasks-client" \
+   http --ignore-stdin -q -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" PUT "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/clients/${KEYCLOAK_CLIENT_ID}" \
              id="${KEYCLOAK_CLIENT_ID}"  \
              enabled:=true \
              serviceAccountsEnabled:=false \
