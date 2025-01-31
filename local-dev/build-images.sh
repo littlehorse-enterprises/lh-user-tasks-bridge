@@ -26,6 +26,7 @@ echo "Building lh-user-tasks-bridge-standalone"
 mkdir -p ./console
 cp -r "${BRIDGE_DIR}/console/.next" ./console/.next
 cp -r "${BRIDGE_DIR}/node_modules" ./node_modules
+
 cp -r "${BRIDGE_DIR}/demo-workflow" ./demo-workflow
 
 docker build -t littlehorse/lh-user-tasks-bridge-standalone:latest -f ./standalone/Dockerfile .

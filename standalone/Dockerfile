@@ -38,7 +38,8 @@ COPY ./console/.next/static /lh-user-tasks-bridge-console/console/.next/static
 COPY ./node_modules /lh-user-tasks-bridge-console/node_modules
 
 # Configure LittleHorse with Demo Workflow
-COPY ./demo-workflow /lh
+COPY ./demo-workflow/build/libs/lh-user-tasks-bridge-demo-all.jar /lh/build/libs
+COPY ./demo-workflow/configure-littlehorse.sh /lh
 RUN chmod +x /lh/configure-littlehorse.sh
 
 WORKDIR /

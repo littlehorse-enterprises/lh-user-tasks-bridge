@@ -25,7 +25,8 @@ jobs:
       - name: Test and Build Artifact
         run: ./gradlew backend:build
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload Backend Artifact
+        uses: actions/upload-artifact@v4
         with:
           name: lh-user-tasks-bridge-backend-jar
           path: backend/build/libs
@@ -44,22 +45,44 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Build Console
         working-directory: lh-user-tasks-bridge
         run: |
           npm ci
           npm run build -ws
+      
+      - name: Build Demo Workflow
+        working-directory: lh-user-tasks-bridge/demo-workflow
+        run: |
+          ./gradlew build
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload Console Artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: user-tasks-bridge-console
+          name: lh-user-tasks-bridge-console
           include-hidden-files: true
           path:  |
             lh-user-tasks-bridge/console/.next/standalone
             lh-user-tasks-bridge/console/.next/static
             lh-user-tasks-bridge/node_modules
+
+      - name: Upload Demo Workflow Jar Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lh-user-tasks-bridge-demo-jar
+          include-hidden-files: true
+          path: |
+            lh-user-tasks-bridge/demo-workflow/build/libs/lh-user-tasks-bridge-demo-all.jar
+
+      - name: Upload Demo Workflow Sh Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lh-user-tasks-bridge-demo-sh
+          include-hidden-files: true
+          path: |
+            lh-user-tasks-bridge/demo-workflow/configure-littlehorse.sh
 
   docker:
     runs-on: ubuntu-latest
@@ -79,8 +102,20 @@ jobs:
       - name: Download Console Artifact
         uses: actions/download-artifact@v4
         with:
-          name: user-tasks-bridge-console
+          name: lh-user-tasks-bridge-console
           path: ./
+
+      - name: Download Demo Workflow Jar Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: lh-user-tasks-bridge-demo-jar
+          path: ./demo-workflow/build/libs
+
+      - name: Download Demo Workflow Sh Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: lh-user-tasks-bridge-demo-sh
+          path: ./demo-workflow
 
       - name: Build and Publish Backend
         id: publish-image
@@ -89,9 +124,6 @@ jobs:
           image-name: lh-user-tasks-bridge-backend
           dockerfile: Dockerfile
           registry: ecr
-          tags: |
-            type=semver,pattern={{version}}
-            type=ref,event=branch
 
       - name: Build and Publish Standalone
         id: publish-standalone-image
