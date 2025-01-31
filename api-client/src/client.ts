@@ -23,7 +23,7 @@ import {
 } from "./errors";
 
 /**
- * Configuration options for the LittleHorse SSO Workflow Bridge API client
+ * Configuration options for the LittleHorse User Tasks Bridge API client
  * @interface
  */
 export interface ClientConfig {
@@ -36,7 +36,7 @@ export interface ClientConfig {
 }
 
 /**
- * Client for interacting with the LittleHorse SSO Workflow Bridge API.
+ * Client for interacting with the LittleHorse User Tasks Bridge API.
  *
  * This client provides methods for managing user tasks in LittleHorse, including:
  * - Task operations (claim, complete, cancel)
@@ -46,20 +46,20 @@ export interface ClientConfig {
  *
  * @example
  * ```typescript
- * const client = new LHSWBApiClient({
+ * const client = new LHUTBApiClient({
  *   baseUrl: 'http://localhost:8089',  // UserTasks API endpoint
  *   tenantId: 'default',              // Your LittleHorse tenant
  *   accessToken: 'your-oidc-token'    // Valid OIDC access token
  * });
  * ```
  */
-export class LHSWBApiClient {
+export class LHUTBApiClient {
   private baseUrl: string;
   private tenantId: string;
   private accessToken: string;
 
   /**
-   * Creates a new instance of the LittleHorse SSO Workflow Bridge API client
+   * Creates a new instance of the LittleHorse User Tasks Bridge API client
    * @param config - Configuration object containing connection details
    * @throws {ValidationError} If required configuration parameters are missing or invalid
    * @throws {UnauthorizedError} If initial connection test fails

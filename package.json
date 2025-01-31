@@ -1,12 +1,12 @@
 {
-	"name": "@littlehorse-enterprises/sso-workflow-bridge",
+	"name": "@littlehorse-enterprises/user-tasks-bridge",
 	"author": "LittleHorse Enterprises",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/littlehorse-enterprises/sso-workflow-bridge.git"
+		"url": "https://github.com/littlehorse-enterprises/lh-user-tasks-bridge.git"
 	},
 	"workspaces": [
 		"api-client",
-		"ui"
+		"console"
 	]
 }

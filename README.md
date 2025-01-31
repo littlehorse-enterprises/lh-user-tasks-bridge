@@ -1,15 +1,15 @@
-# LittleHorse SSO Workflow Bridge
+# LittleHorse User Tasks Bridge
 
 This repository contains the code for:
 
-- `SSO Workflow Bridge UI` (Next.js)
-- `@littlehorse-enterprises/sso-workflow-bridge-api-client` (Node Package That Interacts With The SSO Workflow Bridge API)
+- `User Tasks Bridge Console` (Next.js)
+- `@littlehorse-enterprises/user-tasks-bridge-api-client` (Node Package)
 
-This repository will help you interact with LittleHorse's SSO Workflow Bridge API.
+This repository will help you interact with LittleHorse's User Tasks Bridge Backend.
 
 ## Overview
 
-The LH UserTask UI provides a complete solution for managing human tasks within LittleHorse workflows. It consists of:
+The console provides a complete solution for managing human tasks within LittleHorse workflows. It consists of:
 
 1. A modern web interface built with Next.js for managing and interacting with user tasks
 2. A TypeScript API client that simplifies integration with the UserTasks API
@@ -35,13 +35,13 @@ This project is designed to work seamlessly with LittleHorse's workflow engine, 
 The fastest way to get started is using our standalone image that includes all necessary components:
 
 ```bash
-docker run --name lh-sso-workflow-bridge-standalone --rm -d \
+docker run --name lh-user-tasks-bridge-standalone --rm -d \
         -p 2023:2023 \
         -p 8080:8080 \
         -p 8888:8888 \
         -p 8089:8089 \
         -p 3000:3000 \
-        ghcr.io/littlehorse-enterprises/sso-workflow-bridge/sso-workflow-bridge-standalone:main
+        ghcr.io/littlehorse-enterprises/lh-user-tasks-bridge/lh-user-tasks-bridge-standalone:latest
 ```
 
 This will start:
@@ -49,8 +49,8 @@ This will start:
 - LittleHorse Server (gRPC: 2023)
 - LittleHorse Dashboard (<http://localhost:8080>)
 - Keycloak (<http://localhost:8888>)
-- User Tasks API (<http://localhost:8089>)
-- User Tasks UI (<http://localhost:3000>)
+- User Tasks Bridge Backend (<http://localhost:8089>)
+- User Tasks Bridge Console (<http://localhost:3000>)
 
 ## Available Users
 
@@ -61,9 +61,9 @@ To access the Keycloak admin console at <http://localhost:8888>, use:
 - Username: **admin**
 - Password: **admin**
 
-### User Tasks UI
+### User Tasks Bridge Console
 
-You can log in to the User Tasks UI at <http://localhost:3000> with these pre-configured users:
+You can log in to the User Tasks Bridge Console at <http://localhost:3000> with these pre-configured users:
 
 | User          | Password | Role  |
 | ------------- | -------- | ----- |
@@ -88,13 +88,13 @@ export KEYCLOAK_ADMIN_ACCESS_TOKEN=$(http --ignore-stdin --form "http://localhos
 
 ```bash
 # Assign to specific user
-lhctl run sso-workflow-bridge-demo user $(http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" "http://localhost:8888/admin/realms/default/users/?username=my-user" | jq -r ".[0].id")
+lhctl run user-tasks-bridge-demo user $(http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" "http://localhost:8888/admin/realms/default/users/?username=my-user" | jq -r ".[0].id")
 
 # Assign to users group
-lhctl run sso-workflow-bridge-demo group $(http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" "http://localhost:8888/admin/realms/default/groups/?exact=true&search=users" | jq -r ".[0].id")
+lhctl run user-tasks-bridge-demo group $(http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" "http://localhost:8888/admin/realms/default/groups/?exact=true&search=users" | jq -r ".[0].id")
 
 # Assign to admins group
-lhctl run sso-workflow-bridge-demo group $(http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" "http://localhost:8888/admin/realms/default/groups/?exact=true&search=admins" | jq -r ".[0].id")
+lhctl run user-tasks-bridge-demo group $(http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" "http://localhost:8888/admin/realms/default/groups/?exact=true&search=admins" | jq -r ".[0].id")
 ```
 
 ## Development Setup
@@ -112,8 +112,8 @@ If you want to develop the UI locally:
 1. Clone this repository:
 
 ```bash
-git clone https://github.com/littlehorse-enterprises/lh-sso-workflow-bridge.git
-cd lh-sso-workflow-bridge
+git clone https://github.com/littlehorse-enterprises/lh-user-tasks-bridge.git
+cd lh-user-tasks-bridge
 ```
 
 2. Install git hooks:
@@ -162,7 +162,7 @@ The UI will start with watch mode on <http://localhost:3000>
 
 ### Useful Links
 
-- SSO Workflow Bridge UI: <http://localhost:3000>
+- User Tasks Bridge Console: <http://localhost:3000>
 - LittleHorse Dashboard: <http://localhost:8080>
 - Keycloak Admin Console: <http://localhost:8888>
 
@@ -196,9 +196,9 @@ docker run --rm \
     -e AUTH_KEYCLOAK_SECRET=' ' \
     -e AUTH_KEYCLOAK_ISSUER='http://localhost:8888/realms/default' \
     -e LHUT_API_URL='http://localhost:8089' \
-    -e AUTHORITIES='$.realm_access.roles,$.resource_access.*.roles' \
+    -e LHUT_AUTHORITIES='$.realm_access.roles,$.resource_access.*.roles' \
     -p 3000:3000 -p 3443:3443 \
-    ghcr.io/littlehorse-enterprises/lh-sso-workflow-bridge/lh-sso-workflow-bridge-ui:main
+    ghcr.io/littlehorse-enterprises/lh-user-tasks-bridge/lh-user-tasks-bridge-console:latest
 ```
 
 When SSL is enabled, the UI will be available on:
@@ -213,11 +213,11 @@ When SSL is enabled, the UI will be available on:
 | `SSL`                     | Set to `enabled` to enable SSL                             | Yes      |
 | `AUTH_URL`                | Full URL where the app will be accessible (use HTTPS port) | Yes      |
 | `AUTH_SECRET`             | Random string used to hash tokens                          | Yes      |
-| `AUTH_KEYCLOAK_CLIENT_ID` | Client ID from Keycloak                                    | Yes      |
+| `AUTH_KEYCLOAK_ID`        | Client ID from Keycloak                                    | Yes      |
 | `AUTH_KEYCLOAK_SECRET`    | Client secret from Keycloak                                | Yes      |
 | `AUTH_KEYCLOAK_ISSUER`    | Keycloak server URL                                        | Yes      |
 | `LHUT_API_URL`            | URL of the User Tasks API                                  | Yes      |
-| `AUTHORITIES`             | Paths to extract roles from the token                      | Yes      |
+| `LHUT_AUTHORITIES`        | Paths to extract roles from the token                      | Yes      |
 
 ### Notes
 

@@ -37,7 +37,7 @@ jobs:
       - name: Publish Image
         uses: littlehorse-enterprises/publish-image@v1
         with:
-          image-name: lh-sso-workflow-bridge-ui
+          image-name: lh-user-tasks-bridge-ui
           dockerfile: Dockerfile
           github-token: ${{ secrets.GITHUB_TOKEN }}
           tags: |

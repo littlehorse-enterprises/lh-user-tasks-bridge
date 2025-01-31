@@ -1,14 +1,14 @@
 {
-  "name": "@littlehorse-enterprises/sso-workflow-bridge-api-client",
-  "homepage": "https://littlehorse.io/docs/sso-workflow-bridge",
-  "bugs": "https://github.com/littlehorse-enterprises/sso-workflow-bridge/issues",
-  "version": "0.12.2",
-  "description": "Client for interacting with the LittleHorse SSO Workflow Bridge API",
+  "name": "@littlehorse-enterprises/user-tasks-bridge-api-client",
+  "homepage": "https://littlehorse.io/docs/user-tasks-bridge",
+  "bugs": "https://github.com/littlehorse-enterprises/lh-user-tasks-bridge/issues",
+  "version": "0.12.5",
+  "description": "Client for interacting with the LittleHorse User Tasks Bridge Backend",
   "license": "Apache-2.0",
   "author": "LittleHorse Enterprises",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/littlehorse-enterprises/sso-workflow-bridge.git"
+    "url": "git+https://github.com/littlehorse-enterprises/lh-user-tasks-bridge.git"
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -21,8 +21,7 @@
   },
   "keywords": [
     "littlehorse",
-    "sso",
-    "workflow",
+    "user tasks",
     "bridge",
     "api",
     "client"
