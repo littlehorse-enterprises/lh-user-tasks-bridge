@@ -8,5 +8,5 @@ while ! lhctl version >/dev/null 2>&1; do
 done
 
 cd /lh
-gradle run
+java -jar build/libs/lh-user-tasks-bridge-demo-all.jar
 lhctl run user-tasks-bridge-demo

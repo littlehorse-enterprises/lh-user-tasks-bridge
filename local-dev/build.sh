@@ -9,3 +9,6 @@ cd "${CONTEXT_DIR}"
 
 npm install
 npm run build -ws
+
+cd demo-workflow
+./gradlew build
