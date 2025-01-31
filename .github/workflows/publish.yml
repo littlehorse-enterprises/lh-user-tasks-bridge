@@ -33,6 +33,9 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
           cache: 'npm'
 
+      - name: Install Dependencies
+        run: npm install
+
       - name: Publish
         run: npm publish -w api-client --access public
         env:
