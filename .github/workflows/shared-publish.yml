@@ -87,6 +87,7 @@ jobs:
         uses: littlehorse-enterprises/publish-image@v1
         with:
           image-name: lh-user-tasks-bridge-backend
+          dockerfile: Dockerfile
           registry: ecr
           tags: |
             type=semver,pattern={{version}}
