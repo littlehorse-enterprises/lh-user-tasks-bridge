@@ -6,7 +6,7 @@ ENV PATH=${PATH}:/keycloak/bin
 
 COPY --from=ghcr.io/littlehorse-enterprises/littlehorse/lhctl:latest /usr/local/bin/lhctl /usr/local/bin/lhctl
 
-RUN apt update && apt install -y jq httpie && apt clean
+RUN apt update && apt install -y jq httpie unzip && apt clean
 
 WORKDIR /keycloak
 RUN wget -q https://github.com/keycloak/keycloak/releases/download/${KEYCLOAK_VERSION}/keycloak-${KEYCLOAK_VERSION}.tar.gz -O /tmp/keycloak.tar.gz \
@@ -28,10 +28,6 @@ COPY ./standalone/backend-entrypoint.sh /lh
 COPY ./standalone/console-entrypoint.sh /lh
 COPY ./local-dev/keycloak-configurer/configure-keycloak.sh /lh
 
-# Configure LittleHorse with Demo Workflow
-COPY ./demo-workflow /lh
-RUN chmod +x /lh/configure-littlehorse.sh
-
 WORKDIR /lh-user-tasks-bridge-backend
 COPY ./backend/build/libs/lh-user-tasks-bridge-backend.jar /lh-user-tasks-bridge-backend
 COPY ./standalone/backend-properties.yml /lh-user-tasks-bridge-backend
@@ -40,5 +36,10 @@ WORKDIR /lh-user-tasks-bridge-console
 COPY ./console/.next/standalone /lh-user-tasks-bridge-console
 COPY ./console/.next/static /lh-user-tasks-bridge-console/console/.next/static
 COPY ./node_modules /lh-user-tasks-bridge-console/node_modules
+
+# Configure LittleHorse with Demo Workflow
+COPY ./demo-workflow/build/libs/lh-user-tasks-bridge-demo-all.jar /lh/build/libs
+COPY ./demo-workflow/configure-littlehorse.sh /lh
+RUN chmod +x /lh/configure-littlehorse.sh
 
 WORKDIR /
