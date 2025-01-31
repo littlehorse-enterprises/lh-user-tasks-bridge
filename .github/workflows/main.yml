@@ -20,4 +20,4 @@ jobs:
       - name: Trigger Build Standalone
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT_USER_TASKS }}
-        run: gh workflow run main.yml -R littlehorse-enterprises/lh-user-tasks-bridge-api
+        run: gh workflow run main.yml -R littlehorse-enterprises/lh-user-tasks-bridge-backend
