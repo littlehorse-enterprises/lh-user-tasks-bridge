@@ -14,4 +14,4 @@ jobs:
           distribution: 'corretto'
 
       - name: Test and Build Artifact
-        run: ./gradlew api:build
+        run: ./gradlew backend:build

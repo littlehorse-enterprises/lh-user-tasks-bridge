@@ -6,7 +6,7 @@ KEYCLOAK_URL=${KEYCLOAK_URL:-"http://localhost:8888"}
 REALM_NAME=${REALM_NAME:-"default"}
 KEYCLOAK_ADMIN_USER="admin"
 KEYCLOAK_ADMIN_PASSWORD="admin"
-KEYCLOAK_CLIENT_ID="user-tasks-client"
+KEYCLOAK_CLIENT_ID="user-tasks-bridge-client"
 
 wait_for_keycloak() {
     while ! curl --silent --fail --output /dev/null "${KEYCLOAK_URL}"; do

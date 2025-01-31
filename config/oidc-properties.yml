@@ -12,4 +12,4 @@ com:
             tenant-id: default
             client-id-claim: azp
             clients:
-              - user-tasks-client
+              - user-tasks-bridge-client

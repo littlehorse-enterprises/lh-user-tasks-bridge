@@ -2,4 +2,4 @@
 
 set -e
 
-java -jar /lh/sso-workflow-bridge-api.jar "$@"
+java -jar /lh/lh-user-tasks-bridge-backend.jar "$@"
