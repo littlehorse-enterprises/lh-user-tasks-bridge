@@ -23,7 +23,7 @@ jobs:
         with:
           cache: npm
           cache-dependency-path: package-lock.json
-          node-version: 20
+          node-version: 22
 
       - name: Installing Dependencies
         run: npm install
@@ -37,8 +37,8 @@ jobs:
       - name: Publish Image
         uses: littlehorse-enterprises/publish-image@v1
         with:
-          image-name: lh-user-tasks-bridge-ui
-          dockerfile: Dockerfile
+          image-name: lh-user-tasks-bridge-console
+          dockerfile: ./console/Dockerfile
           github-token: ${{ secrets.GITHUB_TOKEN }}
           tags: |
             type=semver,pattern={{version}}
