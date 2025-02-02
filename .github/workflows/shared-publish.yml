@@ -50,7 +50,7 @@ jobs:
       - name: Build Console
         working-directory: lh-user-tasks-bridge
         run: |
-          npm ci
+          npm install
           npm run build -ws
       
       - name: Build Demo Workflow
