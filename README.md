@@ -35,13 +35,8 @@ This project is designed to work seamlessly with LittleHorse's workflow engine, 
 The fastest way to get started is using our standalone image that includes all necessary components:
 
 ```bash
-docker run --name lh-user-tasks-bridge-standalone --rm -d \
-        -p 2023:2023 \
-        -p 8080:8080 \
-        -p 8888:8888 \
-        -p 8089:8089 \
-        -p 3000:3000 \
-        ghcr.io/littlehorse-enterprises/lh-user-tasks-bridge/lh-user-tasks-bridge-standalone:latest
+docker run --name lh-user-tasks-bridge-standalone --pull always --rm -d --net=host \
+        ghcr.io/littlehorse-enterprises/lh-user-tasks-bridge-backend/lh-user-tasks-bridge-standalone:latest
 ```
 
 This will start:
