@@ -122,17 +122,16 @@ pre-commit install
    Copy `ui/.env.sample` as `ui/.env.local` and configure with:
 
 ```bash
-AUTH_URL='http://localhost:3000'
 NEXTAUTH_URL='http://localhost:3000'
+AUTH_URL='http://localhost:3000'
 AUTH_SECRET='<any secret here>'
 
-AUTH_KEYCLOAK_CLIENT_ID='user-tasks-client'
+AUTH_KEYCLOAK_ID='user-tasks-client'
 AUTH_KEYCLOAK_SECRET=' '
 AUTH_KEYCLOAK_ISSUER='http://localhost:8888/realms/default'
 
 LHUT_API_URL='http://localhost:8089'
-
-AUTHORITIES='$.realm_access.roles,$.resource_access.*.roles'
+LHUT_AUTHORITIES='$.realm_access.roles,$.resource_access.*.roles'
 ```
 
 1. Install dependencies and start development server:
@@ -184,10 +183,10 @@ This script will:
 docker run --rm \
     -e SSL=enabled \
     -v ./local-dev/ssl:/ssl \
-    -e AUTH_URL='https://localhost:3443' \
     -e NEXTAUTH_URL='https://localhost:3443' \
+    -e AUTH_URL='https://localhost:3443' \
     -e AUTH_SECRET='your-secret-here' \
-    -e AUTH_KEYCLOAK_CLIENT_ID='user-tasks-client' \
+    -e AUTH_KEYCLOAK_ID='user-tasks-client' \
     -e AUTH_KEYCLOAK_SECRET=' ' \
     -e AUTH_KEYCLOAK_ISSUER='http://localhost:8888/realms/default' \
     -e LHUT_API_URL='http://localhost:8089' \
