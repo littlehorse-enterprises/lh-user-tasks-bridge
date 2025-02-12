@@ -1,0 +1,40 @@
+name: branch
+run-name: Publishing images for branch ${{ github.ref_name }}
+on:
+  workflow_dispatch:
+  push:
+    branches-ignore:
+      - "master"
+    paths:
+      - .github/workflows/branch.yml
+      - backend/**
+      - Dockerfile
+      - entrypoint.sh
+
+permissions:
+  id-token: write
+  contents: read
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: "corretto"
+
+      - name: Test and Build Artifact
+        run: ./gradlew backend:build
+
+      - name: Build and Publish Backend
+        id: publish-image
+        uses: littlehorse-enterprises/publish-image@v1
+        with:
+          image-name: lh-user-tasks-bridge-backend
+          dockerfile: Dockerfile
+          registry: ecr
+          prefix: branch-

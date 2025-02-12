@@ -4,6 +4,7 @@ import com.c4_soft.springaddons.security.oidc.starter.OpenidProviderPropertiesRe
 import com.c4_soft.springaddons.security.oidc.starter.properties.SpringAddonsOidcProperties;
 import io.littlehorse.sdk.common.config.LHConfig;
 import io.littlehorse.sdk.common.proto.LittleHorseGrpc;
+import io.littlehorse.sdk.common.proto.TenantId;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,11 +19,12 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.jwt.JwtClaimNames;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.net.URI;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Configuration
 @EnableMethodSecurity
@@ -72,12 +74,44 @@ public class WebSecurityConfiguration {
     }
 
     @Bean
-    public LittleHorseGrpc.LittleHorseBlockingStub lhClient() {
-        return new LHConfig().getBlockingStub();
+    public Map<String, LittleHorseGrpc.LittleHorseBlockingStub> lhClient(IdentityProviderConfigProperties identityProviderConfigProperties) throws NoSuchFieldException {
+        Set<String> configuredTenants = getConfiguredTenants(identityProviderConfigProperties);
+
+        if (CollectionUtils.isEmpty(configuredTenants)) {
+            throw new SecurityException("No Tenants found in configuration properties.");
+        }
+
+        return getPerTenantLHClients(configuredTenants);
     }
 
     @Bean
     public IdentityProviderConfigProperties identityProviderConfigProperties() {
         return new IdentityProviderConfigProperties();
+    }
+
+    private Set<String> getConfiguredTenants(IdentityProviderConfigProperties identityProviderConfigProperties) {
+        return identityProviderConfigProperties.getOps().stream()
+                .map(CustomIdentityProviderProperties::getTenantId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+    }
+
+    private Map<String, LittleHorseGrpc.LittleHorseBlockingStub> getPerTenantLHClients(Set<String> configuredTenants) {
+        LHConfig lhConfig = new LHConfig();
+        String lhServerHost = lhConfig.getApiBootstrapHost();
+        int lhServerPort = lhConfig.getApiBootstrapPort();
+        Map<String, LittleHorseGrpc.LittleHorseBlockingStub> perTenantClients = new HashMap<>();
+
+        configuredTenants.forEach(tenantIdFromConfig -> {
+            TenantId tenantId = TenantId.newBuilder()
+                    .setId(tenantIdFromConfig)
+                    .build();
+            LittleHorseGrpc.LittleHorseBlockingStub tenantBoundClient = lhConfig.getBlockingStub(lhServerHost,
+                    lhServerPort, tenantId);
+
+            perTenantClients.put(tenantIdFromConfig, tenantBoundClient);
+        });
+
+        return Collections.unmodifiableMap(perTenantClients);
     }
 }

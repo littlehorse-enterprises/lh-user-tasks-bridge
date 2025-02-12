@@ -36,11 +36,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static io.littlehorse.usertasks.util.DateUtil.isDateRangeValid;
@@ -48,10 +44,10 @@ import static io.littlehorse.usertasks.util.DateUtil.isDateRangeValid;
 @Service
 @Slf4j
 public class UserTaskService {
-    private final LittleHorseGrpc.LittleHorseBlockingStub lhClient;
+    private final Map<String, LittleHorseGrpc.LittleHorseBlockingStub> lhClients;
 
-    UserTaskService(LittleHorseGrpc.LittleHorseBlockingStub lhClient) {
-        this.lhClient = lhClient;
+    UserTaskService(Map<String, LittleHorseGrpc.LittleHorseBlockingStub> lhClients) {
+        this.lhClients = lhClients;
     }
 
     @NonNull
@@ -69,7 +65,7 @@ public class UserTaskService {
         SearchUserTaskRunRequest searchRequest;
         searchRequest = buildSearchUserTaskRunRequest(userId, userGroup, additionalFilters, pagination);
 
-        LittleHorseGrpc.LittleHorseBlockingStub tenantClient = lhClient.withCallCredentials(new TenantMetadataProvider(tenantId));
+        LittleHorseGrpc.LittleHorseBlockingStub tenantClient = getTenantLHClient(tenantId);
 
         UserTaskRunIdList searchResults = tenantClient.searchUserTaskRun(searchRequest);
         List<UserTaskRunId> resultsIdList = searchResults.getResultsList();
@@ -98,7 +94,7 @@ public class UserTaskService {
                                                                boolean isAdminRequest) {
         UserTaskRunId getUserTaskRunRequest = buildUserTaskRunId(wfRunId, userTaskRunGuid);
 
-        LittleHorseGrpc.LittleHorseBlockingStub tenantClient = lhClient.withCallCredentials(new TenantMetadataProvider(tenantId));
+        LittleHorseGrpc.LittleHorseBlockingStub tenantClient = getTenantLHClient(tenantId);
 
         var userTaskRunResult = tenantClient.getUserTaskRun(getUserTaskRunRequest);
 
@@ -149,7 +145,7 @@ public class UserTaskService {
 
             CompleteUserTaskRunRequest serverRequest = request.toServerRequest(userId);
 
-            LittleHorseGrpc.LittleHorseBlockingStub tenantClient = lhClient.withCallCredentials(new TenantMetadataProvider(tenantId));
+            LittleHorseGrpc.LittleHorseBlockingStub tenantClient = getTenantLHClient(tenantId);
 
             tenantClient.completeUserTaskRun(serverRequest);
 
@@ -182,7 +178,7 @@ public class UserTaskService {
     }
 
     public UserTaskDefListDTO getAllUserTasksDef(@NonNull String tenantId, int limit, byte[] bookmark) {
-        LittleHorseGrpc.LittleHorseBlockingStub tenantClient = lhClient.withCallCredentials(new TenantMetadataProvider(tenantId));
+        LittleHorseGrpc.LittleHorseBlockingStub tenantClient = getTenantLHClient(tenantId);
 
         SearchUserTaskDefRequest.Builder searchRequest = SearchUserTaskDefRequest.newBuilder()
                 .setLimit(limit);
@@ -222,7 +218,7 @@ public class UserTaskService {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No valid arguments were received to complete reassignment.");
             }
 
-            LittleHorseGrpc.LittleHorseBlockingStub tenantClient = lhClient.withCallCredentials(new TenantMetadataProvider(tenantId));
+            LittleHorseGrpc.LittleHorseBlockingStub tenantClient = getTenantLHClient(tenantId);
 
             UserTaskRunId userTaskRunId = buildUserTaskRunId(wfRunId, userTaskRunGuid);
 
@@ -283,7 +279,7 @@ public class UserTaskService {
                     .addArgument(userTaskRunGuid)
                     .log();
 
-            LittleHorseGrpc.LittleHorseBlockingStub tenantClient = lhClient.withCallCredentials(new TenantMetadataProvider(tenantId));
+            LittleHorseGrpc.LittleHorseBlockingStub tenantClient = getTenantLHClient(tenantId);
 
             UserTaskRunId userTaskRunId = UserTaskRunId.newBuilder()
                     .setUserTaskGuid(userTaskRunGuid)
@@ -359,7 +355,7 @@ public class UserTaskService {
                     .addArgument(userTaskRunGuid)
                     .log();
 
-            LittleHorseGrpc.LittleHorseBlockingStub tenantClient = lhClient.withCallCredentials(new TenantMetadataProvider(tenantId));
+            LittleHorseGrpc.LittleHorseBlockingStub tenantClient = getTenantLHClient(tenantId);
 
             UserTaskRunId userTaskRunId = UserTaskRunId.newBuilder()
                     .setUserTaskGuid(userTaskRunGuid)
@@ -439,7 +435,7 @@ public class UserTaskService {
                     .addArgument(userTaskRunGuid)
                     .log();
 
-            LittleHorseGrpc.LittleHorseBlockingStub tenantClient = lhClient.withCallCredentials(new TenantMetadataProvider(tenantId));
+            LittleHorseGrpc.LittleHorseBlockingStub tenantClient = getTenantLHClient(tenantId);
 
             UserTaskRunId userTaskRunId = buildUserTaskRunId(wfRunId, userTaskRunGuid);
 
@@ -496,6 +492,12 @@ public class UserTaskService {
 
             throw e;
         }
+    }
+
+    private LittleHorseGrpc.LittleHorseBlockingStub getTenantLHClient(String tenantId) {
+        Optional<LittleHorseGrpc.LittleHorseBlockingStub> optionalTenantClient = Optional.ofNullable(lhClients.get(tenantId));
+
+        return optionalTenantClient.orElseThrow(() -> new SecurityException("Could not find a matching configured tenant"));
     }
 
     private SearchUserTaskRunRequest buildSearchUserTaskRunRequest(String userId, String userGroup,
