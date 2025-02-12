@@ -106,7 +106,7 @@ public class WebSecurityConfiguration {
             TenantId tenantId = TenantId.newBuilder()
                     .setId(tenantIdFromConfig)
                     .build();
-            LittleHorseGrpc.LittleHorseBlockingStub tenantBoundClient = new LHConfig().getBlockingStub(lhServerHost,
+            LittleHorseGrpc.LittleHorseBlockingStub tenantBoundClient = lhConfig.getBlockingStub(lhServerHost,
                     lhServerPort, tenantId);
 
             perTenantClients.put(tenantIdFromConfig, tenantBoundClient);
