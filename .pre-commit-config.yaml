@@ -28,4 +28,4 @@ repos:
         language: system
         always_run: true
         pass_filenames: false
-        entry: ./gradlew api:build
+        entry: ./gradlew backend:build

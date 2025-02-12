@@ -14,8 +14,10 @@ import static org.mockito.Mockito.when;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.MockedStatic;
@@ -39,10 +41,11 @@ import io.littlehorse.usertasks.util.TokenUtil;
 
 @ExtendWith(MockitoExtension.class)
 class TenantServiceTest {
-    private final LittleHorseGrpc.LittleHorseBlockingStub lhClient = mock();
+    private final Map<String, LittleHorseGrpc.LittleHorseBlockingStub> lhClients = mock();
+    private final LittleHorseGrpc.LittleHorseBlockingStub lhTenantClient = mock();
     private final IdentityProviderConfigProperties identityProviderConfigProperties = mock();
 
-    private final TenantService tenantService = new TenantService(lhClient, identityProviderConfigProperties);
+    private final TenantService tenantService = new TenantService(lhClients, identityProviderConfigProperties);
 
     private final String STUBBED_ACCESS_TOKEN = "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJIbkdSc3I1eGpub1UyN0k" +
             "ycVBSMUYwMHEzNlRSaW9iQ3RESU5ET1NFNnNNIn0.eyJleHAiOjE3MjU5MjA0OTAsImlhdCI6MTcyNTkyMDE5MCwianRpIjoiNGY4MzEwZW" +
@@ -70,11 +73,16 @@ class TenantServiceTest {
             "kOTPdoAbfSdNCayJ8WlGqmKr_-zA7hmjRIGs2ZHA5KfDH_81SzFPBrJyFGaAzwHaRmHbk1K3fg6eJC4Uw07oixw7TPiaSla47p6NDG-kzshi" +
             "NgR9sJHYf2ALHATYYTkV6IKLNbjoXuo-vuqus9kqkoXNb_QyR43hw6qZaH_A";
 
+    @BeforeEach
+    void init() {
+        when(lhClients.get(anyString())).thenReturn(lhTenantClient);
+    }
+
     @Test
     void isValidTenant_shouldThrowNullPointerExceptionWhenTenantIdIsNull() {
         assertThrows(NullPointerException.class, () -> tenantService.isValidTenant(null, STUBBED_ACCESS_TOKEN));
 
-        verify(lhClient, never()).getTenant(any(TenantId.class));
+        verify(lhTenantClient, never()).getTenant(any(TenantId.class));
     }
 
     @Test
@@ -82,41 +90,41 @@ class TenantServiceTest {
         var tenantIdToValidate = "someTenantId";
         assertThrows(NullPointerException.class, () -> tenantService.isValidTenant(tenantIdToValidate, null));
 
-        verify(lhClient, never()).getTenant(any(TenantId.class));
+        verify(lhTenantClient, never()).getTenant(any(TenantId.class));
     }
 
     @Test
     void isValidTenant_shouldReturnFalseWhenNoMatchingTenantIsFound() {
         var tenantIdToValidate = "invalidTenantId";
 
-        when(lhClient.getTenant(any(TenantId.class))).thenReturn(null);
+        when(lhTenantClient.getTenant(any(TenantId.class))).thenReturn(null);
 
         assertFalse(tenantService.isValidTenant(tenantIdToValidate, STUBBED_ACCESS_TOKEN));
 
-        verify(lhClient).getTenant(any(TenantId.class));
+        verify(lhTenantClient).getTenant(any(TenantId.class));
     }
 
     @Test
     void isValidTenant_shouldReturnFalseWhenServerAPIThrowsNotFoundException() {
         var tenantIdToValidate = "someTenant";
 
-        when(lhClient.getTenant(any(TenantId.class))).thenThrow(new StatusRuntimeException(Status.NOT_FOUND));
+        when(lhTenantClient.getTenant(any(TenantId.class))).thenThrow(new StatusRuntimeException(Status.NOT_FOUND));
 
         assertFalse(tenantService.isValidTenant(tenantIdToValidate, STUBBED_ACCESS_TOKEN));
 
-        verify(lhClient).getTenant(any(TenantId.class));
+        verify(lhTenantClient).getTenant(any(TenantId.class));
     }
 
     @Test
     void isValidTenant_shouldReturnFalseWhenServerAPIThrowsUnhandledException() {
         var tenantIdToValidate = "someOtherTenant";
 
-        when(lhClient.getTenant(any(TenantId.class))).thenThrow(new StatusRuntimeException(Status.ABORTED));
+        when(lhTenantClient.getTenant(any(TenantId.class))).thenThrow(new StatusRuntimeException(Status.ABORTED));
 
         assertThrows(StatusRuntimeException.class,
                 () -> tenantService.isValidTenant(tenantIdToValidate, STUBBED_ACCESS_TOKEN));
 
-        verify(lhClient).getTenant(any(TenantId.class));
+        verify(lhTenantClient).getTenant(any(TenantId.class));
     }
 
     @Test
@@ -124,14 +132,29 @@ class TenantServiceTest {
         var tenantIdToValidate = "someTenant";
         var expectedExceptionMessage = "ERROR: Some pretty weird issue on LH Server";
 
-        when(lhClient.getTenant(any(TenantId.class))).thenThrow(new RuntimeException(expectedExceptionMessage));
+        when(lhTenantClient.getTenant(any(TenantId.class))).thenThrow(new RuntimeException(expectedExceptionMessage));
 
         RuntimeException exception = assertThrows(RuntimeException.class,
                 () -> tenantService.isValidTenant(tenantIdToValidate, STUBBED_ACCESS_TOKEN));
 
         assertEquals(expectedExceptionMessage, exception.getMessage());
 
-        verify(lhClient).getTenant(any(TenantId.class));
+        verify(lhTenantClient).getTenant(any(TenantId.class));
+    }
+
+    @Test
+    void isValidTenant_shouldThrowExceptionWhenRequestTenantIsNotFoundWithinTheConfiguration() {
+        var tenantIdToValidate = "someTenant";
+        var expectedExceptionMessage = "Could not find a matching configured tenant";
+
+        when(lhClients.get(anyString())).thenReturn(null);
+
+        SecurityException exception = assertThrows(SecurityException.class,
+                () -> tenantService.isValidTenant(tenantIdToValidate, STUBBED_ACCESS_TOKEN));
+
+        assertEquals(expectedExceptionMessage, exception.getMessage());
+
+        verify(lhTenantClient, never()).getTenant(any(TenantId.class));
     }
 
     @Test
@@ -139,7 +162,7 @@ class TenantServiceTest {
         var tenantIdToValidate = "someTenant";
 
         try (MockedStatic<TokenUtil> mockStaticTokenUtil = mockStatic(TokenUtil.class)) {
-            when(lhClient.getTenant(any(TenantId.class))).thenReturn(Tenant.getDefaultInstance());
+            when(lhTenantClient.getTenant(any(TenantId.class))).thenReturn(Tenant.getDefaultInstance());
             mockStaticTokenUtil.when(() -> TokenUtil.getTokenClaims(anyString()))
                     .thenThrow(new UnrecognizedPropertyException(mock(JsonParser.class), "error message",
                             mock(JsonLocation.class), TokenUtil.class, "some-property", Collections.emptyList()));
@@ -150,7 +173,7 @@ class TenantServiceTest {
             int expectedHttpErrorCode = HttpStatus.INTERNAL_SERVER_ERROR.value();
             assertEquals(expectedHttpErrorCode, exception.getBody().getStatus());
 
-            verify(lhClient).getTenant(any(TenantId.class));
+            verify(lhTenantClient).getTenant(any(TenantId.class));
         }
     }
 
@@ -165,7 +188,7 @@ class TenantServiceTest {
 
         var properties = new CustomIdentityProviderProperties(fakeUri, fakeUsernameClaim, fakeVendor, configuredTenant, configuredClients, "cid");
 
-        when(lhClient.getTenant(any(TenantId.class))).thenReturn(Tenant.getDefaultInstance());
+        when(lhTenantClient.getTenant(any(TenantId.class))).thenReturn(Tenant.getDefaultInstance());
         when(identityProviderConfigProperties.getOps()).thenReturn(List.of(properties));
 
         ResponseStatusException responseStatusException = assertThrows(ResponseStatusException.class,
@@ -174,6 +197,6 @@ class TenantServiceTest {
         int expectedErrorCode = HttpStatus.UNAUTHORIZED.value();
         assertEquals(expectedErrorCode, responseStatusException.getBody().getStatus());
 
-        verify(lhClient).getTenant(any(TenantId.class));
+        verify(lhTenantClient).getTenant(any(TenantId.class));
     }
 }

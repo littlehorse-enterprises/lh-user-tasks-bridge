@@ -17,6 +17,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 import static io.littlehorse.usertasks.configurations.CustomIdentityProviderProperties.getCustomIdentityProviderProperties;
 import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.ALLOWED_TOKEN_CUSTOM_CLAIM;
@@ -24,17 +25,18 @@ import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.ALLOWE
 @Service
 @Slf4j
 public class TenantService {
-    private final LittleHorseGrpc.LittleHorseBlockingStub lhClient;
+    private final Map<String, LittleHorseGrpc.LittleHorseBlockingStub> lhClients;
     private final IdentityProviderConfigProperties identityProviderConfigProperties;
 
-    TenantService(LittleHorseGrpc.LittleHorseBlockingStub lhClient, IdentityProviderConfigProperties identityProviderConfigProperties) {
-        this.lhClient = lhClient;
+    TenantService(Map<String, LittleHorseGrpc.LittleHorseBlockingStub> lhClients, IdentityProviderConfigProperties identityProviderConfigProperties) {
+        this.lhClients = lhClients;
         this.identityProviderConfigProperties = identityProviderConfigProperties;
     }
 
     public boolean isValidTenant(@NonNull String requestTenantId, @NonNull String accessToken) {
         try {
-            Tenant tenant = lhClient.getTenant(TenantId.newBuilder()
+            LittleHorseGrpc.LittleHorseBlockingStub tenantBoundLHClient = getTenantLHClient(requestTenantId);
+            Tenant tenant = tenantBoundLHClient.getTenant(TenantId.newBuilder()
                     .setId(requestTenantId)
                     .build());
 
@@ -57,6 +59,12 @@ public class TenantService {
         }
 
         return false;
+    }
+
+    private LittleHorseGrpc.LittleHorseBlockingStub getTenantLHClient(String tenantId) {
+        Optional<LittleHorseGrpc.LittleHorseBlockingStub> optionalTenantClient = Optional.ofNullable(lhClients.get(tenantId));
+
+        return optionalTenantClient.orElseThrow(() -> new SecurityException("Could not find a matching configured tenant"));
     }
 
     private boolean isMatchingPropertiesConfiguration(String requestTenantId, String accessToken) throws JsonProcessingException {

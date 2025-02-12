@@ -63,6 +63,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -73,15 +74,15 @@ import static org.mockito.Mockito.when;
 class UserTaskServiceTest {
     private static final int RESULTS_LIMIT = 10;
     private final ZoneOffset UTC_ZONE = ZoneOffset.UTC;
-    private final LittleHorseGrpc.LittleHorseBlockingStub lhClient = mock();
+    private final Map<String, LittleHorseGrpc.LittleHorseBlockingStub> lhClients = mock();
     private final LittleHorseGrpc.LittleHorseBlockingStub lhTenantClient = mock();
     private final String tenantId = "my-tenant-id";
 
-    private final UserTaskService userTaskService = new UserTaskService(lhClient);
+    private final UserTaskService userTaskService = new UserTaskService(lhClients);
 
     @BeforeEach
     void init() {
-        when(lhClient.withCallCredentials(any())).thenReturn(lhTenantClient);
+        when(lhClients.get(anyString())).thenReturn(lhTenantClient);
     }
 
     @Test
@@ -98,6 +99,22 @@ class UserTaskServiceTest {
         var expectedExceptionMessage = "Cannot search UserTask without specifying a proper UserId";
 
         assertEquals(expectedExceptionMessage, exception.getMessage());
+    }
+
+    @Test
+    void getTasks_shouldThrowExceptionWhenRequestTenantIsNotFoundWithinTheConfiguration() {
+        var userId = UUID.randomUUID().toString();
+        var expectedExceptionMessage = "Could not find a matching configured tenant";
+
+        when(lhClients.get(anyString())).thenReturn(null);
+
+        SecurityException exception = assertThrows(SecurityException.class,
+                () -> userTaskService.getTasks(tenantId, userId, null, null,
+                RESULTS_LIMIT, null, false));
+
+        assertEquals(expectedExceptionMessage, exception.getMessage());
+
+        verify(lhTenantClient, never()).searchUserTaskRun(any(SearchUserTaskRunRequest.class));
     }
 
     @Test
@@ -360,8 +377,8 @@ class UserTaskServiceTest {
 
         assertEquals(expectedExceptionMessage, exception.getMessage());
 
-        verify(lhClient, never()).searchUserTaskRun(any());
-        verify(lhClient, never()).getUserTaskRun(any());
+        verify(lhTenantClient, never()).searchUserTaskRun(any());
+        verify(lhTenantClient, never()).getUserTaskRun(any());
     }
 
     @Test
