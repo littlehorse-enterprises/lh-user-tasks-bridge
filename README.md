@@ -96,6 +96,8 @@ Make sure that you edit the `oidc-properties.yml` file located at `./config/` di
 Here's what you need to modify in that file:
 
 - _**iss**_: Here you need to paste your Identity Provider's issuer url.
+- _**label-name**_: This field allows you to set a string that can be used in your UI to differentiate your
+identity providers configured with the same tenant.
 - _**username-claim**_: This field is currently not being used, but it is part of the required configuration,
   so you can just leave it as is with the default value as _preferred_username_
 - _**authorities**_: Within this property you MUST set at least 1 JSON path that indicates from where the roles are

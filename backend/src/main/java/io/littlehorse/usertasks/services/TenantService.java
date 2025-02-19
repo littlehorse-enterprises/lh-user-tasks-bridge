@@ -7,6 +7,8 @@ import io.littlehorse.sdk.common.proto.LittleHorseGrpc;
 import io.littlehorse.sdk.common.proto.Tenant;
 import io.littlehorse.sdk.common.proto.TenantId;
 import io.littlehorse.usertasks.configurations.IdentityProviderConfigProperties;
+import io.littlehorse.usertasks.models.responses.IdentityProviderDTO;
+import io.littlehorse.usertasks.models.responses.IdentityProviderListDTO;
 import io.littlehorse.usertasks.util.TokenUtil;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +20,8 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static io.littlehorse.usertasks.configurations.CustomIdentityProviderProperties.getCustomIdentityProviderProperties;
 import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.ALLOWED_TOKEN_CUSTOM_CLAIM;
@@ -59,6 +63,21 @@ public class TenantService {
         }
 
         return false;
+    }
+
+    @NonNull
+    public IdentityProviderListDTO getTenantIdentityProviderConfig(@NonNull String tenantId) {
+        Set<IdentityProviderDTO> tenantConfig = identityProviderConfigProperties.getOps().stream()
+                .filter(config ->
+                        StringUtils.equalsIgnoreCase(tenantId, config.getTenantId())
+                )
+                .map(IdentityProviderDTO::fromConfigProperties)
+                .flatMap(providerSet -> providerSet.stream().distinct())
+                .collect(Collectors.toSet());
+
+        return IdentityProviderListDTO.builder()
+                .providers(tenantConfig)
+                .build();
     }
 
     private LittleHorseGrpc.LittleHorseBlockingStub getTenantLHClient(String tenantId) {

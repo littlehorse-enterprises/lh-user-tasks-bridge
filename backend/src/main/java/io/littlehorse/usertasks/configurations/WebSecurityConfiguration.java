@@ -37,9 +37,11 @@ public class WebSecurityConfiguration {
     @Bean
     SecurityFilterChain securityFilterChain(HttpSecurity http, AuthenticationManagerResolver<HttpServletRequest> authenticationManagerResolver)
             throws Exception {
+        String[] publicPaths = {"/config/**", "/api-docs/**", "/swagger-ui/**", "/actuator/**"}; //These paths do not require authentication
+
         http.authorizeHttpRequests(
                         auth -> auth
-                                .requestMatchers(HttpMethod.GET, new String[]{"/api-docs/**", "/swagger-ui/**", "/actuator/**"})
+                                .requestMatchers(HttpMethod.GET, publicPaths)
                                 .permitAll()
                                 .anyRequest()
                                 .authenticated())
@@ -74,7 +76,7 @@ public class WebSecurityConfiguration {
     }
 
     @Bean
-    public Map<String, LittleHorseGrpc.LittleHorseBlockingStub> lhClient(IdentityProviderConfigProperties identityProviderConfigProperties) throws NoSuchFieldException {
+    public Map<String, LittleHorseGrpc.LittleHorseBlockingStub> lhClient(IdentityProviderConfigProperties identityProviderConfigProperties) {
         Set<String> configuredTenants = getConfiguredTenants(identityProviderConfigProperties);
 
         if (CollectionUtils.isEmpty(configuredTenants)) {
