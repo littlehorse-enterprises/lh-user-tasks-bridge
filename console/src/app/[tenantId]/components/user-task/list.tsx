@@ -22,11 +22,11 @@ import {
   Status,
   UserGroup,
 } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
-import { useInfiniteQuery } from "@tanstack/react-query";
 import { FilterIcon } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useLayoutEffect, useState } from "react";
 import { toast } from "sonner";
+import useSWRInfinite from "swr/infinite";
 import UserTask from "../../components/user-task";
 import { useTenantId } from "../../layout";
 import Loading from "../loading";
@@ -72,18 +72,19 @@ export default function ListUserTasks({
     );
   }, [query]);
 
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    useInfiniteQuery({
-      queryKey: ["userTasks", userTaskDefName, query, limit],
-      initialData: {
-        pages: [initialData],
-        pageParams: [initialData.bookmark ?? undefined],
-      },
-      initialPageParam: undefined,
-      getNextPageParam: (lastPage: ListUserTasksResponse) => lastPage.bookmark,
-      queryFn: async ({
-        pageParam: bookmark,
-      }): Promise<ListUserTasksResponse> => {
+  const getKey = (
+    pageIndex: number,
+    previousPageData: ListUserTasksResponse | null,
+  ) => {
+    if (previousPageData && !previousPageData.bookmark) return null; // reached the end
+    return ["userTask", query, limit, previousPageData?.bookmark];
+  };
+
+  const { data, error, setSize, isValidating } =
+    useSWRInfinite<ListUserTasksResponse>(
+      getKey,
+      async (key): Promise<ListUserTasksResponse> => {
+        const [, query, limit, bookmark] = key;
         const response = await (userTaskDefName
           ? adminListUserTasks(tenantId, {
               ...query,
@@ -104,12 +105,27 @@ export default function ListUserTasks({
             bookmark: null,
           };
         }
-
         return response;
       },
-    });
+      {
+        refreshInterval: 1000,
+        revalidateOnFocus: true,
+        revalidateOnReconnect: true,
+        revalidateOnMount: true,
+        revalidateIfStale: true,
+        fallbackData: [initialData],
+      },
+    );
 
-  if (data === undefined) return <Loading />;
+  const fetchNextPage = () => {
+    setSize((size) => size + 1);
+  };
+
+  const isPending = (!data && !error) || !data;
+  if (isPending) return <Loading />;
+  const hasNextPage = !!(data && data[data.length - 1]?.bookmark);
+
+  const isFetchingNextPage = isValidating && hasNextPage;
 
   return (
     <div>
@@ -216,10 +232,10 @@ export default function ListUserTasks({
         </Popover>
       </div>
 
-      {data.pages.flatMap((page) => page.userTasks).length ? (
+      {data.flatMap((page) => page.userTasks).length ? (
         <div className="flex flex-col gap-8 items-center">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {data.pages
+            {data
               .flatMap((page) => page.userTasks)
               .sort(
                 (a, b) =>
