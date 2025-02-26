@@ -1,5 +1,6 @@
 package io.littlehorse.usertasks.configurations;
 
+import com.c4_soft.springaddons.security.oidc.starter.properties.SpringAddonsOidcProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.littlehorse.usertasks.idp_adapters.IdentityProviderVendor;
 import io.littlehorse.usertasks.util.TokenUtil;
@@ -12,6 +13,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.net.URI;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -25,9 +27,11 @@ public class CustomIdentityProviderProperties {
     private URI iss;
     private String usernameClaim;
     private IdentityProviderVendor vendor;
+    private String labelName;
     private String tenantId;
     private Set<String> clients;
     private String clientIdClaim;
+    private List<SpringAddonsOidcProperties.OpenidProviderProperties.SimpleAuthoritiesMappingProperties> authorities;
 
     public static CustomIdentityProviderProperties getCustomIdentityProviderProperties(@NonNull String accessToken,
                                                                                        @NonNull IdentityProviderConfigProperties identityProviderConfigProperties) throws JsonProcessingException {

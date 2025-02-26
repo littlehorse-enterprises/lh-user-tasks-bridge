@@ -1,34 +1,9 @@
 package io.littlehorse.usertasks.services;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import java.net.URI;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.MockedStatic;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
-
+import com.c4_soft.springaddons.security.oidc.starter.properties.SpringAddonsOidcProperties;
 import com.fasterxml.jackson.core.JsonLocation;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
-
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.littlehorse.sdk.common.proto.LittleHorseGrpc;
@@ -37,7 +12,25 @@ import io.littlehorse.sdk.common.proto.TenantId;
 import io.littlehorse.usertasks.configurations.CustomIdentityProviderProperties;
 import io.littlehorse.usertasks.configurations.IdentityProviderConfigProperties;
 import io.littlehorse.usertasks.idp_adapters.IdentityProviderVendor;
+import io.littlehorse.usertasks.models.responses.IdentityProviderDTO;
+import io.littlehorse.usertasks.models.responses.IdentityProviderListDTO;
 import io.littlehorse.usertasks.util.TokenUtil;
+import org.apache.commons.lang3.StringUtils;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.MockedStatic;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.net.URI;
+import java.util.*;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class TenantServiceTest {
@@ -182,11 +175,7 @@ class TenantServiceTest {
         var configuredTenant = "default";
         var tenantIdToValidate = "default";
         URI fakeUri = URI.create("https://trial-5903875.okta.com/oauth2/default");
-        var fakeUsernameClaim = "preferred_username";
-        IdentityProviderVendor fakeVendor = IdentityProviderVendor.OKTA;
-        Set<String> configuredClients = Set.of("user-tasks-bridge-client");
-
-        var properties = new CustomIdentityProviderProperties(fakeUri, fakeUsernameClaim, fakeVendor, configuredTenant, configuredClients, "cid");
+        CustomIdentityProviderProperties properties = getCustomIdentityProviderPropertiesWithOkta(fakeUri, configuredTenant);
 
         when(lhTenantClient.getTenant(any(TenantId.class))).thenReturn(Tenant.getDefaultInstance());
         when(identityProviderConfigProperties.getOps()).thenReturn(List.of(properties));
@@ -198,5 +187,133 @@ class TenantServiceTest {
         assertEquals(expectedErrorCode, responseStatusException.getBody().getStatus());
 
         verify(lhTenantClient).getTenant(any(TenantId.class));
+    }
+
+    @Test
+    void getTenantIdentityProviderConfig_shouldThrowNullPointerExceptionIfNullTenantIsReceived() {
+        assertThrows(NullPointerException.class, ()-> tenantService.getTenantIdentityProviderConfig(null));
+    }
+
+    @Test
+    void getTenantIdentityProviderConfig_shouldReturnEmptyWhenNoProviderConfigIsFoundForAGivenTenant() {
+        var configuredTenant = "default";
+        var requestedTenant = "some-tenant";
+        URI fakeUri = URI.create("https://trial-5903875.okta.com/oauth2/default");
+        CustomIdentityProviderProperties properties = getCustomIdentityProviderPropertiesWithOkta(fakeUri, configuredTenant);
+
+        when(identityProviderConfigProperties.getOps()).thenReturn(List.of(properties));
+
+        IdentityProviderListDTO providerConfigs = tenantService.getTenantIdentityProviderConfig(requestedTenant);
+
+        assertTrue(providerConfigs.getProviders().isEmpty());
+
+        verify(identityProviderConfigProperties).getOps();
+    }
+
+    @Test
+    void getTenantIdentityProviderConfig_shouldReturnProviderConfigWhenThereIsAMatchingTenantConfigFound() {
+        var configuredTenant = "default";
+        var requestedTenant = "default";
+        URI fakeUri = URI.create("http://keycloak:8888/realms/default");
+        CustomIdentityProviderProperties properties = getCustomIdentityProviderPropertiesWithKeycloak(fakeUri, configuredTenant);
+
+        when(identityProviderConfigProperties.getOps()).thenReturn(List.of(properties));
+
+        IdentityProviderListDTO providerConfigs = tenantService.getTenantIdentityProviderConfig(requestedTenant);
+
+        Set<IdentityProviderDTO> foundProvidersConfig = providerConfigs.getProviders();
+
+        int expectedTotalProviderConfigsCount = 1;
+
+        assertFalse(foundProvidersConfig.isEmpty());
+        assertEquals(expectedTotalProviderConfigsCount, foundProvidersConfig.size());
+        assertEquals(IdentityProviderVendor.KEYCLOAK, foundProvidersConfig.iterator().next().getVendor());
+
+        verify(identityProviderConfigProperties).getOps();
+    }
+
+    @Test
+    void getTenantIdentityProviderConfig_shouldReturnProviderConfigWhenThereIsAMatchingTenantConfigFoundWithDifferentClients() {
+        var configuredTenant = "default";
+        var requestedTenant = "default";
+        String issuerURL = "https://trial-5903875.okta.com/oauth2/default";
+        URI fakeUri = URI.create(issuerURL);
+        CustomIdentityProviderProperties properties = getCustomIdentityProviderPropertiesWithOkta(fakeUri, configuredTenant);
+
+        when(identityProviderConfigProperties.getOps()).thenReturn(List.of(properties));
+
+        IdentityProviderListDTO providerConfigs = tenantService.getTenantIdentityProviderConfig(requestedTenant);
+
+        assertTrue(providerConfigs.getProviders().stream()
+                .allMatch(providerConfig -> providerConfig.getVendor() == IdentityProviderVendor.OKTA
+                        && StringUtils.equalsIgnoreCase(issuerURL, providerConfig.getIssuer())));
+
+        Set<IdentityProviderDTO> foundProvidersConfig = providerConfigs.getProviders();
+
+        int expectedTotalProviderConfigsCount = 2;
+
+        assertFalse(foundProvidersConfig.isEmpty());
+        assertEquals(expectedTotalProviderConfigsCount, foundProvidersConfig.size());
+
+        verify(identityProviderConfigProperties).getOps();
+    }
+
+    @Test
+    void getTenantIdentityProviderConfig_shouldReturnProviderConfigWhenThereAreSeveralMatchingTenantConfigsFound() {
+        var configuredTenant = "default";
+        var requestedTenant = "default";
+        String oktaIssuerURL = "https://trial-5903875.okta.com/oauth2/default";
+        String keycloakIssuerURL = "http://keycloak:8888/realms/default";
+        URI fakeOktaUri = URI.create(oktaIssuerURL);
+        URI fakeKeycloakUri = URI.create(keycloakIssuerURL);
+        CustomIdentityProviderProperties properties1 = getCustomIdentityProviderPropertiesWithOkta(fakeOktaUri, configuredTenant);
+        CustomIdentityProviderProperties properties2 = getCustomIdentityProviderPropertiesWithKeycloak(fakeKeycloakUri, configuredTenant);
+
+        when(identityProviderConfigProperties.getOps()).thenReturn(List.of(properties1, properties2));
+
+        IdentityProviderListDTO providerConfigs = tenantService.getTenantIdentityProviderConfig(requestedTenant);
+
+        Set<IdentityProviderDTO> foundProvidersConfig = providerConfigs.getProviders();
+
+        int expectedTotalProviderConfigsCount = 3;
+        int expectedOktaProviderConfigsCount = 2;
+        int expectedKeycloakProviderConfigCount = 1;
+
+        assertFalse(foundProvidersConfig.isEmpty());
+        assertEquals(expectedTotalProviderConfigsCount, foundProvidersConfig.size());
+        assertEquals(expectedOktaProviderConfigsCount, foundProvidersConfig.stream()
+                .filter(providerConfig -> providerConfig.getVendor() == IdentityProviderVendor.OKTA
+                        && StringUtils.equalsIgnoreCase(oktaIssuerURL, providerConfig.getIssuer()))
+                .count()
+        );
+        assertEquals(expectedKeycloakProviderConfigCount, foundProvidersConfig.stream()
+                .filter(providerConfig -> providerConfig.getVendor() == IdentityProviderVendor.KEYCLOAK
+                        && StringUtils.equalsIgnoreCase(keycloakIssuerURL, providerConfig.getIssuer()))
+                .count()
+        );
+
+        verify(identityProviderConfigProperties).getOps();
+    }
+
+    private CustomIdentityProviderProperties getCustomIdentityProviderPropertiesWithOkta(URI fakeUri, String configuredTenant) {
+        var fakeUsernameClaim = "preferred_username";
+        IdentityProviderVendor fakeVendor = IdentityProviderVendor.OKTA;
+        Set<String> configuredClients = Set.of("user-tasks-bridge-client", "user-tasks-bridge-client-2");
+        SpringAddonsOidcProperties.OpenidProviderProperties.SimpleAuthoritiesMappingProperties authority = new SpringAddonsOidcProperties.OpenidProviderProperties.SimpleAuthoritiesMappingProperties();
+        authority.setPath("$.someJsonPath.roles");
+
+        return new CustomIdentityProviderProperties(fakeUri, fakeUsernameClaim, fakeVendor, "some-okta",
+                configuredTenant, configuredClients, "cid", List.of(authority));
+    }
+
+    private CustomIdentityProviderProperties getCustomIdentityProviderPropertiesWithKeycloak(URI fakeUri, String configuredTenant) {
+        var fakeUsernameClaim = "preferred_username";
+        IdentityProviderVendor fakeVendor = IdentityProviderVendor.KEYCLOAK;
+        Set<String> configuredClients = Set.of("user-tasks-bridge-client");
+        SpringAddonsOidcProperties.OpenidProviderProperties.SimpleAuthoritiesMappingProperties authority = new SpringAddonsOidcProperties.OpenidProviderProperties.SimpleAuthoritiesMappingProperties();
+        authority.setPath("$.realm_access.roles");
+
+        return new CustomIdentityProviderProperties(fakeUri, fakeUsernameClaim, fakeVendor, "some-keycloak",
+                configuredTenant, configuredClients, "azp", List.of(authority));
     }
 }
