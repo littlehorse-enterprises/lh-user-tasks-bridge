@@ -23,12 +23,11 @@ import {
   UserGroup,
 } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
 import { FilterIcon } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useLayoutEffect, useState } from "react";
 import { toast } from "sonner";
 import useSWRInfinite from "swr/infinite";
 import UserTask from "../../components/user-task";
-import { useTenantId } from "../../layout";
 import Loading from "../loading";
 
 type Query = {
@@ -50,7 +49,7 @@ export default function ListUserTasks({
   const [query, setQuery] = useState<Query>({});
   const [search, setSearch] = useState("");
   const [limit] = useState(100);
-  const tenantId = useTenantId();
+  const tenantId = useParams().tenantId as string;
 
   const router = useRouter();
 
