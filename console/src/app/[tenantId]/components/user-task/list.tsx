@@ -49,7 +49,7 @@ export default function ListUserTasks({
 }) {
   const [query, setQuery] = useState<Query>({});
   const [search, setSearch] = useState("");
-  const [limit] = useState(10);
+  const [limit] = useState(100);
   const tenantId = useTenantId();
 
   const router = useRouter();
