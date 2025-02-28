@@ -27,6 +27,15 @@ export async function listUserTasks(
   );
 }
 
+export async function listClaimableUserTasks(
+  tenantId: string,
+  search: Omit<ListUserTasksRequest, "type">,
+) {
+  return clientWithErrorHandling(tenantId, (client) =>
+    client.listClaimableUserTasks(search),
+  );
+}
+
 export async function listUserGroups(tenantId: string) {
   return clientWithErrorHandling(tenantId, (client) => client.listUserGroups());
 }
