@@ -2,7 +2,7 @@
   "name": "@littlehorse-enterprises/user-tasks-bridge-api-client",
   "homepage": "https://littlehorse.io/docs/user-tasks-bridge",
   "bugs": "https://github.com/littlehorse-enterprises/lh-user-tasks-bridge/issues",
-  "version": "0.12.5",
+  "version": "0.13.0",
   "description": "Client for interacting with the LittleHorse User Tasks Bridge Backend",
   "license": "Apache-2.0",
   "author": "LittleHorse Enterprises",
