@@ -1,6 +1,7 @@
 "use server";
 import { clientWithErrorHandling } from "@/lib/client";
 import {
+  ListClaimableUserTasksRequest,
   ListUserTasksRequest,
   UserTask,
   UserTaskResult,
@@ -29,7 +30,7 @@ export async function listUserTasks(
 
 export async function listClaimableUserTasks(
   tenantId: string,
-  search: Omit<ListUserTasksRequest, "type">,
+  search: ListClaimableUserTasksRequest,
 ) {
   return clientWithErrorHandling(tenantId, (client) =>
     client.listClaimableUserTasks(search),
