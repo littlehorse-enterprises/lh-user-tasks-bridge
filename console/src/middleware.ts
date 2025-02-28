@@ -13,6 +13,27 @@ const withAuth = nextAuth(async (req) => {
     );
   }
 
+  // Check if token is valid
+  try {
+    const response = await fetch(
+      `${process.env.AUTH_KEYCLOAK_ISSUER}/protocol/openid-connect/userinfo`,
+      {
+        headers: {
+          Authorization: `Bearer ${token?.access_token}`,
+        },
+      },
+    );
+    if (!response.ok) {
+      return NextResponse.redirect(
+        `${baseUrl}/api/auth/signin?callbackUrl=${currentPath}`,
+      );
+    }
+  } catch (error) {
+    return NextResponse.redirect(
+      `${baseUrl}/api/auth/signin?callbackUrl=${currentPath}`,
+    );
+  }
+
   // Redirect to tenant after login
   if (currentPath === "/" && token.decoded.allowed_tenant) {
     if (getRoles(token.decoded).includes("lh-user-tasks-admin"))
