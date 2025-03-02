@@ -143,7 +143,7 @@ export default function ListUserTasks({
             </Button>
           </PopoverTrigger>
           <PopoverContent>
-            <div className="space-y-4 [&>*]:w-full">
+            <div className="space-y-4 *:w-full">
               <div>
                 <Label>Date Range</Label>
                 <DateRangePicker
