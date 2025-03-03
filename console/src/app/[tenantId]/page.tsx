@@ -19,9 +19,12 @@ export default async function Home({
     throw new Error(listUserTasksResponse.message);
 
   return (
-    <ListUserTasks
-      userGroups={listUserGroupsResponse.groups}
-      initialData={listUserTasksResponse}
-    />
+    <div className="flex gap-4">
+      <ListUserTasks
+        userGroups={listUserGroupsResponse.groups}
+        initialData={listUserTasksResponse}
+      />
+      
+    </div>
   );
 }

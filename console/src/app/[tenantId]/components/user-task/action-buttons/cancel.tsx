@@ -1,7 +1,6 @@
 "use client";
 import { adminCancelUserTask } from "@/app/[tenantId]/actions/admin";
 import { cancelUserTask } from "@/app/[tenantId]/actions/user";
-import { useTenantId } from "@/app/[tenantId]/layout";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,6 +14,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { UserTask } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
+import { useParams } from "next/navigation";
 import { toast } from "sonner";
 
 export default function CancelUserTaskButton({
@@ -24,7 +24,7 @@ export default function CancelUserTaskButton({
   userTask: UserTask;
   admin?: boolean;
 }) {
-  const tenantId = useTenantId();
+  const tenantId = useParams().tenantId as string;
 
   return (
     <AlertDialog>
