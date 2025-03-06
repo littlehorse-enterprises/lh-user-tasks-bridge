@@ -4,7 +4,6 @@ import {
   adminGetUserTask,
 } from "@/app/[tenantId]/actions/admin";
 import { completeUserTask, getUserTask } from "@/app/[tenantId]/actions/user";
-import { useTenantId } from "@/app/[tenantId]/layout";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Dialog,
@@ -29,6 +28,7 @@ import {
   UserTask,
   UserTaskResult,
 } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
+import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import Loading from "../../loading";
@@ -45,7 +45,7 @@ export default function CompleteUserTaskButton({
 }) {
   const [userTaskDetails, setUserTaskDetails] = useState<GetUserTaskResponse>();
   const [userTaskResult, setUserTaskResult] = useState<UserTaskResult>({});
-  const tenantId = useTenantId();
+  const tenantId = useParams().tenantId as string;
 
   useEffect(() => {
     (admin
