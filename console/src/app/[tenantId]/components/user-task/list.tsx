@@ -77,6 +77,8 @@ export default function ListUserTasks({
     pageIndex: number,
     previousPageData: ListUserTasksResponse | null,
   ) => {
+    if (claimable) return null;
+
     if (previousPageData && !previousPageData.bookmark) return null; // reached the end
     return ["userTask", query, limit, previousPageData?.bookmark];
   };
@@ -112,8 +114,8 @@ export default function ListUserTasks({
         refreshInterval: 1000,
         revalidateOnFocus: true,
         revalidateOnReconnect: true,
-        revalidateOnMount: true,
-        revalidateIfStale: true,
+        revalidateOnMount: !claimable,
+        revalidateIfStale: !claimable,
         fallbackData: [initialData],
       },
     );

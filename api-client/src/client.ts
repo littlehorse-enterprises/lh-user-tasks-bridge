@@ -287,9 +287,8 @@ export class LHUTBApiClient {
     );
     const searchParams = new URLSearchParams({
       ...filteredSearch,
-      status: "UNASSIGNED",
     });
-    return await this.fetch(`/tasks?${searchParams.toString()}`);
+    return await this.fetch(`/tasks/claimable?${searchParams.toString()}`);
   }
 
   /**
