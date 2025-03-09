@@ -41,10 +41,12 @@ export default function ListUserTasks({
   userGroups,
   userTaskDefName,
   initialData,
+  claimable,
 }: {
   userGroups: UserGroup[];
   userTaskDefName?: string;
   initialData: ListUserTasksResponse;
+  claimable?: boolean;
 }) {
   const [query, setQuery] = useState<Query>({});
   const [search, setSearch] = useState("");
@@ -128,7 +130,9 @@ export default function ListUserTasks({
 
   return (
     <div>
-      <h1 className="text-2xl font-bold">{userTaskDefName ?? "My Tasks"}</h1>
+      <h1 className="text-2xl font-bold">
+        {userTaskDefName ?? (!claimable && "My Assigned Tasks")}
+      </h1>
       <div className="flex items-center gap-2 py-4">
         <Input
           placeholder="Search"
@@ -233,7 +237,7 @@ export default function ListUserTasks({
 
       {data.flatMap((page) => page.userTasks).length ? (
         <div className="flex flex-col gap-8 items-center">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-4">
             {data
               .flatMap((page) => page.userTasks)
               .sort(

@@ -1,6 +1,6 @@
 import { listUserGroups, listUserTasks } from "./actions/user";
-import ClaimableUserTasks from "./components/user-task/claimable";
 import ListUserTasks from "./components/user-task/list";
+import ListClaimableUserTasks from "./components/user-task/list-claimable";
 
 export default async function Home({
   params,
@@ -20,13 +20,13 @@ export default async function Home({
     throw new Error(listUserTasksResponse.message);
 
   return (
-    <div className="flex gap-4">
+    <div className="flex gap-4 sm:flex-row flex-col [&>*]:w-full">
       <ListUserTasks
         userGroups={listUserGroupsResponse.groups}
         initialData={listUserTasksResponse}
       />
       {listUserGroupsResponse.groups.length > 0 && (
-        <ClaimableUserTasks
+        <ListClaimableUserTasks
           userGroups={[
             listUserGroupsResponse.groups[0],
             ...listUserGroupsResponse.groups.slice(1),

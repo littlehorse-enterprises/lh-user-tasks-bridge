@@ -11,7 +11,7 @@ import useSWR from "swr";
 import { listClaimableUserTasks } from "../../actions/user";
 import ListUserTasks from "./list";
 
-export default function ClaimableUserTasks({
+export default function ListClaimableUserTasks({
   userGroups,
 }: {
   userGroups: [UserGroup, ...UserGroup[]];
@@ -19,7 +19,7 @@ export default function ClaimableUserTasks({
   const tenantId = useParams().tenantId as string;
   return (
     <div>
-      <h1>Claimable User Tasks</h1>
+      <h1 className="text-2xl font-bold mb-4">Claimable User Tasks</h1>
 
       <Tabs defaultValue={userGroups[0].id}>
         <TabsList>
@@ -34,6 +34,10 @@ export default function ClaimableUserTasks({
           const { data, error, isLoading } = useSWR(
             [`claimable-tasks-${userGroup.id}`, tenantId, userGroup.id],
             async ([_, tenantId, userGroupId]) => {
+              console.log(
+                "fetching claimable tasks for user group",
+                userGroupId,
+              );
               const data = await listClaimableUserTasks(tenantId, {
                 user_group_id: userGroupId,
                 limit: 10,
