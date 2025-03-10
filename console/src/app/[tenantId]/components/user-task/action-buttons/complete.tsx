@@ -94,7 +94,9 @@ export default function CompleteUserTaskButton({
               <div key={field.name} className="space-y-2">
                 <Label>
                   {field.displayName}
-                  {field.required && <span className="text-red-500">*</span>}
+                  {field.required && (
+                    <span className="text-destructive">*</span>
+                  )}
                 </Label>
                 {field.type === "STRING" && (
                   <Input
@@ -161,8 +163,8 @@ export default function CompleteUserTaskButton({
           <Loading />
         )}
 
-        <p className="text-sm text-gray-500">
-          <span className="text-red-500">*</span> Required fields
+        <p className="text-sm text-muted-foreground">
+          <span className="text-destructive">*</span> Required fields
         </p>
 
         <DialogFooter>
