@@ -9,6 +9,7 @@ import io.littlehorse.usertasks.idp_adapters.IStandardIdentityProviderAdapter;
 import io.littlehorse.usertasks.idp_adapters.IdentityProviderVendor;
 import io.littlehorse.usertasks.idp_adapters.keycloak.KeycloakAdapter;
 import io.littlehorse.usertasks.models.common.UserDTO;
+import io.littlehorse.usertasks.models.common.UserGroupDTO;
 import io.littlehorse.usertasks.models.common.UserTaskVariableValue;
 import io.littlehorse.usertasks.models.requests.CompleteUserTaskRequest;
 import io.littlehorse.usertasks.models.requests.UserTaskRequestFilter;
@@ -120,12 +121,14 @@ public class UserController {
 
             Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
 
-            var userIdFromToken = (String) tokenClaims.get(USER_ID_CLAIM);
             var additionalFilters = UserTaskRequestFilter.buildUserTaskRequestFilter(earliestStartDate, latestStartDate, status, type);
             var parsedBookmark = Objects.nonNull(bookmark) ? Base64.decodeBase64(bookmark) : null;
 
             CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(accessToken,
                     identityProviderConfigProperties);
+
+            //REVIEW WHY THIS IS NOT BEING ABLE TO FETCH THE CLAIM
+            var userIdFromToken = (String) tokenClaims.get(actualProperties.getUserIdClaim().toString());
 
             IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor(), false);
 
@@ -133,13 +136,19 @@ public class UserController {
 
             if (StringUtils.hasText(userGroupId) && hasIdPAdapter) {
                 identityProviderHandler.validateUserGroup(userGroupId, accessToken);
+                UserGroupDTO foundUserGroup = identityProviderHandler.getUserGroup(Map.of("userGroupId", userGroupId,
+                        "accessToken", accessToken));
+
+                if (Objects.nonNull(foundUserGroup)) {
+                    userGroupId = foundUserGroup.getName();
+                }
             }
 
             UserTaskRunListDTO response = userTaskService.getTasks(tenantId, userIdFromToken, userGroupId, additionalFilters,
                     limit, parsedBookmark, false);
 
             if (!CollectionUtils.isEmpty(response.getUserTasks()) && hasIdPAdapter) {
-                response.addAssignmentDetails(accessToken, identityProviderHandler);
+                response.addAssignmentDetails(accessToken, identityProviderHandler, actualProperties);
             }
 
             return ResponseEntity.ok(response);
@@ -195,9 +204,10 @@ public class UserController {
                 return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.UNAUTHORIZED)).build();
             }
 
+            CustomIdentityProviderProperties actualIdPProperties = getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
             Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
 
-            var userIdFromToken = (String) tokenClaims.get(USER_ID_CLAIM);
+            var userIdFromToken = (String) tokenClaims.get(actualIdPProperties.getUserIdClaim().toString());
 
             var optionalUserTaskDetail = userTaskService.getUserTaskDetails(wfRunId, userTaskRunGuid, tenantId, userIdFromToken,
                     null, false);
@@ -255,8 +265,9 @@ public class UserController {
         }
 
         Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
+        CustomIdentityProviderProperties actualIdPProperties = getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
 
-        var userIdFromToken = (String) tokenClaims.get(USER_ID_CLAIM);
+        var userIdFromToken = (String) tokenClaims.get(actualIdPProperties.getUserIdClaim().toString());
         CompleteUserTaskRequest request = CompleteUserTaskRequest.builder()
                 .wfRunId(wfRunId)
                 .userTaskRunGuid(userTaskRunGuid)
@@ -322,7 +333,9 @@ public class UserController {
         }
 
         Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
-        var userIdFromToken = (String) tokenClaims.get(USER_ID_CLAIM);
+        CustomIdentityProviderProperties actualIdPProperties = getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
+
+        var userIdFromToken = (String) tokenClaims.get(actualIdPProperties.getUserIdClaim().toString());
 
         userTaskService.cancelUserTaskForNonAdmin(wfRunId, userTaskRunGuid, tenantId, userIdFromToken);
     }
@@ -383,9 +396,12 @@ public class UserController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
 
+        CustomIdentityProviderProperties actualProperties = CustomIdentityProviderProperties.getCustomIdentityProviderProperties(accessToken,
+                identityProviderConfigProperties);
+
         Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
 
-        var userIdFromToken = (String) tokenClaims.get(USER_ID_CLAIM);
+        var userIdFromToken = (String) tokenClaims.get(actualProperties.getUserIdClaim().toString());
 
         userTaskService.claimUserTask(userIdFromToken, wfRunId, userTaskRunGuid, tenantId);
     }

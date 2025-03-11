@@ -4,6 +4,7 @@ import com.c4_soft.springaddons.security.oidc.starter.properties.SpringAddonsOid
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.littlehorse.usertasks.idp_adapters.IdentityProviderVendor;
 import io.littlehorse.usertasks.util.TokenUtil;
+import io.littlehorse.usertasks.util.enums.CustomUserIdClaim;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NonNull;
@@ -26,6 +27,7 @@ import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.ISSUER
 public class CustomIdentityProviderProperties {
     private URI iss;
     private String usernameClaim;
+    private CustomUserIdClaim userIdClaim;
     private IdentityProviderVendor vendor;
     private String labelName;
     private String tenantId;

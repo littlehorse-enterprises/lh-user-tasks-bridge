@@ -3,20 +3,7 @@ package io.littlehorse.usertasks.services;
 import com.google.protobuf.ByteString;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
-import io.littlehorse.sdk.common.auth.TenantMetadataProvider;
-import io.littlehorse.sdk.common.proto.AssignUserTaskRunRequest;
-import io.littlehorse.sdk.common.proto.CancelUserTaskRunRequest;
-import io.littlehorse.sdk.common.proto.CompleteUserTaskRunRequest;
-import io.littlehorse.sdk.common.proto.LittleHorseGrpc;
-import io.littlehorse.sdk.common.proto.SearchUserTaskDefRequest;
-import io.littlehorse.sdk.common.proto.SearchUserTaskRunRequest;
-import io.littlehorse.sdk.common.proto.UserTaskDefId;
-import io.littlehorse.sdk.common.proto.UserTaskDefIdList;
-import io.littlehorse.sdk.common.proto.UserTaskRun;
-import io.littlehorse.sdk.common.proto.UserTaskRunId;
-import io.littlehorse.sdk.common.proto.UserTaskRunIdList;
-import io.littlehorse.sdk.common.proto.UserTaskRunStatus;
-import io.littlehorse.sdk.common.proto.WfRunId;
+import io.littlehorse.sdk.common.proto.*;
 import io.littlehorse.usertasks.exceptions.CustomUnauthorizedException;
 import io.littlehorse.usertasks.exceptions.NotFoundException;
 import io.littlehorse.usertasks.models.requests.AssignmentRequest;
@@ -62,8 +49,7 @@ public class UserTaskService {
                 .limit(limit)
                 .build();
 
-        SearchUserTaskRunRequest searchRequest;
-        searchRequest = buildSearchUserTaskRunRequest(userId, userGroup, additionalFilters, pagination);
+        SearchUserTaskRunRequest searchRequest = buildSearchUserTaskRunRequest(userId, userGroup, additionalFilters, pagination);
 
         LittleHorseGrpc.LittleHorseBlockingStub tenantClient = getTenantLHClient(tenantId);
 
