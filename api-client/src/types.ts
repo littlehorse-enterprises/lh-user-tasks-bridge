@@ -57,6 +57,22 @@ export type ListUserTasksRequest = {
 };
 
 /**
+ * Request parameters for listing claimable user tasks
+ */
+export type ListClaimableUserTasksRequest = {
+  /** Maximum number of results to return */
+  limit: number;
+  /** Which user group to get the claimable tasks for */
+  user_group_id: string;
+  /** ISO 8601 timestamp for earliest start date filter */
+  earliest_start_date?: string;
+  /** ISO 8601 timestamp for latest start date filter */
+  latest_start_date?: string;
+  /** Pagination bookmark token */
+  bookmark?: string;
+};
+
+/**
  * Request parameters for listing task definition names
  */
 export type ListUserTaskDefNamesRequest = {

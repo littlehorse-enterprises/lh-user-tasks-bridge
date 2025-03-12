@@ -4,7 +4,6 @@ import {
   adminListUserGroups,
   adminListUsers,
 } from "@/app/[tenantId]/actions/admin";
-import { useTenantId } from "@/app/[tenantId]/layout";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Dialog,
@@ -28,15 +27,15 @@ import {
   UserGroup,
   UserTask,
 } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
+import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-
 export default function AssignUserTaskButton({
   userTask,
 }: {
   userTask: UserTask;
 }) {
-  const tenantId = useTenantId();
+  const tenantId = useParams().tenantId as string;
   const [users, setUsers] = useState<User[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | undefined>(
     userTask.user,

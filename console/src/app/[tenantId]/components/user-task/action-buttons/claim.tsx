@@ -1,7 +1,6 @@
 "use client";
 
 import { claimUserTask } from "@/app/[tenantId]/actions/user";
-import { useTenantId } from "@/app/[tenantId]/layout";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,6 +14,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { UserTask } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
+import { useParams } from "next/navigation";
 import { toast } from "sonner";
 
 export default function ClaimUserTaskButton({
@@ -22,7 +22,7 @@ export default function ClaimUserTaskButton({
 }: {
   userTask: UserTask;
 }) {
-  const tenantId = useTenantId();
+  const tenantId = useParams().tenantId as string;
 
   return (
     <AlertDialog>

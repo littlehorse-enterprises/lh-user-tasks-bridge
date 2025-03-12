@@ -14,13 +14,12 @@ import { LogOut } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useTenantId } from "../layout";
+import { useParams, usePathname } from "next/navigation";
 
 export default function Header() {
   const session = useSession();
   const pathname = usePathname();
-  const tenantId = useTenantId();
+  const { tenantId } = useParams();
 
   return (
     <>
