@@ -1,6 +1,7 @@
 import {
   AdminGetUserTaskResponse,
   GetUserTaskResponse,
+  ListClaimableUserTasksRequest,
   ListUserGroupsResponse,
   ListUserTaskDefNamesRequest,
   ListUserTaskDefNamesResponse,
@@ -249,6 +250,45 @@ export class LHUTBApiClient {
     const searchParams = new URLSearchParams(filteredSearch);
 
     return await this.fetch(`/tasks?${searchParams.toString()}`);
+  }
+
+  /**
+   * Lists UserTasks that are claimable by the authenticated user in any of their respective user groups.
+   *
+   * @param search - Search parameters for filtering tasks
+   * @param search.limit - Maximum number of results to return
+   * @param search.user_group_id - Which user group to get the claimable tasks for
+   * @param search.earliest_start_date - Optional ISO 8601 timestamp for earliest task start
+   * @param search.latest_start_date - Optional ISO 8601 timestamp for latest task start
+   * @param search.bookmark - Optional pagination token from previous response
+   *
+   * @returns Promise resolving to paginated list of UserTasks
+   * @throws {UnauthorizedError} If the user is not authenticated
+   * @throws {ValidationError} If search parameters are invalid
+   *
+   * @example
+   * ```typescript
+   * const result = await client.listClaimableUserTasks({
+   *   limit: 10,
+   *   user_group_id: 'group-123'
+   * });
+   * ```
+   */
+  async listClaimableUserTasks(
+    search: ListClaimableUserTasksRequest,
+  ): Promise<ListUserTasksResponse> {
+    const filteredSearch = Object.fromEntries(
+      Object.entries(search)
+        .filter(([_, value]) => value !== undefined && value !== null)
+        .map(([key, value]) => [
+          key,
+          encodeURIComponent(value.toString().trim()),
+        ]),
+    );
+    const searchParams = new URLSearchParams({
+      ...filteredSearch,
+    });
+    return await this.fetch(`/tasks/claimable?${searchParams.toString()}`);
   }
 
   /**
