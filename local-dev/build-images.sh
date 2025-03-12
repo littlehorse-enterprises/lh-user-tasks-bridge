@@ -5,6 +5,7 @@ set -e
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 CONTEXT_DIR=$(cd "$SCRIPT_DIR/.." && pwd)
 WORKSPACE_DIR=$(cd "$CONTEXT_DIR/.." && pwd)
+#BRIDGE_DIR=/Users/mitch/Code/lh/lh-user-tasks-bridge-backend
 BRIDGE_DIR=$(cd "$WORKSPACE_DIR/lh-user-tasks-bridge" && pwd)
 
 if [ ! -d "${BRIDGE_DIR}" ]; then
