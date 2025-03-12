@@ -12,7 +12,7 @@ public class OpenAPIConfiguration {
     @Bean
     public OpenAPI apiDocConfig() {
         return new OpenAPI().info(new Info()
-                        .title("UserTasks Bridge API")
+                        .title("UserTasks Bridge Backend")
                         .description("This is LittleHorse's custom API to handle UserTaskRuns existing in LittleHorse " +
                                 "Server and provide a seamless experience between LittleHorse Server and any OIDC-compliant " +
                                 "Identity Provider when working with LH UserTasks.")
