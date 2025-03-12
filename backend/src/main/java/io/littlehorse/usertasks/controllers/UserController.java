@@ -127,7 +127,6 @@ public class UserController {
             CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(accessToken,
                     identityProviderConfigProperties);
 
-            //REVIEW WHY THIS IS NOT BEING ABLE TO FETCH THE CLAIM
             var userIdFromToken = (String) tokenClaims.get(actualProperties.getUserIdClaim().toString());
 
             IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor(), false);
@@ -524,6 +523,94 @@ public class UserController {
             return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR)).build();
         } catch (ResponseStatusException e) {
             throw e;
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR)).build();
+        }
+    }
+
+    @Operation(
+            summary = "Get Claimable UserTasks",
+            description = "Gets all UserTasks assigned to an specific userGroup that the user belongs to."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "List of unique UserTasks with some basic attributes. Optionally, it will retrieve a bookmark " +
+                            "field that is used for pagination purposes.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = UserTaskRunListDTO.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Tenant Id is not valid.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            )
+    })
+    @GetMapping("/{tenant_id}/tasks/claimable")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseEntity<UserTaskRunListDTO> getClaimableTasks(@RequestHeader("Authorization") String accessToken,
+                                                         @PathVariable(name = "tenant_id") String tenantId,
+                                                         @RequestParam(name = "earliest_start_date", required = false)
+                                                         @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+                                                         LocalDateTime earliestStartDate,
+                                                         @RequestParam(name = "latest_start_date", required = false)
+                                                         @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+                                                         LocalDateTime latestStartDate,
+                                                         @RequestParam(name = "user_group_id")
+                                                         String userGroupId,
+                                                         @RequestParam(name = "limit")
+                                                         Integer limit,
+                                                         @RequestParam(name = "bookmark", required = false)
+                                                         String bookmark) {
+        try {
+            if (!tenantService.isValidTenant(tenantId, accessToken)) {
+                return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.UNAUTHORIZED)).build();
+            }
+
+            Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
+
+            //Here we are hardcoding the UNASSIGNED status on purpose since that is the way in which we can fetch claimable tasks from LH Server
+            UserTaskStatus claimableStatus = UserTaskStatus.UNASSIGNED;
+
+            var additionalFilters = UserTaskRequestFilter.buildUserTaskRequestFilter(earliestStartDate, latestStartDate, claimableStatus, null);
+            var parsedBookmark = Objects.nonNull(bookmark) ? Base64.decodeBase64(bookmark) : null;
+
+            CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(accessToken,
+                    identityProviderConfigProperties);
+
+            var userIdFromToken = (String) tokenClaims.get(actualProperties.getUserIdClaim().toString());
+
+            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor(), false);
+
+            boolean hasIdPAdapter = Objects.nonNull(identityProviderHandler);
+
+            if (hasIdPAdapter) {
+                identityProviderHandler.validateUserGroup(userGroupId, accessToken);
+                UserGroupDTO foundUserGroup = identityProviderHandler.getUserGroup(Map.of("userGroupId", userGroupId,
+                        "accessToken", accessToken));
+
+                if (Objects.nonNull(foundUserGroup)) {
+                    userGroupId = foundUserGroup.getName();
+                }
+            }
+
+            UserTaskRunListDTO response = userTaskService.getTasks(tenantId, userIdFromToken, userGroupId, additionalFilters,
+                    limit, parsedBookmark, false);
+
+            if (!CollectionUtils.isEmpty(response.getUserTasks()) && hasIdPAdapter) {
+                response.addAssignmentDetails(accessToken, identityProviderHandler, actualProperties);
+            }
+
+            return ResponseEntity.ok(response);
+        } catch (NotFoundException e) {
+            return ResponseEntity.of(ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, e.getMessage())).build();
+        } catch (JsonProcessingException e) {
+            log.error("Something went wrong when getting claims from token while trying to fetch claimable UserTaskRuns.");
+            return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR)).build();
         } catch (Exception e) {
             log.error(e.getMessage());
             return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR)).build();
