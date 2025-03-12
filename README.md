@@ -100,6 +100,8 @@ Here's what you need to modify in that file:
 identity providers configured with the same tenant.
 - _**username-claim**_: This field is currently not being used, but it is part of the required configuration,
   so you can just leave it as is with the default value as _preferred_username_
+- _**user-id-claim**_: This property allows you to set what claim you want to use as _userId_ when performing assignments.
+You can set 1 of the following values: EMAIL, PREFERRED_USERNAME or SUB.
 - _**authorities**_: Within this property you MUST set at least 1 JSON path that indicates from where the roles are
   going to be found within the token's claims, and this is important to help the API differentiate between ADMIN
   and NON-ADMIN users.

@@ -15,6 +15,7 @@ import io.littlehorse.usertasks.idp_adapters.IdentityProviderVendor;
 import io.littlehorse.usertasks.models.responses.IdentityProviderDTO;
 import io.littlehorse.usertasks.models.responses.IdentityProviderListDTO;
 import io.littlehorse.usertasks.util.TokenUtil;
+import io.littlehorse.usertasks.util.enums.CustomUserIdClaim;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -302,7 +303,7 @@ class TenantServiceTest {
         SpringAddonsOidcProperties.OpenidProviderProperties.SimpleAuthoritiesMappingProperties authority = new SpringAddonsOidcProperties.OpenidProviderProperties.SimpleAuthoritiesMappingProperties();
         authority.setPath("$.someJsonPath.roles");
 
-        return new CustomIdentityProviderProperties(fakeUri, fakeUsernameClaim, fakeVendor, "some-okta",
+        return new CustomIdentityProviderProperties(fakeUri, fakeUsernameClaim, CustomUserIdClaim.EMAIL, fakeVendor, "some-okta",
                 configuredTenant, configuredClients, "cid", List.of(authority));
     }
 
@@ -313,7 +314,7 @@ class TenantServiceTest {
         SpringAddonsOidcProperties.OpenidProviderProperties.SimpleAuthoritiesMappingProperties authority = new SpringAddonsOidcProperties.OpenidProviderProperties.SimpleAuthoritiesMappingProperties();
         authority.setPath("$.realm_access.roles");
 
-        return new CustomIdentityProviderProperties(fakeUri, fakeUsernameClaim, fakeVendor, "some-keycloak",
+        return new CustomIdentityProviderProperties(fakeUri, fakeUsernameClaim, CustomUserIdClaim.EMAIL, fakeVendor, "some-keycloak",
                 configuredTenant, configuredClients, "azp", List.of(authority));
     }
 }
