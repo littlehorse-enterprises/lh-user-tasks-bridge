@@ -114,7 +114,7 @@ public class DetailedUserTaskRunDTO {
     private void addAssignedUserGroupInfo(IStandardIdentityProviderAdapter identityProviderHandler,
                                           DetailedUserTaskRunDTO detailedUserTaskRunDTO, Map<String, Object> params) {
         if (Objects.nonNull(detailedUserTaskRunDTO.getUserGroup())) {
-            params.put("userGroupId", detailedUserTaskRunDTO.getUserGroup().getId());
+            params.put("userGroupName", detailedUserTaskRunDTO.getUserGroup().getId());
             UserGroupDTO userGroupDTO = identityProviderHandler.getUserGroup(params);
 
             if (Objects.nonNull(userGroupDTO)) {

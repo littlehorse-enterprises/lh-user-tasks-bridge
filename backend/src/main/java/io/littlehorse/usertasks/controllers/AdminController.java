@@ -9,15 +9,12 @@ import io.littlehorse.usertasks.idp_adapters.IStandardIdentityProviderAdapter;
 import io.littlehorse.usertasks.idp_adapters.IdentityProviderVendor;
 import io.littlehorse.usertasks.idp_adapters.keycloak.KeycloakAdapter;
 import io.littlehorse.usertasks.models.common.UserDTO;
+import io.littlehorse.usertasks.models.common.UserGroupDTO;
 import io.littlehorse.usertasks.models.common.UserTaskVariableValue;
 import io.littlehorse.usertasks.models.requests.AssignmentRequest;
 import io.littlehorse.usertasks.models.requests.CompleteUserTaskRequest;
 import io.littlehorse.usertasks.models.requests.UserTaskRequestFilter;
-import io.littlehorse.usertasks.models.responses.DetailedUserTaskRunDTO;
-import io.littlehorse.usertasks.models.responses.UserGroupListDTO;
-import io.littlehorse.usertasks.models.responses.UserListDTO;
-import io.littlehorse.usertasks.models.responses.UserTaskDefListDTO;
-import io.littlehorse.usertasks.models.responses.UserTaskRunListDTO;
+import io.littlehorse.usertasks.models.responses.*;
 import io.littlehorse.usertasks.services.TenantService;
 import io.littlehorse.usertasks.services.UserTaskService;
 import io.littlehorse.usertasks.util.TokenUtil;
@@ -30,6 +27,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.tomcat.util.codec.binary.Base64;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -37,15 +35,7 @@ import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.util.CollectionUtils;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
@@ -55,7 +45,6 @@ import java.util.Objects;
 
 import static io.littlehorse.usertasks.configurations.CustomIdentityProviderProperties.getCustomIdentityProviderProperties;
 import static io.littlehorse.usertasks.util.constants.AuthoritiesConstants.LH_USER_TASKS_ADMIN_ROLE;
-import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.USER_ID_CLAIM;
 
 @Tag(
         name = "Admin Controller",
@@ -133,18 +122,32 @@ public class AdminController {
                     status, type);
             byte[] parsedBookmark = Objects.nonNull(bookmark) ? Base64.decodeBase64(bookmark) : null;
 
+            CustomIdentityProviderProperties customIdentityProviderProperties = getCustomIdentityProviderProperties(accessToken,
+                    identityProviderConfigProperties);
+            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(customIdentityProviderProperties.getVendor(), false);
+            boolean hasIdpAdapter = Objects.nonNull(identityProviderHandler);
+
+            if (hasIdpAdapter) {
+                if (StringUtils.isNotBlank(userId)) {
+                    Map<String, Object> params = Map.of("userId", userId, "accessToken", accessToken);
+                    userId = getUserIdFromCustomClaim(identityProviderHandler, params, customIdentityProviderProperties);
+                }
+
+                if (StringUtils.isNotBlank(userGroup)) {
+                    Map<String, Object> params = Map.of("userGroupId", userGroup, "accessToken", accessToken);
+                    UserGroupDTO userGroupDTO = identityProviderHandler.getUserGroup(params);
+
+                    if (Objects.nonNull(userGroupDTO)) {
+                        userGroup = userGroupDTO.getName();
+                    }
+                }
+            }
+
             UserTaskRunListDTO response = userTaskService.getTasks(tenantId, userId, userGroup, additionalFilters,
                     limit, parsedBookmark, true);
 
-            CustomIdentityProviderProperties customIdentityProviderProperties = getCustomIdentityProviderProperties(accessToken,
-                    identityProviderConfigProperties);
-
-            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(customIdentityProviderProperties.getVendor(), false);
-
-            boolean hasIdpAdapter = Objects.nonNull(identityProviderHandler);
-
             if (!CollectionUtils.isEmpty(response.getUserTasks()) && hasIdpAdapter) {
-                response.addAssignmentDetails(accessToken, identityProviderHandler);
+                response.addAssignmentDetails(accessToken, identityProviderHandler, customIdentityProviderProperties);
             }
 
             return ResponseEntity.ok(response);
@@ -310,8 +313,9 @@ public class AdminController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
         var tokenClaims = TokenUtil.getTokenClaims(accessToken);
+        CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
 
-        var userIdFromToken = (String) tokenClaims.get(USER_ID_CLAIM);
+        var userIdFromToken = (String) tokenClaims.get(actualProperties.getUserIdClaim().toString());
         CompleteUserTaskRequest request = CompleteUserTaskRequest.builder()
                 .wfRunId(wfRunId)
                 .userTaskRunGuid(userTaskRunGuid)
@@ -373,17 +377,30 @@ public class AdminController {
 
         try {
             CustomIdentityProviderProperties actualProperties = getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
+            String userId = requestBody.getUserId();
 
             //TODO: This condition MUST be updated in the event that we add support to more IdP adapters
             if (actualProperties.getVendor() == IdentityProviderVendor.KEYCLOAK) {
-                IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor(), true);
+                IStandardIdentityProviderAdapter identityProviderHandler =  getIdentityProviderHandler(actualProperties.getVendor(), true);
 
                 Map<String, Object> params = new HashMap<>();
-                params.put("userId", requestBody.getUserId());
-                params.put("userGroup", requestBody.getUserGroup());
+                params.put("userId", userId);
+                params.put("userGroupId", requestBody.getUserGroup());
                 params.put("accessToken", accessToken);
 
                 identityProviderHandler.validateAssignmentProperties(params);
+
+                if (StringUtils.isNotBlank(requestBody.getUserId())) {
+                    String userIdFromCustomClaim = getUserIdFromCustomClaim(identityProviderHandler, params, actualProperties);
+                    requestBody.setUserId(userIdFromCustomClaim);
+                }
+
+                if (StringUtils.isNotBlank(requestBody.getUserGroup())) {
+                    UserGroupDTO userGroupDTO = identityProviderHandler.getUserGroup(params);
+                    if (Objects.nonNull(userGroupDTO)) {
+                        requestBody.setUserGroup(userGroupDTO.getName());
+                    }
+                }
             }
 
             userTaskService.assignUserTask(requestBody, wfRunId, userTaskRunGuid, tenantId);
@@ -678,5 +695,20 @@ public class AdminController {
                 return null;
             }
         }
+    }
+
+    private String getUserIdFromCustomClaim(IStandardIdentityProviderAdapter identityProviderHandler, Map<String, Object> params,
+                                            CustomIdentityProviderProperties idpProperties) {
+        UserDTO userDTO = identityProviderHandler.getUserInfo(params);
+
+        if (Objects.nonNull(userDTO)) {
+            return switch (idpProperties.getUserIdClaim()) {
+                case EMAIL -> userDTO.getEmail();
+                case PREFERRED_USERNAME -> userDTO.getUsername();
+                case SUB -> userDTO.getId();
+            };
+        }
+
+        throw new IllegalArgumentException("Verify your user-id-claim configuration.");
     }
 }

@@ -148,12 +148,30 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
     public UserDTO getUserInfo(Map<String, Object> params) {
         try {
             var userId = (String) params.get(USER_ID_MAP_KEY);
+            var email = (String) params.get("email");
+            var username = (String) params.get("username");
             var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
 
             String realm = getRealmFromToken(accessToken);
 
             Keycloak keycloak = getKeycloakInstance(realm, accessToken);
-            UserRepresentation userRepresentation = keycloak.realm(realm).users().get(userId).toRepresentation();
+            UserRepresentation userRepresentation = null;
+
+            if (StringUtils.isNotBlank(email)) {
+                List<UserRepresentation> userRepresentations = keycloak.realm(realm).users().searchByEmail(email, true);
+
+                if (!CollectionUtils.isEmpty(userRepresentations)) {
+                    userRepresentation = userRepresentations.getFirst();
+                }
+            } else if (StringUtils.isNotBlank(username)) {
+                List<UserRepresentation> userRepresentations = keycloak.realm(realm).users().searchByUsername(username, true);
+
+                if (!CollectionUtils.isEmpty(userRepresentations)) {
+                    userRepresentation = userRepresentations.getFirst();
+                }
+            } else {
+                userRepresentation = keycloak.realm(realm).users().get(userId).toRepresentation();
+            }
 
             return UserDTO.transform().apply(userRepresentation);
         } catch (AdapterException e) {
@@ -173,12 +191,29 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
     public UserGroupDTO getUserGroup(Map<String, Object> params) {
         try {
             var userGroupId = (String) params.get(USER_GROUP_ID_MAP_KEY);
+            var userGroupName = (String) params.get("userGroupName");
             var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
 
             String realm = getRealmFromToken(accessToken);
 
             Keycloak keycloak = getKeycloakInstance(realm, accessToken);
-            GroupRepresentation groupRepresentation = keycloak.realm(realm).groups().group(userGroupId).toRepresentation();
+            GroupRepresentation groupRepresentation = null;
+
+            if (StringUtils.isNotBlank(userGroupName)) {
+                List<GroupRepresentation> groupRepresentations = keycloak.realm(realm).groups().query(userGroupName);
+
+                if (!CollectionUtils.isEmpty(groupRepresentations)) {
+                    Set<GroupRepresentation> actualGroups = groupRepresentations.stream()
+                            .filter(foundGroup -> StringUtils.equalsIgnoreCase(foundGroup.getName(), userGroupName))
+                            .collect(Collectors.toSet());
+
+                    groupRepresentation = !CollectionUtils.isEmpty(actualGroups)
+                            ? actualGroups.iterator().next()
+                            : null;
+                }
+            } else {
+                groupRepresentation = keycloak.realm(realm).groups().group(userGroupId).toRepresentation();
+            }
 
             return UserGroupDTO.transform().apply(groupRepresentation);
         } catch (AdapterException e) {
@@ -199,7 +234,7 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
         log.info("Validating assignment properties!");
 
         var userId = (String) params.get(USER_ID_MAP_KEY);
-        var userGroupId = (String) params.get("userGroup");
+        var userGroupId = (String) params.get(USER_GROUP_ID_MAP_KEY);
         var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
 
         if (CollectionUtils.isEmpty(params) || (StringUtils.isBlank(userId) && StringUtils.isBlank(userGroupId))) {

@@ -6,6 +6,7 @@ com:
           - iss: http://localhost:8888/realms/default
             label-name: Default Keycloak
             username-claim: preferred_username
+            user-id-claim: EMAIL
             authorities:
               - path: $.realm_access.roles
               - path: $.resource_access.*.roles
