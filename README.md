@@ -119,19 +119,16 @@ pre-commit install
 
 3. Create environment configuration:
 
-   Copy `ui/.env.sample` as `ui/.env.local` and configure with:
+   Copy `console/.env.sample` as `console/.env.local` and configure with:
 
 ```bash
-NEXTAUTH_URL='http://localhost:3000'
 AUTH_URL='http://localhost:3000'
-AUTH_SECRET='<any secret here>'
-
-AUTH_KEYCLOAK_ID='user-tasks-client'
-AUTH_KEYCLOAK_SECRET=' '
-AUTH_KEYCLOAK_ISSUER='http://localhost:8888/realms/default'
+NEXTAUTH_URL='http://localhost:3000'
 
 LHUT_API_URL='http://localhost:8089'
 LHUT_AUTHORITIES='$.realm_access.roles,$.resource_access.*.roles'
+
+PROVIDERS_CONFIG_FILE="${PWD}/config/providers-sample.yaml
 ```
 
 1. Install dependencies and start development server:
@@ -141,7 +138,7 @@ npm install
 ```
 
 ```shell
-npm run dev -w ui
+npm run dev -w console
 ```
 
 In another terminal, start the API Client:

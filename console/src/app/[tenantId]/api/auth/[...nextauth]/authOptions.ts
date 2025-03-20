@@ -6,17 +6,9 @@ import {
   NextApiResponse,
 } from "next";
 import { getServerSession, NextAuthOptions } from "next-auth";
-import KeycloakProvider from "next-auth/providers/keycloak";
 
-export const authOptions: NextAuthOptions = {
-  providers: [
-    KeycloakProvider({
-      clientId: `${process.env.AUTH_KEYCLOAK_ID}`,
-      clientSecret: `${process.env.AUTH_KEYCLOAK_SECRET}`,
-      issuer: `${process.env.AUTH_KEYCLOAK_ISSUER}`,
-    }),
-  ],
 
+export const authOptions: Omit<NextAuthOptions, "providers"> = {
   callbacks: {
     async jwt({ token, account }: any) {
       if (account) {
@@ -45,7 +37,6 @@ export const authOptions: NextAuthOptions = {
     },
   },
   events: {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     signOut: async ({ token: { id_token } }) => {
       const url = `${process.env.AUTH_KEYCLOAK_ISSUER}/protocol/openid-connect/logout?id_token_hint=${id_token}`;
       await fetch(url, {

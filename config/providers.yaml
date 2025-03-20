@@ -1,0 +1,6 @@
+tenants:
+  - name: default
+    providers:
+      - type: keycloak
+        clientId: user-tasks-bridge-client
+        issuer: http://localhost:8888/realms/default

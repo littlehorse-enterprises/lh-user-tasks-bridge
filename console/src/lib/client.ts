@@ -3,7 +3,7 @@ import {
   LHUTBApiClient,
 } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
 import { redirect } from "next/navigation";
-import { auth } from "../app/api/auth/[...nextauth]/authOptions";
+import { auth } from "../app/[tenantId]/api/auth/[...nextauth]/authOptions";
 
 export class LHUTBApiClientSingleton {
   private static instance: LHUTBApiClient | null = null;
