@@ -173,7 +173,9 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
                 userRepresentation = keycloak.realm(realm).users().get(userId).toRepresentation();
             }
 
-            return UserDTO.transform().apply(userRepresentation);
+            return Objects.nonNull(userRepresentation)
+                    ? UserDTO.transform().apply(userRepresentation)
+                    : null;
         } catch (AdapterException e) {
             log.error(e.getMessage());
             throw new AdapterException(e.getMessage());
@@ -215,7 +217,9 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
                 groupRepresentation = keycloak.realm(realm).groups().group(userGroupId).toRepresentation();
             }
 
-            return UserGroupDTO.transform().apply(groupRepresentation);
+            return Objects.nonNull(groupRepresentation)
+                    ? UserGroupDTO.transform().apply(groupRepresentation)
+                    : null;
         } catch (AdapterException e) {
             log.error(e.getMessage());
             throw new AdapterException(e.getMessage());
