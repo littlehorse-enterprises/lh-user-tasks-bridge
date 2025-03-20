@@ -33,8 +33,9 @@ configure_keycloak() {
         password="$KEYCLOAK_ADMIN_PASSWORD" \
         grant_type=password | jq -r ".access_token")
 
-    if [[ x$(http --ignore-stdin -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" ${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/clients/${KEYCLOAK_CLIENT_ID}) != x ]]; then
-        echo "$KEYCLOAK_CLIENT_ID already exists, not recreating.  Exiting success"
+    # Check if realm exists first
+    if http --ignore-stdin -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" ${KEYCLOAK_URL}/admin/realms/${REALM_NAME} -q --check-status; then
+        echo "$REALM_NAME realm already exists, not recreating. Exiting success"
         exit 0
     fi
 #   Here we create the realm which will simulate a client's realm.
