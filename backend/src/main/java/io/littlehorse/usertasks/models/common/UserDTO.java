@@ -12,6 +12,7 @@ import java.util.function.Function;
 
 /**
  * {@code UserDTO} is a Data Transfer Object that contains information about a specific User from an Identity Provider
+ * with a focus on an operational level of User Tasks Bridge.
  */
 @Builder
 @AllArgsConstructor
@@ -28,7 +29,7 @@ public class UserDTO {
     /**
      * Transforms a {@code UserRepresentation} into a {@code UserDTO}
      *
-     * @return An object of type {@code io.littlehorse.usertasks.models.common.UserDTO}
+     * @return An object of type {@link  io.littlehorse.usertasks.models.common.UserDTO}
      * @see org.keycloak.representations.idm.UserRepresentation
      */
     public static Function<UserRepresentation, UserDTO> transform() {
@@ -46,7 +47,7 @@ public class UserDTO {
      * Builds a partial {@code UserDTO} based on a {@code UserTaskRun} that might have a userId assigned
      *
      * @param userTaskRun UserTaskRun from which the userGroup might be taken from.
-     * @return A partial representation of a {@code UserDTO} that only has the ID property set, or null in case that
+     * @return A partial representation of a {@link io.littlehorse.usertasks.models.common.UserDTO} that only has the ID property set, or null in case that
      * the UserTaskRun does not have a userId set.
      * @see UserTaskRun
      */

@@ -31,7 +31,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-actuator'
     implementation 'io.micrometer:micrometer-registry-prometheus'
 
-    implementation 'org.keycloak:keycloak-admin-client:26.0.1'
+    implementation 'org.keycloak:keycloak-admin-client:26.0.4'
     //Patches a vulnerability from an transitive dependency within keycloak-admin-client
     implementation 'commons-io:commons-io:2.14.0'
 

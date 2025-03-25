@@ -14,6 +14,10 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * {@code IdentityProviderDTO} is a Data Transfer Object that contains information about a specific Identity Provider's
+ * configuration on a per-clientId basis.
+ */
 @Builder
 @AllArgsConstructor
 @Data
@@ -29,6 +33,13 @@ public class IdentityProviderDTO {
     @NotEmpty
     private Set<String> authorities;
 
+    /**
+     Transforms a {@code CustomIdentityProviderProperties} object into a clientId-based {@code Set} of {@code IdentityProviderDTO}
+     containing configuration properties inherent to an Identity Provider.
+
+     @return A {@link  java.util.Set} of type {@link  io.littlehorse.usertasks.models.responses.IdentityProviderDTO}
+     @see io.littlehorse.usertasks.configurations.CustomIdentityProviderProperties
+     */
     public static Set<IdentityProviderDTO> fromConfigProperties(CustomIdentityProviderProperties configProperties) {
         Set<String> authorities = mapAuthorities(configProperties);
         Set<IdentityProviderDTO> providers = new HashSet<>();

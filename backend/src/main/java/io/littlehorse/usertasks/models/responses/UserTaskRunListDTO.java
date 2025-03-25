@@ -6,6 +6,7 @@ import io.littlehorse.usertasks.models.common.UserDTO;
 import io.littlehorse.usertasks.models.common.UserGroupDTO;
 import io.littlehorse.usertasks.util.enums.CustomUserIdClaim;
 import lombok.*;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.CollectionUtils;
 
 import java.util.HashMap;
@@ -59,7 +60,7 @@ public class UserTaskRunListDTO {
 
     private void addAssignedUserGroupInfo(String accessToken, IStandardIdentityProviderAdapter identityProviderHandler,
                                           SimpleUserTaskRunDTO userTaskRunDTO) {
-        if (Objects.nonNull(userTaskRunDTO.getUserGroup())) {
+        if (Objects.nonNull(userTaskRunDTO.getUserGroup()) && StringUtils.isNotBlank(userTaskRunDTO.getUserGroup().getId())) {
             Map<String, Object> params = Map.of("accessToken", accessToken, "userGroupName", userTaskRunDTO.getUserGroup().getId());
 
             UserGroupDTO userGroupDTO = identityProviderHandler.getUserGroup(params);

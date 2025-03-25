@@ -5,28 +5,29 @@ import io.littlehorse.usertasks.exceptions.AdapterException;
 import io.littlehorse.usertasks.idp_adapters.IStandardIdentityProviderAdapter;
 import io.littlehorse.usertasks.models.common.UserDTO;
 import io.littlehorse.usertasks.models.common.UserGroupDTO;
+import io.littlehorse.usertasks.models.responses.IDPUserDTO;
+import io.littlehorse.usertasks.models.responses.IDPUserListDTO;
 import io.littlehorse.usertasks.models.responses.UserGroupListDTO;
 import io.littlehorse.usertasks.models.responses.UserListDTO;
 import io.littlehorse.usertasks.util.TokenUtil;
 import jakarta.ws.rs.NotFoundException;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.admin.client.resource.UsersResource;
+import org.keycloak.representations.idm.ClientMappingsRepresentation;
 import org.keycloak.representations.idm.GroupRepresentation;
+import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -126,6 +127,41 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
             throw e;
         } catch (Exception e) {
             var errorMessage = "Something went wrong while fetching all Users from Keycloak realm.";
+            log.error(errorMessage, e);
+            throw new AdapterException(errorMessage);
+        }
+    }
+
+    @Override
+    public IDPUserListDTO getManagedUsers(Map<String, Object> params) {
+        try {
+            var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
+            var realm = getRealmFromToken(accessToken);
+            var email = (String) params.get("email");
+            var firstName = (String) params.get("firstName");
+            var lastName = (String) params.get("lastName");
+            var username = (String) params.get("username");
+            var userGroupId = (String) params.get(USER_GROUP_ID_MAP_KEY);
+            var firstResult = (Integer) params.get("firstResult");
+            var maxResults = (Integer) params.get("maxResults");
+
+            Keycloak keycloak = getKeycloakInstance(realm, accessToken);
+            RealmResource realmResource = keycloak.realm(realm);
+
+            Set<UserRepresentation> foundUsers = filterUsers(realmResource, email, firstName, lastName, username, userGroupId,
+                    firstResult, maxResults);
+
+            Set<IDPUserDTO> setOfUsers = foundUsers.stream()
+                    .filter(Objects::nonNull)
+                    .map(buildUserDTO(realmResource))
+                    .collect(Collectors.toUnmodifiableSet());
+
+            return new IDPUserListDTO(setOfUsers);
+        } catch (AdapterException e) {
+            log.error(e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            var errorMessage = "Something went wrong while fetching all managed Users from Keycloak realm.";
             log.error(errorMessage, e);
             throw new AdapterException(errorMessage);
         }
@@ -344,5 +380,72 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
 
     private Predicate<UserGroupDTO> equalUserGroupIdPredicate(String userGroupId) {
         return userGroupDTO -> StringUtils.equals(userGroupId, userGroupDTO.getId());
+    }
+
+    private Function<UserRepresentation, IDPUserDTO> buildUserDTO(@NonNull RealmResource realmResource) {
+        return foundUser -> {
+            UsersResource usersResource = realmResource.users();
+            List<GroupRepresentation> foundGroups = usersResource.get(foundUser.getId()).groups();
+
+            IDPUserDTO actualUserDTO = IDPUserDTO.transform().apply(foundUser, foundGroups);
+
+            List<RoleRepresentation> realmRoles = getRealmRolesByUser(foundUser, usersResource);
+            Map<String, ClientMappingsRepresentation> clientRolesMappingsRepresentation =
+                    getClientRoleMappingsByUser(foundUser, usersResource);
+
+            addRealmRolesToUser(realmRoles, actualUserDTO);
+            addClientRolesToUser(clientRolesMappingsRepresentation, actualUserDTO);
+
+            return actualUserDTO;
+        };
+    }
+
+    private void addClientRolesToUser(Map<String, ClientMappingsRepresentation> clientRoles, IDPUserDTO actualUserDTO) {
+        if (!CollectionUtils.isEmpty(clientRoles)) {
+            Map<String, Set<String>> mappedClientRoles = getMappedClientRoles(clientRoles);
+
+            actualUserDTO.setClientRoles(mappedClientRoles);
+        } else {
+            actualUserDTO.setClientRoles(Collections.emptyMap());
+        }
+    }
+
+    private void addRealmRolesToUser(List<RoleRepresentation> realmRoles, IDPUserDTO actualUserDTO) {
+        if (!CollectionUtils.isEmpty(realmRoles)) {
+            Set<String> roleNames = realmRoles.stream()
+                    .map(RoleRepresentation::getName)
+                    .collect(Collectors.toSet());
+            actualUserDTO.setRealmRoles(roleNames);
+        } else {
+            actualUserDTO.setRealmRoles(Collections.emptySet());
+        }
+    }
+
+    private List<RoleRepresentation> getRealmRolesByUser(UserRepresentation foundUser, UsersResource usersResource) {
+        return usersResource.get(foundUser.getId()).roles()
+                .realmLevel()
+                .listAll();
+    }
+
+    private Map<String, ClientMappingsRepresentation> getClientRoleMappingsByUser(UserRepresentation foundUser,
+                                                                                  UsersResource usersResource) {
+        return usersResource.get(foundUser.getId()).roles()
+                .getAll()
+                .getClientMappings();
+    }
+
+    private Map<String, Set<String>> getMappedClientRoles(Map<String, ClientMappingsRepresentation> clientRoles) {
+        return clientRoles.entrySet().stream()
+                .map(entry -> {
+                    Set<String> roleNames = getRoleNamesFromClientMappingsRepresentation(entry);
+
+                    return Map.entry(entry.getKey(), roleNames);
+                }).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
+    private Set<String> getRoleNamesFromClientMappingsRepresentation(Map.Entry<String, ClientMappingsRepresentation> entry) {
+        return entry.getValue().getMappings().stream()
+                .map(RoleRepresentation::getName)
+                .collect(Collectors.toSet());
     }
 }
