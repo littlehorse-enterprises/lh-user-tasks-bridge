@@ -7,7 +7,6 @@ import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.util.CollectionUtils;
 
 import java.util.*;
-import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 /**
@@ -33,26 +32,25 @@ public class IDPUserDTO {
      * @see org.keycloak.representations.idm.UserRepresentation
      * @see org.keycloak.representations.idm.GroupRepresentation
      */
-    public static BiFunction<UserRepresentation, Collection<GroupRepresentation>, IDPUserDTO> transform() {
-        return (userRepresentation, groupsRepresentation) -> {
-            Set<IDPGroupDTO> foundGroups = getGroupsFromKeycloakGroupsRepresentation(groupsRepresentation);
+    public static IDPUserDTO transform(UserRepresentation userRepresentation,
+                                       Collection<GroupRepresentation> groupsRepresentation) {
+        Set<IDPGroupDTO> foundGroups = getGroupsFromKeycloakGroupsRepresentation(groupsRepresentation);
 
-            return IDPUserDTO.builder()
-                    .id(userRepresentation.getId())
-                    .username(userRepresentation.getUsername())
-                    .firstName(userRepresentation.getFirstName())
-                    .lastName(userRepresentation.getLastName())
-                    .email(userRepresentation.getEmail())
-                    .groups(foundGroups)
-                    .build();
-        };
+        return IDPUserDTO.builder()
+                .id(userRepresentation.getId())
+                .username(userRepresentation.getUsername())
+                .firstName(userRepresentation.getFirstName())
+                .lastName(userRepresentation.getLastName())
+                .email(userRepresentation.getEmail())
+                .groups(foundGroups)
+                .build();
     }
 
     private static Set<IDPGroupDTO> getGroupsFromKeycloakGroupsRepresentation(Collection<GroupRepresentation> groupsRepresentation) {
         if (!CollectionUtils.isEmpty(groupsRepresentation)) {
             return groupsRepresentation.stream()
                     .filter(Objects::nonNull)
-                    .map(groupRepresentation -> IDPGroupDTO.transform().apply(groupRepresentation, null))
+                    .map(groupRepresentation -> IDPGroupDTO.transform(groupRepresentation, null))
                     .collect(Collectors.toUnmodifiableSet());
         }
 

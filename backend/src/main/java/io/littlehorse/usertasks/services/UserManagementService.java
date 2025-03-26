@@ -6,10 +6,8 @@ import io.littlehorse.usertasks.models.requests.IDPUserSearchRequestFilter;
 import io.littlehorse.usertasks.models.responses.IDPUserListDTO;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
 import java.util.Map;
 
 @Service
@@ -22,40 +20,9 @@ public class UserManagementService {
         Map<String, Object> params = null;
 
         if (identityProviderAdapter instanceof KeycloakAdapter) {
-            params = buildParamsForUsersSearchInKeycloak(accessToken, requestFilter, firstResult, maxResults);
+            params = KeycloakAdapter.buildParamsForUsersSearch(accessToken, requestFilter, firstResult, maxResults);
         }
 
         return identityProviderAdapter.getManagedUsers(params);
-    }
-
-    private Map<String, Object> buildParamsForUsersSearchInKeycloak(String accessToken, IDPUserSearchRequestFilter requestFilter,
-                                                                    int firstResult, int maxResults) {
-        Map<String, Object> params = new HashMap<>();
-
-        if (StringUtils.isNotBlank(requestFilter.getEmail())) {
-            params.put("email", requestFilter.getEmail());
-        }
-
-        if (StringUtils.isNotBlank(requestFilter.getFirstName())) {
-            params.put("firstName", requestFilter.getFirstName());
-        }
-
-        if (StringUtils.isNotBlank(requestFilter.getLastName())) {
-            params.put("lastName", requestFilter.getLastName());
-        }
-
-        if (StringUtils.isNotBlank(requestFilter.getUsername())) {
-            params.put("username", requestFilter.getUsername());
-        }
-
-        if (StringUtils.isNotBlank(requestFilter.getUserGroupId())) {
-            params.put("userGroupId", requestFilter.getUserGroupId());
-        }
-
-        params.put("accessToken", accessToken);
-        params.put("firstResult", firstResult);
-        params.put("maxResults", maxResults);
-
-        return params;
     }
 }

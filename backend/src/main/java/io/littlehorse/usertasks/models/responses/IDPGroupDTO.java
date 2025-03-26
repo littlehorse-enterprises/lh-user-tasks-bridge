@@ -10,7 +10,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
 /**
@@ -31,23 +30,21 @@ public class IDPGroupDTO {
      * @see org.keycloak.representations.idm.GroupRepresentation
      * @see org.keycloak.representations.idm.UserRepresentation
      */
-    public static BiFunction<GroupRepresentation, Collection<UserRepresentation>, IDPGroupDTO> transform() {
-        return (groupRepresentation, usersRepresentation) -> {
-            Set<IDPUserDTO> foundMembers = getMembersFromKeycloakUserRepresentation(usersRepresentation);
+    public static IDPGroupDTO transform(GroupRepresentation groupRepresentation, Collection<UserRepresentation> usersRepresentation) {
+        Set<IDPUserDTO> foundMembers = getMembersFromKeycloakUserRepresentation(usersRepresentation);
 
-            return IDPGroupDTO.builder()
-                    .id(groupRepresentation.getId())
-                    .name(groupRepresentation.getName())
-                    .members(foundMembers)
-                    .build();
-        };
+        return IDPGroupDTO.builder()
+                .id(groupRepresentation.getId())
+                .name(groupRepresentation.getName())
+                .members(foundMembers)
+                .build();
     }
 
     private static Set<IDPUserDTO> getMembersFromKeycloakUserRepresentation(Collection<UserRepresentation> usersRepresentation) {
         if (!CollectionUtils.isEmpty(usersRepresentation)) {
             return usersRepresentation.stream()
                     .filter(Objects::nonNull)
-                    .map(userRepresentation -> IDPUserDTO.transform().apply(userRepresentation, null))
+                    .map(userRepresentation -> IDPUserDTO.transform(userRepresentation, null))
                     .collect(Collectors.toUnmodifiableSet());
         }
 

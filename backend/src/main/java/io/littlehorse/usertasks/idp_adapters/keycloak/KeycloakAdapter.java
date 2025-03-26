@@ -5,6 +5,7 @@ import io.littlehorse.usertasks.exceptions.AdapterException;
 import io.littlehorse.usertasks.idp_adapters.IStandardIdentityProviderAdapter;
 import io.littlehorse.usertasks.models.common.UserDTO;
 import io.littlehorse.usertasks.models.common.UserGroupDTO;
+import io.littlehorse.usertasks.models.requests.IDPUserSearchRequestFilter;
 import io.littlehorse.usertasks.models.responses.IDPUserDTO;
 import io.littlehorse.usertasks.models.responses.IDPUserListDTO;
 import io.littlehorse.usertasks.models.responses.UserGroupListDTO;
@@ -291,6 +292,37 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
         }
     }
 
+    public static Map<String, Object> buildParamsForUsersSearch(String accessToken, IDPUserSearchRequestFilter requestFilter,
+                                                                int firstResult, int maxResults) {
+        Map<String, Object> params = new HashMap<>();
+
+        if (StringUtils.isNotBlank(requestFilter.getEmail())) {
+            params.put("email", requestFilter.getEmail());
+        }
+
+        if (StringUtils.isNotBlank(requestFilter.getFirstName())) {
+            params.put("firstName", requestFilter.getFirstName());
+        }
+
+        if (StringUtils.isNotBlank(requestFilter.getLastName())) {
+            params.put("lastName", requestFilter.getLastName());
+        }
+
+        if (StringUtils.isNotBlank(requestFilter.getUsername())) {
+            params.put("username", requestFilter.getUsername());
+        }
+
+        if (StringUtils.isNotBlank(requestFilter.getUserGroupId())) {
+            params.put("userGroupId", requestFilter.getUserGroupId());
+        }
+
+        params.put("accessToken", accessToken);
+        params.put("firstResult", firstResult);
+        params.put("maxResults", maxResults);
+
+        return params;
+    }
+
     private Keycloak getKeycloakInstance(String realm, String accessToken) {
         try {
             Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
@@ -387,7 +419,7 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
             UsersResource usersResource = realmResource.users();
             List<GroupRepresentation> foundGroups = usersResource.get(foundUser.getId()).groups();
 
-            IDPUserDTO actualUserDTO = IDPUserDTO.transform().apply(foundUser, foundGroups);
+            IDPUserDTO actualUserDTO = IDPUserDTO.transform(foundUser, foundGroups);
 
             List<RoleRepresentation> realmRoles = getRealmRolesByUser(foundUser, usersResource);
             Map<String, ClientMappingsRepresentation> clientRolesMappingsRepresentation =
