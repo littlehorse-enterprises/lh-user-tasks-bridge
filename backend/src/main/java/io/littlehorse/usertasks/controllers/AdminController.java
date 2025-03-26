@@ -504,7 +504,7 @@ public class AdminController {
             ),
             @ApiResponse(
                     responseCode = "406",
-                    description = "Unknown vendor.",
+                    description = "Unknown Identity vendor.",
                     content = {@Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ProblemDetail.class))}
@@ -567,7 +567,7 @@ public class AdminController {
             ),
             @ApiResponse(
                     responseCode = "406",
-                    description = "Unknown vendor.",
+                    description = "Unknown Identity vendor.",
                     content = {@Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ProblemDetail.class))}
@@ -651,7 +651,7 @@ public class AdminController {
             ),
             @ApiResponse(
                     responseCode = "406",
-                    description = "Unknown vendor.",
+                    description = "Unknown Identity vendor.",
                     content = {@Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ProblemDetail.class))}
