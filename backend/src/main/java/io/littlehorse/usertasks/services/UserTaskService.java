@@ -15,11 +15,13 @@ import io.littlehorse.usertasks.models.responses.DetailedUserTaskRunDTO;
 import io.littlehorse.usertasks.models.responses.SimpleUserTaskRunDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskDefListDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskRunListDTO;
+import jakarta.annotation.Nullable;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.util.codec.binary.Base64;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -413,7 +415,7 @@ public class UserTaskService {
         }
     }
 
-    public void claimUserTask(@NonNull String userId, @NonNull String wfRunId, @NonNull String userTaskRunGuid,
+    public void claimUserTask(@NonNull String userId, @Nullable Set<String> userGroups, @NonNull String wfRunId, @NonNull String userTaskRunGuid,
                               @NonNull String tenantId, boolean isAdminClaim) {
         try {
             log.atInfo()
@@ -428,10 +430,7 @@ public class UserTaskService {
 
             UserTaskRun userTaskRun = tenantClient.getUserTaskRun(userTaskRunId);
 
-            boolean isUserTaskClaimable = isUserTaskClaimable(isAdminClaim, TERMINAL_STATUSES, userTaskRun);
-
-            //TODO: Once userGroups are properly implemented, also implement the logic to verify that the claiming user
-            // belongs to the userGroup to which the UserTaskRun is assigned to.
+            boolean isUserTaskClaimable = isUserTaskClaimable(isAdminClaim, userTaskRun, userGroups);
 
             if (isUserTaskClaimable) {
                 AssignUserTaskRunRequest requestBuilder = AssignUserTaskRunRequest.newBuilder()
@@ -577,8 +576,7 @@ public class UserTaskService {
     }
 
     private boolean isUserTaskTerminated(UserTaskRunStatus currentStatus) {
-        var blockingStatuses = Set.of(UserTaskRunStatus.DONE, UserTaskRunStatus.CANCELLED);
-        return blockingStatuses.contains(currentStatus);
+        return TERMINAL_STATUSES.contains(currentStatus);
     }
 
     private UserTaskRunId buildUserTaskRunId(String wfRunId, String userTaskRunGuid) {
@@ -590,11 +588,17 @@ public class UserTaskService {
                 .build();
     }
 
-    private boolean isUserTaskClaimable(boolean isAdminClaim, Set<UserTaskRunStatus> terminalStatuses, UserTaskRun userTaskRun) {
+    private boolean isUserTaskClaimable(boolean isAdminClaim, UserTaskRun userTaskRun, Set<String> userGroups) {
         if (isAdminClaim) {
-            return !terminalStatuses.contains(userTaskRun.getStatus());
+            return !isUserTaskTerminated(userTaskRun.getStatus());
         } else {
-            return userTaskRun.getStatus().equals(UserTaskRunStatus.UNASSIGNED);
+            return isClaimableAsNonAdminUser(userTaskRun, userGroups);
         }
+    }
+
+    private boolean isClaimableAsNonAdminUser(UserTaskRun userTaskRun, Set<String> userGroups) {
+        return userTaskRun.getStatus().equals(UserTaskRunStatus.UNASSIGNED)
+                && !CollectionUtils.isEmpty(userGroups)
+                && userGroups.contains(userTaskRun.getUserGroup().trim());
     }
 }

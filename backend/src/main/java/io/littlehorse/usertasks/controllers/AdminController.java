@@ -535,7 +535,7 @@ public class AdminController {
 
         var userIdFromToken = (String) tokenClaims.get(actualProperties.getUserIdClaim().toString());
 
-        userTaskService.claimUserTask(userIdFromToken, wfRunId, userTaskRunGuid, tenantId, true);
+        userTaskService.claimUserTask(userIdFromToken, null, wfRunId, userTaskRunGuid, tenantId, true);
     }
 
     @Operation(
