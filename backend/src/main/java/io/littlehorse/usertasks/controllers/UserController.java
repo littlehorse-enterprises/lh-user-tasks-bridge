@@ -350,7 +350,7 @@ public class UserController {
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "Field(s) passed in is/are invalid, or no userId nor userGroup are passed in.",
+                    description = "Field(s) passed in is/are invalid.",
                     content = {@Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ProblemDetail.class))}
@@ -402,7 +402,7 @@ public class UserController {
 
         var userIdFromToken = (String) tokenClaims.get(actualProperties.getUserIdClaim().toString());
 
-        userTaskService.claimUserTask(userIdFromToken, wfRunId, userTaskRunGuid, tenantId);
+        userTaskService.claimUserTask(userIdFromToken, wfRunId, userTaskRunGuid, tenantId, false);
     }
 
     @Operation(

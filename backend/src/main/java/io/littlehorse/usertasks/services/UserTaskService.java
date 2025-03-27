@@ -32,6 +32,7 @@ import static io.littlehorse.usertasks.util.DateUtil.isDateRangeValid;
 @Slf4j
 public class UserTaskService {
     private final Map<String, LittleHorseGrpc.LittleHorseBlockingStub> lhClients;
+    private final Set<UserTaskRunStatus> TERMINAL_STATUSES = Set.of(UserTaskRunStatus.CANCELLED, UserTaskRunStatus.DONE);
 
     UserTaskService(Map<String, LittleHorseGrpc.LittleHorseBlockingStub> lhClients) {
         this.lhClients = lhClients;
@@ -413,7 +414,7 @@ public class UserTaskService {
     }
 
     public void claimUserTask(@NonNull String userId, @NonNull String wfRunId, @NonNull String userTaskRunGuid,
-                              @NonNull String tenantId) {
+                              @NonNull String tenantId, boolean isAdminClaim) {
         try {
             log.atInfo()
                     .setMessage("Claiming UserTaskRun with wfRunId: {} and userTaskGuid: {}")
@@ -427,7 +428,7 @@ public class UserTaskService {
 
             UserTaskRun userTaskRun = tenantClient.getUserTaskRun(userTaskRunId);
 
-            boolean isUserTaskClaimable = userTaskRun.getStatus().equals(UserTaskRunStatus.UNASSIGNED);
+            boolean isUserTaskClaimable = isUserTaskClaimable(isAdminClaim, TERMINAL_STATUSES, userTaskRun);
 
             //TODO: Once userGroups are properly implemented, also implement the logic to verify that the claiming user
             // belongs to the userGroup to which the UserTaskRun is assigned to.
@@ -435,9 +436,20 @@ public class UserTaskService {
             if (isUserTaskClaimable) {
                 AssignUserTaskRunRequest requestBuilder = AssignUserTaskRunRequest.newBuilder()
                         .setUserId(userId)
-                        .setUserGroup(userTaskRun.getUserGroup())
                         .setUserTaskRunId(userTaskRunId)
                         .build();
+
+                if (StringUtils.hasText(userTaskRun.getUserGroup())) {
+                    requestBuilder = requestBuilder.toBuilder()
+                            .setUserGroup(userTaskRun.getUserGroup())
+                            .build();
+                }
+
+                if (isAdminClaim) {
+                    requestBuilder = requestBuilder.toBuilder()
+                            .setOverrideClaim(true)
+                            .build();
+                }
 
                 tenantClient.assignUserTaskRun(requestBuilder);
 
@@ -576,5 +588,13 @@ public class UserTaskService {
                         .setId(wfRunId)
                         .build())
                 .build();
+    }
+
+    private boolean isUserTaskClaimable(boolean isAdminClaim, Set<UserTaskRunStatus> terminalStatuses, UserTaskRun userTaskRun) {
+        if (isAdminClaim) {
+            return !terminalStatuses.contains(userTaskRun.getStatus());
+        } else {
+            return userTaskRun.getStatus().equals(UserTaskRunStatus.UNASSIGNED);
+        }
     }
 }
