@@ -473,6 +473,71 @@ public class AdminController {
     }
 
     @Operation(
+            summary = "Claim UserTask",
+            description = "Claims a UserTaskRun by assigning it to the requester Admin user skipping most validations applied to standard users and their groups"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "204",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Field(s) passed in is/are invalid.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Tenant Id is not valid.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "No UserTask data was found in LH Server using the given params.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "UserTask cannot be claimed.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "412",
+                    description = "Failed at a LittleHorse server condition.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            )
+    })
+    @PostMapping("/{tenant_id}/admin/tasks/{wf_run_id}/{user_task_guid}/claim")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void claimUserTask(@RequestHeader("Authorization") String accessToken,
+                              @PathVariable(name = "tenant_id") String tenantId,
+                              @PathVariable(name = "wf_run_id") String wfRunId,
+                              @PathVariable(name = "user_task_guid") String userTaskRunGuid) throws JsonProcessingException {
+        if (!tenantService.isValidTenant(tenantId, accessToken)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+
+        CustomIdentityProviderProperties actualProperties = CustomIdentityProviderProperties.getCustomIdentityProviderProperties(accessToken,
+                identityProviderConfigProperties);
+
+        Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
+
+        var userIdFromToken = (String) tokenClaims.get(actualProperties.getUserIdClaim().toString());
+
+        userTaskService.claimUserTask(userIdFromToken, null, wfRunId, userTaskRunGuid, tenantId, true);
+    }
+
+    @Operation(
             summary = "Get Groups",
             description = "Gets all Groups from a specific identity provider of a specific tenant."
     )

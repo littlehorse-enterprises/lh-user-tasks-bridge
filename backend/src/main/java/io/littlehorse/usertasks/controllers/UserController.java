@@ -50,6 +50,8 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static io.littlehorse.usertasks.configurations.CustomIdentityProviderProperties.getCustomIdentityProviderProperties;
 import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.USER_ID_CLAIM;
@@ -350,7 +352,7 @@ public class UserController {
             ),
             @ApiResponse(
                     responseCode = "400",
-                    description = "Field(s) passed in is/are invalid, or no userId nor userGroup are passed in.",
+                    description = "Field(s) passed in is/are invalid.",
                     content = {@Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ProblemDetail.class))}
@@ -402,7 +404,20 @@ public class UserController {
 
         var userIdFromToken = (String) tokenClaims.get(actualProperties.getUserIdClaim().toString());
 
-        userTaskService.claimUserTask(userIdFromToken, wfRunId, userTaskRunGuid, tenantId);
+        IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(actualProperties.getVendor(), false);
+
+        Set<String> userGroups = null;
+
+        if (Objects.nonNull(identityProviderHandler)) {
+            Map<String, Object> params = Map.of("accessToken", accessToken);
+            UserGroupListDTO myUserGroups = identityProviderHandler.getMyUserGroups(params);
+
+            userGroups = myUserGroups.getGroups().stream()
+                    .map(UserGroupDTO::getName)
+                    .collect(Collectors.toUnmodifiableSet());
+        }
+
+        userTaskService.claimUserTask(userIdFromToken, userGroups, wfRunId, userTaskRunGuid, tenantId, false);
     }
 
     @Operation(

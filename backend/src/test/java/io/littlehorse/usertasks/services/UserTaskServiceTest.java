@@ -1782,7 +1782,7 @@ class UserTaskServiceTest {
         var wfRunId = buildStringGuid();
         var userTaskRunGuid = buildStringGuid();
 
-        assertThrows(NullPointerException.class, () -> userTaskService.claimUserTask(null, wfRunId, userTaskRunGuid, tenantId));
+        assertThrows(NullPointerException.class, () -> userTaskService.claimUserTask(null, Set.of(), wfRunId, userTaskRunGuid, tenantId, false));
     }
 
     @Test
@@ -1790,7 +1790,7 @@ class UserTaskServiceTest {
         var userId = "my-user-id";
         var userTaskRunGuid = buildStringGuid();
 
-        assertThrows(NullPointerException.class, () -> userTaskService.claimUserTask(userId, null, userTaskRunGuid, tenantId));
+        assertThrows(NullPointerException.class, () -> userTaskService.claimUserTask(userId, Set.of(), null, userTaskRunGuid, tenantId, false));
     }
 
     @Test
@@ -1798,7 +1798,7 @@ class UserTaskServiceTest {
         var userId = "my-user-id";
         var wfRunId = buildStringGuid();
 
-        assertThrows(NullPointerException.class, () -> userTaskService.claimUserTask(userId, wfRunId, null, tenantId));
+        assertThrows(NullPointerException.class, () -> userTaskService.claimUserTask(userId, Set.of(), wfRunId, null, tenantId, false));
     }
 
     @Test
@@ -1807,7 +1807,7 @@ class UserTaskServiceTest {
         var wfRunId = buildStringGuid();
         var userTaskRunGuid = buildStringGuid();
 
-        assertThrows(NullPointerException.class, () -> userTaskService.claimUserTask(userId, wfRunId, userTaskRunGuid, null));
+        assertThrows(NullPointerException.class, () -> userTaskService.claimUserTask(userId, Set.of(), wfRunId, userTaskRunGuid, null, false));
     }
 
     @Test
@@ -1822,7 +1822,7 @@ class UserTaskServiceTest {
         when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRunToBeClaimed);
 
         ResponseStatusException thrownException = assertThrows(ResponseStatusException.class,
-                () -> userTaskService.claimUserTask(userId, wfRunId, userTaskRunGuid, tenantId));
+                () -> userTaskService.claimUserTask(userId, Set.of(), wfRunId, userTaskRunGuid, tenantId, false));
 
         int expectedHttpCode = HttpStatus.CONFLICT.value();
         var expectedErrorMessage = "UserTaskRun cannot be claimed!";
@@ -1835,7 +1835,33 @@ class UserTaskServiceTest {
     }
 
     @Test
-    void claimUserTask_shouldSucceedWhenServerDoesNotThrowAnyException() {
+    void claimUserTask_shouldThrowResponseStatusExceptionAsConflictWhenUserIsNotAMemberOfAnyGroup() {
+        var userId = "my-user-id";
+        var anotherUserId = "my-user-id";
+        var wfRunId = buildStringGuid();
+        var userTaskRunGuid = buildStringGuid();
+
+        UserTaskRun userTaskRunToBeClaimed = buildFakeUserTaskRun(anotherUserId, wfRunId).toBuilder()
+                .setStatus(UserTaskRunStatus.UNASSIGNED)
+                .build();
+
+        when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRunToBeClaimed);
+
+        ResponseStatusException thrownException = assertThrows(ResponseStatusException.class,
+                () -> userTaskService.claimUserTask(userId, null, wfRunId, userTaskRunGuid, tenantId, false));
+
+        int expectedHttpCode = HttpStatus.CONFLICT.value();
+        var expectedErrorMessage = "UserTaskRun cannot be claimed!";
+
+        assertEquals(expectedHttpCode, thrownException.getBody().getStatus());
+        assertEquals(expectedErrorMessage, thrownException.getReason());
+
+        verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient, never()).assignUserTaskRun(any(AssignUserTaskRunRequest.class));
+    }
+
+    @Test
+    void claimUserTask_shouldSucceedWhenClaimingAsNonAdminAndServerDoesNotThrowAnyException() {
         var userId = "my-user-id";
         var wfRunId = buildStringGuid();
         var userTaskRunGuid = buildStringGuid();
@@ -1850,10 +1876,61 @@ class UserTaskServiceTest {
         when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRunToBeClaimed);
         when(lhTenantClient.assignUserTaskRun(any(AssignUserTaskRunRequest.class))).thenReturn(Empty.getDefaultInstance());
 
-        userTaskService.claimUserTask(userId, wfRunId, userTaskRunGuid, tenantId);
+        userTaskService.claimUserTask(userId, Set.of("some-user-group"), wfRunId, userTaskRunGuid, tenantId, false);
 
         verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
         verify(lhTenantClient).assignUserTaskRun(any(AssignUserTaskRunRequest.class));
+    }
+
+    @Test
+    void claimUserTask_shouldSucceedWhenClaimingAsAdminAndServerDoesNotThrowAnyException() {
+        var userId = "my-admin-user-id";
+        var wfRunId = buildStringGuid();
+        var userTaskRunGuid = buildStringGuid();
+
+        UserTaskRun userTaskRunToBeClaimed = buildFakeUserTaskRun(userId, wfRunId)
+                .toBuilder()
+                .clearUserId()
+                .setUserGroup("some-user-group")
+                .setStatus(UserTaskRunStatus.UNASSIGNED)
+                .build();
+
+        when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRunToBeClaimed);
+        when(lhTenantClient.assignUserTaskRun(any(AssignUserTaskRunRequest.class))).thenReturn(Empty.getDefaultInstance());
+
+        userTaskService.claimUserTask(userId, Set.of(), wfRunId, userTaskRunGuid, tenantId, true);
+
+        ArgumentCaptor<AssignUserTaskRunRequest> argumentCaptor = ArgumentCaptor.forClass(AssignUserTaskRunRequest.class);
+
+        verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient).assignUserTaskRun(argumentCaptor.capture());
+
+        AssignUserTaskRunRequest sentRequest = argumentCaptor.getValue();
+
+        assertTrue(sentRequest.getOverrideClaim());
+    }
+
+    @Test
+    void claimUserTask_shouldSucceedWhenClaimingAsAdminAndUserTaskWasPreviouslyAssignedAndServerDoesNotThrowAnyException() {
+        var userId = "my-admin-user-id";
+        var wfRunId = buildStringGuid();
+        var userTaskRunGuid = buildStringGuid();
+
+        UserTaskRun userTaskRunToBeClaimed = buildFakeUserTaskRun(userId, wfRunId);
+
+        when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRunToBeClaimed);
+        when(lhTenantClient.assignUserTaskRun(any(AssignUserTaskRunRequest.class))).thenReturn(Empty.getDefaultInstance());
+
+        userTaskService.claimUserTask(userId, null, wfRunId, userTaskRunGuid, tenantId, true);
+
+        ArgumentCaptor<AssignUserTaskRunRequest> argumentCaptor = ArgumentCaptor.forClass(AssignUserTaskRunRequest.class);
+
+        verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient).assignUserTaskRun(argumentCaptor.capture());
+
+        AssignUserTaskRunRequest sentRequest = argumentCaptor.getValue();
+
+        assertTrue(sentRequest.getOverrideClaim());
     }
 
     @Test
@@ -1873,7 +1950,7 @@ class UserTaskServiceTest {
         when(lhTenantClient.assignUserTaskRun(any(AssignUserTaskRunRequest.class)))
                 .thenThrow(new StatusRuntimeException(Status.ABORTED));
 
-        assertThrows(StatusRuntimeException.class, () -> userTaskService.claimUserTask(userId, wfRunId, userTaskRunGuid, tenantId));
+        assertThrows(StatusRuntimeException.class, () -> userTaskService.claimUserTask(userId, Set.of("some-user-group"), wfRunId, userTaskRunGuid, tenantId, false));
 
         verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
         verify(lhTenantClient).assignUserTaskRun(any(AssignUserTaskRunRequest.class));
@@ -1897,7 +1974,7 @@ class UserTaskServiceTest {
                 .thenThrow(new StatusRuntimeException(Status.INVALID_ARGUMENT));
 
         ResponseStatusException thrownException = assertThrows(ResponseStatusException.class,
-                () -> userTaskService.claimUserTask(userId, wfRunId, userTaskRunGuid, tenantId));
+                () -> userTaskService.claimUserTask(userId, Set.of("some-user-group"), wfRunId, userTaskRunGuid, tenantId, false));
 
         int expectedHttpErrorCode = HttpStatus.BAD_REQUEST.value();
 
@@ -1926,7 +2003,7 @@ class UserTaskServiceTest {
                 .thenThrow(new StatusRuntimeException(Status.FAILED_PRECONDITION));
 
         ResponseStatusException thrownException = assertThrows(ResponseStatusException.class,
-                () -> userTaskService.claimUserTask(userId, wfRunId, userTaskRunGuid, tenantId));
+                () -> userTaskService.claimUserTask(userId, Set.of("some-user-group"), wfRunId, userTaskRunGuid, tenantId, false));
 
         int expectedHttpErrorCode = HttpStatus.CONFLICT.value();
 
@@ -1953,7 +2030,7 @@ class UserTaskServiceTest {
         when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenThrow(new StatusRuntimeException(Status.NOT_FOUND));
 
         NotFoundException thrownException = assertThrows(NotFoundException.class,
-                () -> userTaskService.claimUserTask(userId, wfRunId, userTaskRunGuid, tenantId));
+                () -> userTaskService.claimUserTask(userId, Set.of(), wfRunId, userTaskRunGuid, tenantId, false));
 
         var expectedErrorMessage = "Could not find UserTaskRun!";
 

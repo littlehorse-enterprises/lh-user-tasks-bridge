@@ -15,11 +15,13 @@ import io.littlehorse.usertasks.models.responses.DetailedUserTaskRunDTO;
 import io.littlehorse.usertasks.models.responses.SimpleUserTaskRunDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskDefListDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskRunListDTO;
+import jakarta.annotation.Nullable;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.util.codec.binary.Base64;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -32,6 +34,7 @@ import static io.littlehorse.usertasks.util.DateUtil.isDateRangeValid;
 @Slf4j
 public class UserTaskService {
     private final Map<String, LittleHorseGrpc.LittleHorseBlockingStub> lhClients;
+    private final Set<UserTaskRunStatus> TERMINAL_STATUSES = Set.of(UserTaskRunStatus.CANCELLED, UserTaskRunStatus.DONE);
 
     UserTaskService(Map<String, LittleHorseGrpc.LittleHorseBlockingStub> lhClients) {
         this.lhClients = lhClients;
@@ -412,8 +415,8 @@ public class UserTaskService {
         }
     }
 
-    public void claimUserTask(@NonNull String userId, @NonNull String wfRunId, @NonNull String userTaskRunGuid,
-                              @NonNull String tenantId) {
+    public void claimUserTask(@NonNull String userId, @Nullable Set<String> userGroups, @NonNull String wfRunId, @NonNull String userTaskRunGuid,
+                              @NonNull String tenantId, boolean isAdminClaim) {
         try {
             log.atInfo()
                     .setMessage("Claiming UserTaskRun with wfRunId: {} and userTaskGuid: {}")
@@ -427,17 +430,25 @@ public class UserTaskService {
 
             UserTaskRun userTaskRun = tenantClient.getUserTaskRun(userTaskRunId);
 
-            boolean isUserTaskClaimable = userTaskRun.getStatus().equals(UserTaskRunStatus.UNASSIGNED);
-
-            //TODO: Once userGroups are properly implemented, also implement the logic to verify that the claiming user
-            // belongs to the userGroup to which the UserTaskRun is assigned to.
+            boolean isUserTaskClaimable = isUserTaskClaimable(isAdminClaim, userTaskRun, userGroups);
 
             if (isUserTaskClaimable) {
                 AssignUserTaskRunRequest requestBuilder = AssignUserTaskRunRequest.newBuilder()
                         .setUserId(userId)
-                        .setUserGroup(userTaskRun.getUserGroup())
                         .setUserTaskRunId(userTaskRunId)
                         .build();
+
+                if (StringUtils.hasText(userTaskRun.getUserGroup())) {
+                    requestBuilder = requestBuilder.toBuilder()
+                            .setUserGroup(userTaskRun.getUserGroup())
+                            .build();
+                }
+
+                if (isAdminClaim) {
+                    requestBuilder = requestBuilder.toBuilder()
+                            .setOverrideClaim(true)
+                            .build();
+                }
 
                 tenantClient.assignUserTaskRun(requestBuilder);
 
@@ -565,8 +576,7 @@ public class UserTaskService {
     }
 
     private boolean isUserTaskTerminated(UserTaskRunStatus currentStatus) {
-        var blockingStatuses = Set.of(UserTaskRunStatus.DONE, UserTaskRunStatus.CANCELLED);
-        return blockingStatuses.contains(currentStatus);
+        return TERMINAL_STATUSES.contains(currentStatus);
     }
 
     private UserTaskRunId buildUserTaskRunId(String wfRunId, String userTaskRunGuid) {
@@ -576,5 +586,19 @@ public class UserTaskService {
                         .setId(wfRunId)
                         .build())
                 .build();
+    }
+
+    private boolean isUserTaskClaimable(boolean isAdminClaim, UserTaskRun userTaskRun, Set<String> userGroups) {
+        if (isAdminClaim) {
+            return !isUserTaskTerminated(userTaskRun.getStatus());
+        } else {
+            return isClaimableAsNonAdminUser(userTaskRun, userGroups);
+        }
+    }
+
+    private boolean isClaimableAsNonAdminUser(UserTaskRun userTaskRun, Set<String> userGroups) {
+        return userTaskRun.getStatus().equals(UserTaskRunStatus.UNASSIGNED)
+                && !CollectionUtils.isEmpty(userGroups)
+                && userGroups.contains(userTaskRun.getUserGroup().trim());
     }
 }

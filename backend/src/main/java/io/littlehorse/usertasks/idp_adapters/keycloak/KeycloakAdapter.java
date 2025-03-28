@@ -46,12 +46,10 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
 
     @Override
     public UserGroupListDTO getUserGroups(Map<String, Object> params) {
-        try {
-            var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
-            var realm = getRealmFromToken(accessToken);
+        var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
+        var realm = getRealmFromToken(accessToken);
 
-            Keycloak keycloak = getKeycloakInstance(realm, accessToken);
-
+        try (Keycloak keycloak = getKeycloakInstance(realm, accessToken)) {
             Set<UserGroupDTO> foundUserGroups = keycloak.realm(realm).groups().groups().stream()
                     .map(groupRepresentation -> UserGroupDTO.transform().apply(groupRepresentation))
                     .collect(Collectors.toSet());
@@ -71,12 +69,11 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
 
     @Override
     public UserGroupListDTO getMyUserGroups(Map<String, Object> params) {
-        try {
-            var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
-            var realm = getRealmFromToken(accessToken);
-            var requestedUserId = (String) params.get(USER_ID_MAP_KEY);
+        var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
+        var realm = getRealmFromToken(accessToken);
 
-            Keycloak keycloak = getKeycloakInstance(realm, accessToken);
+        try (Keycloak keycloak = getKeycloakInstance(realm, accessToken)) {
+            var requestedUserId = (String) params.get(USER_ID_MAP_KEY);
 
             var userId = StringUtils.isNotBlank(requestedUserId)
                     ? requestedUserId
@@ -101,9 +98,10 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
 
     @Override
     public UserListDTO getUsers(Map<String, Object> params) {
-        try {
-            var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
-            var realm = getRealmFromToken(accessToken);
+        var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
+        var realm = getRealmFromToken(accessToken);
+
+        try (Keycloak keycloak = getKeycloakInstance(realm, accessToken)){
             var email = (String) params.get("email");
             var firstName = (String) params.get("firstName");
             var lastName = (String) params.get("lastName");
@@ -112,7 +110,6 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
             var firstResult = (Integer) params.get("firstResult");
             var maxResults = (Integer) params.get("maxResults");
 
-            Keycloak keycloak = getKeycloakInstance(realm, accessToken);
             RealmResource realmResource = keycloak.realm(realm);
 
             Set<UserRepresentation> foundUsers = filterUsers(realmResource, email, firstName, lastName, username, userGroupId,
@@ -135,9 +132,10 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
 
     @Override
     public IDPUserListDTO getManagedUsers(Map<String, Object> params) {
-        try {
-            var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
-            var realm = getRealmFromToken(accessToken);
+        var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
+        var realm = getRealmFromToken(accessToken);
+
+        try (Keycloak keycloak = getKeycloakInstance(realm, accessToken)) {
             var email = (String) params.get("email");
             var firstName = (String) params.get("firstName");
             var lastName = (String) params.get("lastName");
@@ -146,7 +144,6 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
             var firstResult = (Integer) params.get("firstResult");
             var maxResults = (Integer) params.get("maxResults");
 
-            Keycloak keycloak = getKeycloakInstance(realm, accessToken);
             RealmResource realmResource = keycloak.realm(realm);
 
             Set<UserRepresentation> foundUsers = filterUsers(realmResource, email, firstName, lastName, username, userGroupId,
@@ -183,15 +180,14 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
 
     @Override
     public UserDTO getUserInfo(Map<String, Object> params) {
-        try {
+        var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
+        var realm = getRealmFromToken(accessToken);
+
+        try (Keycloak keycloak = getKeycloakInstance(realm, accessToken)) {
             var userId = (String) params.get(USER_ID_MAP_KEY);
             var email = (String) params.get("email");
             var username = (String) params.get("username");
-            var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
 
-            String realm = getRealmFromToken(accessToken);
-
-            Keycloak keycloak = getKeycloakInstance(realm, accessToken);
             UserRepresentation userRepresentation = null;
 
             if (StringUtils.isNotBlank(email)) {
@@ -217,7 +213,7 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
             log.error(e.getMessage());
             throw new AdapterException(e.getMessage());
         } catch (NotFoundException e) {
-            log.error("User could not be found", e);
+            log.warn("User could not be found");
             return null;
         } catch (Exception e) {
             var errorMessage = "Something went wrong while fetching User's info from Keycloak realm.";
@@ -228,14 +224,13 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
 
     @Override
     public UserGroupDTO getUserGroup(Map<String, Object> params) {
-        try {
+        var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
+        var realm = getRealmFromToken(accessToken);
+
+        try (Keycloak keycloak = getKeycloakInstance(realm, accessToken)) {
             var userGroupId = (String) params.get(USER_GROUP_ID_MAP_KEY);
             var userGroupName = (String) params.get("userGroupName");
-            var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
 
-            String realm = getRealmFromToken(accessToken);
-
-            Keycloak keycloak = getKeycloakInstance(realm, accessToken);
             GroupRepresentation groupRepresentation = null;
 
             if (StringUtils.isNotBlank(userGroupName)) {
@@ -250,7 +245,7 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
                             ? actualGroups.iterator().next()
                             : null;
                 }
-            } else {
+            } else if (StringUtils.isNotBlank(userGroupId)){
                 groupRepresentation = keycloak.realm(realm).groups().group(userGroupId).toRepresentation();
             }
 
@@ -261,7 +256,7 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
             log.error(e.getMessage());
             throw new AdapterException(e.getMessage());
         } catch (NotFoundException e) {
-            log.error("Group could not be found", e);
+            log.warn("Group could not be found");
             return null;
         } catch (Exception e) {
             var errorMessage = "Something went wrong while fetching Group's info from Keycloak realm.";
