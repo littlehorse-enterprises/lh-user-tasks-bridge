@@ -1,6 +1,5 @@
 "use client";
 
-import { useTenantId } from "@/app/[tenantId]/layout";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -35,6 +34,7 @@ import {
   Trash2,
   Users,
 } from "lucide-react";
+import { useParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -44,7 +44,7 @@ import {
   resetUserPassword,
   toggleUserAdminRole,
   updateUser,
-} from "../actions/users-groups-management";
+} from "../actions/users-and-groups-management";
 
 // Add a custom hook for debouncing values
 function useDebounce<T>(value: T, delay: number): T {
@@ -77,7 +77,7 @@ interface KeycloakUser {
 const cacheDuration = 60 * 1000; // 1 minute in milliseconds
 
 export default function UsersManagement() {
-  const tenantId = useTenantId();
+  const tenantId = useParams().tenantId as string;
   const [users, setUsers] = useState<UserRepresentation[]>([]);
   const [isAddUserDialogOpen, setIsAddUserDialogOpen] = useState(false);
   const [isEditUserDialogOpen, setIsEditUserDialogOpen] = useState(false);

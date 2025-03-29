@@ -7,6 +7,15 @@ import {
   UserTaskResult,
 } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
 
+export async function adminClaimUserTask(
+  tenantId: string,
+  userTask: UserTask,
+) {
+  return clientWithErrorHandling(tenantId, (client) =>
+    client.adminClaimUserTask(userTask),
+  );
+}
+
 export async function adminCancelUserTask(
   tenantId: string,
   userTask: UserTask,

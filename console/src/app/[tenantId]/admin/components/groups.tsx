@@ -1,6 +1,5 @@
 "use client";
 
-import { useTenantId } from "@/app/[tenantId]/layout";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -29,6 +28,7 @@ import {
 import GroupRepresentation from "keycloak-admin/lib/defs/groupRepresentation";
 import UserRepresentation from "keycloak-admin/lib/defs/userRepresentation";
 import { Edit, MoreHorizontal, Plus, Trash2, Users } from "lucide-react";
+import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -40,10 +40,10 @@ import {
   listUsers,
   removeUserFromGroup,
   updateGroup,
-} from "../actions/users-groups-management";
+} from "../actions/users-and-groups-management";
 
 export default function GroupsManagement() {
-  const tenantId = useTenantId();
+  const tenantId = useParams().tenantId as string;
   const [groups, setGroups] = useState<GroupRepresentation[]>([]);
   const [isAddGroupDialogOpen, setIsAddGroupDialogOpen] = useState(false);
   const [isEditGroupDialogOpen, setIsEditGroupDialogOpen] = useState(false);

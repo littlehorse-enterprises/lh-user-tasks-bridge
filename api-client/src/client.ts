@@ -365,6 +365,30 @@ export class LHUTBApiClient {
   }
 
   // Admin Methods
+
+  /**
+   * Administrative method to claim a UserTask for a specific user. This will bypass any normal validation checks and overide anyone that already has it claimed.
+   *
+   * @param userTask - The UserTask to claim, must contain wfRunId and id
+   * @throws {UnauthorizedError} If the user is not authenticated
+   * @throws {ForbiddenError} If the user doesn't have permission to claim the task
+   * @throws {TaskStateError} If the task is already completed or cancelled
+   * @throws {AssignmentError} If the task cannot be claimed
+   *
+   * @example
+   * ```typescript
+   * await client.adminClaimUserTask({
+   *   id: 'task-123',
+   *   wfRunId: 'workflow-456'
+   * });
+   * ```
+   */
+  async adminClaimUserTask(userTask: UserTask): Promise<void> {
+    await this.fetch(`/admin/tasks/${userTask.wfRunId}/${userTask.id}/claim`, {
+      method: "POST",
+    });
+  }
+
   /**
    * Administrative method to cancel any UserTask, regardless of its current state or assignment.
    *

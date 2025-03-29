@@ -95,7 +95,7 @@ export default function UserTask({
             )}
             <CancelUserTaskButton userTask={userTask} admin={admin} />
             {user.id !== userTask.user?.id && (
-              <ClaimUserTaskButton userTask={userTask} />
+              <ClaimUserTaskButton userTask={userTask} admin={admin} />
             )}
             <CompleteUserTaskButton userTask={userTask} admin={admin} />
           </>
