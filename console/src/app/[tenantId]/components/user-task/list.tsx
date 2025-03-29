@@ -23,12 +23,11 @@ import {
   UserGroup,
 } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
 import { FilterIcon } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useLayoutEffect, useState } from "react";
 import { toast } from "sonner";
 import useSWRInfinite from "swr/infinite";
 import UserTask from "../../components/user-task";
-import { useTenantId } from "../../layout";
 import Loading from "../loading";
 
 type Query = {
@@ -42,15 +41,17 @@ export default function ListUserTasks({
   userGroups,
   userTaskDefName,
   initialData,
+  claimable,
 }: {
   userGroups: UserGroup[];
   userTaskDefName?: string;
   initialData: ListUserTasksResponse;
+  claimable?: boolean;
 }) {
   const [query, setQuery] = useState<Query>({});
   const [search, setSearch] = useState("");
   const [limit] = useState(100);
-  const tenantId = useTenantId();
+  const tenantId = useParams().tenantId as string;
 
   const router = useRouter();
 
@@ -76,6 +77,8 @@ export default function ListUserTasks({
     pageIndex: number,
     previousPageData: ListUserTasksResponse | null,
   ) => {
+    if (claimable) return null;
+
     if (previousPageData && !previousPageData.bookmark) return null; // reached the end
     return ["userTask", query, limit, previousPageData?.bookmark];
   };
@@ -111,8 +114,8 @@ export default function ListUserTasks({
         refreshInterval: 1000,
         revalidateOnFocus: true,
         revalidateOnReconnect: true,
-        revalidateOnMount: true,
-        revalidateIfStale: true,
+        revalidateOnMount: !claimable,
+        revalidateIfStale: !claimable,
         fallbackData: [initialData],
       },
     );
@@ -129,7 +132,9 @@ export default function ListUserTasks({
 
   return (
     <div>
-      <h1 className="text-2xl font-bold">{userTaskDefName ?? "My Tasks"}</h1>
+      <h1 className="text-2xl font-bold">
+        {userTaskDefName ?? (!claimable && "My Assigned Tasks")}
+      </h1>
       <div className="flex items-center gap-2 py-4">
         <Input
           placeholder="Search"
@@ -234,7 +239,7 @@ export default function ListUserTasks({
 
       {data.flatMap((page) => page.userTasks).length ? (
         <div className="flex flex-col gap-8 items-center">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-4">
             {data
               .flatMap((page) => page.userTasks)
               .sort(

@@ -17,14 +17,12 @@ import { signOut, useSession } from "next-auth/react";
 import { useTheme } from "next-themes";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useParams, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { useTenantId } from "../layout";
 
 export default function Header() {
   const { data: session, status } = useSession();
   const pathname = usePathname();
-  const tenantId = useTenantId();
   const [mounted, setMounted] = useState(false);
   const { resolvedTheme } = useTheme();
 
@@ -36,6 +34,7 @@ export default function Header() {
   const isAdmin =
     status === "authenticated" &&
     session?.roles.includes("lh-user-tasks-admin");
+  const { tenantId } = useParams();
 
   return (
     <>
