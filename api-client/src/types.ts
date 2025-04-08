@@ -87,7 +87,7 @@ export type ListUserTaskDefNamesRequest = {
  */
 export type ListUserTaskDefNamesResponse = {
   /** Array of task definition names */
-  userTaskDefNames?: string[];
+  userTaskDefNames: string[];
 };
 
 /**

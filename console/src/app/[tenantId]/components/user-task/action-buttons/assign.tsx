@@ -105,7 +105,7 @@ export default function AssignUserTaskButton({
                   {selectedUser.firstName && selectedUser.lastName
                     ? `${selectedUser.firstName} ${selectedUser.lastName}`
                     : selectedUser.id}{" "}
-                  <span className="text-red-500">INVALID USER</span>
+                  <span className="text-destructive">INVALID USER</span>
                 </SelectItem>
               )}
               {users.map((user) => (
@@ -135,7 +135,7 @@ export default function AssignUserTaskButton({
               {selectedUserGroup?.valid === false && (
                 <SelectItem value={selectedUserGroup.id}>
                   {selectedUserGroup.name ?? selectedUserGroup.id}{" "}
-                  <span className="text-red-500">INVALID GROUP</span>
+                  <span className="text-destructive">INVALID GROUP</span>
                 </SelectItem>
               )}
               {userGroups.map((userGroup) => (

@@ -1,5 +1,6 @@
 "use client";
 
+import { adminClaimUserTask } from "@/app/[tenantId]/actions/admin";
 import { claimUserTask } from "@/app/[tenantId]/actions/user";
 import {
   AlertDialog,
@@ -19,8 +20,10 @@ import { toast } from "sonner";
 
 export default function ClaimUserTaskButton({
   userTask,
+  admin,
 }: {
   userTask: UserTask;
+  admin?: boolean;
 }) {
   const tenantId = useParams().tenantId as string;
 
@@ -45,7 +48,9 @@ export default function ClaimUserTaskButton({
             className={buttonVariants({ variant: "default" })}
             onClick={async () => {
               try {
-                const response = await claimUserTask(tenantId, userTask);
+                const response = admin
+                  ? await adminClaimUserTask(tenantId, userTask)
+                  : await claimUserTask(tenantId, userTask);
 
                 if (response && "message" in response)
                   return toast.error(response.message);

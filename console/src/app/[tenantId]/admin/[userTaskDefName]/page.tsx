@@ -2,6 +2,7 @@ import {
   adminListUserGroups,
   adminListUserTasks,
 } from "@/app/[tenantId]/actions/admin";
+import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import ListUserTasks from "../../components/user-task/list";
@@ -26,13 +27,12 @@ export default async function TaskPage({
 
   return (
     <div>
-      <Link
-        href={`/${params.tenantId}/admin`}
-        className="mb-2 text-sm text-blue-500 flex items-center gap-2"
-      >
-        <ArrowLeft className="size-4" />
-        Back to UserTask Definitions
-      </Link>
+      <Button variant="link" asChild>
+        <Link href={`/${params.tenantId}/admin`}>
+          <ArrowLeft className="size-4" />
+          Back to UserTask Definitions
+        </Link>
+      </Button>
       <ListUserTasks
         userGroups={adminListUserGroupsResponse.groups}
         userTaskDefName={params.userTaskDefName}

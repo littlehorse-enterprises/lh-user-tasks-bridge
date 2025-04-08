@@ -36,7 +36,7 @@ export default function UserTask({
   return (
     <Card
       className={
-        "px-4 py-6 shadow-[0px_1px_8px_0px_rgba(0,0,0,0.15)] border-none bg-white hover:bg-gray-50 transition-[all_150ms_ease-out] flex flex-col gap-6"
+        "px-4 py-6 shadow-[0px_1px_8px_0px_rgba(0,0,0,0.15)] border-none bg-card hover:bg-accent/50 transition-[all_150ms_ease-out] flex flex-col gap-6"
       }
     >
       <CardHeader className="p-0">
@@ -95,7 +95,7 @@ export default function UserTask({
             )}
             <CancelUserTaskButton userTask={userTask} admin={admin} />
             {user.id !== userTask.user?.id && (
-              <ClaimUserTaskButton userTask={userTask} />
+              <ClaimUserTaskButton userTask={userTask} admin={admin} />
             )}
             <CompleteUserTaskButton userTask={userTask} admin={admin} />
           </>
