@@ -6,6 +6,7 @@ import io.littlehorse.usertasks.configurations.IdentityProviderConfigProperties;
 import io.littlehorse.usertasks.idp_adapters.IStandardIdentityProviderAdapter;
 import io.littlehorse.usertasks.idp_adapters.IdentityProviderVendor;
 import io.littlehorse.usertasks.idp_adapters.keycloak.KeycloakAdapter;
+import io.littlehorse.usertasks.models.requests.CreateManagedUserRequest;
 import io.littlehorse.usertasks.models.requests.IDPUserSearchRequestFilter;
 import io.littlehorse.usertasks.models.responses.IDPUserListDTO;
 import io.littlehorse.usertasks.services.TenantService;
@@ -76,7 +77,7 @@ public class UserManagementController {
     })
     @GetMapping("/{tenant_id}/management/users")
     @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<Object> getUsersFromIdP(@RequestHeader(name = "Authorization") String accessToken,
+    public ResponseEntity<IDPUserListDTO> getUsersFromIdP(@RequestHeader(name = "Authorization") String accessToken,
                                                   @PathVariable(name = "tenant_id") String tenantId,
                                                   @RequestParam(name = "email", required = false) String email,
                                                   @RequestParam(name = "first_name", required = false) String firstName,
@@ -111,6 +112,57 @@ public class UserManagementController {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
+
+    @Operation(
+            summary = "Create User",
+            description = "Creates a User within a specific tenant's IdP"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "201",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Tenant Id is not valid.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "406",
+                    description = "Unknown Identity vendor.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            )
+    })
+    @PostMapping("/{tenant_id}/management/users")
+    @ResponseStatus(HttpStatus.CREATED)
+    public void createUser(@RequestHeader(name = "Authorization") String accessToken,
+                           @PathVariable(name = "tenant_id") String tenantId,
+                           @RequestBody CreateManagedUserRequest requestBody) {
+        if (!tenantService.isValidTenant(tenantId, accessToken)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+
+        try {
+            CustomIdentityProviderProperties customIdentityProviderProperties =
+                    getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
+            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
+
+            if (!requestBody.isValid()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot create User while missing all properties.");
+            }
+
+            userManagementService.createUserInIdentityProvider(accessToken, requestBody, identityProviderHandler);
+
+        } catch (JsonProcessingException e) {
+            log.error("Something went wrong when getting claims from token while trying to create a user.");
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
 
     private IStandardIdentityProviderAdapter getIdentityProviderHandler(@NonNull IdentityProviderVendor vendor) {
         if (vendor == IdentityProviderVendor.KEYCLOAK) {

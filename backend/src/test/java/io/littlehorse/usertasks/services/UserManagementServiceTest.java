@@ -2,6 +2,7 @@ package io.littlehorse.usertasks.services;
 
 import io.littlehorse.usertasks.idp_adapters.IStandardIdentityProviderAdapter;
 import io.littlehorse.usertasks.idp_adapters.keycloak.KeycloakAdapter;
+import io.littlehorse.usertasks.models.requests.CreateManagedUserRequest;
 import io.littlehorse.usertasks.models.requests.IDPUserSearchRequestFilter;
 import io.littlehorse.usertasks.models.responses.IDPGroupDTO;
 import io.littlehorse.usertasks.models.responses.IDPUserDTO;
@@ -278,6 +279,58 @@ class UserManagementServiceTest {
 
         assertMandatoryParamsForKeycloakSearch(paramsUsedToSearchUsers, expectedParamsCount);
         assertTrue(paramsUsedToSearchUsers.containsKey("userGroupId"));
+    }
+
+    @Test
+    void createUserInIdentityProvider_shouldThrowNullPointerExceptionWhenNullAccessTokenIsReceived() {
+        CreateManagedUserRequest request = CreateManagedUserRequest.builder().build();
+        assertThrows(NullPointerException.class,
+                ()-> userManagementService.createUserInIdentityProvider(null, request, keycloakAdapter));
+    }
+
+    @Test
+    void createUserInIdentityProvider_shouldThrowNullPointerExceptionWhenNullRequestObjectIsReceived() {
+        assertThrows(NullPointerException.class,
+                ()-> userManagementService.createUserInIdentityProvider(fakeAccessToken, null, keycloakAdapter));
+    }
+
+    @Test
+    void createUserInIdentityProvider_shouldThrowNullPointerExceptionWhenNullIdentityProviderAdapterIsReceived() {
+        CreateManagedUserRequest request = CreateManagedUserRequest.builder().build();
+        assertThrows(NullPointerException.class,
+                ()-> userManagementService.createUserInIdentityProvider(fakeAccessToken, request, null));
+    }
+
+    @Test
+    void createUserInIdentityProvider_shouldSucceedWhenNoExceptionsAreThrownUsingKeycloak() {
+        var fakeFirstName = "myFirstName";
+        var fakeLastName = "myLastName";
+        var fakeUsername = "myUsername";
+        var fakeEmail = "myemail@somedomain.com";
+
+        CreateManagedUserRequest request = CreateManagedUserRequest.builder()
+                .firstName(fakeFirstName)
+                .lastName(fakeLastName)
+                .username(fakeUsername)
+                .email(fakeEmail)
+                .build();
+
+        userManagementService.createUserInIdentityProvider(fakeAccessToken, request, keycloakAdapter);
+
+        ArgumentCaptor<Map<String, Object>> argumentCaptor = ArgumentCaptor.forClass(Map.class);
+
+        verify(keycloakAdapter).createUser(argumentCaptor.capture());
+
+        Map<String, Object> paramsSent = argumentCaptor.getValue();
+        int expectedParamsCount = 5;
+
+        assertFalse(paramsSent.isEmpty());
+        assertEquals(expectedParamsCount, paramsSent.size());
+        assertEquals(fakeAccessToken, paramsSent.get("accessToken"));
+        assertEquals(fakeFirstName, paramsSent.get("firstName"));
+        assertEquals(fakeLastName, paramsSent.get("lastName"));
+        assertEquals(fakeUsername, paramsSent.get("username"));
+        assertEquals(fakeEmail, paramsSent.get("email"));
     }
 
     private void assertMandatoryParamsForKeycloakSearch(Map<String, Object> paramsUsedToSearchUsers, int expectedParamsCount) {

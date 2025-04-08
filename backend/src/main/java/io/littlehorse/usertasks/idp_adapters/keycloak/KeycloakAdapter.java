@@ -5,6 +5,7 @@ import io.littlehorse.usertasks.exceptions.AdapterException;
 import io.littlehorse.usertasks.idp_adapters.IStandardIdentityProviderAdapter;
 import io.littlehorse.usertasks.models.common.UserDTO;
 import io.littlehorse.usertasks.models.common.UserGroupDTO;
+import io.littlehorse.usertasks.models.requests.CreateManagedUserRequest;
 import io.littlehorse.usertasks.models.requests.IDPUserSearchRequestFilter;
 import io.littlehorse.usertasks.models.responses.IDPUserDTO;
 import io.littlehorse.usertasks.models.responses.IDPUserListDTO;
@@ -12,6 +13,7 @@ import io.littlehorse.usertasks.models.responses.UserGroupListDTO;
 import io.littlehorse.usertasks.models.responses.UserListDTO;
 import io.littlehorse.usertasks.util.TokenUtil;
 import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.core.Response;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -43,6 +45,10 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
     public static final String ACCESS_TOKEN_MAP_KEY = "accessToken";
     public static final String USER_ID_MAP_KEY = "userId";
     public static final String USER_GROUP_ID_MAP_KEY = "userGroupId";
+    public static final String EMAIL_MAP_KEY = "email";
+    public static final String FIRST_NAME_MAP_KEY = "firstName";
+    public static final String LAST_NAME_MAP_KEY = "lastName";
+    public static final String USERNAME_MAP_KEY = "username";
 
     @Override
     public UserGroupListDTO getUserGroups(Map<String, Object> params) {
@@ -287,33 +293,90 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
         }
     }
 
+    @Override
+    public void createUser(Map<String, Object> params) {
+        log.info("Starting User creation!");
+
+        var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
+        var realm = getRealmFromToken(accessToken);
+
+        try (Keycloak keycloak = getKeycloakInstance(realm, accessToken)) {
+            UserRepresentation userRepresentation = buildBasicUserRepresentation(params);
+
+            try (Response response = keycloak.realm(realm).users().create(userRepresentation)) {
+                if (response.getStatusInfo().getStatusCode() != 201) {
+                    String exceptionMessage = String.format("User creation failed within realm %s with status: %s!", realm,
+                            response.getStatusInfo().getStatusCode());
+
+                    throw new AdapterException(exceptionMessage);
+                }
+
+                log.info("User successfully created within realm {}!", realm);
+            }
+        } catch (AdapterException e) {
+            log.error(e.getMessage());
+            throw new AdapterException(e.getMessage());
+        } catch (Exception e) {
+            var errorMessage = "Something went wrong while creating a User in Keycloak realm.";
+            log.error(errorMessage, e);
+            throw new AdapterException(errorMessage);
+        }
+    }
+
     public static Map<String, Object> buildParamsForUsersSearch(String accessToken, IDPUserSearchRequestFilter requestFilter,
                                                                 int firstResult, int maxResults) {
         Map<String, Object> params = new HashMap<>();
 
         if (StringUtils.isNotBlank(requestFilter.getEmail())) {
-            params.put("email", requestFilter.getEmail());
+            params.put(EMAIL_MAP_KEY, requestFilter.getEmail());
         }
 
         if (StringUtils.isNotBlank(requestFilter.getFirstName())) {
-            params.put("firstName", requestFilter.getFirstName());
+            params.put(FIRST_NAME_MAP_KEY, requestFilter.getFirstName());
         }
 
         if (StringUtils.isNotBlank(requestFilter.getLastName())) {
-            params.put("lastName", requestFilter.getLastName());
+            params.put(LAST_NAME_MAP_KEY, requestFilter.getLastName());
         }
 
         if (StringUtils.isNotBlank(requestFilter.getUsername())) {
-            params.put("username", requestFilter.getUsername());
+            params.put(USERNAME_MAP_KEY, requestFilter.getUsername());
         }
 
         if (StringUtils.isNotBlank(requestFilter.getUserGroupId())) {
-            params.put("userGroupId", requestFilter.getUserGroupId());
+            params.put(USER_GROUP_ID_MAP_KEY, requestFilter.getUserGroupId());
         }
 
-        params.put("accessToken", accessToken);
+        params.put(ACCESS_TOKEN_MAP_KEY, accessToken);
         params.put("firstResult", firstResult);
         params.put("maxResults", maxResults);
+
+        return params;
+    }
+
+    @NonNull
+    public static Map<String, Object> buildParamsForUserCreation(@NonNull String accessToken, @NonNull CreateManagedUserRequest request) {
+        Map<String, Object> params = new HashMap<>();
+        String firstName = StringUtils.isNotBlank(request.getFirstName()) ? request.getFirstName().trim() : null;
+        String lastName = StringUtils.isNotBlank(request.getLastName()) ? request.getLastName().trim() : null;
+        String email = StringUtils.isNotBlank(request.getEmail()) ? request.getEmail().trim() : null;
+        String username;
+
+        if (StringUtils.isNotBlank(request.getUsername())) {
+            username = request.getUsername().trim();
+        } else {
+            throw new AdapterException("Cannot create User without username!");
+        }
+
+        //Done like this and not with Map.of() because some values could be null
+        params.put(ACCESS_TOKEN_MAP_KEY, accessToken);
+        params.put(FIRST_NAME_MAP_KEY, firstName);
+        params.put(LAST_NAME_MAP_KEY, lastName);
+        params.put(USERNAME_MAP_KEY, username);
+        params.put(EMAIL_MAP_KEY, email);
+
+        params.entrySet()
+                .removeIf(entry -> Objects.isNull(entry.getValue()));
 
         return params;
     }
@@ -474,5 +537,34 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
         return entry.getValue().getMappings().stream()
                 .map(RoleRepresentation::getName)
                 .collect(Collectors.toSet());
+    }
+
+    private UserRepresentation buildBasicUserRepresentation(Map<String, Object> params) {
+        var firstName = (String) params.get(FIRST_NAME_MAP_KEY);
+        var lastName = (String) params.get(LAST_NAME_MAP_KEY);
+        var userName = (String) params.get(USERNAME_MAP_KEY);
+        var email = (String) params.get(EMAIL_MAP_KEY);
+
+        UserRepresentation userRepresentation = new UserRepresentation();
+
+        if (StringUtils.isNotBlank(firstName)) {
+            userRepresentation.setFirstName(firstName);
+        }
+
+        if (StringUtils.isNotBlank(lastName)) {
+            userRepresentation.setLastName(lastName);
+        }
+
+        if (StringUtils.isNotBlank(userName)) {
+            userRepresentation.setUsername(userName);
+        } else {
+            throw new AdapterException("Cannot create User without username!");
+        }
+
+        if (StringUtils.isNotBlank(email)) {
+            userRepresentation.setEmail(email);
+        }
+
+        return userRepresentation;
     }
 }

@@ -27,4 +27,6 @@ public interface IStandardIdentityProviderAdapter {
     void validateUserGroup(String userGroupId, String accessToken);
 
     void validateAssignmentProperties(Map<String, Object> params);
+
+    void createUser(Map<String, Object> params);
 }
