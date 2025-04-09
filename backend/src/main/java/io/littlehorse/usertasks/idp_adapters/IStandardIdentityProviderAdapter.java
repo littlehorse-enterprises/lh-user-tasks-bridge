@@ -29,4 +29,6 @@ public interface IStandardIdentityProviderAdapter {
     void validateAssignmentProperties(Map<String, Object> params);
 
     void createUser(Map<String, Object> params);
+
+    void setPassword(String userId, Map<String, Object> params);
 }

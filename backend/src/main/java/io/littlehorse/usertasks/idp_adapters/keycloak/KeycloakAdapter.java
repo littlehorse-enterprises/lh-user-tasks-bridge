@@ -19,11 +19,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.RealmResource;
+import org.keycloak.admin.client.resource.UserResource;
 import org.keycloak.admin.client.resource.UsersResource;
-import org.keycloak.representations.idm.ClientMappingsRepresentation;
-import org.keycloak.representations.idm.GroupRepresentation;
-import org.keycloak.representations.idm.RoleRepresentation;
-import org.keycloak.representations.idm.UserRepresentation;
+import org.keycloak.representations.idm.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -318,6 +316,42 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
             throw new AdapterException(e.getMessage());
         } catch (Exception e) {
             var errorMessage = "Something went wrong while creating a User in Keycloak realm.";
+            log.error(errorMessage, e);
+            throw new AdapterException(errorMessage);
+        }
+    }
+
+    @Override
+    public void setPassword(String userId, Map<String, Object> params) {
+        log.info("Starting to set user's password!");
+
+        var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
+        var realm = getRealmFromToken(accessToken);
+        var password = (String) params.get("password");
+        var isTemporary = (Boolean) params.get("isTemporary");
+
+        try (Keycloak keycloak = getKeycloakInstance(realm, accessToken)) {
+            UserResource userResource = keycloak.realm(realm).users().get(userId);
+            CredentialRepresentation credentialRepresentation = new CredentialRepresentation();
+            credentialRepresentation.setTemporary(isTemporary);
+            credentialRepresentation.setValue(password);
+            credentialRepresentation.setType(CredentialRepresentation.PASSWORD);
+
+            if (CollectionUtils.isEmpty(userResource.credentials())) {
+                UserRepresentation representation = userResource.toRepresentation();
+                representation.setCredentials(Collections.singletonList(credentialRepresentation));
+                userResource.update(representation);
+
+                log.info("Password successfully set!");
+            } else {
+                userResource.resetPassword(credentialRepresentation);
+                log.info("Password successfully reset!");
+            }
+        } catch (AdapterException e) {
+            log.error(e.getMessage());
+            throw new AdapterException(e.getMessage());
+        } catch (Exception e) {
+            var errorMessage = "Something went wrong while setting a User's password in Keycloak realm.";
             log.error(errorMessage, e);
             throw new AdapterException(errorMessage);
         }

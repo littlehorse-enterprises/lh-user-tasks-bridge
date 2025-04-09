@@ -4,6 +4,7 @@ import io.littlehorse.usertasks.idp_adapters.IStandardIdentityProviderAdapter;
 import io.littlehorse.usertasks.idp_adapters.keycloak.KeycloakAdapter;
 import io.littlehorse.usertasks.models.requests.CreateManagedUserRequest;
 import io.littlehorse.usertasks.models.requests.IDPUserSearchRequestFilter;
+import io.littlehorse.usertasks.models.requests.PasswordUpsertRequest;
 import io.littlehorse.usertasks.models.responses.IDPGroupDTO;
 import io.littlehorse.usertasks.models.responses.IDPUserDTO;
 import io.littlehorse.usertasks.models.responses.IDPUserListDTO;
@@ -331,6 +332,57 @@ class UserManagementServiceTest {
         assertEquals(fakeLastName, paramsSent.get("lastName"));
         assertEquals(fakeUsername, paramsSent.get("username"));
         assertEquals(fakeEmail, paramsSent.get("email"));
+    }
+
+    @Test
+    void setPassword_shouldThrowNullPointerExceptionWhenNullAccessTokenIsReceived(){
+        PasswordUpsertRequest request = PasswordUpsertRequest.builder().build();
+        assertThrows(NullPointerException.class,
+                ()-> userManagementService.setPassword(null, "someUserId", request, keycloakAdapter));
+    }
+
+    @Test
+    void setPassword_shouldThrowNullPointerExceptionWhenNullUserIdIsReceived(){
+        PasswordUpsertRequest request = PasswordUpsertRequest.builder().build();
+        assertThrows(NullPointerException.class,
+                ()-> userManagementService.setPassword(fakeAccessToken, null, request, keycloakAdapter));
+    }
+
+    @Test
+    void setPassword_shouldThrowNullPointerExceptionWhenNullRequestIsReceived(){
+        assertThrows(NullPointerException.class,
+                ()-> userManagementService.setPassword(fakeAccessToken, "someUserId", null, keycloakAdapter));
+    }
+
+    @Test
+    void setPassword_shouldThrowNullPointerExceptionWhenNullIdentityProviderAdapterIsReceived(){
+        PasswordUpsertRequest request = PasswordUpsertRequest.builder().build();
+        assertThrows(NullPointerException.class,
+                ()-> userManagementService.setPassword(fakeAccessToken, "someUserId", request, null));
+    }
+
+    @Test
+    void setPassword_shouldSucceedWhenNoExceptionsAreThrown() {
+        var fakeUserId = "someUserId";
+        var fakePassword = "my-nice-password";
+        PasswordUpsertRequest request = PasswordUpsertRequest.builder()
+                .password(fakePassword)
+                .temporary(false)
+                .build();
+
+        userManagementService.setPassword(fakeAccessToken, fakeUserId, request, keycloakAdapter);
+
+        ArgumentCaptor<Map<String, Object>> argumentCaptor = ArgumentCaptor.forClass(Map.class);
+
+        verify(keycloakAdapter).setPassword(eq(fakeUserId), argumentCaptor.capture());
+
+        Map<String, Object> paramsSent = argumentCaptor.getValue();
+
+        int expectedParamsCount = 3;
+
+        assertEquals(expectedParamsCount, paramsSent.size());
+        assertEquals(fakePassword, paramsSent.get("password"));
+        assertFalse((boolean)paramsSent.get("isTemporary"));
     }
 
     private void assertMandatoryParamsForKeycloakSearch(Map<String, Object> paramsUsedToSearchUsers, int expectedParamsCount) {
