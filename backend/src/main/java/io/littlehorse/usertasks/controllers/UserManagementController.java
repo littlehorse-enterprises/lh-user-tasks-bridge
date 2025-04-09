@@ -233,7 +233,7 @@ public class UserManagementController {
             if (!CollectionUtils.isEmpty(constraintViolations)) {
                 String validationMessage = constraintViolations.stream()
                         .map(ConstraintViolation::getMessage)
-                        .collect(Collectors.joining());
+                        .collect(Collectors.joining("; "));
 
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, validationMessage);
             }
