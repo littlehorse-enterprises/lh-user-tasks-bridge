@@ -1,5 +1,6 @@
 package io.littlehorse.usertasks.models.responses;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
 import lombok.Data;
 import org.keycloak.representations.idm.GroupRepresentation;
@@ -21,6 +22,7 @@ import java.util.stream.Collectors;
 public class IDPGroupDTO {
     private String id;
     private String name;
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private Set<IDPUserDTO> members;
 
     /**

@@ -18,9 +18,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.keycloak.admin.client.Keycloak;
-import org.keycloak.admin.client.resource.RealmResource;
-import org.keycloak.admin.client.resource.UserResource;
-import org.keycloak.admin.client.resource.UsersResource;
+import org.keycloak.admin.client.resource.*;
 import org.keycloak.representations.idm.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -170,6 +168,33 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
     }
 
     @Override
+    public IDPUserDTO getManagedUser(Map<String, Object> params) {
+        var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
+        var realm = getRealmFromToken(accessToken);
+
+        try (Keycloak keycloak = getKeycloakInstance(realm, accessToken)) {
+            var userId = (String) params.get(USER_ID_MAP_KEY);
+
+            RealmResource realmResource = keycloak.realm(realm);
+            UserRepresentation userRepresentation = realmResource.users().get(userId).toRepresentation();
+
+            return Optional.ofNullable(userRepresentation)
+                    .map(buildUserDTO(realmResource))
+                    .orElse(null);
+        } catch (AdapterException e) {
+            log.error(e.getMessage());
+            throw e;
+        } catch (NotFoundException e) {
+            log.warn("User data could not be found");
+            return null;
+        } catch (Exception e) {
+            var errorMessage = "Something went wrong while fetching managed User from Keycloak realm.";
+            log.error(errorMessage, e);
+            throw new AdapterException(errorMessage);
+        }
+    }
+
+    @Override
     public void validateUserGroup(String userGroupId, String accessToken) {
         String realm = getRealmFromToken(accessToken);
         Map<String, Object> params = Map.of(REALM_MAP_KEY, realm, ACCESS_TOKEN_MAP_KEY, accessToken);
@@ -210,9 +235,9 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
                 userRepresentation = keycloak.realm(realm).users().get(userId).toRepresentation();
             }
 
-            return Objects.nonNull(userRepresentation)
-                    ? UserDTO.transform().apply(userRepresentation)
-                    : null;
+            return Optional.ofNullable(userRepresentation)
+                    .map(representation -> UserDTO.transform().apply(representation))
+                    .orElse(null);
         } catch (AdapterException e) {
             log.error(e.getMessage());
             throw new AdapterException(e.getMessage());
@@ -546,16 +571,32 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
     }
 
     private List<RoleRepresentation> getRealmRolesByUser(UserRepresentation foundUser, UsersResource usersResource) {
-        return usersResource.get(foundUser.getId()).roles()
-                .realmLevel()
-                .listAll();
+        RoleMappingResource roleMappingResource = usersResource.get(foundUser.getId()).roles();
+
+        return Optional.ofNullable(roleMappingResource)
+                .map(roleResource -> {
+                    RoleScopeResource roleScopeResource = roleResource.realmLevel();
+
+                    return Optional.ofNullable(roleScopeResource)
+                            .map(RoleScopeResource::listAll)
+                            .orElse(Collections.emptyList());
+                })
+                .orElse(Collections.emptyList());
     }
 
     private Map<String, ClientMappingsRepresentation> getClientRoleMappingsByUser(UserRepresentation foundUser,
                                                                                   UsersResource usersResource) {
-        return usersResource.get(foundUser.getId()).roles()
-                .getAll()
-                .getClientMappings();
+        RoleMappingResource roleMappingResource = usersResource.get(foundUser.getId()).roles();
+
+        return Optional.ofNullable(roleMappingResource)
+                .map(roleResource -> {
+                    MappingsRepresentation allMappings = roleResource.getAll();
+
+                    return Optional.ofNullable(allMappings)
+                            .map(MappingsRepresentation::getClientMappings)
+                            .orElse(Collections.emptyMap());
+                })
+                .orElse(Collections.emptyMap());
     }
 
     private Map<String, Set<String>> getMappedClientRoles(Map<String, ClientMappingsRepresentation> clientRoles) {

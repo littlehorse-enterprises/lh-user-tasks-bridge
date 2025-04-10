@@ -2,6 +2,7 @@ package io.littlehorse.usertasks.idp_adapters;
 
 import io.littlehorse.usertasks.models.common.UserDTO;
 import io.littlehorse.usertasks.models.common.UserGroupDTO;
+import io.littlehorse.usertasks.models.responses.IDPUserDTO;
 import io.littlehorse.usertasks.models.responses.IDPUserListDTO;
 import io.littlehorse.usertasks.models.responses.UserGroupListDTO;
 import io.littlehorse.usertasks.models.responses.UserListDTO;
@@ -31,4 +32,6 @@ public interface IStandardIdentityProviderAdapter {
     void createUser(Map<String, Object> params);
 
     void setPassword(String userId, Map<String, Object> params);
+
+    IDPUserDTO getManagedUser(Map<String, Object> params);
 }

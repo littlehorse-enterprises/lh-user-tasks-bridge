@@ -8,15 +8,14 @@ import io.littlehorse.usertasks.models.requests.PasswordUpsertRequest;
 import io.littlehorse.usertasks.models.responses.IDPGroupDTO;
 import io.littlehorse.usertasks.models.responses.IDPUserDTO;
 import io.littlehorse.usertasks.models.responses.IDPUserListDTO;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.util.CollectionUtils;
 
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -383,6 +382,75 @@ class UserManagementServiceTest {
         assertEquals(expectedParamsCount, paramsSent.size());
         assertEquals(fakePassword, paramsSent.get("password"));
         assertFalse((boolean)paramsSent.get("isTemporary"));
+    }
+
+    @Test
+    void getUserFromIdentityProvider_shouldThrowNullPointerExceptionWhenNullAccessTokenIsReceived() {
+        assertThrows(NullPointerException.class,
+                () -> userManagementService.getUserFromIdentityProvider(null, UUID.randomUUID().toString(), keycloakAdapter));
+    }
+
+    @Test
+    void getUserFromIdentityProvider_shouldThrowNullPointerExceptionWhenNullUserIdIsReceived() {
+        assertThrows(NullPointerException.class,
+                () -> userManagementService.getUserFromIdentityProvider(fakeAccessToken, null, keycloakAdapter));
+    }
+
+    @Test
+    void getUserFromIdentityProvider_shouldThrowNullPointerExceptionWhenNullIdentityProviderAdapterIsReceived() {
+        assertThrows(NullPointerException.class,
+                () -> userManagementService.getUserFromIdentityProvider(fakeAccessToken, UUID.randomUUID().toString(), null));
+    }
+
+    @Test
+    void getUserFromIdentityProvider_shouldSucceedWhenNoExceptionsAreThrownAndDataIsFound() {
+        String userId = UUID.randomUUID().toString();
+        IDPUserDTO userDTO = IDPUserDTO.builder()
+                .id(userId)
+                .username("my-cool-username")
+                .email("myemail@somedomain.com")
+                .realmRoles(Set.of("myRole"))
+                .build();
+
+        when(keycloakAdapter.getManagedUser(anyMap())).thenReturn(userDTO);
+
+        Optional<IDPUserDTO> optionalUserDTO = userManagementService.getUserFromIdentityProvider(fakeAccessToken, userId, keycloakAdapter);
+
+        assertTrue(optionalUserDTO.isPresent());
+        assertTrue(StringUtils.equalsIgnoreCase(userId, optionalUserDTO.get().getId()));
+
+        ArgumentCaptor<Map<String, Object>> argumentCaptor = ArgumentCaptor.forClass(Map.class);
+
+        verify(keycloakAdapter).getManagedUser(argumentCaptor.capture());
+
+        Map<String, Object> paramsSent = argumentCaptor.getValue();
+
+        int expectedParamsCount = 2;
+
+        assertEquals(expectedParamsCount, paramsSent.size());
+        assertTrue(StringUtils.equalsIgnoreCase(userId, (String) paramsSent.get("userId")));
+    }
+
+    @Test
+    void getUserFromIdentityProvider_shouldSucceedWhenNoExceptionsAreThrownAndNoDataIsFound() {
+        String userId = UUID.randomUUID().toString();
+
+        when(keycloakAdapter.getManagedUser(anyMap())).thenReturn(null);
+
+        Optional<IDPUserDTO> optionalUserDTO = userManagementService.getUserFromIdentityProvider(fakeAccessToken, userId, keycloakAdapter);
+
+        assertFalse(optionalUserDTO.isPresent());
+
+        ArgumentCaptor<Map<String, Object>> argumentCaptor = ArgumentCaptor.forClass(Map.class);
+
+        verify(keycloakAdapter).getManagedUser(argumentCaptor.capture());
+
+        Map<String, Object> paramsSent = argumentCaptor.getValue();
+
+        int expectedParamsCount = 2;
+
+        assertEquals(expectedParamsCount, paramsSent.size());
+        assertTrue(StringUtils.equalsIgnoreCase(userId, (String) paramsSent.get("userId")));
     }
 
     private void assertMandatoryParamsForKeycloakSearch(Map<String, Object> paramsUsedToSearchUsers, int expectedParamsCount) {
