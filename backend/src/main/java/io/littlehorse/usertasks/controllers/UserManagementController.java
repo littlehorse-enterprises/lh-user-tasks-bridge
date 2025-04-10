@@ -6,7 +6,9 @@ import io.littlehorse.usertasks.configurations.IdentityProviderConfigProperties;
 import io.littlehorse.usertasks.idp_adapters.IStandardIdentityProviderAdapter;
 import io.littlehorse.usertasks.idp_adapters.IdentityProviderVendor;
 import io.littlehorse.usertasks.idp_adapters.keycloak.KeycloakAdapter;
+import io.littlehorse.usertasks.models.requests.CreateManagedUserRequest;
 import io.littlehorse.usertasks.models.requests.IDPUserSearchRequestFilter;
+import io.littlehorse.usertasks.models.requests.PasswordUpsertRequest;
 import io.littlehorse.usertasks.models.responses.IDPUserListDTO;
 import io.littlehorse.usertasks.services.TenantService;
 import io.littlehorse.usertasks.services.UserManagementService;
@@ -16,14 +18,19 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.*;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static io.littlehorse.usertasks.configurations.CustomIdentityProviderProperties.getCustomIdentityProviderProperties;
 import static io.littlehorse.usertasks.util.constants.AuthoritiesConstants.LH_USER_TASKS_ADMIN_ROLE;
@@ -41,7 +48,8 @@ public class UserManagementController {
     private final UserManagementService userManagementService;
     private final IdentityProviderConfigProperties identityProviderConfigProperties;
 
-    public UserManagementController(TenantService tenantService, UserManagementService userManagementService, IdentityProviderConfigProperties identityProviderConfigProperties) {
+    public UserManagementController(TenantService tenantService, UserManagementService userManagementService,
+                                    IdentityProviderConfigProperties identityProviderConfigProperties) {
         this.tenantService = tenantService;
         this.userManagementService = userManagementService;
         this.identityProviderConfigProperties = identityProviderConfigProperties;
@@ -76,7 +84,7 @@ public class UserManagementController {
     })
     @GetMapping("/{tenant_id}/management/users")
     @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<Object> getUsersFromIdP(@RequestHeader(name = "Authorization") String accessToken,
+    public ResponseEntity<IDPUserListDTO> getUsersFromIdP(@RequestHeader(name = "Authorization") String accessToken,
                                                   @PathVariable(name = "tenant_id") String tenantId,
                                                   @RequestParam(name = "email", required = false) String email,
                                                   @RequestParam(name = "first_name", required = false) String firstName,
@@ -112,11 +120,123 @@ public class UserManagementController {
         }
     }
 
+    @Operation(
+            summary = "Create User",
+            description = "Creates a User within a specific tenant's IdP"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "201",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Tenant Id is not valid.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "406",
+                    description = "Unknown Identity vendor.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            )
+    })
+    @PostMapping("/{tenant_id}/management/users")
+    @ResponseStatus(HttpStatus.CREATED)
+    public void createUser(@RequestHeader(name = "Authorization") String accessToken,
+                           @PathVariable(name = "tenant_id") String tenantId,
+                           @RequestBody CreateManagedUserRequest requestBody) {
+        if (!tenantService.isValidTenant(tenantId, accessToken)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+
+        try {
+            CustomIdentityProviderProperties customIdentityProviderProperties =
+                    getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
+            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
+
+            if (!requestBody.isValid()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot create User while missing all properties.");
+            }
+
+            userManagementService.createUserInIdentityProvider(accessToken, requestBody, identityProviderHandler);
+        } catch (JsonProcessingException e) {
+            log.error("Something went wrong when getting claims from token while trying to create a user.");
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @Operation(
+            summary = "Set Password",
+            description = "Sets or resets a user's password"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "204",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Tenant Id is not valid.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "406",
+                    description = "Unknown Identity vendor.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            )
+    })
+    @PutMapping("/{tenant_id}/management/users/{user_id}/password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void upsertPassword(@RequestHeader(name = "Authorization") String accessToken,
+                               @PathVariable(name = "tenant_id") String tenantId,
+                               @PathVariable(name = "user_id") String userId,
+                               @RequestBody PasswordUpsertRequest requestBody) {
+        if (!tenantService.isValidTenant(tenantId, accessToken)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+
+        try {
+            validatePasswordUpsertRequest(requestBody);
+
+            CustomIdentityProviderProperties customIdentityProviderProperties =
+                    getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
+            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
+
+            userManagementService.setPassword(accessToken, userId, requestBody, identityProviderHandler);
+        } catch (JsonProcessingException e) {
+            log.error("Something went wrong when getting claims from token while trying to upsert a user's password.");
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     private IStandardIdentityProviderAdapter getIdentityProviderHandler(@NonNull IdentityProviderVendor vendor) {
         if (vendor == IdentityProviderVendor.KEYCLOAK) {
             return new KeycloakAdapter();
         } else {
             throw new ResponseStatusException(HttpStatus.NOT_ACCEPTABLE);
+        }
+    }
+
+    private void validatePasswordUpsertRequest(PasswordUpsertRequest requestBody) {
+        try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
+            Validator validator = factory.getValidator();
+            Set<ConstraintViolation<PasswordUpsertRequest>> constraintViolations = validator.validate(requestBody);
+
+            if (!CollectionUtils.isEmpty(constraintViolations)) {
+                String validationMessage = constraintViolations.stream()
+                        .map(ConstraintViolation::getMessage)
+                        .collect(Collectors.joining("; "));
+
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, validationMessage);
+            }
         }
     }
 }

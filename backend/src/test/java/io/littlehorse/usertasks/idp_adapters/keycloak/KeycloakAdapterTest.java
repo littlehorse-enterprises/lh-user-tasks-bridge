@@ -3,22 +3,27 @@ package io.littlehorse.usertasks.idp_adapters.keycloak;
 import io.littlehorse.usertasks.exceptions.AdapterException;
 import io.littlehorse.usertasks.models.common.UserDTO;
 import io.littlehorse.usertasks.models.common.UserGroupDTO;
+import io.littlehorse.usertasks.models.requests.CreateManagedUserRequest;
 import io.littlehorse.usertasks.models.responses.IDPUserListDTO;
 import io.littlehorse.usertasks.models.responses.UserGroupListDTO;
 import io.littlehorse.usertasks.models.responses.UserListDTO;
 import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.core.Response;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.*;
 import org.keycloak.representations.idm.*;
+import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.net.URI;
 import java.util.*;
 
+import static io.littlehorse.usertasks.idp_adapters.keycloak.KeycloakAdapter.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -1051,7 +1056,7 @@ class KeycloakAdapterTest {
     @Test
     void getUserInfo_shouldThrowAdapterExceptionCreatingKeycloakInstanceWhenRuntimeExceptionIsThrownGettingNewInstance() {
         var userId = "someUserId";
-        Map<String, Object> params = Map.of("userId", userId, "accessToken", STUBBED_ACCESS_TOKEN);
+        Map<String, Object> params = Map.of("userId", userId, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
 
         try (MockedStatic<Keycloak> ignored = mockStatic(Keycloak.class)) {
             when(Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
@@ -1069,7 +1074,7 @@ class KeycloakAdapterTest {
     @Test
     void getUserInfo_shouldThrowExceptionCreatingKeycloakInstanceWhenAccessingRealms() {
         var userId = "someUserId";
-        Map<String, Object> params = Map.of("userId", userId, "accessToken", STUBBED_ACCESS_TOKEN);
+        Map<String, Object> params = Map.of("userId", userId, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
 
         try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
             Keycloak mockKeycloakInstance = mock(Keycloak.class);
@@ -1089,7 +1094,7 @@ class KeycloakAdapterTest {
     @Test
     void getUserInfo_shouldReturnUserDTOWhenUserRepresentationIsFoundUsingUserId() {
         String userId = UUID.randomUUID().toString();
-        Map<String, Object> params = Map.of("userId", userId, "accessToken", STUBBED_ACCESS_TOKEN);
+        Map<String, Object> params = Map.of("userId", userId, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
 
         RealmResource fakeRealmResource = mock(RealmResource.class);
         UsersResource fakeUsersResource = mock(UsersResource.class);
@@ -1116,7 +1121,7 @@ class KeycloakAdapterTest {
     @Test
     void getUserInfo_shouldReturnUserDTOWhenUserRepresentationIsFoundUsingEmail() {
         String userId = UUID.randomUUID().toString();
-        Map<String, Object> params = Map.of("userId", userId, "accessToken", STUBBED_ACCESS_TOKEN,
+        Map<String, Object> params = Map.of("userId", userId, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN,
                 "email", "someaddress@somedomain.com");
 
         RealmResource fakeRealmResource = mock(RealmResource.class);
@@ -1142,7 +1147,7 @@ class KeycloakAdapterTest {
     @Test
     void getUserInfo_shouldReturnNullWhenUserRepresentationIsNotFoundUsingEmail() {
         String userId = UUID.randomUUID().toString();
-        Map<String, Object> params = Map.of("userId", userId, "accessToken", STUBBED_ACCESS_TOKEN,
+        Map<String, Object> params = Map.of("userId", userId, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN,
                 "email", "someweirdaddress@somedomain.co");
 
         RealmResource fakeRealmResource = mock(RealmResource.class);
@@ -1165,7 +1170,7 @@ class KeycloakAdapterTest {
     @Test
     void getUserInfo_shouldReturnUserDTOWhenUserRepresentationIsFoundUsingUsername() {
         String userId = UUID.randomUUID().toString();
-        Map<String, Object> params = Map.of("userId", userId, "accessToken", STUBBED_ACCESS_TOKEN,
+        Map<String, Object> params = Map.of("userId", userId, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN,
                 "username", "my-username");
 
         RealmResource fakeRealmResource = mock(RealmResource.class);
@@ -1191,7 +1196,7 @@ class KeycloakAdapterTest {
     @Test
     void getUserInfo_shouldReturnNullWhenUserRepresentationIsNotFoundUsingUsername() {
         String userId = UUID.randomUUID().toString();
-        Map<String, Object> params = Map.of("userId", userId, "accessToken", STUBBED_ACCESS_TOKEN,
+        Map<String, Object> params = Map.of("userId", userId, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN,
                 "username", "my-username");
 
         RealmResource fakeRealmResource = mock(RealmResource.class);
@@ -1214,7 +1219,7 @@ class KeycloakAdapterTest {
     @Test
     void getUserGroup_shouldThrowAdapterExceptionCreatingKeycloakInstanceWhenRuntimeExceptionIsThrownGettingNewInstance() {
         var userGroupId = UUID.randomUUID().toString();
-        Map<String, Object> params = Map.of("userGroupId", userGroupId, "accessToken", STUBBED_ACCESS_TOKEN);
+        Map<String, Object> params = Map.of("userGroupId", userGroupId, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
 
         try (MockedStatic<Keycloak> ignored = mockStatic(Keycloak.class)) {
             when(Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
@@ -1232,7 +1237,7 @@ class KeycloakAdapterTest {
     @Test
     void getUserGroup_shouldThrowExceptionCreatingKeycloakInstanceWhenAccessingRealms() {
         var userGroupId = UUID.randomUUID().toString();
-        Map<String, Object> params = Map.of("userGroupId", userGroupId, "accessToken", STUBBED_ACCESS_TOKEN);
+        Map<String, Object> params = Map.of("userGroupId", userGroupId, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
 
         try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
             Keycloak mockKeycloakInstance = mock(Keycloak.class);
@@ -1252,7 +1257,7 @@ class KeycloakAdapterTest {
     @Test
     void getUserGroup_shouldReturnNullWhenUserGroupRepresentationIsNotFound() {
         var userGroupId = UUID.randomUUID().toString();
-        Map<String, Object> params = Map.of("userGroupName", userGroupId, "accessToken", STUBBED_ACCESS_TOKEN);
+        Map<String, Object> params = Map.of("userGroupName", userGroupId, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
 
         RealmResource fakeRealmResource = mock(RealmResource.class);
         GroupsResource fakeGroupsResource = mock(GroupsResource.class);
@@ -1274,7 +1279,7 @@ class KeycloakAdapterTest {
     @Test
     void getUserGroup_shouldReturnNullWhenUserGroupIsNotFoundUsingUserGroupName() {
         var userGroupNameParam = "some-group";
-        Map<String, Object> params = Map.of("userGroupName", userGroupNameParam, "accessToken", STUBBED_ACCESS_TOKEN);
+        Map<String, Object> params = Map.of("userGroupName", userGroupNameParam, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
 
         RealmResource fakeRealmResource = mock(RealmResource.class);
         GroupsResource fakeGroupsResource = mock(GroupsResource.class);
@@ -1296,7 +1301,7 @@ class KeycloakAdapterTest {
     @Test
     void getUserGroup_shouldReturnNullWhenUserGroupNameDoesMatchAnyFoundGroups() {
         var userGroupNameParam = "some-group";
-        Map<String, Object> params = Map.of("userGroupName", userGroupNameParam, "accessToken", STUBBED_ACCESS_TOKEN);
+        Map<String, Object> params = Map.of("userGroupName", userGroupNameParam, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
 
         RealmResource fakeRealmResource = mock(RealmResource.class);
         GroupsResource fakeGroupsResource = mock(GroupsResource.class);
@@ -1321,7 +1326,7 @@ class KeycloakAdapterTest {
     @Test
     void getUserGroup_shouldReturnUserGroupDTOWhenUserGroupRepresentationIsFound() {
         var userGroupId = UUID.randomUUID().toString();
-        Map<String, Object> params = Map.of("userGroupName", "some-group-name", "accessToken", STUBBED_ACCESS_TOKEN);
+        Map<String, Object> params = Map.of("userGroupName", "some-group-name", ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
 
         RealmResource fakeRealmResource = mock(RealmResource.class);
         GroupsResource fakeGroupsResource = mock(GroupsResource.class);
@@ -1374,7 +1379,7 @@ class KeycloakAdapterTest {
     @Test
     void validateAssignmentProperties_shouldThrowResponseStatusExceptionAsBadRequestWhenUserIdIsReceivedButNoUserInfoIsFound() {
         var userId = UUID.randomUUID().toString();
-        Map<String, Object> params = Map.of("userId", userId, "accessToken", STUBBED_ACCESS_TOKEN);
+        Map<String, Object> params = Map.of("userId", userId, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
 
         RealmResource fakeRealmResource = mock(RealmResource.class);
         UsersResource fakeUsersResource = mock(UsersResource.class);
@@ -1401,7 +1406,7 @@ class KeycloakAdapterTest {
     @Test
     void validateAssignmentProperties_shouldThrowResponseStatusExceptionAsBadRequestWhenUserGroupIsReceivedButItIsNotFoundWithinRealm() {
         var requestedUserGroup = "my-group";
-        Map<String, Object> params = Map.of("userGroupId", requestedUserGroup, "accessToken", STUBBED_ACCESS_TOKEN);
+        Map<String, Object> params = Map.of("userGroupId", requestedUserGroup, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
 
         RealmResource fakeRealmResource = mock(RealmResource.class);
         GroupsResource fakeGroupsResource = mock(GroupsResource.class);
@@ -1429,7 +1434,7 @@ class KeycloakAdapterTest {
     @Test
     void validateAssignmentProperties_shouldThrowResponseStatusExceptionAsBadRequestWhenUserGroupIsReceivedButItIsNotPartOfTheOnesInRealm() {
         var requestedUserGroup = "my-group";
-        Map<String, Object> params = Map.of("userGroupId", requestedUserGroup, "accessToken", STUBBED_ACCESS_TOKEN);
+        Map<String, Object> params = Map.of("userGroupId", requestedUserGroup, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
 
         RealmResource fakeRealmResource = mock(RealmResource.class);
         GroupsResource fakeGroupsResource = mock(GroupsResource.class);
@@ -1467,7 +1472,7 @@ class KeycloakAdapterTest {
     void validateAssignmentProperties_shouldThrowResponseStatusExceptionAsBadRequestWhenUserIdAndUserGroupAreReceivedButUserGroupIsNotFoundWithinRealm() {
         var userId = UUID.randomUUID().toString();
         var requestedUserGroup = "my-group";
-        Map<String, Object> params = Map.of("userId", userId, "userGroupId", requestedUserGroup, "accessToken", STUBBED_ACCESS_TOKEN);
+        Map<String, Object> params = Map.of("userId", userId, "userGroupId", requestedUserGroup, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
 
         RealmResource fakeRealmResource = mock(RealmResource.class);
         UsersResource fakeUsersResource = mock(UsersResource.class);
@@ -1506,7 +1511,7 @@ class KeycloakAdapterTest {
     void validateAssignmentProperties_shouldThrowResponseStatusExceptionAsBadRequestWhenUserIdAndUserGroupAreReceivedButNoUserInfoIsFound() {
         var userId = UUID.randomUUID().toString();
         var requestedUserGroup = "my-group";
-        Map<String, Object> params = Map.of("userId", userId, "userGroupId", requestedUserGroup, "accessToken", STUBBED_ACCESS_TOKEN);
+        Map<String, Object> params = Map.of("userId", userId, "userGroupId", requestedUserGroup, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
 
         RealmResource fakeRealmResource = mock(RealmResource.class);
         UsersResource fakeUsersResource = mock(UsersResource.class);
@@ -1534,7 +1539,7 @@ class KeycloakAdapterTest {
     void validateAssignmentProperties_shouldNotThrowAnyExceptionWhenUserIdAndUserGroupAreReceivedAndTheyAreFoundWithinRealm() {
         var userId = UUID.randomUUID().toString();
         var requestedUserGroup = UUID.randomUUID().toString();
-        Map<String, Object> params = Map.of("userId", userId, "userGroupId", requestedUserGroup, "accessToken", STUBBED_ACCESS_TOKEN);
+        Map<String, Object> params = Map.of("userId", userId, "userGroupId", requestedUserGroup, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
 
         RealmResource fakeRealmResource = mock(RealmResource.class);
         UsersResource fakeUsersResource = mock(UsersResource.class);
@@ -1568,7 +1573,7 @@ class KeycloakAdapterTest {
     @Test
     void validateAssignmentProperties_shouldNotThrowAnyExceptionWhenUserGroupIsReceivedAndItIsFoundWithinRealm() {
         var requestedUserGroup = UUID.randomUUID().toString();
-        Map<String, Object> params = Map.of("userGroupId", requestedUserGroup, "accessToken", STUBBED_ACCESS_TOKEN);
+        Map<String, Object> params = Map.of("userGroupId", requestedUserGroup, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
 
         RealmResource fakeRealmResource = mock(RealmResource.class);
         GroupsResource fakeGroupsResource = mock(GroupsResource.class);
@@ -1597,7 +1602,7 @@ class KeycloakAdapterTest {
     @Test
     void validateAssignmentProperties_shouldNotThrowAnyExceptionWhenUserIdIsReceivedAndItIsFoundWithinRealm() {
         var userId = UUID.randomUUID().toString();
-        Map<String, Object> params = Map.of("userId", userId, "accessToken", STUBBED_ACCESS_TOKEN);
+        Map<String, Object> params = Map.of("userId", userId, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
 
         RealmResource fakeRealmResource = mock(RealmResource.class);
         UsersResource fakeUsersResource = mock(UsersResource.class);
@@ -1615,6 +1620,440 @@ class KeycloakAdapterTest {
             when(fakeUserResource.toRepresentation()).thenReturn(fakeUserRepresentation);
 
             assertDoesNotThrow(() -> keycloakAdapter.validateAssignmentProperties(params));
+        }
+    }
+
+    @Test
+    void buildParamsForUserCreation_shouldThrowNullPointerExceptionWhenNullAccessTokenIsReceived() {
+        assertThrows(NullPointerException.class,
+                ()-> KeycloakAdapter.buildParamsForUserCreation(null, CreateManagedUserRequest.builder().build()));
+    }
+
+    @Test
+    void buildParamsForUserCreation_shouldThrowNullPointerExceptionWhenNullRequestObjectIsReceived() {
+        assertThrows(NullPointerException.class,
+                ()-> KeycloakAdapter.buildParamsForUserCreation(STUBBED_ACCESS_TOKEN, null));
+    }
+
+    @Test
+    void buildParamsForUserCreation_shouldThrowNullPointerExceptionIfRequestObjectHasBlankUsername() {
+        CreateManagedUserRequest request = CreateManagedUserRequest.builder()
+                .username("   ")
+                .build();
+
+        AdapterException adapterException = assertThrows(AdapterException.class,
+                () -> buildParamsForUserCreation(STUBBED_ACCESS_TOKEN, request));
+
+        String expectedErrorMessage = "Cannot create User without username!";
+        assertEquals(expectedErrorMessage, adapterException.getMessage());
+    }
+
+    @Test
+    void buildParamsForUserCreation_shouldReturnTwoParamsIfUsernameIsPresentWithinRequestNotNullNorBlank() {
+        var fakeUsername = "someUsername";
+
+        CreateManagedUserRequest request = CreateManagedUserRequest.builder()
+                .firstName(" ")
+                .lastName(null)
+                .username(fakeUsername)
+                .email("")
+                .build();
+
+        Map<String, Object> params = buildParamsForUserCreation(STUBBED_ACCESS_TOKEN, request);
+
+        int expectedParamsCount = 2;
+
+        assertFalse(params.isEmpty());
+        assertEquals(expectedParamsCount, params.size());
+        assertEquals(STUBBED_ACCESS_TOKEN, params.get(ACCESS_TOKEN_MAP_KEY));
+        assertEquals(fakeUsername, params.get(USERNAME_MAP_KEY));
+    }
+
+    @Test
+    void buildParamsForUserCreation_shouldReturnAllParamsIfPresentAndNotNullNorBlank() {
+        var fakeFirstName = "someName";
+        var fakeLastName = "someLastName";
+        var fakeUsername = "someUsername";
+        var fakeEmail = "someemail@somedomain.com";
+
+        CreateManagedUserRequest request = CreateManagedUserRequest.builder()
+                .firstName(fakeFirstName)
+                .lastName(fakeLastName)
+                .username(fakeUsername)
+                .email(fakeEmail)
+                .build();
+
+        Map<String, Object> params = buildParamsForUserCreation(STUBBED_ACCESS_TOKEN, request);
+
+        int expectedParamsCount = 5;
+
+        assertFalse(params.isEmpty());
+        assertEquals(expectedParamsCount, params.size());
+        assertEquals(STUBBED_ACCESS_TOKEN, params.get(ACCESS_TOKEN_MAP_KEY));
+        assertEquals(fakeFirstName, params.get(FIRST_NAME_MAP_KEY));
+        assertEquals(fakeLastName, params.get(LAST_NAME_MAP_KEY));
+        assertEquals(fakeUsername, params.get(USERNAME_MAP_KEY));
+        assertEquals(fakeEmail, params.get(EMAIL_MAP_KEY));
+    }
+
+    @Test
+    void createUser_shouldThrowAdapterExceptionCreatingKeycloakInstanceWhenRuntimeExceptionIsThrownGettingNewInstance() {
+        var fakeUsername = "someUsername";
+        Map<String, Object> params = Map.of(USERNAME_MAP_KEY, fakeUsername, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
+
+        try (MockedStatic<Keycloak> ignored = mockStatic(Keycloak.class)) {
+            when(Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenThrow(new RuntimeException("Error"));
+
+            AdapterException thrownException = assertThrows(AdapterException.class,
+                    () -> keycloakAdapter.createUser(params));
+
+            var expectedErrorMessage = "Something went wrong while creating Keycloak instance.";
+
+            assertEquals(expectedErrorMessage, thrownException.getMessage());
+        }
+    }
+
+    @Test
+    void createUser_shouldThrowExceptionCreatingKeycloakInstanceWhenAccessingRealms() {
+        var fakeUsername = "someUsername";
+        Map<String, Object> params = Map.of(USERNAME_MAP_KEY, fakeUsername, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenThrow(new RuntimeException());
+
+            AdapterException thrownException = assertThrows(AdapterException.class,
+                    () -> keycloakAdapter.createUser(params));
+
+            var expectedErrorMessage = "Something went wrong while creating a User in Keycloak realm.";
+
+            assertEquals(expectedErrorMessage, thrownException.getMessage());
+        }
+    }
+
+    @Test
+    void createUser_shouldThrowExceptionCreatingKeycloakInstanceWhenUsernameIsNotPresent() {
+        var fakeEmail = "somemail@somedomain.com";
+        Map<String, Object> params = Map.of(EMAIL_MAP_KEY, fakeEmail, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenThrow(new RuntimeException());
+
+            AdapterException thrownException = assertThrows(AdapterException.class,
+                    () -> keycloakAdapter.createUser(params));
+
+            var expectedErrorMessage = "Cannot create User without username!";
+
+            assertEquals(expectedErrorMessage, thrownException.getMessage());
+        }
+    }
+
+    @Test
+    void createUser_shouldThrowExceptionWhenResponseIsNotCreated() {
+        var fakeUsername = "someUsername";
+        Map<String, Object> params = Map.of(USERNAME_MAP_KEY, fakeUsername, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
+        RealmResource fakeRealmResource = mock(RealmResource.class);
+        UsersResource fakeUsersResource = mock(UsersResource.class);
+        Response fakeResponse = Response.created(URI.create("www.some-fake-uri.com"))
+                .status(HttpStatus.BAD_REQUEST.value())
+                .build();
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
+            when(fakeRealmResource.users()).thenReturn(fakeUsersResource);
+            when(fakeUsersResource.create(any(UserRepresentation.class))).thenReturn(fakeResponse);
+
+            AdapterException thrownException = assertThrows(AdapterException.class,
+                    () -> keycloakAdapter.createUser(params));
+
+            var expectedErrorMessage = "User creation failed within realm lh with status: 400!";
+
+            assertEquals(expectedErrorMessage, thrownException.getMessage());
+        }
+    }
+
+    @Test
+    void createUser_shouldSucceedWhenCreatingUserOnlyWithUsernameNoExceptionsAreThrownAndResponseIsCreated() {
+        var fakeUsername = "someUsername";
+        Map<String, Object> params = Map.of(USERNAME_MAP_KEY, fakeUsername, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
+        RealmResource fakeRealmResource = mock(RealmResource.class);
+        UsersResource fakeUsersResource = mock(UsersResource.class);
+        Response fakeResponse = Response.created(URI.create("www.some-fake-uri.com"))
+                .status(HttpStatus.CREATED.value())
+                .build();
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
+            when(fakeRealmResource.users()).thenReturn(fakeUsersResource);
+            when(fakeUsersResource.create(any(UserRepresentation.class))).thenReturn(fakeResponse);
+
+            assertDoesNotThrow(() -> keycloakAdapter.createUser(params));
+        }
+    }
+
+    @Test
+    void createUser_shouldSucceedWhenCreatingUserOnlyWithUsernameAndEmailNoExceptionsAreThrownAndResponseIsCreated() {
+        var fakeUsername = "someUsername";
+        var fakeEmail = "somemail@somedomain.com";
+        Map<String, Object> params = Map.of(USERNAME_MAP_KEY, fakeUsername, EMAIL_MAP_KEY, fakeEmail,
+                ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
+        RealmResource fakeRealmResource = mock(RealmResource.class);
+        UsersResource fakeUsersResource = mock(UsersResource.class);
+        Response fakeResponse = Response.created(URI.create("www.some-fake-uri.com"))
+                .status(HttpStatus.CREATED.value())
+                .build();
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
+            when(fakeRealmResource.users()).thenReturn(fakeUsersResource);
+            when(fakeUsersResource.create(any(UserRepresentation.class))).thenReturn(fakeResponse);
+
+            assertDoesNotThrow(() -> keycloakAdapter.createUser(params));
+        }
+    }
+
+    @Test
+    void createUser_shouldSucceedWhenCreatingUserWithUsernameEmailFirstNameAndLastNameNoExceptionsAreThrownAndResponseIsCreated() {
+        var fakeUsername = "someUsername";
+        var fakeEmail = "somemail@somedomain.com";
+        var firstName = "Name";
+        var lastName = "LastName";
+        Map<String, Object> params = Map.of(USERNAME_MAP_KEY, fakeUsername, EMAIL_MAP_KEY, fakeEmail,
+                FIRST_NAME_MAP_KEY, firstName, LAST_NAME_MAP_KEY, lastName, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
+        RealmResource fakeRealmResource = mock(RealmResource.class);
+        UsersResource fakeUsersResource = mock(UsersResource.class);
+        Response fakeResponse = Response.created(URI.create("www.some-fake-uri.com"))
+                .status(HttpStatus.CREATED.value())
+                .build();
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
+            when(fakeRealmResource.users()).thenReturn(fakeUsersResource);
+            when(fakeUsersResource.create(any(UserRepresentation.class))).thenReturn(fakeResponse);
+
+            assertDoesNotThrow(() -> keycloakAdapter.createUser(params));
+        }
+    }
+
+    @Test
+    void setPassword_shouldThrowAdapterExceptionCreatingKeycloakInstanceWhenRuntimeExceptionIsThrownGettingNewInstance() {
+        var fakeUserId = "someUserId";
+        var fakePassword = "somePassword";
+        Map<String, Object> params = Map.of(ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN, "password", fakePassword,
+                "isTemporary", false);
+
+        try (MockedStatic<Keycloak> ignored = mockStatic(Keycloak.class)) {
+            when(Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenThrow(new RuntimeException("Error"));
+
+            AdapterException thrownException = assertThrows(AdapterException.class,
+                    () -> keycloakAdapter.setPassword(fakeUserId, params));
+
+            var expectedErrorMessage = "Something went wrong while creating Keycloak instance.";
+
+            assertEquals(expectedErrorMessage, thrownException.getMessage());
+        }
+    }
+
+    @Test
+    void setPassword_shouldThrowExceptionCreatingKeycloakInstanceWhenAccessingRealms() {
+        var fakeUserId = "someUserId";
+        var fakePassword = "somePassword";
+        Map<String, Object> params = Map.of(ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN, "password", fakePassword,
+                "isTemporary", false);
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenThrow(new RuntimeException());
+
+            AdapterException thrownException = assertThrows(AdapterException.class,
+                    () -> keycloakAdapter.setPassword(fakeUserId, params));
+
+            var expectedErrorMessage = "Something went wrong while setting a User's password in Keycloak realm.";
+
+            assertEquals(expectedErrorMessage, thrownException.getMessage());
+        }
+    }
+
+    @Test
+    void setPassword_shouldSucceedWhenNoPreviousCredentialsArePresentAndPasswordIsNotTemporary() {
+        var fakeUserId = "someUserId";
+        var fakePassword = "somePassword";
+        Map<String, Object> params = Map.of(ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN, "password", fakePassword,
+                "isTemporary", false);
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            RealmResource fakeRealmResource = mock(RealmResource.class);
+            UsersResource fakeUsersResource = mock(UsersResource.class);
+            UserResource fakeUserResource = mock(UserResource.class);
+
+            UserRepresentation userRepresentation = new UserRepresentation();
+            userRepresentation.setId(fakeUserId);
+
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
+            when(fakeRealmResource.users()).thenReturn(fakeUsersResource);
+            when(fakeUsersResource.get(eq(fakeUserId))).thenReturn(fakeUserResource);
+            when(fakeUserResource.toRepresentation()).thenReturn(userRepresentation);
+
+            keycloakAdapter.setPassword(fakeUserId, params);
+
+            ArgumentCaptor<UserRepresentation> argumentCaptor = ArgumentCaptor.forClass(UserRepresentation.class);
+
+            verify(fakeUserResource).update(argumentCaptor.capture());
+
+            UserRepresentation userRepresentationSent = argumentCaptor.getValue();
+
+            int expectedCredentialsCount = 1;
+            List<CredentialRepresentation> credentialsSent = userRepresentationSent.getCredentials();
+
+            assertNotNull(userRepresentationSent);
+            assertEquals(expectedCredentialsCount, credentialsSent.size());
+            assertEquals(fakePassword, credentialsSent.getFirst().getValue());
+            assertFalse(credentialsSent.getFirst().isTemporary());
+        }
+    }
+
+    @Test
+    void setPassword_shouldSucceedWhenNoPreviousCredentialsArePresentAndPasswordIsTemporary() {
+        var fakeUserId = "someUserId";
+        var fakePassword = "somePassword";
+        Map<String, Object> params = Map.of(ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN, "password", fakePassword,
+                "isTemporary", true);
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            RealmResource fakeRealmResource = mock(RealmResource.class);
+            UsersResource fakeUsersResource = mock(UsersResource.class);
+            UserResource fakeUserResource = mock(UserResource.class);
+
+            UserRepresentation userRepresentation = new UserRepresentation();
+            userRepresentation.setId(fakeUserId);
+
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
+            when(fakeRealmResource.users()).thenReturn(fakeUsersResource);
+            when(fakeUsersResource.get(eq(fakeUserId))).thenReturn(fakeUserResource);
+            when(fakeUserResource.toRepresentation()).thenReturn(userRepresentation);
+
+            keycloakAdapter.setPassword(fakeUserId, params);
+
+            ArgumentCaptor<UserRepresentation> argumentCaptor = ArgumentCaptor.forClass(UserRepresentation.class);
+
+            verify(fakeUserResource).update(argumentCaptor.capture());
+
+            UserRepresentation userRepresentationSent = argumentCaptor.getValue();
+
+            int expectedCredentialsCount = 1;
+            List<CredentialRepresentation> credentialsSent = userRepresentationSent.getCredentials();
+
+            assertNotNull(userRepresentationSent);
+            assertEquals(expectedCredentialsCount, credentialsSent.size());
+            assertEquals(fakePassword, credentialsSent.getFirst().getValue());
+            assertTrue(credentialsSent.getFirst().isTemporary());
+        }
+    }
+
+    @Test
+    void setPassword_shouldSucceedWhenPreviousCredentialsArePresentAndPasswordIsTemporary() {
+        var fakeUserId = "someUserId";
+        var fakePassword = "somePassword";
+        Map<String, Object> params = Map.of(ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN, "password", fakePassword,
+                "isTemporary", true);
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            RealmResource fakeRealmResource = mock(RealmResource.class);
+            UsersResource fakeUsersResource = mock(UsersResource.class);
+            UserResource fakeUserResource = mock(UserResource.class);
+
+            UserRepresentation userRepresentation = new UserRepresentation();
+            userRepresentation.setId(fakeUserId);
+
+            CredentialRepresentation credentialRepresentation = new CredentialRepresentation();
+            credentialRepresentation.setId(UUID.randomUUID().toString());
+
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
+            when(fakeRealmResource.users()).thenReturn(fakeUsersResource);
+            when(fakeUsersResource.get(eq(fakeUserId))).thenReturn(fakeUserResource);
+            when(fakeUserResource.credentials()).thenReturn(List.of(credentialRepresentation));
+
+            keycloakAdapter.setPassword(fakeUserId, params);
+
+            ArgumentCaptor<CredentialRepresentation> argumentCaptor = ArgumentCaptor.forClass(CredentialRepresentation.class);
+
+            verify(fakeUserResource).resetPassword(argumentCaptor.capture());
+
+            CredentialRepresentation credentialsUpdated = argumentCaptor.getValue();
+
+            assertNotNull(credentialsUpdated);
+            assertEquals(fakePassword, credentialsUpdated.getValue());
+            assertTrue(credentialsUpdated.isTemporary());
+        }
+    }
+
+    @Test
+    void setPassword_shouldSucceedWhenPreviousCredentialsArePresentAndPasswordIsNotTemporary() {
+        var fakeUserId = "someUserId";
+        var fakePassword = "somePassword";
+        Map<String, Object> params = Map.of(ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN, "password", fakePassword,
+                "isTemporary", false);
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            RealmResource fakeRealmResource = mock(RealmResource.class);
+            UsersResource fakeUsersResource = mock(UsersResource.class);
+            UserResource fakeUserResource = mock(UserResource.class);
+
+            UserRepresentation userRepresentation = new UserRepresentation();
+            userRepresentation.setId(fakeUserId);
+
+            CredentialRepresentation credentialRepresentation = new CredentialRepresentation();
+            credentialRepresentation.setId(UUID.randomUUID().toString());
+
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
+            when(fakeRealmResource.users()).thenReturn(fakeUsersResource);
+            when(fakeUsersResource.get(eq(fakeUserId))).thenReturn(fakeUserResource);
+            when(fakeUserResource.credentials()).thenReturn(List.of(credentialRepresentation));
+
+            keycloakAdapter.setPassword(fakeUserId, params);
+
+            ArgumentCaptor<CredentialRepresentation> argumentCaptor = ArgumentCaptor.forClass(CredentialRepresentation.class);
+
+            verify(fakeUserResource).resetPassword(argumentCaptor.capture());
+
+            CredentialRepresentation credentialsUpdated = argumentCaptor.getValue();
+
+            assertNotNull(credentialsUpdated);
+            assertEquals(fakePassword, credentialsUpdated.getValue());
+            assertFalse(credentialsUpdated.isTemporary());
         }
     }
 

@@ -127,3 +127,15 @@ This command will execute Spring Boot's run task:
 
 In order to see OpenAPI Specs with Swagger UI, and after having User Tasks Bridge Backend running, you just need to go to your
 web browser and access the following URL: <http://localhost:8089/swagger-ui/index.html>
+
+### Users & Groups Management
+
+There are some useful endpoints if you want to create, fetch, update and delete users and groups from a realm in your
+configured Identity Provider.
+
+#### Special Considerations to Manage Users & Groups
+
+- IMPORTANT: These endpoints will **_only work with Keycloak_** as Identity Provider, for there's only one IdP adapter currently implemented.
+- These endpoints are set to only allow Admin users to hit them
+- In order to properly manage users, besides having the `lh-user-tasks-admin` role that identifies Users as Admins,
+they also need to have the `manage-users` role assigned.
