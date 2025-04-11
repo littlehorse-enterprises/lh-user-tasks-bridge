@@ -9,6 +9,7 @@ import io.littlehorse.usertasks.idp_adapters.keycloak.KeycloakAdapter;
 import io.littlehorse.usertasks.models.requests.CreateManagedUserRequest;
 import io.littlehorse.usertasks.models.requests.IDPUserSearchRequestFilter;
 import io.littlehorse.usertasks.models.requests.PasswordUpsertRequest;
+import io.littlehorse.usertasks.models.responses.IDPUserDTO;
 import io.littlehorse.usertasks.models.responses.IDPUserListDTO;
 import io.littlehorse.usertasks.services.TenantService;
 import io.littlehorse.usertasks.services.UserManagementService;
@@ -29,6 +30,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -213,6 +215,64 @@ public class UserManagementController {
             userManagementService.setPassword(accessToken, userId, requestBody, identityProviderHandler);
         } catch (JsonProcessingException e) {
             log.error("Something went wrong when getting claims from token while trying to upsert a user's password.");
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @Operation(
+            summary = "Get Single User from IdP",
+            description = "Gets a User from a specific identity provider of a specific tenant."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "User representation",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = IDPUserListDTO.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Tenant Id is not valid.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "User data could not be found",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "406",
+                    description = "Unknown Identity vendor.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            )
+    })
+    @GetMapping("/{tenant_id}/management/users/{user_id}")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseEntity<IDPUserDTO> getUserFromIdP(@RequestHeader(name = "Authorization") String accessToken,
+                               @PathVariable(name = "tenant_id") String tenantId,
+                               @PathVariable(name = "user_id") String userId) {
+        if (!tenantService.isValidTenant(tenantId, accessToken)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+
+        try {
+            CustomIdentityProviderProperties customIdentityProviderProperties =
+                    getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
+            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
+
+            Optional<IDPUserDTO> optionalUserDTO = userManagementService.getUserFromIdentityProvider(accessToken, userId, identityProviderHandler);
+
+            return optionalUserDTO.map(ResponseEntity::ok)
+                    .orElseGet(() -> ResponseEntity.notFound().build());
+        } catch (JsonProcessingException e) {
+            log.error("Something went wrong when getting claims from token while trying to fetch a user's data.");
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
