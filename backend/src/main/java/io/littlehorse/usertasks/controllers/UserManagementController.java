@@ -8,20 +8,26 @@ import io.littlehorse.usertasks.idp_adapters.IdentityProviderVendor;
 import io.littlehorse.usertasks.idp_adapters.keycloak.KeycloakAdapter;
 import io.littlehorse.usertasks.models.requests.CreateManagedUserRequest;
 import io.littlehorse.usertasks.models.requests.IDPUserSearchRequestFilter;
-import io.littlehorse.usertasks.models.requests.PasswordUpsertRequest;
+import io.littlehorse.usertasks.models.requests.UpdateManagedUserRequest;
+import io.littlehorse.usertasks.models.requests.UpsertPasswordRequest;
 import io.littlehorse.usertasks.models.responses.IDPUserDTO;
 import io.littlehorse.usertasks.models.responses.IDPUserListDTO;
 import io.littlehorse.usertasks.services.TenantService;
 import io.littlehorse.usertasks.services.UserManagementService;
+import io.littlehorse.usertasks.util.enums.CustomUserIdClaim;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.validation.*;
+import jakarta.validation.ConstraintViolation;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+import jakarta.validation.ValidatorFactory;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
@@ -200,7 +206,7 @@ public class UserManagementController {
     public void upsertPassword(@RequestHeader(name = "Authorization") String accessToken,
                                @PathVariable(name = "tenant_id") String tenantId,
                                @PathVariable(name = "user_id") String userId,
-                               @RequestBody PasswordUpsertRequest requestBody) {
+                               @RequestBody UpsertPasswordRequest requestBody) {
         if (!tenantService.isValidTenant(tenantId, accessToken)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
@@ -277,6 +283,54 @@ public class UserManagementController {
         }
     }
 
+    @Operation(
+            summary = "Update Managed User",
+            description = "Updates a user's properties"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "204",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Tenant Id is not valid.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "406",
+                    description = "Unknown Identity vendor.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            )
+    })
+    @PutMapping("/{tenant_id}/management/users/{user_id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void updateUser(@RequestHeader(name = "Authorization") String accessToken,
+                               @PathVariable(name = "tenant_id") String tenantId,
+                               @PathVariable(name = "user_id") String userId,
+                               @RequestBody UpdateManagedUserRequest requestBody) {
+        if (!tenantService.isValidTenant(tenantId, accessToken)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+
+        try {
+            CustomIdentityProviderProperties customIdentityProviderProperties =
+                    getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
+            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
+
+            validateUpdateManagedUserRequest(requestBody, customIdentityProviderProperties.getUserIdClaim());
+
+            userManagementService.updateUser(accessToken, userId, requestBody, identityProviderHandler);
+        } catch (JsonProcessingException e) {
+            log.error("Something went wrong when getting claims from token while trying to update a user's properties.");
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     private IStandardIdentityProviderAdapter getIdentityProviderHandler(@NonNull IdentityProviderVendor vendor) {
         if (vendor == IdentityProviderVendor.KEYCLOAK) {
             return new KeycloakAdapter();
@@ -285,10 +339,10 @@ public class UserManagementController {
         }
     }
 
-    private void validatePasswordUpsertRequest(PasswordUpsertRequest requestBody) {
+    private void validatePasswordUpsertRequest(UpsertPasswordRequest requestBody) {
         try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
             Validator validator = factory.getValidator();
-            Set<ConstraintViolation<PasswordUpsertRequest>> constraintViolations = validator.validate(requestBody);
+            Set<ConstraintViolation<UpsertPasswordRequest>> constraintViolations = validator.validate(requestBody);
 
             if (!CollectionUtils.isEmpty(constraintViolations)) {
                 String validationMessage = constraintViolations.stream()
@@ -297,6 +351,25 @@ public class UserManagementController {
 
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, validationMessage);
             }
+        }
+    }
+
+    private void validateUpdateManagedUserRequest(UpdateManagedUserRequest requestBody, CustomUserIdClaim userIdClaim) {
+        try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
+            Validator validator = factory.getValidator();
+            Set<ConstraintViolation<UpdateManagedUserRequest>> constraintViolations = validator.validate(requestBody);
+
+            if (!CollectionUtils.isEmpty(constraintViolations)) {
+                String validationMessage = constraintViolations.stream()
+                        .map(ConstraintViolation::getMessage)
+                        .collect(Collectors.joining("; "));
+
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, validationMessage);
+            }
+        }
+
+        if (userIdClaim == CustomUserIdClaim.EMAIL && StringUtils.isBlank(requestBody.getEmail())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot set email to NULL, empty nor whitespace-only value.");
         }
     }
 }

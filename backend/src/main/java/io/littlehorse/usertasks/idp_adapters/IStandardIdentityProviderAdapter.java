@@ -29,9 +29,11 @@ public interface IStandardIdentityProviderAdapter {
 
     void validateAssignmentProperties(Map<String, Object> params);
 
-    void createUser(Map<String, Object> params);
+    void createManagedUser(Map<String, Object> params);
 
     void setPassword(String userId, Map<String, Object> params);
 
     IDPUserDTO getManagedUser(Map<String, Object> params);
+
+    void updateManagedUser(Map<String, Object> params);
 }
