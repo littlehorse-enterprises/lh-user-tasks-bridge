@@ -1,10 +1,12 @@
 package io.littlehorse.usertasks.services;
 
+import io.littlehorse.usertasks.exceptions.AdapterException;
 import io.littlehorse.usertasks.idp_adapters.IStandardIdentityProviderAdapter;
 import io.littlehorse.usertasks.idp_adapters.keycloak.KeycloakAdapter;
 import io.littlehorse.usertasks.models.requests.CreateManagedUserRequest;
 import io.littlehorse.usertasks.models.requests.IDPUserSearchRequestFilter;
-import io.littlehorse.usertasks.models.requests.PasswordUpsertRequest;
+import io.littlehorse.usertasks.models.requests.UpdateManagedUserRequest;
+import io.littlehorse.usertasks.models.requests.UpsertPasswordRequest;
 import io.littlehorse.usertasks.models.responses.IDPGroupDTO;
 import io.littlehorse.usertasks.models.responses.IDPUserDTO;
 import io.littlehorse.usertasks.models.responses.IDPUserListDTO;
@@ -15,7 +17,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.util.CollectionUtils;
 
-import java.util.*;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -319,7 +324,7 @@ class UserManagementServiceTest {
 
         ArgumentCaptor<Map<String, Object>> argumentCaptor = ArgumentCaptor.forClass(Map.class);
 
-        verify(keycloakAdapter).createUser(argumentCaptor.capture());
+        verify(keycloakAdapter).createManagedUser(argumentCaptor.capture());
 
         Map<String, Object> paramsSent = argumentCaptor.getValue();
         int expectedParamsCount = 5;
@@ -335,14 +340,14 @@ class UserManagementServiceTest {
 
     @Test
     void setPassword_shouldThrowNullPointerExceptionWhenNullAccessTokenIsReceived(){
-        PasswordUpsertRequest request = PasswordUpsertRequest.builder().build();
+        UpsertPasswordRequest request = UpsertPasswordRequest.builder().build();
         assertThrows(NullPointerException.class,
                 ()-> userManagementService.setPassword(null, "someUserId", request, keycloakAdapter));
     }
 
     @Test
     void setPassword_shouldThrowNullPointerExceptionWhenNullUserIdIsReceived(){
-        PasswordUpsertRequest request = PasswordUpsertRequest.builder().build();
+        UpsertPasswordRequest request = UpsertPasswordRequest.builder().build();
         assertThrows(NullPointerException.class,
                 ()-> userManagementService.setPassword(fakeAccessToken, null, request, keycloakAdapter));
     }
@@ -355,7 +360,7 @@ class UserManagementServiceTest {
 
     @Test
     void setPassword_shouldThrowNullPointerExceptionWhenNullIdentityProviderAdapterIsReceived(){
-        PasswordUpsertRequest request = PasswordUpsertRequest.builder().build();
+        UpsertPasswordRequest request = UpsertPasswordRequest.builder().build();
         assertThrows(NullPointerException.class,
                 ()-> userManagementService.setPassword(fakeAccessToken, "someUserId", request, null));
     }
@@ -364,7 +369,7 @@ class UserManagementServiceTest {
     void setPassword_shouldSucceedWhenNoExceptionsAreThrown() {
         var fakeUserId = "someUserId";
         var fakePassword = "my-nice-password";
-        PasswordUpsertRequest request = PasswordUpsertRequest.builder()
+        UpsertPasswordRequest request = UpsertPasswordRequest.builder()
                 .password(fakePassword)
                 .temporary(false)
                 .build();
@@ -451,6 +456,108 @@ class UserManagementServiceTest {
 
         assertEquals(expectedParamsCount, paramsSent.size());
         assertTrue(StringUtils.equalsIgnoreCase(userId, (String) paramsSent.get("userId")));
+    }
+
+    @Test
+    void updateUser_shouldThrowNullPointerExceptionWhenNullAccessTokenIsReceived() {
+        var userId = UUID.randomUUID().toString();
+        UpdateManagedUserRequest request = UpdateManagedUserRequest.builder().build();
+
+        assertThrows(NullPointerException.class,
+                ()-> userManagementService.updateUser(null, userId, request, keycloakAdapter));
+    }
+
+    @Test
+    void updateUser_shouldThrowNullPointerExceptionWhenNullUserIdIsReceived() {
+        UpdateManagedUserRequest request = UpdateManagedUserRequest.builder().build();
+
+        assertThrows(NullPointerException.class,
+                ()-> userManagementService.updateUser(fakeAccessToken, null, request, keycloakAdapter));
+    }
+
+    @Test
+    void updateUser_shouldThrowNullPointerExceptionWhenNullRequestIsReceived() {
+        var userId = UUID.randomUUID().toString();
+
+        assertThrows(NullPointerException.class,
+                ()-> userManagementService.updateUser(fakeAccessToken, userId, null, keycloakAdapter));
+    }
+
+    @Test
+    void updateUser_shouldThrowNullPointerExceptionWhenNullIdentityProviderAdapterIsReceived() {
+        var userId = UUID.randomUUID().toString();
+        UpdateManagedUserRequest request = UpdateManagedUserRequest.builder().build();
+
+        assertThrows(NullPointerException.class,
+                ()-> userManagementService.updateUser(fakeAccessToken, userId, request, null));
+    }
+
+    @Test
+    void updateUser_shouldSucceedWhenNoExceptionIsThrownAndNoUsernameIsProvided() {
+        var userId = UUID.randomUUID().toString();
+        var fakeEmail = "somerandommail@somedomain.com";
+        var fakeFirstName = "someName";
+        var fakeLastName = "someLastName";
+
+        UpdateManagedUserRequest request = UpdateManagedUserRequest.builder()
+                .enabled(true)
+                .email(fakeEmail)
+                .firstName(fakeFirstName)
+                .lastName(fakeLastName)
+                .build();
+
+        userManagementService.updateUser(fakeAccessToken, userId, request, keycloakAdapter);
+
+        ArgumentCaptor<Map<String, Object>> argumentCaptor = ArgumentCaptor.forClass(Map.class);
+
+        verify(keycloakAdapter).updateManagedUser(argumentCaptor.capture());
+
+        Map<String, Object> paramsSent = argumentCaptor.getValue();
+
+        int expectedParamsCount = 6;
+
+        assertEquals(expectedParamsCount, paramsSent.size());
+        assertEquals(userId, paramsSent.get("userId"));
+        assertEquals(fakeAccessToken, paramsSent.get("accessToken"));
+        assertEquals(true, paramsSent.get("enabled"));
+        assertNull(paramsSent.get("username"));
+        assertEquals(fakeFirstName, paramsSent.get("firstName"));
+        assertEquals(fakeLastName, paramsSent.get("lastName"));
+        assertEquals(fakeEmail, paramsSent.get("email"));
+    }
+
+    @Test
+    void updateUser_shouldThrowExceptionWhenUsernameIsProvidedAndKeycloakAdapterThrowsAdapterException() {
+        var userId = UUID.randomUUID().toString();
+        var fakeEmail = "somerandommail@somedomain.com";
+        var fakeFirstName = "someName";
+        var fakeLastName = "someLastName";
+        var fakeUsername = "someUsername";
+
+        UpdateManagedUserRequest request = UpdateManagedUserRequest.builder()
+                .enabled(true)
+                .email(fakeEmail)
+                .firstName(fakeFirstName)
+                .lastName(fakeLastName)
+                .username(fakeUsername)
+                .build();
+
+        var exceptionMessage = "Username is not allowed to be edited!";
+
+        doThrow(new AdapterException(exceptionMessage)).when(keycloakAdapter).updateManagedUser(anyMap());
+
+        AdapterException expectedException = assertThrows(AdapterException.class,
+                () -> userManagementService.updateUser(fakeAccessToken, userId, request, keycloakAdapter));
+
+        assertTrue(StringUtils.equalsIgnoreCase(exceptionMessage, expectedException.getMessage()));
+
+        ArgumentCaptor<Map<String, Object>> argumentCaptor = ArgumentCaptor.forClass(Map.class);
+
+        verify(keycloakAdapter).updateManagedUser(argumentCaptor.capture());
+
+        Map<String, Object> paramsSent = argumentCaptor.getValue();
+
+        assertEquals(fakeUsername, paramsSent.get("username"));
     }
 
     private void assertMandatoryParamsForKeycloakSearch(Map<String, Object> paramsUsedToSearchUsers, int expectedParamsCount) {

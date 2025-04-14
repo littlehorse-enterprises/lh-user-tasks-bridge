@@ -195,6 +195,30 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
     }
 
     @Override
+    public void updateManagedUser(Map<String, Object> params) {
+        log.info("Starting User update!");
+
+        var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
+        var realm = getRealmFromToken(accessToken);
+        var userId = (String) params.get(USER_ID_MAP_KEY);
+
+        try (Keycloak keycloak = getKeycloakInstance(realm, accessToken)) {
+            UserRepresentation userRepresentation = buildBasicUserRepresentationForUpdate(params);
+
+            keycloak.realm(realm).users().get(userId).update(userRepresentation);
+
+            log.info("User successfully updated in realm {}!", realm);
+        } catch (AdapterException e) {
+            log.error(e.getMessage());
+            throw new AdapterException(e.getMessage());
+        } catch (Exception e) {
+            var errorMessage = "Something went wrong while creating a User in Keycloak realm.";
+            log.error(errorMessage, e);
+            throw new AdapterException(errorMessage);
+        }
+    }
+
+    @Override
     public void validateUserGroup(String userGroupId, String accessToken) {
         String realm = getRealmFromToken(accessToken);
         Map<String, Object> params = Map.of(REALM_MAP_KEY, realm, ACCESS_TOKEN_MAP_KEY, accessToken);
@@ -317,14 +341,14 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
     }
 
     @Override
-    public void createUser(Map<String, Object> params) {
+    public void createManagedUser(Map<String, Object> params) {
         log.info("Starting User creation!");
 
         var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
         var realm = getRealmFromToken(accessToken);
 
         try (Keycloak keycloak = getKeycloakInstance(realm, accessToken)) {
-            UserRepresentation userRepresentation = buildBasicUserRepresentation(params);
+            UserRepresentation userRepresentation = buildBasicUserRepresentationForCreation(params);
 
             try (Response response = keycloak.realm(realm).users().create(userRepresentation)) {
                 if (response.getStatusInfo().getStatusCode() != 201) {
@@ -614,7 +638,7 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
                 .collect(Collectors.toSet());
     }
 
-    private UserRepresentation buildBasicUserRepresentation(Map<String, Object> params) {
+    private UserRepresentation buildBasicUserRepresentationForCreation(Map<String, Object> params) {
         var firstName = (String) params.get(FIRST_NAME_MAP_KEY);
         var lastName = (String) params.get(LAST_NAME_MAP_KEY);
         var userName = (String) params.get(USERNAME_MAP_KEY);
@@ -639,6 +663,38 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
         if (StringUtils.isNotBlank(email)) {
             userRepresentation.setEmail(email);
         }
+
+        userRepresentation.setEmailVerified(true);
+
+        return userRepresentation;
+    }
+
+    private UserRepresentation buildBasicUserRepresentationForUpdate(Map<String, Object> params) {
+        var firstName = (String) params.get(FIRST_NAME_MAP_KEY);
+        var lastName = (String) params.get(LAST_NAME_MAP_KEY);
+        var userName = (String) params.get(USERNAME_MAP_KEY);
+        var email = (String) params.get(EMAIL_MAP_KEY);
+        var enabled = (Boolean) params.get("enabled");
+
+        if (StringUtils.isNotBlank(userName)) {
+            throw new AdapterException("Username is not allowed to be edited!");
+        }
+
+        UserRepresentation userRepresentation = new UserRepresentation();
+
+        if (StringUtils.isNotBlank(firstName)) {
+            userRepresentation.setFirstName(firstName);
+        }
+
+        if (StringUtils.isNotBlank(lastName)) {
+            userRepresentation.setLastName(lastName);
+        }
+
+        if (StringUtils.isNotBlank(email)) {
+            userRepresentation.setEmail(email);
+        }
+
+        userRepresentation.setEnabled(enabled);
 
         return userRepresentation;
     }

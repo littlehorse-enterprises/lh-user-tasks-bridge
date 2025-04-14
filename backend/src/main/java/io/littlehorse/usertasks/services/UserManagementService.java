@@ -4,13 +4,15 @@ import io.littlehorse.usertasks.idp_adapters.IStandardIdentityProviderAdapter;
 import io.littlehorse.usertasks.idp_adapters.keycloak.KeycloakAdapter;
 import io.littlehorse.usertasks.models.requests.CreateManagedUserRequest;
 import io.littlehorse.usertasks.models.requests.IDPUserSearchRequestFilter;
-import io.littlehorse.usertasks.models.requests.PasswordUpsertRequest;
+import io.littlehorse.usertasks.models.requests.UpdateManagedUserRequest;
+import io.littlehorse.usertasks.models.requests.UpsertPasswordRequest;
 import io.littlehorse.usertasks.models.responses.IDPUserDTO;
 import io.littlehorse.usertasks.models.responses.IDPUserListDTO;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -41,10 +43,10 @@ public class UserManagementService {
             params = KeycloakAdapter.buildParamsForUserCreation(accessToken, requestBody);
         }
 
-        identityProviderAdapter.createUser(params);
+        identityProviderAdapter.createManagedUser(params);
     }
 
-    public void setPassword(@NonNull String accessToken, @NonNull String userId, @NonNull PasswordUpsertRequest requestBody,
+    public void setPassword(@NonNull String accessToken, @NonNull String userId, @NonNull UpsertPasswordRequest requestBody,
                             @NonNull IStandardIdentityProviderAdapter identityProviderHandler) {
         Map<String, Object> params = Map.of(ACCESS_TOKEN_MAP_KEY, accessToken,
                 "password", requestBody.getPassword().trim(),
@@ -58,5 +60,14 @@ public class UserManagementService {
         Map<String, Object> params = Map.of(ACCESS_TOKEN_MAP_KEY, accessToken, USER_ID_MAP_KEY, userId);
 
         return Optional.ofNullable(identityProviderHandler.getManagedUser(params));
+    }
+
+    public void updateUser(@NonNull String accessToken, @NonNull String userId, @NonNull UpdateManagedUserRequest requestBody,
+                           @NonNull IStandardIdentityProviderAdapter identityProviderHandler) {
+        Map<String, Object> params = new HashMap<>(requestBody.toMap());
+        params.put(ACCESS_TOKEN_MAP_KEY, accessToken);
+        params.put(USER_ID_MAP_KEY, userId);
+
+        identityProviderHandler.updateManagedUser(params);
     }
 }

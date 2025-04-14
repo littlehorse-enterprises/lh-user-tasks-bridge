@@ -8,7 +8,7 @@ import lombok.Data;
 @Data
 @Builder
 @AllArgsConstructor
-public class PasswordUpsertRequest {
+public class UpsertPasswordRequest {
     @NotBlank(message = "Password must not be NULL, empty nor a whitespace-only value")
     private String password;
     private boolean temporary;
