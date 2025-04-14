@@ -647,21 +647,21 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
         UserRepresentation userRepresentation = new UserRepresentation();
 
         if (StringUtils.isNotBlank(firstName)) {
-            userRepresentation.setFirstName(firstName);
+            userRepresentation.setFirstName(firstName.trim());
         }
 
         if (StringUtils.isNotBlank(lastName)) {
-            userRepresentation.setLastName(lastName);
+            userRepresentation.setLastName(lastName.trim());
         }
 
         if (StringUtils.isNotBlank(userName)) {
-            userRepresentation.setUsername(userName);
+            userRepresentation.setUsername(userName.trim());
         } else {
             throw new AdapterException("Cannot create User without username!");
         }
 
         if (StringUtils.isNotBlank(email)) {
-            userRepresentation.setEmail(email);
+            userRepresentation.setEmail(email.trim());
         }
 
         userRepresentation.setEmailVerified(true);
@@ -683,15 +683,15 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
         UserRepresentation userRepresentation = new UserRepresentation();
 
         if (StringUtils.isNotBlank(firstName)) {
-            userRepresentation.setFirstName(firstName);
+            userRepresentation.setFirstName(firstName.trim());
         }
 
         if (StringUtils.isNotBlank(lastName)) {
-            userRepresentation.setLastName(lastName);
+            userRepresentation.setLastName(lastName.trim());
         }
 
         if (StringUtils.isNotBlank(email)) {
-            userRepresentation.setEmail(email);
+            userRepresentation.setEmail(email.trim());
         }
 
         userRepresentation.setEnabled(enabled);
