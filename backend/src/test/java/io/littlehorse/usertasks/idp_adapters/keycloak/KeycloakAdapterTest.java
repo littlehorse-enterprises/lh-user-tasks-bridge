@@ -2492,8 +2492,8 @@ class KeycloakAdapterTest {
 
         try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
             Keycloak mockKeycloakInstance = mock(Keycloak.class);
-            var fakeRealm = mock(RealmResource.class);
-            var fakeUsersResource = mock(UsersResource.class);
+            RealmResource fakeRealm = mock(RealmResource.class);
+            UsersResource fakeUsersResource = mock(UsersResource.class);
             mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
                     .thenReturn(mockKeycloakInstance);
             when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealm);
@@ -2518,8 +2518,8 @@ class KeycloakAdapterTest {
 
         try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
             Keycloak mockKeycloakInstance = mock(Keycloak.class);
-            var fakeRealmResource = mock(RealmResource.class);
-            var fakeUsersResource = mock(UsersResource.class);
+            RealmResource fakeRealmResource = mock(RealmResource.class);
+            UsersResource fakeUsersResource = mock(UsersResource.class);
             mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
                     .thenReturn(mockKeycloakInstance);
             when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
@@ -2574,9 +2574,9 @@ class KeycloakAdapterTest {
 
         try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
             Keycloak mockKeycloakInstance = mock(Keycloak.class);
-            var fakeRealmResource = mock(RealmResource.class);
-            var fakeRolesResource = mock(RolesResource.class);
-            var fakeRoleResource = mock(RoleResource.class);
+            RealmResource fakeRealmResource = mock(RealmResource.class);
+            RolesResource fakeRolesResource = mock(RolesResource.class);
+            RoleResource fakeRoleResource = mock(RoleResource.class);
 
             UserRepresentation userRepresentation = new UserRepresentation();
             userRepresentation.setId(UUID.randomUUID().toString());
@@ -2604,9 +2604,9 @@ class KeycloakAdapterTest {
 
         try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
             Keycloak mockKeycloakInstance = mock(Keycloak.class);
-            var fakeRealmResource = mock(RealmResource.class);
-            var fakeRolesResource = mock(RolesResource.class);
-            var fakeRoleResource = mock(RoleResource.class);
+            RealmResource fakeRealmResource = mock(RealmResource.class);
+            RolesResource fakeRolesResource = mock(RolesResource.class);
+            RoleResource fakeRoleResource = mock(RoleResource.class);
 
             mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
                     .thenReturn(mockKeycloakInstance);
