@@ -595,6 +595,41 @@ class UserManagementServiceTest {
         assertTrue(StringUtils.equalsIgnoreCase(fakeUserId, (String) paramsSent.get("userId")));
     }
 
+    @Test
+    void assignAdminRole_shouldThrowNullPointerExceptionWhenNullAccessTokenIsReceived() {
+        assertThrows(NullPointerException.class,
+                ()-> userManagementService.assignAdminRole(null, "some-user-id", keycloakAdapter));
+    }
+
+    @Test
+    void assignAdminRole_shouldThrowNullPointerExceptionWhenNullUserIdIsReceived() {
+        assertThrows(NullPointerException.class,
+                ()-> userManagementService.assignAdminRole(fakeAccessToken, null, keycloakAdapter));
+    }
+
+    @Test
+    void assignAdminRole_shouldThrowNullPointerExceptionWhenNullIdentityProviderAdapterIsReceived() {
+        assertThrows(NullPointerException.class,
+                ()-> userManagementService.assignAdminRole(fakeAccessToken, "some-user-id", null));
+    }
+
+    @Test
+    void assignAdminRole_shouldSucceedWhenNoExceptionsAreThrown() {
+        var userId = "some-user-id";
+
+        userManagementService.assignAdminRole(fakeAccessToken, userId, keycloakAdapter);
+
+        ArgumentCaptor<Map<String, Object>> argumentCaptor = ArgumentCaptor.forClass(Map.class);
+
+        verify(keycloakAdapter).assignAdminRole(argumentCaptor.capture());
+
+        Map<String, Object> paramsSent = argumentCaptor.getValue();
+
+        int expectedParamsCount = 2;
+        assertEquals(expectedParamsCount, paramsSent.size());
+        assertTrue(StringUtils.equalsIgnoreCase(userId, (String) paramsSent.get("userId")));
+    }
+
     private void assertMandatoryParamsForKeycloakSearch(Map<String, Object> paramsUsedToSearchUsers, int expectedParamsCount) {
         assertTrue(paramsUsedToSearchUsers.containsKey("firstResult"));
         assertTrue(paramsUsedToSearchUsers.containsKey("maxResults"));

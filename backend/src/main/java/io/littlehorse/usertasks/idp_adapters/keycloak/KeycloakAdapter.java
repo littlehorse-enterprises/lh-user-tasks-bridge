@@ -30,6 +30,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static io.littlehorse.usertasks.util.constants.AuthoritiesConstants.LH_USER_TASKS_ADMIN_ROLE;
 import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.ISSUER_URL_CLAIM;
 import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.USER_ID_CLAIM;
 
@@ -427,6 +428,36 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
             throw new AdapterException(e.getMessage());
         } catch (Exception e) {
             var errorMessage = "Something went wrong while setting a User's password in Keycloak realm.";
+            log.error(errorMessage, e);
+            throw new AdapterException(errorMessage);
+        }
+    }
+
+    @Override
+    public void assignAdminRole(Map<String, Object> params) {
+        log.info("Starting to assign Admin role!");
+
+        var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
+        var realm = getRealmFromToken(accessToken);
+        var userId = (String) params.get(USER_ID_MAP_KEY);
+
+        try (Keycloak keycloak = getKeycloakInstance(realm, accessToken)) {
+            UserResource userResource = keycloak.realm(realm).users().get(userId);
+
+            if (Objects.isNull(userResource)) {
+                throw new AdapterException("User could not be found!");
+            }
+
+            RoleRepresentation adminRoleRepresentation = keycloak.realm(realm).roles().get(LH_USER_TASKS_ADMIN_ROLE).toRepresentation();
+
+            userResource.roles().realmLevel().add(Collections.singletonList(adminRoleRepresentation));
+
+            log.info("Admin role successfully added!");
+        } catch (AdapterException e) {
+            log.error(e.getMessage());
+            throw new AdapterException(e.getMessage());
+        } catch (Exception e) {
+            var errorMessage = "Something went wrong while assigning admin role to user in Keycloak realm.";
             log.error(errorMessage, e);
             throw new AdapterException(errorMessage);
         }
