@@ -6,15 +6,16 @@ import io.littlehorse.usertasks.configurations.IdentityProviderConfigProperties;
 import io.littlehorse.usertasks.idp_adapters.IStandardIdentityProviderAdapter;
 import io.littlehorse.usertasks.idp_adapters.IdentityProviderVendor;
 import io.littlehorse.usertasks.idp_adapters.keycloak.KeycloakAdapter;
-import io.littlehorse.usertasks.models.requests.CreateManagedUserRequest;
-import io.littlehorse.usertasks.models.requests.IDPUserSearchRequestFilter;
-import io.littlehorse.usertasks.models.requests.UpdateManagedUserRequest;
-import io.littlehorse.usertasks.models.requests.UpsertPasswordRequest;
+import io.littlehorse.usertasks.models.requests.*;
 import io.littlehorse.usertasks.models.responses.IDPUserDTO;
 import io.littlehorse.usertasks.models.responses.IDPUserListDTO;
+import io.littlehorse.usertasks.models.responses.UserTaskRunListDTO;
 import io.littlehorse.usertasks.services.TenantService;
 import io.littlehorse.usertasks.services.UserManagementService;
+import io.littlehorse.usertasks.services.UserTaskService;
+import io.littlehorse.usertasks.util.TokenUtil;
 import io.littlehorse.usertasks.util.enums.CustomUserIdClaim;
+import io.littlehorse.usertasks.util.enums.UserTaskStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -36,12 +37,15 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import static io.littlehorse.usertasks.configurations.CustomIdentityProviderProperties.getCustomIdentityProviderProperties;
 import static io.littlehorse.usertasks.util.constants.AuthoritiesConstants.LH_USER_TASKS_ADMIN_ROLE;
+import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.USER_ID_CLAIM;
 
 @Tag(
         name = "User Management Controller",
@@ -54,12 +58,14 @@ import static io.littlehorse.usertasks.util.constants.AuthoritiesConstants.LH_US
 public class UserManagementController {
     private final TenantService tenantService;
     private final UserManagementService userManagementService;
+    private final UserTaskService userTaskService;
     private final IdentityProviderConfigProperties identityProviderConfigProperties;
 
-    public UserManagementController(TenantService tenantService, UserManagementService userManagementService,
+    public UserManagementController(TenantService tenantService, UserManagementService userManagementService, UserTaskService userTaskService,
                                     IdentityProviderConfigProperties identityProviderConfigProperties) {
         this.tenantService = tenantService;
         this.userManagementService = userManagementService;
+        this.userTaskService = userTaskService;
         this.identityProviderConfigProperties = identityProviderConfigProperties;
     }
 
@@ -331,6 +337,89 @@ public class UserManagementController {
         }
     }
 
+    @Operation(
+            summary = "Delete Managed User",
+            description = "Deletes a user from the respective Identity Provider"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "204",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Tenant Id is not valid.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "There are not enough Admin users remaining after this deletion.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "406",
+                    description = "Unknown Identity vendor.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "User cannot be deleted because there are UserTaskRuns already assigned and waiting to be completed by them. " +
+                            "Or, Admin user is forbidden from deleting themselves.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            )
+    })
+    @DeleteMapping("/{tenant_id}/management/users/{user_id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteUser(@RequestHeader(name = "Authorization") String accessToken,
+                           @PathVariable(name = "tenant_id") String tenantId,
+                           @PathVariable(name = "user_id") String userId,
+                           @RequestParam(required = false) boolean ignoreOrphanTasks) {
+        if (!tenantService.isValidTenant(tenantId, accessToken)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+
+        try {
+            Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
+            String adminUserId = (String) tokenClaims.get(USER_ID_CLAIM);
+
+            if (StringUtils.equalsIgnoreCase(adminUserId, userId.trim())) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot remove yourself as user!");
+            }
+
+            CustomIdentityProviderProperties customIdentityProviderProperties =
+                    getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
+            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
+
+            Map<String, Object> params = Map.of("accessToken", accessToken, "userId", userId);
+            IDPUserDTO managedUserDTO = identityProviderHandler.getManagedUser(params);
+
+            if (Objects.isNull(managedUserDTO)) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No matching user found!");
+            }
+
+            if (!ignoreOrphanTasks) {
+                validateCurrentlyAssignedUserTaskRuns(managedUserDTO, tenantId, customIdentityProviderProperties);
+            }
+
+            if (managedUserDTO.hasAdminRole()) {
+                validateMinimumAdminExistence(accessToken, identityProviderHandler);
+            }
+
+            userManagementService.deleteUser(accessToken, userId, identityProviderHandler);
+        } catch (JsonProcessingException e) {
+            log.error("Something went wrong when getting claims from token while trying to delete user.");
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     private IStandardIdentityProviderAdapter getIdentityProviderHandler(@NonNull IdentityProviderVendor vendor) {
         if (vendor == IdentityProviderVendor.KEYCLOAK) {
             return new KeycloakAdapter();
@@ -370,6 +459,37 @@ public class UserManagementController {
 
         if (userIdClaim == CustomUserIdClaim.EMAIL && StringUtils.isBlank(requestBody.getEmail())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot set email to NULL, empty nor whitespace-only value.");
+        }
+    }
+
+    private void validateCurrentlyAssignedUserTaskRuns(IDPUserDTO managedUserDTO, String tenantId,
+                                                       CustomIdentityProviderProperties customIdentityProviderProperties) {
+        String lookupUserId = null;
+
+        switch (customIdentityProviderProperties.getUserIdClaim()) {
+            case SUB -> lookupUserId = managedUserDTO.getId();
+            case PREFERRED_USERNAME -> lookupUserId = managedUserDTO.getUsername();
+            case EMAIL -> lookupUserId = managedUserDTO.getEmail();
+        }
+
+        UserTaskRequestFilter requestFilter = UserTaskRequestFilter.builder()
+                .status(UserTaskStatus.ASSIGNED)
+                .build();
+
+        UserTaskRunListDTO pendingTasks = userTaskService.getTasks(tenantId, lookupUserId, null,
+                requestFilter, 1, null, false);
+
+        if (!CollectionUtils.isEmpty(pendingTasks.getUserTasks())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Cannot delete Users with Task(s) assigned that are pending to be completed!");
+        }
+    }
+
+    private void validateMinimumAdminExistence(String accessToken, IStandardIdentityProviderAdapter identityProviderHandler) {
+        int adminsCount = identityProviderHandler.getAdminUsersCount(Map.of("accessToken", accessToken));
+
+        if (adminsCount < 2) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
         }
     }
 }
