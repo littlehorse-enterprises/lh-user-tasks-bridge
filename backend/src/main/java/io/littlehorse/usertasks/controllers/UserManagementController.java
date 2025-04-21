@@ -354,13 +354,6 @@ public class UserManagementController {
                             schema = @Schema(implementation = ProblemDetail.class))}
             ),
             @ApiResponse(
-                    responseCode = "403",
-                    description = "There are not enough Admin users remaining after this deletion.",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class))}
-            ),
-            @ApiResponse(
                     responseCode = "406",
                     description = "Unknown Identity vendor.",
                     content = {@Content(
@@ -407,10 +400,6 @@ public class UserManagementController {
 
             if (!ignoreOrphanTasks) {
                 validateCurrentlyAssignedUserTaskRuns(managedUserDTO, tenantId, customIdentityProviderProperties);
-            }
-
-            if (managedUserDTO.hasAdminRole()) {
-                validateMinimumAdminExistence(accessToken, identityProviderHandler);
             }
 
             userManagementService.deleteUser(accessToken, userId, identityProviderHandler);
@@ -482,14 +471,6 @@ public class UserManagementController {
         if (!CollectionUtils.isEmpty(pendingTasks.getUserTasks())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Cannot delete Users with Task(s) assigned that are pending to be completed!");
-        }
-    }
-
-    private void validateMinimumAdminExistence(String accessToken, IStandardIdentityProviderAdapter identityProviderHandler) {
-        int adminsCount = identityProviderHandler.getAdminUsersCount(Map.of("accessToken", accessToken));
-
-        if (adminsCount < 2) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
         }
     }
 }

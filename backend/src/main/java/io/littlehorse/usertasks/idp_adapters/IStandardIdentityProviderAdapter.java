@@ -38,6 +38,4 @@ public interface IStandardIdentityProviderAdapter {
     void updateManagedUser(Map<String, Object> params);
 
     void deleteManagedUser(Map<String, Object> params);
-
-    int getAdminUsersCount(Map<String, Object> params);
 }

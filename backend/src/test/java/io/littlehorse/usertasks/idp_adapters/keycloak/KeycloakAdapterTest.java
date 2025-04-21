@@ -25,7 +25,6 @@ import java.net.URI;
 import java.util.*;
 
 import static io.littlehorse.usertasks.idp_adapters.keycloak.KeycloakAdapter.*;
-import static io.littlehorse.usertasks.util.constants.AuthoritiesConstants.LH_USER_TASKS_ADMIN_ROLE;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -2529,99 +2528,6 @@ class KeycloakAdapterTest {
             keycloakAdapter.deleteManagedUser(params);
 
             verify(fakeUsersResource).delete(eq(fakeUserId));
-        }
-    }
-
-    @Test
-    void getAdminUsersCount_shouldThrowAdapterExceptionCreatingKeycloakInstanceWhenRuntimeExceptionIsThrownGettingNewInstance() {
-        Map<String, Object> params = Map.of(ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
-
-        try (MockedStatic<Keycloak> ignored = mockStatic(Keycloak.class)) {
-            when(Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
-                    .thenThrow(new RuntimeException("Error"));
-
-            AdapterException thrownException = assertThrows(AdapterException.class,
-                    () -> keycloakAdapter.getAdminUsersCount(params));
-
-            var expectedErrorMessage = "Something went wrong while creating Keycloak instance.";
-
-            assertEquals(expectedErrorMessage, thrownException.getMessage());
-        }
-    }
-
-    @Test
-    void getAdminUsersCount_shouldThrowExceptionCreatingKeycloakInstanceWhenAccessingRealms() {
-        Map<String, Object> params = Map.of(ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
-
-        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
-            Keycloak mockKeycloakInstance = mock(Keycloak.class);
-            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
-                    .thenReturn(mockKeycloakInstance);
-            when(mockKeycloakInstance.realm(anyString())).thenThrow(new RuntimeException());
-
-            AdapterException thrownException = assertThrows(AdapterException.class,
-                    () -> keycloakAdapter.getAdminUsersCount(params));
-
-            var expectedErrorMessage = "Something went wrong while counting Admin users within Keycloak realm.";
-
-            assertEquals(expectedErrorMessage, thrownException.getMessage());
-        }
-    }
-
-    @Test
-    void getAdminUsersCount_shouldSucceedWhenNoExceptionsAreThrownAndThereAreUsersFound() {
-        Map<String, Object> params = Map.of(ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
-
-        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
-            Keycloak mockKeycloakInstance = mock(Keycloak.class);
-            RealmResource fakeRealmResource = mock(RealmResource.class);
-            RolesResource fakeRolesResource = mock(RolesResource.class);
-            RoleResource fakeRoleResource = mock(RoleResource.class);
-
-            UserRepresentation userRepresentation = new UserRepresentation();
-            userRepresentation.setId(UUID.randomUUID().toString());
-
-            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
-                    .thenReturn(mockKeycloakInstance);
-            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
-            when(fakeRealmResource.roles()).thenReturn(fakeRolesResource);
-            when(fakeRolesResource.get(eq(LH_USER_TASKS_ADMIN_ROLE))).thenReturn(fakeRoleResource);
-            when(fakeRoleResource.getUserMembers()).thenReturn(Collections.singletonList(userRepresentation));
-
-            int adminUsersCount = keycloakAdapter.getAdminUsersCount(params);
-
-            int expectedCount = 1;
-
-            assertEquals(expectedCount, adminUsersCount);
-
-            verify(fakeRoleResource).getUserMembers();
-        }
-    }
-
-    @Test
-    void getAdminUsersCount_shouldSucceedWhenNoExceptionsAreThrownAndNoUsersAreFound() {
-        Map<String, Object> params = Map.of(ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
-
-        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
-            Keycloak mockKeycloakInstance = mock(Keycloak.class);
-            RealmResource fakeRealmResource = mock(RealmResource.class);
-            RolesResource fakeRolesResource = mock(RolesResource.class);
-            RoleResource fakeRoleResource = mock(RoleResource.class);
-
-            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
-                    .thenReturn(mockKeycloakInstance);
-            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
-            when(fakeRealmResource.roles()).thenReturn(fakeRolesResource);
-            when(fakeRolesResource.get(eq(LH_USER_TASKS_ADMIN_ROLE))).thenReturn(fakeRoleResource);
-            when(fakeRoleResource.getUserMembers()).thenReturn(Collections.emptyList());
-
-            int adminUsersCount = keycloakAdapter.getAdminUsersCount(params);
-
-            int expectedCount = 0;
-
-            assertEquals(expectedCount, adminUsersCount);
-
-            verify(fakeRoleResource).getUserMembers();
         }
     }
 

@@ -30,7 +30,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static io.littlehorse.usertasks.util.constants.AuthoritiesConstants.LH_USER_TASKS_ADMIN_ROLE;
 import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.ISSUER_URL_CLAIM;
 import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.USER_ID_CLAIM;
 
@@ -428,30 +427,6 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
             throw new AdapterException(e.getMessage());
         } catch (Exception e) {
             var errorMessage = "Something went wrong while setting a User's password in Keycloak realm.";
-            log.error(errorMessage, e);
-            throw new AdapterException(errorMessage);
-        }
-    }
-
-    @Override
-    public int getAdminUsersCount(Map<String, Object> params) {
-        var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
-        var realm = getRealmFromToken(accessToken);
-
-        try (Keycloak keycloak = getKeycloakInstance(realm, accessToken)) {
-            RoleResource roleResource = keycloak.realm(realm).roles().get(LH_USER_TASKS_ADMIN_ROLE);
-            List<UserRepresentation> adminUsers = roleResource.getUserMembers();
-
-            if (!CollectionUtils.isEmpty(adminUsers)) {
-                return adminUsers.size();
-            } else {
-                return 0;
-            }
-        } catch (AdapterException e) {
-            log.error(e.getMessage());
-            throw new AdapterException(e.getMessage());
-        } catch (Exception e) {
-            var errorMessage = "Something went wrong while counting Admin users within Keycloak realm.";
             log.error(errorMessage, e);
             throw new AdapterException(errorMessage);
         }
