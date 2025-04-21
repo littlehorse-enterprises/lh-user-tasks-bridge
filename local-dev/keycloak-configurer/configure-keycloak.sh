@@ -151,6 +151,7 @@ configure_keycloak() {
    echo "Fetching Roles' IDs"
    VIEW_USERS_ROLE_ID=$(http --ignore-stdin -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/ui-ext/available-roles/users/${NON_ADMIN_USER_ID}?first=0&max=1&search=view-users" | jq -r ".[0].id")
    USER_TASKS_BRIDGE_ADMIN_ROLE_ID=$(http --ignore-stdin -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/roles/lh-user-tasks-admin" | jq -r ".id")
+   MANAGE_USERS_ROLE_ID=$(http --ignore-stdin -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/clients/${REALM_MANAGEMENT_CLIENT_ID}/roles/manage-users" | jq -r ".id")
 
 #  Here we assign the view-users role to the nonAdmin user, and subsequently to the admin user as well. The view-users role
 #  allows users to see their userInfo details.
@@ -169,6 +170,11 @@ configure_keycloak() {
    http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" POST "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/users/${ADMIN_USER_ID}/role-mappings/realm" \
               [0][id]="$USER_TASKS_BRIDGE_ADMIN_ROLE_ID" \
               [0][name]="lh-user-tasks-admin"
+# The manage-users role allows admin users to create, read, update and delete users from a Keycloak realm
+   echo "Assigning manage-users Role to Admin User"
+   http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" POST "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/users/${ADMIN_USER_ID}/role-mappings/clients/${REALM_MANAGEMENT_CLIENT_ID}" \
+              [0][id]="$MANAGE_USERS_ROLE_ID" \
+              [0][name]="manage-users"
 
    echo "Roles successfully assigned to users!"
 

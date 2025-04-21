@@ -9,6 +9,8 @@ import org.springframework.util.CollectionUtils;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static io.littlehorse.usertasks.util.constants.AuthoritiesConstants.LH_USER_TASKS_ADMIN_ROLE;
+
 /**
  * {@code IDPUserDTO} is a Data Transfer Object that contains information about a specific User from an Identity Provider.
  * This is a less complex and standardized model in charge of providing user-related data for management purposes.
@@ -44,6 +46,29 @@ public class IDPUserDTO {
                 .email(userRepresentation.getEmail())
                 .groups(foundGroups)
                 .build();
+    }
+
+    /**
+     * Goes through a user's realm and client roles looking for the {@code lh-user-tasks-admin} role that identifies users as Admins
+     * within the User Tasks Bridge Backend's context.
+     * @return TRUE if the {@code lh-user-tasks-admin} role is found within realm or client roles of a user. Otherwise, FALSE.
+     */
+    public boolean hasAdminRole() {
+        Set<String> allRoles = new HashSet<>();
+
+        if (!CollectionUtils.isEmpty(getRealmRoles())) {
+            allRoles.addAll(getRealmRoles());
+        }
+
+        if (!CollectionUtils.isEmpty(getClientRoles())) {
+            Set<String> allClientRoles = getClientRoles().values().stream()
+                    .flatMap(Set::stream)
+                    .collect(Collectors.toUnmodifiableSet());
+
+            allRoles.addAll(allClientRoles);
+        }
+
+        return allRoles.contains(LH_USER_TASKS_ADMIN_ROLE);
     }
 
     private static Set<IDPGroupDTO> getGroupsFromKeycloakGroupsRepresentation(Collection<GroupRepresentation> groupsRepresentation) {

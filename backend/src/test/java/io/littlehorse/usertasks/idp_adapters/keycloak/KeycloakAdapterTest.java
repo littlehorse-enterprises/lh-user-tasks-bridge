@@ -2446,6 +2446,91 @@ class KeycloakAdapterTest {
         }
     }
 
+    @Test
+    void deleteManagedUser_shouldThrowAdapterExceptionCreatingKeycloakInstanceWhenRuntimeExceptionIsThrownGettingNewInstance() {
+        var fakeUserId = UUID.randomUUID().toString();
+        Map<String, Object> params = Map.of(USER_ID_MAP_KEY, fakeUserId, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
+
+        try (MockedStatic<Keycloak> ignored = mockStatic(Keycloak.class)) {
+            when(Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenThrow(new RuntimeException("Error"));
+
+            AdapterException thrownException = assertThrows(AdapterException.class,
+                    () -> keycloakAdapter.deleteManagedUser(params));
+
+            var expectedErrorMessage = "Something went wrong while creating Keycloak instance.";
+
+            assertEquals(expectedErrorMessage, thrownException.getMessage());
+        }
+    }
+
+    @Test
+    void deleteManagedUser_shouldThrowExceptionCreatingKeycloakInstanceWhenAccessingRealms() {
+        var fakeUserId = UUID.randomUUID().toString();
+        Map<String, Object> params = Map.of(USER_ID_MAP_KEY, fakeUserId, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenThrow(new RuntimeException());
+
+            AdapterException thrownException = assertThrows(AdapterException.class,
+                    () -> keycloakAdapter.deleteManagedUser(params));
+
+            var expectedErrorMessage = "Something went wrong while deleting a User from Keycloak realm.";
+
+            assertEquals(expectedErrorMessage, thrownException.getMessage());
+        }
+    }
+
+    @Test
+    void deleteManagedUser_shouldThrowExceptionWhenResponseIsDifferentFromNoContent() {
+        var fakeUserId = UUID.randomUUID().toString();
+        Map<String, Object> params = Map.of(USER_ID_MAP_KEY, fakeUserId, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            RealmResource fakeRealm = mock(RealmResource.class);
+            UsersResource fakeUsersResource = mock(UsersResource.class);
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealm);
+            when(fakeRealm.users()).thenReturn(fakeUsersResource);
+            when(fakeUsersResource.delete(eq(fakeUserId))).thenReturn(Response.serverError().build());
+
+            AdapterException thrownException = assertThrows(AdapterException.class,
+                    () -> keycloakAdapter.deleteManagedUser(params));
+
+            var expectedErrorMessage = "User deletion failed in Keycloak!";
+
+            assertEquals(expectedErrorMessage, thrownException.getMessage());
+
+            verify(fakeUsersResource).delete(eq(fakeUserId));
+        }
+    }
+
+    @Test
+    void deleteManagedUser_shouldSucceedWhenNoExceptionsAreThrownAndResponseIsNoContent() {
+        var fakeUserId = UUID.randomUUID().toString();
+        Map<String, Object> params = Map.of(USER_ID_MAP_KEY, fakeUserId, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            RealmResource fakeRealmResource = mock(RealmResource.class);
+            UsersResource fakeUsersResource = mock(UsersResource.class);
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
+            when(fakeRealmResource.users()).thenReturn(fakeUsersResource);
+            when(fakeUsersResource.delete(eq(fakeUserId))).thenReturn(Response.noContent().build());
+
+            keycloakAdapter.deleteManagedUser(params);
+
+            verify(fakeUsersResource).delete(eq(fakeUserId));
+        }
+    }
+
     private UserRepresentation getFakeUserRepresentation(String username) {
         UserRepresentation userRepresentation = new UserRepresentation();
         userRepresentation.setId(UUID.randomUUID().toString());

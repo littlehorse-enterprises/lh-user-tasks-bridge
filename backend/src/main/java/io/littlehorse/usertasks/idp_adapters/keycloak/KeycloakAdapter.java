@@ -219,6 +219,32 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
     }
 
     @Override
+    public void deleteManagedUser(Map<String, Object> params) {
+        log.info("Starting User deletion!");
+
+        var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
+        var realm = getRealmFromToken(accessToken);
+        var userId = (String) params.get(USER_ID_MAP_KEY);
+
+        try (Keycloak keycloak = getKeycloakInstance(realm, accessToken)) {
+            Response response = keycloak.realm(realm).users().delete(userId);
+
+            if (response.getStatus() != HttpStatus.NO_CONTENT.value()) {
+                throw new AdapterException("User deletion failed in Keycloak!");
+            }
+
+            log.info("User successfully deleted from realm {}!", realm);
+        } catch (AdapterException e) {
+            log.error(e.getMessage());
+            throw new AdapterException(e.getMessage());
+        } catch (Exception e) {
+            var errorMessage = "Something went wrong while deleting a User from Keycloak realm.";
+            log.error(errorMessage, e);
+            throw new AdapterException(errorMessage);
+        }
+    }
+
+    @Override
     public void validateUserGroup(String userGroupId, String accessToken) {
         String realm = getRealmFromToken(accessToken);
         Map<String, Object> params = Map.of(REALM_MAP_KEY, realm, ACCESS_TOKEN_MAP_KEY, accessToken);

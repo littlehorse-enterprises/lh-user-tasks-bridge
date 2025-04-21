@@ -560,6 +560,41 @@ class UserManagementServiceTest {
         assertEquals(fakeUsername, paramsSent.get("username"));
     }
 
+    @Test
+    void deleteUser_shouldThrowNullPointerExceptionWhenNullAccessTokenIsReceived() {
+        String fakeUserId = UUID.randomUUID().toString();
+        assertThrows(NullPointerException.class, ()-> userManagementService.deleteUser(null, fakeUserId, keycloakAdapter));
+    }
+
+    @Test
+    void deleteUser_shouldThrowNullPointerExceptionWhenNullUserIdIsReceived() {
+        assertThrows(NullPointerException.class, ()-> userManagementService.deleteUser(fakeAccessToken, null, keycloakAdapter));
+    }
+
+    @Test
+    void deleteUser_shouldThrowNullPointerExceptionWhenNullIdentityProviderAdapterIsReceived() {
+        String fakeUserId = UUID.randomUUID().toString();
+        assertThrows(NullPointerException.class, ()-> userManagementService.deleteUser(fakeAccessToken, fakeUserId, null));
+    }
+
+    @Test
+    void deleteUser_shouldSucceedWhenNoExceptionsAreThrown() {
+        String fakeUserId = UUID.randomUUID().toString();
+
+        userManagementService.deleteUser(fakeUserId, fakeUserId, keycloakAdapter);
+
+        ArgumentCaptor<Map<String, Object>> argumentCaptor = ArgumentCaptor.forClass(Map.class);
+
+        verify(keycloakAdapter).deleteManagedUser(argumentCaptor.capture());
+
+        Map<String, Object> paramsSent = argumentCaptor.getValue();
+
+        int expectedParamsCount = 2;
+
+        assertEquals(expectedParamsCount, paramsSent.size());
+        assertTrue(StringUtils.equalsIgnoreCase(fakeUserId, (String) paramsSent.get("userId")));
+    }
+
     private void assertMandatoryParamsForKeycloakSearch(Map<String, Object> paramsUsedToSearchUsers, int expectedParamsCount) {
         assertTrue(paramsUsedToSearchUsers.containsKey("firstResult"));
         assertTrue(paramsUsedToSearchUsers.containsKey("maxResults"));

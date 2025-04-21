@@ -70,4 +70,11 @@ public class UserManagementService {
 
         identityProviderHandler.updateManagedUser(params);
     }
+
+    public void deleteUser(@NonNull String accessToken, @NonNull String userId,
+                           @NonNull IStandardIdentityProviderAdapter identityProviderHandler) {
+        Map<String, Object> params = Map.of(ACCESS_TOKEN_MAP_KEY, accessToken, USER_ID_MAP_KEY, userId);
+
+        identityProviderHandler.deleteManagedUser(params);
+    }
 }

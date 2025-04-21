@@ -139,3 +139,5 @@ configured Identity Provider.
 - These endpoints are set to only allow Admin users to hit them
 - In order to properly manage users, besides having the `lh-user-tasks-admin` role that identifies Users as Admins,
 they also need to have the `manage-users` role assigned.
+
+**In case that all Admin users were deleted, you will need to create at least 1 by using your Identity Provider's dashboard.**
