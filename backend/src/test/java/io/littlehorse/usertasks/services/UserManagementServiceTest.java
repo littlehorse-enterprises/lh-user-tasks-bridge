@@ -12,9 +12,7 @@ import io.littlehorse.usertasks.models.responses.IDPUserDTO;
 import io.littlehorse.usertasks.models.responses.IDPUserListDTO;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.util.CollectionUtils;
 
 import java.util.Map;
@@ -27,7 +25,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(MockitoExtension.class)
 @SuppressWarnings("unchecked")
 class UserManagementServiceTest {
     private final UserManagementService userManagementService = new UserManagementService();
@@ -628,6 +625,39 @@ class UserManagementServiceTest {
         int expectedParamsCount = 2;
         assertEquals(expectedParamsCount, paramsSent.size());
         assertTrue(StringUtils.equalsIgnoreCase(userId, (String) paramsSent.get("userId")));
+    }
+
+    @Test
+    void removeAdminRole_shouldThrowNullPointerExceptionWhenNullAccessTokenIsReceived() {
+        assertThrows(NullPointerException.class, ()-> userManagementService.removeAdminRole(null, "someUserId", keycloakAdapter));
+    }
+
+    @Test
+    void removeAdminRole_shouldThrowNullPointerExceptionWhenNullUserIdIsReceived() {
+        assertThrows(NullPointerException.class, ()-> userManagementService.removeAdminRole(fakeAccessToken, null, keycloakAdapter));
+    }
+
+    @Test
+    void removeAdminRole_shouldThrowNullPointerExceptionWhenNullIdentityProviderAdapterIsReceived() {
+        assertThrows(NullPointerException.class, ()-> userManagementService.removeAdminRole(fakeAccessToken, "aUserId", null));
+    }
+
+    @Test
+    void removeAdminRole_shouldSucceedWhenNoExceptionsAreThrown() {
+        var fakeUserId = UUID.randomUUID().toString();
+
+        userManagementService.removeAdminRole(fakeAccessToken, fakeUserId, keycloakAdapter);
+
+        ArgumentCaptor<Map<String, Object>> argumentCaptor = ArgumentCaptor.forClass(Map.class);
+
+        verify(keycloakAdapter).removeAdminRole(argumentCaptor.capture());
+
+        Map<String, Object> paramsSent = argumentCaptor.getValue();
+
+        int expectedParamsCount = 2;
+
+        assertEquals(expectedParamsCount, paramsSent.size());
+        assertTrue(StringUtils.equalsIgnoreCase(fakeUserId, (String) paramsSent.get("userId")));
     }
 
     private void assertMandatoryParamsForKeycloakSearch(Map<String, Object> paramsUsedToSearchUsers, int expectedParamsCount) {

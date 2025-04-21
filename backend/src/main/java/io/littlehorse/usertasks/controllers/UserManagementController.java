@@ -454,6 +454,64 @@ public class UserManagementController {
         }
     }
 
+    @Operation(
+            summary = "Remove Admin Role",
+            description = "Removes the Admin role from a specific user."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "204",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Tenant Id is not valid.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "406",
+                    description = "Unknown Identity vendor.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "Admin user is forbidden from self removing as admin.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            )
+    })
+    @DeleteMapping("/{tenant_id}/management/users/{user_id}/roles/admin")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void removeAdminRole(@RequestHeader(name = "Authorization") String accessToken,
+                                @PathVariable(name = "tenant_id") String tenantId,
+                                @PathVariable(name = "user_id") String userId) {
+        if (!tenantService.isValidTenant(tenantId, accessToken)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+
+        try {
+            Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
+            String adminUserId = (String) tokenClaims.get(USER_ID_CLAIM);
+
+            if (StringUtils.equalsIgnoreCase(adminUserId, userId.trim())) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot remove yourself as admin!");
+            }
+
+            CustomIdentityProviderProperties customIdentityProviderProperties =
+                    getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
+            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
+
+            userManagementService.removeAdminRole(accessToken, userId, identityProviderHandler);
+        } catch (JsonProcessingException e) {
+            log.error("Something went wrong when getting claims from token while trying to remove admin role.");
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
     private IStandardIdentityProviderAdapter getIdentityProviderHandler(@NonNull IdentityProviderVendor vendor) {
         if (vendor == IdentityProviderVendor.KEYCLOAK) {

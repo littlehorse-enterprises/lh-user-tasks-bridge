@@ -442,13 +442,14 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
         var userId = (String) params.get(USER_ID_MAP_KEY);
 
         try (Keycloak keycloak = getKeycloakInstance(realm, accessToken)) {
-            UserResource userResource = keycloak.realm(realm).users().get(userId);
+            RealmResource realmResource = keycloak.realm(realm);
+            UserResource userResource = realmResource.users().get(userId);
 
             if (Objects.isNull(userResource)) {
                 throw new AdapterException("User could not be found!");
             }
 
-            RoleRepresentation adminRoleRepresentation = keycloak.realm(realm).roles().get(LH_USER_TASKS_ADMIN_ROLE).toRepresentation();
+            RoleRepresentation adminRoleRepresentation = realmResource.roles().get(LH_USER_TASKS_ADMIN_ROLE).toRepresentation();
 
             userResource.roles().realmLevel().add(Collections.singletonList(adminRoleRepresentation));
 
@@ -458,6 +459,37 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
             throw new AdapterException(e.getMessage());
         } catch (Exception e) {
             var errorMessage = "Something went wrong while assigning admin role to user in Keycloak realm.";
+            log.error(errorMessage, e);
+            throw new AdapterException(errorMessage);
+        }
+    }
+
+    @Override
+    public void removeAdminRole(Map<String, Object> params) {
+        log.info("Starting to remove Admin role!");
+
+        var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
+        var realm = getRealmFromToken(accessToken);
+        var userId = (String) params.get(USER_ID_MAP_KEY);
+
+        try (Keycloak keycloak = getKeycloakInstance(realm, accessToken)) {
+            RealmResource realmResource = keycloak.realm(realm);
+            UserResource userResource = realmResource.users().get(userId);
+
+            if (Objects.isNull(userResource)) {
+                throw new AdapterException("User could not be found!");
+            }
+
+            RoleRepresentation adminRoleRepresentation = realmResource.roles().get(LH_USER_TASKS_ADMIN_ROLE).toRepresentation();
+
+            userResource.roles().realmLevel().remove(Collections.singletonList(adminRoleRepresentation));
+
+            log.info("Admin role successfully removed!");
+        } catch (AdapterException e) {
+            log.error(e.getMessage());
+            throw new AdapterException(e.getMessage());
+        } catch (Exception e) {
+            var errorMessage = "Something went wrong while removing admin role from user in Keycloak realm.";
             log.error(errorMessage, e);
             throw new AdapterException(errorMessage);
         }

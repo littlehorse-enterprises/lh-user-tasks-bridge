@@ -84,4 +84,11 @@ public class UserManagementService {
 
         identityProviderHandler.assignAdminRole(params);
     }
+
+    public void removeAdminRole(@NonNull String accessToken, @NonNull String userId,
+                                @NonNull IStandardIdentityProviderAdapter identityProviderHandler) {
+        Map<String, Object> params = Map.of(ACCESS_TOKEN_MAP_KEY, accessToken, USER_ID_MAP_KEY, userId);
+
+        identityProviderHandler.removeAdminRole(params);
+    }
 }
