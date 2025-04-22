@@ -25,10 +25,12 @@ import java.net.URI;
 import java.util.*;
 
 import static io.littlehorse.usertasks.idp_adapters.keycloak.KeycloakAdapter.*;
+import static io.littlehorse.usertasks.util.constants.AuthoritiesConstants.LH_USER_TASKS_ADMIN_ROLE;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+@SuppressWarnings("unchecked")
 class KeycloakAdapterTest {
     private final KeycloakAdapter keycloakAdapter = new KeycloakAdapter();
 
@@ -2528,6 +2530,209 @@ class KeycloakAdapterTest {
             keycloakAdapter.deleteManagedUser(params);
 
             verify(fakeUsersResource).delete(eq(fakeUserId));
+        }
+    }
+
+    @Test
+    void assignAdminRole_shouldThrowAdapterExceptionCreatingKeycloakInstanceWhenRuntimeExceptionIsThrownGettingNewInstance() {
+        var fakeUserId = UUID.randomUUID().toString();
+        Map<String, Object> params = Map.of(USER_ID_MAP_KEY, fakeUserId, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
+
+        try (MockedStatic<Keycloak> ignored = mockStatic(Keycloak.class)) {
+            when(Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenThrow(new RuntimeException("Error"));
+
+            AdapterException thrownException = assertThrows(AdapterException.class,
+                    () -> keycloakAdapter.assignAdminRole(params));
+
+            var expectedErrorMessage = "Something went wrong while creating Keycloak instance.";
+
+            assertEquals(expectedErrorMessage, thrownException.getMessage());
+        }
+    }
+
+    @Test
+    void assignAdminRole_shouldThrowExceptionCreatingKeycloakInstanceWhenAccessingRealms() {
+        var fakeUserId = UUID.randomUUID().toString();
+        Map<String, Object> params = Map.of(USER_ID_MAP_KEY, fakeUserId, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenThrow(new RuntimeException());
+
+            AdapterException thrownException = assertThrows(AdapterException.class,
+                    () -> keycloakAdapter.assignAdminRole(params));
+
+            var expectedErrorMessage = "Something went wrong while assigning admin role to user in Keycloak realm.";
+
+            assertEquals(expectedErrorMessage, thrownException.getMessage());
+        }
+    }
+
+    @Test
+    void assignAdminRole_shouldThrowExceptionWhenNoUserIsFound() {
+        var fakeUserId = UUID.randomUUID().toString();
+        Map<String, Object> params = Map.of(USER_ID_MAP_KEY, fakeUserId, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            RealmResource fakeRealmResource = mock(RealmResource.class);
+            UsersResource fakeUsersResource = mock(UsersResource.class);
+
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
+            when(fakeRealmResource.users()).thenReturn(fakeUsersResource);
+            when(fakeUsersResource.get(eq(fakeUserId))).thenReturn(null);
+
+            AdapterException thrownException = assertThrows(AdapterException.class,
+                    () -> keycloakAdapter.assignAdminRole(params));
+
+            var expectedErrorMessage = "User could not be found!";
+
+            assertEquals(expectedErrorMessage, thrownException.getMessage());
+        }
+    }
+
+    @Test
+    void assignAdminRole_shouldSucceedWhenNoExceptionsAreThrown() {
+        var fakeUserId = UUID.randomUUID().toString();
+        Map<String, Object> params = Map.of(USER_ID_MAP_KEY, fakeUserId, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            RealmResource fakeRealmResource = mock(RealmResource.class);
+            UsersResource fakeUsersResource = mock(UsersResource.class);
+            UserResource fakeUserResource = mock(UserResource.class);
+            RolesResource fakeRolesResource = mock(RolesResource.class);
+            RoleResource fakeRoleResource = mock(RoleResource.class);
+            RoleMappingResource fakeRoleMappingResource = mock(RoleMappingResource.class);
+            RoleScopeResource fakeRoleScopeResource = mock(RoleScopeResource.class);
+
+            RoleRepresentation fakeRoleRepresentation = new RoleRepresentation();
+            fakeRoleRepresentation.setId(UUID.randomUUID().toString());
+            fakeRoleRepresentation.setName(LH_USER_TASKS_ADMIN_ROLE);
+
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
+            when(fakeRealmResource.users()).thenReturn(fakeUsersResource);
+            when(fakeUsersResource.get(eq(fakeUserId))).thenReturn(fakeUserResource);
+            when(fakeRealmResource.roles()).thenReturn(fakeRolesResource);
+            when(fakeRolesResource.get(eq(LH_USER_TASKS_ADMIN_ROLE))).thenReturn(fakeRoleResource);
+            when(fakeRoleResource.toRepresentation()).thenReturn(fakeRoleRepresentation);
+            when(fakeUserResource.roles()).thenReturn(fakeRoleMappingResource);
+            when(fakeRoleMappingResource.realmLevel()).thenReturn(fakeRoleScopeResource);
+
+            keycloakAdapter.assignAdminRole(params);
+
+            verify(fakeRoleScopeResource).add(eq(Collections.singletonList(fakeRoleRepresentation)));
+        }
+    }
+
+    @Test
+    void removeAdminRole_shouldThrowAdapterExceptionCreatingKeycloakInstanceWhenRuntimeExceptionIsThrownGettingNewInstance() {
+        var fakeUserId = UUID.randomUUID().toString();
+        Map<String, Object> params = Map.of(USER_ID_MAP_KEY, fakeUserId, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
+
+        try (MockedStatic<Keycloak> ignored = mockStatic(Keycloak.class)) {
+            when(Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenThrow(new RuntimeException("Error"));
+
+            AdapterException thrownException = assertThrows(AdapterException.class,
+                    () -> keycloakAdapter.removeAdminRole(params));
+
+            var expectedErrorMessage = "Something went wrong while creating Keycloak instance.";
+
+            assertEquals(expectedErrorMessage, thrownException.getMessage());
+        }
+    }
+
+    @Test
+    void removeAdminRole_shouldThrowExceptionCreatingKeycloakInstanceWhenAccessingRealms() {
+        var fakeUserId = UUID.randomUUID().toString();
+        Map<String, Object> params = Map.of(USER_ID_MAP_KEY, fakeUserId, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenThrow(new RuntimeException());
+
+            AdapterException thrownException = assertThrows(AdapterException.class,
+                    () -> keycloakAdapter.removeAdminRole(params));
+
+            var expectedErrorMessage = "Something went wrong while removing admin role from user in Keycloak realm.";
+
+            assertEquals(expectedErrorMessage, thrownException.getMessage());
+        }
+    }
+
+    @Test
+    void removeAdminRole_shouldThrowExceptionWhenNoUserIsFound() {
+        var fakeUserId = UUID.randomUUID().toString();
+        Map<String, Object> params = Map.of(USER_ID_MAP_KEY, fakeUserId, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            RealmResource fakeRealmResource = mock(RealmResource.class);
+            UsersResource fakeUsersResource = mock(UsersResource.class);
+
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
+            when(fakeRealmResource.users()).thenReturn(fakeUsersResource);
+            when(fakeUsersResource.get(eq(fakeUserId))).thenReturn(null);
+
+            AdapterException thrownException = assertThrows(AdapterException.class, () -> keycloakAdapter.removeAdminRole(params));
+
+            var expectedErrorMessage = "User could not be found!";
+
+            assertEquals(expectedErrorMessage, thrownException.getMessage());
+        }
+    }
+
+    @Test
+    void removeAdminRole_shouldSucceedWhenNoExceptionsAreThrown() {
+        var fakeUserId = UUID.randomUUID().toString();
+        Map<String, Object> params = Map.of(USER_ID_MAP_KEY, fakeUserId, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            RealmResource fakeRealmResource = mock(RealmResource.class);
+            UsersResource fakeUsersResource = mock(UsersResource.class);
+            UserResource fakeUserResource = mock(UserResource.class);
+            RolesResource fakeRolesResource = mock(RolesResource.class);
+            RoleResource fakeRoleResource = mock(RoleResource.class);
+            RoleMappingResource fakeRoleMappingResource = mock(RoleMappingResource.class);
+            RoleScopeResource fakeRoleScopeResource = mock(RoleScopeResource.class);
+
+            RoleRepresentation fakeRoleRepresentation = new RoleRepresentation(LH_USER_TASKS_ADMIN_ROLE, null, false);
+
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
+            when(fakeRealmResource.users()).thenReturn(fakeUsersResource);
+            when(fakeUsersResource.get(eq(fakeUserId))).thenReturn(fakeUserResource);
+            when(fakeRealmResource.roles()).thenReturn(fakeRolesResource);
+            when(fakeRolesResource.get(eq(LH_USER_TASKS_ADMIN_ROLE))).thenReturn(fakeRoleResource);
+            when(fakeRoleResource.toRepresentation()).thenReturn(fakeRoleRepresentation);
+            when(fakeUserResource.roles()).thenReturn(fakeRoleMappingResource);
+            when(fakeRoleMappingResource.realmLevel()).thenReturn(fakeRoleScopeResource);
+
+            keycloakAdapter.removeAdminRole(params);
+
+            ArgumentCaptor<List<RoleRepresentation>> argumentCaptor = ArgumentCaptor.forClass(List.class);
+
+            verify(fakeRoleScopeResource).remove(argumentCaptor.capture());
+
+            List<RoleRepresentation> removedRoles = argumentCaptor.getValue();
+
+            int expectedCountOfRemovedRoles = 1;
+            assertEquals(expectedCountOfRemovedRoles, removedRoles.size());
+            assertEquals(fakeRoleRepresentation, removedRoles.getFirst());
         }
     }
 

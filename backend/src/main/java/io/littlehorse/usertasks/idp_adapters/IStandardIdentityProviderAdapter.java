@@ -38,4 +38,8 @@ public interface IStandardIdentityProviderAdapter {
     void updateManagedUser(Map<String, Object> params);
 
     void deleteManagedUser(Map<String, Object> params);
+
+    void assignAdminRole(Map<String, Object> params);
+
+    void removeAdminRole(Map<String, Object> params);
 }
