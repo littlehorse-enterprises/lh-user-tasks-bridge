@@ -569,6 +569,61 @@ public class UserManagementController {
         }
     }
 
+    @Operation(
+            summary = "Remove User from Group",
+            description = "Removes a user as member of a group."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "204",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Tenant Id is not valid.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "User or Group could not be found.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "406",
+                    description = "Unknown Identity vendor.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+    })
+    @DeleteMapping("/{tenant_id}/management/users/{user_id}/groups/{group_id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void removeUserFromGroup(@RequestHeader(name = "Authorization") String accessToken,
+                                    @PathVariable(name = "tenant_id") String tenantId,
+                                    @PathVariable(name = "user_id") String userId,
+                                    @PathVariable(name = "group_id") String groupId) {
+        if (!tenantService.isValidTenant(tenantId, accessToken)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+
+        try {
+            CustomIdentityProviderProperties customIdentityProviderProperties =
+                    getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
+            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
+
+            userManagementService.removeUserFromGroup(accessToken, userId, groupId, identityProviderHandler);
+        } catch (JsonProcessingException e) {
+            log.error("Something went wrong when getting claims from token while trying to remove user as member of a group.");
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (NotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
+        }
+    }
+
     private IStandardIdentityProviderAdapter getIdentityProviderHandler(@NonNull IdentityProviderVendor vendor) {
         if (vendor == IdentityProviderVendor.KEYCLOAK) {
             return new KeycloakAdapter();

@@ -2783,6 +2783,101 @@ class KeycloakAdapterTest {
         }
     }
 
+    @Test
+    void removeUserFromGroup_shouldThrowAdapterExceptionCreatingKeycloakInstanceWhenRuntimeExceptionIsThrownGettingNewInstance() {
+        var fakeUserId = UUID.randomUUID().toString();
+        Map<String, Object> params = Map.of(USER_ID_MAP_KEY, fakeUserId, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN,
+                USER_GROUP_ID_MAP_KEY, "someGroupId");
+
+        try (MockedStatic<Keycloak> ignored = mockStatic(Keycloak.class)) {
+            when(Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenThrow(new RuntimeException("Error"));
+
+            AdapterException thrownException = assertThrows(AdapterException.class,
+                    () -> keycloakAdapter.removeUserFromGroup(params));
+
+            var expectedErrorMessage = "Something went wrong while creating Keycloak instance.";
+
+            assertEquals(expectedErrorMessage, thrownException.getMessage());
+        }
+    }
+
+    @Test
+    void removeUserFromGroup_shouldThrowExceptionCreatingKeycloakInstanceWhenAccessingRealms() {
+        var fakeUserId = UUID.randomUUID().toString();
+        Map<String, Object> params = Map.of(USER_ID_MAP_KEY, fakeUserId, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN,
+                USER_GROUP_ID_MAP_KEY, "someGroupId");
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenThrow(new RuntimeException());
+
+            AdapterException thrownException = assertThrows(AdapterException.class,
+                    () -> keycloakAdapter.removeUserFromGroup(params));
+
+            var expectedErrorMessage = "Something went wrong while removing user from group in Keycloak realm.";
+
+            assertEquals(expectedErrorMessage, thrownException.getMessage());
+        }
+    }
+
+    @Test
+    void removeUserFromGroup_shouldThrowExceptionWhenNotFoundExceptionIsCaught() {
+        var fakeUserId = UUID.randomUUID().toString();
+        var groupId = UUID.randomUUID().toString();
+        Map<String, Object> params = Map.of(USER_ID_MAP_KEY, fakeUserId, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN,
+                USER_GROUP_ID_MAP_KEY, groupId);
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            RealmResource fakeRealmResource = mock(RealmResource.class);
+            UsersResource fakeUsersResource = mock(UsersResource.class);
+            UserResource fakeUserResource = mock(UserResource.class);
+
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
+            when(fakeRealmResource.users()).thenReturn(fakeUsersResource);
+            when(fakeUsersResource.get(eq(fakeUserId))).thenReturn(fakeUserResource);
+            doThrow(new NotFoundException()).when(fakeUserResource).leaveGroup(eq(groupId));
+
+            io.littlehorse.usertasks.exceptions.NotFoundException thrownException =
+                    assertThrows(io.littlehorse.usertasks.exceptions.NotFoundException.class,
+                    () -> keycloakAdapter.removeUserFromGroup(params));
+
+            var expectedErrorMessage = "User or Group could not be found.";
+
+            assertEquals(expectedErrorMessage, thrownException.getMessage());
+        }
+    }
+
+    @Test
+    void removeUserFromGroup_shouldSucceedWhenNoExceptionsAreThrown() {
+        var fakeUserId = UUID.randomUUID().toString();
+        var groupId = UUID.randomUUID().toString();
+        Map<String, Object> params = Map.of(USER_ID_MAP_KEY, fakeUserId, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN,
+                USER_GROUP_ID_MAP_KEY, groupId);
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            RealmResource fakeRealmResource = mock(RealmResource.class);
+            UsersResource fakeUsersResource = mock(UsersResource.class);
+            UserResource fakeUserResource = mock(UserResource.class);
+
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
+            when(fakeRealmResource.users()).thenReturn(fakeUsersResource);
+            when(fakeUsersResource.get(eq(fakeUserId))).thenReturn(fakeUserResource);
+
+            keycloakAdapter.removeUserFromGroup(params);
+
+            verify(fakeUserResource).leaveGroup(eq(groupId));
+        }
+    }
+
     private UserRepresentation getFakeUserRepresentation(String username) {
         UserRepresentation userRepresentation = new UserRepresentation();
         userRepresentation.setId(UUID.randomUUID().toString());

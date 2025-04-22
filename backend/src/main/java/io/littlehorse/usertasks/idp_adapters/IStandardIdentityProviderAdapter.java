@@ -44,4 +44,6 @@ public interface IStandardIdentityProviderAdapter {
     void removeAdminRole(Map<String, Object> params);
 
     void joinGroup(Map<String, Object> params);
+
+    void removeUserFromGroup(Map<String, Object> params);
 }

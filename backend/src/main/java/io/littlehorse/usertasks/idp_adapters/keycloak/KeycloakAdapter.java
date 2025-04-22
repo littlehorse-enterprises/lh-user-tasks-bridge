@@ -511,6 +511,32 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
         }
     }
 
+    @Override
+    public void removeUserFromGroup(Map<String, Object> params) {
+        log.info("Starting to remove user as group member!");
+
+        var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
+        var realm = getRealmFromToken(accessToken);
+        var userId = (String) params.get(USER_ID_MAP_KEY);
+        var groupId = (String) params.get(USER_GROUP_ID_MAP_KEY);
+
+        try (Keycloak keycloak = getKeycloakInstance(realm, accessToken)) {
+            keycloak.realm(realm).users().get(userId).leaveGroup(groupId);
+
+            log.info("User successfully removed from group!");
+        } catch (AdapterException e) {
+            log.error(e.getMessage());
+            throw new AdapterException(e.getMessage());
+        } catch (NotFoundException e) {
+            log.error(e.getMessage());
+            throw new io.littlehorse.usertasks.exceptions.NotFoundException("User or Group could not be found.");
+        } catch (Exception e) {
+            var errorMessage = "Something went wrong while removing user from group in Keycloak realm.";
+            log.error(errorMessage, e);
+            throw new AdapterException(errorMessage);
+        }
+    }
+
     public static Map<String, Object> buildParamsForUsersSearch(String accessToken, IDPUserSearchRequestFilter requestFilter,
                                                                 int firstResult, int maxResults) {
         Map<String, Object> params = new HashMap<>();
