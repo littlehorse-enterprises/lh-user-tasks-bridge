@@ -443,15 +443,10 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
 
         try (Keycloak keycloak = getKeycloakInstance(realm, accessToken)) {
             RealmResource realmResource = keycloak.realm(realm);
-            UserResource userResource = realmResource.users().get(userId);
-
-            if (Objects.isNull(userResource)) {
-                throw new AdapterException("User could not be found!");
-            }
 
             RoleRepresentation adminRoleRepresentation = realmResource.roles().get(LH_USER_TASKS_ADMIN_ROLE).toRepresentation();
 
-            userResource.roles().realmLevel().add(Collections.singletonList(adminRoleRepresentation));
+            realmResource.users().get(userId).roles().realmLevel().add(Collections.singletonList(adminRoleRepresentation));
 
             log.info("Admin role successfully added!");
         } catch (AdapterException e) {
@@ -474,15 +469,10 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
 
         try (Keycloak keycloak = getKeycloakInstance(realm, accessToken)) {
             RealmResource realmResource = keycloak.realm(realm);
-            UserResource userResource = realmResource.users().get(userId);
-
-            if (Objects.isNull(userResource)) {
-                throw new AdapterException("User could not be found!");
-            }
 
             RoleRepresentation adminRoleRepresentation = realmResource.roles().get(LH_USER_TASKS_ADMIN_ROLE).toRepresentation();
 
-            userResource.roles().realmLevel().remove(Collections.singletonList(adminRoleRepresentation));
+            realmResource.users().get(userId).roles().realmLevel().remove(Collections.singletonList(adminRoleRepresentation));
 
             log.info("Admin role successfully removed!");
         } catch (AdapterException e) {
@@ -490,6 +480,32 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
             throw new AdapterException(e.getMessage());
         } catch (Exception e) {
             var errorMessage = "Something went wrong while removing admin role from user in Keycloak realm.";
+            log.error(errorMessage, e);
+            throw new AdapterException(errorMessage);
+        }
+    }
+
+    @Override
+    public void joinGroup(Map<String, Object> params) {
+        log.info("Starting to join a group!");
+
+        var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
+        var realm = getRealmFromToken(accessToken);
+        var userId = (String) params.get(USER_ID_MAP_KEY);
+        var groupId = (String) params.get(USER_GROUP_ID_MAP_KEY);
+
+        try (Keycloak keycloak = getKeycloakInstance(realm, accessToken)) {
+            keycloak.realm(realm).users().get(userId).joinGroup(groupId);
+
+            log.info("User successfully joined a group!");
+        } catch (AdapterException e) {
+            log.error(e.getMessage());
+            throw new AdapterException(e.getMessage());
+        } catch (NotFoundException e) {
+            log.error(e.getMessage());
+            throw new io.littlehorse.usertasks.exceptions.NotFoundException("User or Group could not be found.");
+        } catch (Exception e) {
+            var errorMessage = "Something went wrong while joining user to a group in Keycloak realm.";
             log.error(errorMessage, e);
             throw new AdapterException(errorMessage);
         }

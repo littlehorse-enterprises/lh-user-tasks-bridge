@@ -660,6 +660,50 @@ class UserManagementServiceTest {
         assertTrue(StringUtils.equalsIgnoreCase(fakeUserId, (String) paramsSent.get("userId")));
     }
 
+    @Test
+    void joinGroup_shouldThrowNullPointerExceptionWhenNullAccessTokenIsReceived() {
+        assertThrows(NullPointerException.class, ()-> userManagementService.joinGroup(null, "userId",
+                "groupId", keycloakAdapter));
+    }
+
+    @Test
+    void joinGroup_shouldThrowNullPointerExceptionWhenNullUserIdIsReceived() {
+        assertThrows(NullPointerException.class, ()-> userManagementService.joinGroup(fakeAccessToken, null,
+                "groupId", keycloakAdapter));
+    }
+
+    @Test
+    void joinGroup_shouldThrowNullPointerExceptionWhenNullGroupIdIsReceived() {
+        assertThrows(NullPointerException.class, ()-> userManagementService.joinGroup(fakeAccessToken, "userId",
+                null, keycloakAdapter));
+    }
+
+    @Test
+    void joinGroup_shouldThrowNullPointerExceptionWhenNullIdentityProviderAdapterIsReceived() {
+        assertThrows(NullPointerException.class, ()-> userManagementService.joinGroup(fakeAccessToken, "userId",
+                "groupId", null));
+    }
+
+    @Test
+    void joinGroup_shouldSucceedWhenNoExceptionsAreThrown() {
+        String fakeUserId = UUID.randomUUID().toString();
+        String fakeGroupId = UUID.randomUUID().toString();
+
+        userManagementService.joinGroup(fakeAccessToken, fakeUserId, fakeGroupId, keycloakAdapter);
+
+        ArgumentCaptor<Map<String, Object>> argumentCaptor = ArgumentCaptor.forClass(Map.class);
+
+        verify(keycloakAdapter).joinGroup(argumentCaptor.capture());
+
+        Map<String, Object> paramsSent = argumentCaptor.getValue();
+
+        int expectedParamsCount = 3;
+
+        assertEquals(expectedParamsCount, paramsSent.size());
+        assertTrue(StringUtils.equalsIgnoreCase(fakeUserId, (String) paramsSent.get("userId")));
+        assertTrue(StringUtils.equalsIgnoreCase(fakeGroupId, (String) paramsSent.get("userGroupId")));
+    }
+
     private void assertMandatoryParamsForKeycloakSearch(Map<String, Object> paramsUsedToSearchUsers, int expectedParamsCount) {
         assertTrue(paramsUsedToSearchUsers.containsKey("firstResult"));
         assertTrue(paramsUsedToSearchUsers.containsKey("maxResults"));

@@ -16,8 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import static io.littlehorse.usertasks.idp_adapters.keycloak.KeycloakAdapter.ACCESS_TOKEN_MAP_KEY;
-import static io.littlehorse.usertasks.idp_adapters.keycloak.KeycloakAdapter.USER_ID_MAP_KEY;
+import static io.littlehorse.usertasks.idp_adapters.keycloak.KeycloakAdapter.*;
 
 @Service
 @Slf4j
@@ -90,5 +89,13 @@ public class UserManagementService {
         Map<String, Object> params = Map.of(ACCESS_TOKEN_MAP_KEY, accessToken, USER_ID_MAP_KEY, userId);
 
         identityProviderHandler.removeAdminRole(params);
+    }
+
+    public void joinGroup(@NonNull String accessToken, @NonNull String userId, @NonNull String groupId,
+                          @NonNull IStandardIdentityProviderAdapter identityProviderHandler) {
+        Map<String, Object> params = Map.of(ACCESS_TOKEN_MAP_KEY, accessToken, USER_ID_MAP_KEY, userId,
+                USER_GROUP_ID_MAP_KEY, groupId);
+
+        identityProviderHandler.joinGroup(params);
     }
 }
