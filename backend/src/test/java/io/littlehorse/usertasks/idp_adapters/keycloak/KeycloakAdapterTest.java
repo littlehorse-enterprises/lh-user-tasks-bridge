@@ -2572,31 +2572,6 @@ class KeycloakAdapterTest {
     }
 
     @Test
-    void assignAdminRole_shouldThrowExceptionWhenNoUserIsFound() {
-        var fakeUserId = UUID.randomUUID().toString();
-        Map<String, Object> params = Map.of(USER_ID_MAP_KEY, fakeUserId, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
-
-        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
-            Keycloak mockKeycloakInstance = mock(Keycloak.class);
-            RealmResource fakeRealmResource = mock(RealmResource.class);
-            UsersResource fakeUsersResource = mock(UsersResource.class);
-
-            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
-                    .thenReturn(mockKeycloakInstance);
-            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
-            when(fakeRealmResource.users()).thenReturn(fakeUsersResource);
-            when(fakeUsersResource.get(eq(fakeUserId))).thenReturn(null);
-
-            AdapterException thrownException = assertThrows(AdapterException.class,
-                    () -> keycloakAdapter.assignAdminRole(params));
-
-            var expectedErrorMessage = "User could not be found!";
-
-            assertEquals(expectedErrorMessage, thrownException.getMessage());
-        }
-    }
-
-    @Test
     void assignAdminRole_shouldSucceedWhenNoExceptionsAreThrown() {
         var fakeUserId = UUID.randomUUID().toString();
         Map<String, Object> params = Map.of(USER_ID_MAP_KEY, fakeUserId, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
@@ -2671,30 +2646,6 @@ class KeycloakAdapterTest {
     }
 
     @Test
-    void removeAdminRole_shouldThrowExceptionWhenNoUserIsFound() {
-        var fakeUserId = UUID.randomUUID().toString();
-        Map<String, Object> params = Map.of(USER_ID_MAP_KEY, fakeUserId, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
-
-        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
-            Keycloak mockKeycloakInstance = mock(Keycloak.class);
-            RealmResource fakeRealmResource = mock(RealmResource.class);
-            UsersResource fakeUsersResource = mock(UsersResource.class);
-
-            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
-                    .thenReturn(mockKeycloakInstance);
-            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
-            when(fakeRealmResource.users()).thenReturn(fakeUsersResource);
-            when(fakeUsersResource.get(eq(fakeUserId))).thenReturn(null);
-
-            AdapterException thrownException = assertThrows(AdapterException.class, () -> keycloakAdapter.removeAdminRole(params));
-
-            var expectedErrorMessage = "User could not be found!";
-
-            assertEquals(expectedErrorMessage, thrownException.getMessage());
-        }
-    }
-
-    @Test
     void removeAdminRole_shouldSucceedWhenNoExceptionsAreThrown() {
         var fakeUserId = UUID.randomUUID().toString();
         Map<String, Object> params = Map.of(USER_ID_MAP_KEY, fakeUserId, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
@@ -2733,6 +2684,102 @@ class KeycloakAdapterTest {
             int expectedCountOfRemovedRoles = 1;
             assertEquals(expectedCountOfRemovedRoles, removedRoles.size());
             assertEquals(fakeRoleRepresentation, removedRoles.getFirst());
+        }
+    }
+
+    @Test
+    void joinGroup_shouldThrowAdapterExceptionCreatingKeycloakInstanceWhenRuntimeExceptionIsThrownGettingNewInstance() {
+        var fakeUserId = UUID.randomUUID().toString();
+        Map<String, Object> params = Map.of(USER_ID_MAP_KEY, fakeUserId, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN,
+                USER_GROUP_ID_MAP_KEY, "someGroupId");
+
+        try (MockedStatic<Keycloak> ignored = mockStatic(Keycloak.class)) {
+            when(Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenThrow(new RuntimeException("Error"));
+
+            AdapterException thrownException = assertThrows(AdapterException.class,
+                    () -> keycloakAdapter.joinGroup(params));
+
+            var expectedErrorMessage = "Something went wrong while creating Keycloak instance.";
+
+            assertEquals(expectedErrorMessage, thrownException.getMessage());
+        }
+    }
+
+    @Test
+    void joinGroup_shouldThrowExceptionCreatingKeycloakInstanceWhenAccessingRealms() {
+        var fakeUserId = UUID.randomUUID().toString();
+        Map<String, Object> params = Map.of(USER_ID_MAP_KEY, fakeUserId, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN,
+                USER_GROUP_ID_MAP_KEY, "someGroupId");
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenThrow(new RuntimeException());
+
+            AdapterException thrownException = assertThrows(AdapterException.class,
+                    () -> keycloakAdapter.joinGroup(params));
+
+            var expectedErrorMessage = "Something went wrong while joining user to a group in Keycloak realm.";
+
+            assertEquals(expectedErrorMessage, thrownException.getMessage());
+        }
+    }
+
+    @Test
+    void joinGroup_shouldThrowExceptionWhenNotFoundExceptionIsCaught() {
+        var fakeUserId = UUID.randomUUID().toString();
+        var fakeGroupId = "some-weird-group.id";
+
+        Map<String, Object> params = Map.of(USER_ID_MAP_KEY, fakeUserId, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN,
+                USER_GROUP_ID_MAP_KEY, fakeGroupId);
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            RealmResource fakeRealmResource = mock(RealmResource.class);
+            UsersResource fakeUsersResource = mock(UsersResource.class);
+            UserResource fakeUserResource = mock(UserResource.class);
+
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
+            when(fakeRealmResource.users()).thenReturn(fakeUsersResource);
+            when(fakeUsersResource.get(eq(fakeUserId))).thenReturn(fakeUserResource);
+            doThrow(new NotFoundException()).when(fakeUserResource).joinGroup(eq(fakeGroupId));
+
+            io.littlehorse.usertasks.exceptions.NotFoundException thrownException =
+                    assertThrows(io.littlehorse.usertasks.exceptions.NotFoundException.class, () -> keycloakAdapter.joinGroup(params));
+
+            var expectedErrorMessage = "User or Group could not be found.";
+
+            assertEquals(expectedErrorMessage, thrownException.getMessage());
+        }
+    }
+
+    @Test
+    void joinGroup_shouldSucceedWhenNoExceptionsAreThrown() {
+        var fakeUserId = UUID.randomUUID().toString();
+        var fakeGroupId = UUID.randomUUID().toString();
+
+        Map<String, Object> params = Map.of(USER_ID_MAP_KEY, fakeUserId, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN,
+                USER_GROUP_ID_MAP_KEY, fakeGroupId);
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            RealmResource fakeRealmResource = mock(RealmResource.class);
+            UsersResource fakeUsersResource = mock(UsersResource.class);
+            UserResource fakeUserResource = mock(UserResource.class);
+
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
+            when(fakeRealmResource.users()).thenReturn(fakeUsersResource);
+            when(fakeUsersResource.get(eq(fakeUserId))).thenReturn(fakeUserResource);
+
+            keycloakAdapter.joinGroup(params);
+
+            verify(fakeUserResource).joinGroup(eq(fakeGroupId));
         }
     }
 
