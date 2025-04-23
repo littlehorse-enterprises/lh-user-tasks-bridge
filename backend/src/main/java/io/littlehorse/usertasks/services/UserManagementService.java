@@ -98,4 +98,11 @@ public class UserManagementService {
 
         identityProviderHandler.joinGroup(params);
     }
+
+    public void removeUserFromGroup(@NonNull String accessToken, @NonNull String userId, @NonNull String groupId,
+                                    @NonNull IStandardIdentityProviderAdapter identityProviderHandler) {
+        Map<String, Object> params = Map.of(ACCESS_TOKEN_MAP_KEY, accessToken, USER_ID_MAP_KEY, userId, USER_GROUP_ID_MAP_KEY, groupId);
+
+        identityProviderHandler.removeUserFromGroup(params);
+    }
 }
