@@ -46,6 +46,7 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
     public static final String FIRST_NAME_MAP_KEY = "firstName";
     public static final String LAST_NAME_MAP_KEY = "lastName";
     public static final String USERNAME_MAP_KEY = "username";
+    public static final String USER_GROUP_NAME_MAP_KEY = "userGroupName";
 
     @Override
     public UserGroupListDTO getUserGroups(Map<String, Object> params) {
@@ -309,7 +310,7 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
 
         try (Keycloak keycloak = getKeycloakInstance(realm, accessToken)) {
             var userGroupId = (String) params.get(USER_GROUP_ID_MAP_KEY);
-            var userGroupName = (String) params.get("userGroupName");
+            var userGroupName = (String) params.get(USER_GROUP_NAME_MAP_KEY);
 
             GroupRepresentation groupRepresentation = null;
 
@@ -532,6 +533,38 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
             throw new io.littlehorse.usertasks.exceptions.NotFoundException("User or Group could not be found.");
         } catch (Exception e) {
             var errorMessage = "Something went wrong while removing user from group in Keycloak realm.";
+            log.error(errorMessage, e);
+            throw new AdapterException(errorMessage);
+        }
+    }
+
+    @Override
+    public void createGroup(Map<String, Object> params) {
+        log.info("Starting Group creation!");
+
+        var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
+        var groupName = (String) params.get(USER_GROUP_NAME_MAP_KEY);
+        var realm = getRealmFromToken(accessToken);
+
+        try (Keycloak keycloak = getKeycloakInstance(realm, accessToken)) {
+            GroupRepresentation groupRepresentation = new GroupRepresentation();
+            groupRepresentation.setName(groupName);
+
+            try (Response response = keycloak.realm(realm).groups().add(groupRepresentation)) {
+                if (response.getStatusInfo().getStatusCode() != 201) {
+                    String exceptionMessage = String.format("User creation failed within realm %s with status: %s!", realm,
+                            response.getStatusInfo().getStatusCode());
+
+                    throw new AdapterException(exceptionMessage);
+                }
+
+                log.info("Group successfully created within realm {}!", realm);
+            }
+        } catch (AdapterException e) {
+            log.error(e.getMessage());
+            throw new AdapterException(e.getMessage());
+        } catch (Exception e) {
+            var errorMessage = "Something went wrong while creating a Group in Keycloak realm.";
             log.error(errorMessage, e);
             throw new AdapterException(errorMessage);
         }
