@@ -22,6 +22,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
 
 import static io.littlehorse.usertasks.idp_adapters.keycloak.KeycloakAdapter.*;
@@ -1942,7 +1943,7 @@ class KeycloakAdapterTest {
     }
 
     @Test
-    void createUser_shouldSucceedWhenCreatingManagedUserOnlyWithUsernameNoExceptionsAreThrownAndResponseIsCreated() {
+    void createManagedUser_shouldSucceedWhenCreatingManagedUserOnlyWithUsernameNoExceptionsAreThrownAndResponseIsCreated() {
         var fakeUsername = "someUsername";
         Map<String, Object> params = Map.of(USERNAME_MAP_KEY, fakeUsername, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
         RealmResource fakeRealmResource = mock(RealmResource.class);
@@ -1964,7 +1965,7 @@ class KeycloakAdapterTest {
     }
 
     @Test
-    void createUser_shouldSucceedWhenCreatingManagedUserOnlyWithUsernameAndEmailNoExceptionsAreThrownAndResponseIsCreated() {
+    void createManagedUser_shouldSucceedWhenCreatingManagedUserOnlyWithUsernameAndEmailNoExceptionsAreThrownAndResponseIsCreated() {
         var fakeUsername = "someUsername";
         var fakeEmail = "somemail@somedomain.com";
         Map<String, Object> params = Map.of(USERNAME_MAP_KEY, fakeUsername, EMAIL_MAP_KEY, fakeEmail,
@@ -1988,7 +1989,7 @@ class KeycloakAdapterTest {
     }
 
     @Test
-    void createUser_shouldSucceedWhenCreatingManagedUserWithUsernameEmailFirstNameAndLastNameNoExceptionsAreThrownAndResponseIsCreated() {
+    void createManagedUser_shouldSucceedWhenCreatingManagedUserWithUsernameEmailFirstNameAndLastNameNoExceptionsAreThrownAndResponseIsCreated() {
         var fakeUsername = "someUsername";
         var fakeEmail = "somemail@somedomain.com";
         var firstName = "Name";
@@ -2875,6 +2876,88 @@ class KeycloakAdapterTest {
             keycloakAdapter.removeUserFromGroup(params);
 
             verify(fakeUserResource).leaveGroup(eq(groupId));
+        }
+    }
+
+    @Test
+    void createGroup_shouldThrowAdapterExceptionCreatingKeycloakInstanceWhenRuntimeExceptionIsThrownGettingNewInstance() {
+        Map<String, Object> params = Map.of(ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN, USER_GROUP_NAME_MAP_KEY, "someGroup");
+
+        try (MockedStatic<Keycloak> ignored = mockStatic(Keycloak.class)) {
+            when(Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenThrow(new RuntimeException("Error"));
+
+            AdapterException thrownException = assertThrows(AdapterException.class,
+                    () -> keycloakAdapter.createGroup(params));
+
+            var expectedErrorMessage = "Something went wrong while creating Keycloak instance.";
+
+            assertEquals(expectedErrorMessage, thrownException.getMessage());
+        }
+    }
+
+    @Test
+    void createGroup_shouldThrowExceptionCreatingKeycloakInstanceWhenAccessingRealms() {
+        Map<String, Object> params = Map.of(ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN, USER_GROUP_NAME_MAP_KEY, "someGroup");
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenThrow(new RuntimeException());
+
+            AdapterException thrownException = assertThrows(AdapterException.class,
+                    () -> keycloakAdapter.createGroup(params));
+
+            var expectedErrorMessage = "Something went wrong while creating a Group in Keycloak realm.";
+
+            assertEquals(expectedErrorMessage, thrownException.getMessage());
+        }
+    }
+
+    @Test
+    void createGroup_shouldThrowExceptionWhenResponseIsDifferentFromCreated() {
+        Map<String, Object> params = Map.of(ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN, USER_GROUP_NAME_MAP_KEY, "someGroup");
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            RealmResource fakeRealmResource = mock(RealmResource.class);
+            GroupsResource fakeGroupsResource = mock(GroupsResource.class);
+
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
+            when(fakeRealmResource.groups()).thenReturn(fakeGroupsResource);
+            when(fakeGroupsResource.add(any(GroupRepresentation.class))).thenReturn(Response.serverError().build());
+
+            AdapterException thrownException = assertThrows(AdapterException.class,
+                    () -> keycloakAdapter.createGroup(params));
+
+            var expectedErrorMessage = "User creation failed within realm lh with status: 500!";
+
+            assertEquals(expectedErrorMessage, thrownException.getMessage());
+        }
+    }
+
+    @Test
+    void createGroup_shouldSucceedWhenNoExceptionsAreThrownAndResponseIsCreated() throws URISyntaxException {
+        Map<String, Object> params = Map.of(ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN, USER_GROUP_NAME_MAP_KEY, "someGroup");
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            RealmResource fakeRealmResource = mock(RealmResource.class);
+            GroupsResource fakeGroupsResource = mock(GroupsResource.class);
+            Response fakeResponse = Response.created(URI.create("www.some-fake-uri.com"))
+                    .status(HttpStatus.CREATED.value())
+                    .build();
+
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
+            when(fakeRealmResource.groups()).thenReturn(fakeGroupsResource);
+            when(fakeGroupsResource.add(any(GroupRepresentation.class))).thenReturn(fakeResponse);
+
+            assertDoesNotThrow(()-> keycloakAdapter.createGroup(params));
         }
     }
 

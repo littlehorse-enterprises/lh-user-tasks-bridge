@@ -46,4 +46,6 @@ public interface IStandardIdentityProviderAdapter {
     void joinGroup(Map<String, Object> params);
 
     void removeUserFromGroup(Map<String, Object> params);
+
+    void createGroup(Map<String, Object> params);
 }
