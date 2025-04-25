@@ -7,10 +7,7 @@ import io.littlehorse.usertasks.models.common.UserDTO;
 import io.littlehorse.usertasks.models.common.UserGroupDTO;
 import io.littlehorse.usertasks.models.requests.CreateManagedUserRequest;
 import io.littlehorse.usertasks.models.requests.IDPUserSearchRequestFilter;
-import io.littlehorse.usertasks.models.responses.IDPUserDTO;
-import io.littlehorse.usertasks.models.responses.IDPUserListDTO;
-import io.littlehorse.usertasks.models.responses.UserGroupListDTO;
-import io.littlehorse.usertasks.models.responses.UserListDTO;
+import io.littlehorse.usertasks.models.responses.*;
 import io.littlehorse.usertasks.util.TokenUtil;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.Response;
@@ -47,6 +44,8 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
     public static final String LAST_NAME_MAP_KEY = "lastName";
     public static final String USERNAME_MAP_KEY = "username";
     public static final String USER_GROUP_NAME_MAP_KEY = "userGroupName";
+    public static final String FIRST_RESULT_MAP_KEY = "firstResult";
+    public static final String MAX_RESULTS_MAP_KEY = "maxResults";
 
     @Override
     public UserGroupListDTO getUserGroups(Map<String, Object> params) {
@@ -111,8 +110,8 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
             var lastName = (String) params.get("lastName");
             var username = (String) params.get("username");
             var userGroupId = (String) params.get(USER_GROUP_ID_MAP_KEY);
-            var firstResult = (Integer) params.get("firstResult");
-            var maxResults = (Integer) params.get("maxResults");
+            var firstResult = (Integer) params.get(FIRST_RESULT_MAP_KEY);
+            var maxResults = (Integer) params.get(MAX_RESULTS_MAP_KEY);
 
             RealmResource realmResource = keycloak.realm(realm);
 
@@ -145,8 +144,8 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
             var lastName = (String) params.get("lastName");
             var username = (String) params.get("username");
             var userGroupId = (String) params.get(USER_GROUP_ID_MAP_KEY);
-            var firstResult = (Integer) params.get("firstResult");
-            var maxResults = (Integer) params.get("maxResults");
+            var firstResult = (Integer) params.get(FIRST_RESULT_MAP_KEY);
+            var maxResults = (Integer) params.get(MAX_RESULTS_MAP_KEY);
 
             RealmResource realmResource = keycloak.realm(realm);
 
@@ -427,6 +426,9 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
         } catch (AdapterException e) {
             log.error(e.getMessage());
             throw new AdapterException(e.getMessage());
+        } catch (NotFoundException e) {
+            log.error(e.getMessage());
+            throw new io.littlehorse.usertasks.exceptions.NotFoundException("User could not be found.");
         } catch (Exception e) {
             var errorMessage = "Something went wrong while setting a User's password in Keycloak realm.";
             log.error(errorMessage, e);
@@ -570,6 +572,43 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
         }
     }
 
+    @Override
+    public Set<IDPGroupDTO> getGroups(Map<String, Object> params) {
+        var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
+        var groupName = (String) params.get(USER_GROUP_NAME_MAP_KEY);
+        var firstResult = (Integer) params.get(FIRST_RESULT_MAP_KEY);
+        var maxResults = (Integer) params.get(MAX_RESULTS_MAP_KEY);
+
+        var realm = getRealmFromToken(accessToken);
+
+        try (Keycloak keycloak = getKeycloakInstance(realm, accessToken)) {
+            RealmResource realmResource = keycloak.realm(realm);
+            GroupsResource groupsResource = realmResource.groups();
+            List<GroupRepresentation> foundGroups;
+
+            if (StringUtils.isNotBlank(groupName)) {
+                foundGroups = groupsResource.groups(groupName, firstResult, maxResults);
+            } else {
+                foundGroups = groupsResource.groups(firstResult, maxResults);
+            }
+
+            if (!CollectionUtils.isEmpty(foundGroups)) {
+                return foundGroups.stream()
+                        .map(IDPGroupDTO::transform)
+                        .collect(Collectors.toUnmodifiableSet());
+            } else {
+                return Collections.emptySet();
+            }
+        } catch (AdapterException e) {
+            log.error(e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            var errorMessage = "Something went wrong while fetching Groups from Keycloak realm.";
+            log.error(errorMessage, e);
+            throw new AdapterException(errorMessage);
+        }
+    }
+
     public static Map<String, Object> buildParamsForUsersSearch(String accessToken, IDPUserSearchRequestFilter requestFilter,
                                                                 int firstResult, int maxResults) {
         Map<String, Object> params = new HashMap<>();
@@ -595,8 +634,8 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
         }
 
         params.put(ACCESS_TOKEN_MAP_KEY, accessToken);
-        params.put("firstResult", firstResult);
-        params.put("maxResults", maxResults);
+        params.put(FIRST_RESULT_MAP_KEY, firstResult);
+        params.put(MAX_RESULTS_MAP_KEY, maxResults);
 
         return params;
     }
@@ -829,6 +868,7 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
         }
 
         userRepresentation.setEmailVerified(true);
+        userRepresentation.setEnabled(true);
 
         return userRepresentation;
     }

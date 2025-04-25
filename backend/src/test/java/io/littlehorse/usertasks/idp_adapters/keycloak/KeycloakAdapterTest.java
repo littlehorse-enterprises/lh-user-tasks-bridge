@@ -4,10 +4,7 @@ import io.littlehorse.usertasks.exceptions.AdapterException;
 import io.littlehorse.usertasks.models.common.UserDTO;
 import io.littlehorse.usertasks.models.common.UserGroupDTO;
 import io.littlehorse.usertasks.models.requests.CreateManagedUserRequest;
-import io.littlehorse.usertasks.models.responses.IDPUserDTO;
-import io.littlehorse.usertasks.models.responses.IDPUserListDTO;
-import io.littlehorse.usertasks.models.responses.UserGroupListDTO;
-import io.littlehorse.usertasks.models.responses.UserListDTO;
+import io.littlehorse.usertasks.models.responses.*;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.Response;
 import org.apache.commons.lang3.StringUtils;
@@ -2057,6 +2054,34 @@ class KeycloakAdapterTest {
     }
 
     @Test
+    void setPassword_shouldThrowExceptionWhenNotFoundExceptionIsCaught() {
+        var fakeUserId = "someUserId";
+        var fakePassword = "somePassword";
+        Map<String, Object> params = Map.of(ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN, "password", fakePassword,
+                "isTemporary", false);
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            RealmResource fakeRealmResource = mock(RealmResource.class);
+            UsersResource fakeUsersResource = mock(UsersResource.class);
+
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
+            when(fakeRealmResource.users()).thenReturn(fakeUsersResource);
+            when(fakeUsersResource.get(eq(fakeUserId))).thenThrow(new NotFoundException());
+
+            io.littlehorse.usertasks.exceptions.NotFoundException thrownException =
+                    assertThrows(io.littlehorse.usertasks.exceptions.NotFoundException.class,
+                    () -> keycloakAdapter.setPassword(fakeUserId, params));
+
+            var expectedErrorMessage = "User could not be found.";
+
+            assertEquals(expectedErrorMessage, thrownException.getMessage());
+        }
+    }
+
+    @Test
     void setPassword_shouldSucceedWhenNoPreviousCredentialsArePresentAndPasswordIsNotTemporary() {
         var fakeUserId = "someUserId";
         var fakePassword = "somePassword";
@@ -2958,6 +2983,171 @@ class KeycloakAdapterTest {
             when(fakeGroupsResource.add(any(GroupRepresentation.class))).thenReturn(fakeResponse);
 
             assertDoesNotThrow(()-> keycloakAdapter.createGroup(params));
+        }
+    }
+
+    @Test
+    void getGroups_shouldThrowAdapterExceptionCreatingKeycloakInstanceWhenRuntimeExceptionIsThrownGettingNewInstance() {
+        Map<String, Object> params = Map.of(ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN, FIRST_RESULT_MAP_KEY, 0,
+                MAX_RESULTS_MAP_KEY, 10);
+
+        try (MockedStatic<Keycloak> ignored = mockStatic(Keycloak.class)) {
+            when(Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenThrow(new RuntimeException("Error"));
+
+            AdapterException thrownException = assertThrows(AdapterException.class,
+                    () -> keycloakAdapter.getGroups(params));
+
+            var expectedErrorMessage = "Something went wrong while creating Keycloak instance.";
+
+            assertEquals(expectedErrorMessage, thrownException.getMessage());
+        }
+    }
+
+    @Test
+    void getGroups_shouldThrowExceptionCreatingKeycloakInstanceWhenAccessingRealms() {
+        Map<String, Object> params = Map.of(ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN, FIRST_RESULT_MAP_KEY, 0,
+                MAX_RESULTS_MAP_KEY, 10);
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenThrow(new RuntimeException());
+
+            AdapterException thrownException = assertThrows(AdapterException.class,
+                    () -> keycloakAdapter.getGroups(params));
+
+            var expectedErrorMessage = "Something went wrong while fetching Groups from Keycloak realm.";
+
+            assertEquals(expectedErrorMessage, thrownException.getMessage());
+        }
+    }
+
+    @Test
+    void getGroups_shouldSucceedWhenNoExceptionsAreThrownAndNoUserGroupNameIsReceivedAndNoGroupsAreFound() {
+        int firstResult = 0;
+        int maxResults = 10;
+
+        Map<String, Object> params = Map.of(ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN, FIRST_RESULT_MAP_KEY, firstResult,
+                MAX_RESULTS_MAP_KEY, maxResults);
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            RealmResource fakeRealmResource = mock(RealmResource.class);
+            GroupsResource fakeGroupsResource = mock(GroupsResource.class);
+
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
+            when(fakeRealmResource.groups()).thenReturn(fakeGroupsResource);
+            when(fakeGroupsResource.groups(eq(firstResult), eq(maxResults))).thenReturn(Collections.emptyList());
+
+            Set<IDPGroupDTO> foundGroups = keycloakAdapter.getGroups(params);
+
+            assertTrue(CollectionUtils.isEmpty(foundGroups));
+
+            verify(fakeGroupsResource).groups(eq(firstResult), eq(maxResults));
+        }
+    }
+
+    @Test
+    void getGroups_shouldSucceedWhenNoExceptionsAreThrownAndUserGroupNameIsReceivedAndNoGroupsAreFound() {
+        int firstResult = 0;
+        int maxResults = 10;
+        var searchingGroupName = "my-group";
+
+        Map<String, Object> params = Map.of(ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN, USER_GROUP_NAME_MAP_KEY, searchingGroupName,
+                FIRST_RESULT_MAP_KEY, firstResult, MAX_RESULTS_MAP_KEY, maxResults);
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            RealmResource fakeRealmResource = mock(RealmResource.class);
+            GroupsResource fakeGroupsResource = mock(GroupsResource.class);
+
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
+            when(fakeRealmResource.groups()).thenReturn(fakeGroupsResource);
+            when(fakeGroupsResource.groups(eq(searchingGroupName), eq(firstResult), eq(maxResults))).thenReturn(Collections.emptyList());
+
+            Set<IDPGroupDTO> foundGroups = keycloakAdapter.getGroups(params);
+
+            assertTrue(CollectionUtils.isEmpty(foundGroups));
+
+            verify(fakeGroupsResource).groups(eq(searchingGroupName), eq(firstResult), eq(maxResults));
+        }
+    }
+
+    @Test
+    void getGroups_shouldSucceedWhenNoExceptionsAreThrownAndNoUserGroupNameIsReceivedAndGroupsAreFound() {
+        int firstResult = 0;
+        int maxResults = 10;
+
+        Map<String, Object> params = Map.of(ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN, FIRST_RESULT_MAP_KEY, firstResult,
+                MAX_RESULTS_MAP_KEY, maxResults);
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            RealmResource fakeRealmResource = mock(RealmResource.class);
+            GroupsResource fakeGroupsResource = mock(GroupsResource.class);
+
+            GroupRepresentation groupRepresentation1 = new GroupRepresentation();
+            groupRepresentation1.setId(UUID.randomUUID().toString());
+            groupRepresentation1.setName("my-group-1");
+
+            GroupRepresentation groupRepresentation2 = new GroupRepresentation();
+            groupRepresentation1.setId(UUID.randomUUID().toString());
+            groupRepresentation1.setName("group-2");
+
+            List<GroupRepresentation> foundGroupRepresentations = List.of(groupRepresentation1, groupRepresentation2);
+
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
+            when(fakeRealmResource.groups()).thenReturn(fakeGroupsResource);
+            when(fakeGroupsResource.groups(eq(firstResult), eq(maxResults))).thenReturn(foundGroupRepresentations);
+
+            Set<IDPGroupDTO> foundGroups = keycloakAdapter.getGroups(params);
+
+            int expectedGroupsCount = 2;
+            assertEquals(expectedGroupsCount, foundGroups.size());
+
+            verify(fakeGroupsResource).groups(eq(firstResult), eq(maxResults));
+        }
+    }
+
+    @Test
+    void getGroups_shouldSucceedWhenNoExceptionsAreThrownAndUserGroupNameIsReceivedAndGroupsAreFound() {
+        int firstResult = 0;
+        int maxResults = 10;
+        var searchingGroupName = "my-group";
+
+        Map<String, Object> params = Map.of(ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN, USER_GROUP_NAME_MAP_KEY, searchingGroupName,
+                FIRST_RESULT_MAP_KEY, firstResult, MAX_RESULTS_MAP_KEY, maxResults);
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            RealmResource fakeRealmResource = mock(RealmResource.class);
+            GroupsResource fakeGroupsResource = mock(GroupsResource.class);
+
+            GroupRepresentation groupRepresentation1 = new GroupRepresentation();
+            groupRepresentation1.setId(UUID.randomUUID().toString());
+            groupRepresentation1.setName("my-group-1");
+
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
+            when(fakeRealmResource.groups()).thenReturn(fakeGroupsResource);
+            when(fakeGroupsResource.groups(eq(searchingGroupName), eq(firstResult), eq(maxResults)))
+                    .thenReturn(Collections.singletonList(groupRepresentation1));
+
+            Set<IDPGroupDTO> foundGroups = keycloakAdapter.getGroups(params);
+
+            int expectedGroupsCount = 1;
+            assertEquals(expectedGroupsCount, foundGroups.size());
+
+            verify(fakeGroupsResource).groups(eq(searchingGroupName), eq(firstResult), eq(maxResults));
         }
     }
 

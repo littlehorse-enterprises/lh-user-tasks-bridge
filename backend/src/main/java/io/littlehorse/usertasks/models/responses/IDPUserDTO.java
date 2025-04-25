@@ -75,7 +75,7 @@ public class IDPUserDTO {
         if (!CollectionUtils.isEmpty(groupsRepresentation)) {
             return groupsRepresentation.stream()
                     .filter(Objects::nonNull)
-                    .map(groupRepresentation -> IDPGroupDTO.transform(groupRepresentation, null))
+                    .map(groupRepresentation -> IDPGroupDTO.transform(groupRepresentation))
                     .collect(Collectors.toUnmodifiableSet());
         }
 

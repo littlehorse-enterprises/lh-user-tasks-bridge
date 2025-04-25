@@ -2,12 +2,10 @@ package io.littlehorse.usertasks.idp_adapters;
 
 import io.littlehorse.usertasks.models.common.UserDTO;
 import io.littlehorse.usertasks.models.common.UserGroupDTO;
-import io.littlehorse.usertasks.models.responses.IDPUserDTO;
-import io.littlehorse.usertasks.models.responses.IDPUserListDTO;
-import io.littlehorse.usertasks.models.responses.UserGroupListDTO;
-import io.littlehorse.usertasks.models.responses.UserListDTO;
+import io.littlehorse.usertasks.models.responses.*;
 
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Interface that defines standard IdP methods to be implemented in all the IdP custom adapters
@@ -48,4 +46,6 @@ public interface IStandardIdentityProviderAdapter {
     void removeUserFromGroup(Map<String, Object> params);
 
     void createGroup(Map<String, Object> params);
+
+    Set<IDPGroupDTO> getGroups(Map<String, Object> params);
 }

@@ -7,6 +7,8 @@ import io.littlehorse.usertasks.idp_adapters.IStandardIdentityProviderAdapter;
 import io.littlehorse.usertasks.idp_adapters.IdentityProviderVendor;
 import io.littlehorse.usertasks.idp_adapters.keycloak.KeycloakAdapter;
 import io.littlehorse.usertasks.models.requests.CreateGroupRequest;
+import io.littlehorse.usertasks.models.responses.IDPGroupDTO;
+import io.littlehorse.usertasks.models.responses.IDPGroupListDTO;
 import io.littlehorse.usertasks.services.GroupManagementService;
 import io.littlehorse.usertasks.services.TenantService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -20,6 +22,7 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
@@ -32,8 +35,8 @@ import static io.littlehorse.usertasks.configurations.CustomIdentityProviderProp
 import static io.littlehorse.usertasks.util.constants.AuthoritiesConstants.LH_USER_TASKS_ADMIN_ROLE;
 
 @Tag(
-        name = "User Management Controller",
-        description = "This is a controller that exposes endpoints in charge of handling requests related to managing users"
+        name = "Group Management Controller",
+        description = "This is a controller that exposes endpoints in charge of handling requests related to managing groups"
 )
 @RestController
 @CrossOrigin
@@ -101,6 +104,62 @@ public class GroupManagementController {
             groupManagementService.createGroupInIdentityProvider(accessToken, requestBody, identityProviderHandler);
         } catch (JsonProcessingException e) {
             log.error("Something went wrong when getting claims from token while trying to create a group.");
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (ValidationException e) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage());
+        }
+    }
+
+    @Operation(
+            summary = "Get Groups",
+            description = "Gets a collection of Groups within a specific tenant's IdP"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "List of unique Groups",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = IDPGroupListDTO.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Tenant Id is not valid.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "406",
+                    description = "Unknown Identity vendor.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            )
+    })
+    @GetMapping("/{tenant_id}/management/groups")
+    @ResponseStatus(HttpStatus.OK)
+    public ResponseEntity<IDPGroupListDTO> getGroups(@RequestHeader(name = "Authorization") String accessToken,
+                                                      @PathVariable(name = "tenant_id") String tenantId,
+                                                      @RequestParam(required = false) String name,
+                                                      @RequestParam(name = "first_result", defaultValue = "0") Integer firstResult,
+                                                      @RequestParam(name = "max_results", defaultValue = "10") Integer maxResults) {
+        if (!tenantService.isValidTenant(tenantId, accessToken)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+
+        try {
+            CustomIdentityProviderProperties customIdentityProviderProperties =
+                    getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
+            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
+
+            Set<IDPGroupDTO> groups = groupManagementService.getGroups(accessToken, name, firstResult, maxResults, identityProviderHandler);
+
+            IDPGroupListDTO response = new IDPGroupListDTO(groups);
+
+            return ResponseEntity.ok(response);
+        } catch (JsonProcessingException e) {
+            log.error("Something went wrong when getting claims from token while trying to fetch groups.");
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
         } catch (ValidationException e) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage());
