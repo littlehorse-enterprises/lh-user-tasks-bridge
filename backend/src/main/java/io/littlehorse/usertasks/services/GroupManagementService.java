@@ -3,6 +3,7 @@ package io.littlehorse.usertasks.services;
 import io.littlehorse.usertasks.idp_adapters.IStandardIdentityProviderAdapter;
 import io.littlehorse.usertasks.models.common.UserGroupDTO;
 import io.littlehorse.usertasks.models.requests.CreateGroupRequest;
+import io.littlehorse.usertasks.models.requests.UpdateGroupRequest;
 import io.littlehorse.usertasks.models.responses.IDPGroupDTO;
 import jakarta.validation.ValidationException;
 import lombok.NonNull;
@@ -33,7 +34,7 @@ public class GroupManagementService {
     }
 
     public Set<IDPGroupDTO> getGroups(@NonNull String accessToken, @Nullable String name, int firstResult, int maxResults,
-                                      @NonNull IStandardIdentityProviderAdapter identityProviderHandler) {
+                                      @NonNull IStandardIdentityProviderAdapter identityProviderAdapter) {
         Map<String, Object> params = new HashMap<>();
 
         params.put(ACCESS_TOKEN_MAP_KEY, accessToken);
@@ -43,6 +44,22 @@ public class GroupManagementService {
 
         params.entrySet().removeIf(entry -> Objects.isNull(entry.getValue()));
 
-        return identityProviderHandler.getGroups(params);
+        return identityProviderAdapter.getGroups(params);
+    }
+
+    public void updateGroup(@NonNull String accessToken, @NonNull String groupId, @NonNull UpdateGroupRequest request,
+                            @NonNull IStandardIdentityProviderAdapter identityProviderAdapter) {
+
+        Map<String, Object> lookupParams = Map.of(ACCESS_TOKEN_MAP_KEY, accessToken, USER_GROUP_NAME_MAP_KEY, request.getName());
+        UserGroupDTO foundGroup = identityProviderAdapter.getUserGroup(lookupParams);
+
+        if (Objects.nonNull(foundGroup)) {
+            throw new ValidationException("Group already exists with the requested name!");
+        }
+
+        Map<String, Object> updateParams = Map.of(ACCESS_TOKEN_MAP_KEY, accessToken, USER_GROUP_ID_MAP_KEY, groupId,
+                USER_GROUP_NAME_MAP_KEY, request.getName());
+
+        identityProviderAdapter.updateGroup(updateParams);
     }
 }

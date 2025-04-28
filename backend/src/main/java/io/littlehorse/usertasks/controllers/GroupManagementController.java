@@ -6,11 +6,17 @@ import io.littlehorse.usertasks.configurations.IdentityProviderConfigProperties;
 import io.littlehorse.usertasks.idp_adapters.IStandardIdentityProviderAdapter;
 import io.littlehorse.usertasks.idp_adapters.IdentityProviderVendor;
 import io.littlehorse.usertasks.idp_adapters.keycloak.KeycloakAdapter;
+import io.littlehorse.usertasks.models.common.UserGroupDTO;
 import io.littlehorse.usertasks.models.requests.CreateGroupRequest;
+import io.littlehorse.usertasks.models.requests.UpdateGroupRequest;
+import io.littlehorse.usertasks.models.requests.UserTaskRequestFilter;
 import io.littlehorse.usertasks.models.responses.IDPGroupDTO;
 import io.littlehorse.usertasks.models.responses.IDPGroupListDTO;
+import io.littlehorse.usertasks.models.responses.UserTaskRunListDTO;
 import io.littlehorse.usertasks.services.GroupManagementService;
 import io.littlehorse.usertasks.services.TenantService;
+import io.littlehorse.usertasks.services.UserTaskService;
+import io.littlehorse.usertasks.util.enums.UserTaskStatus;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -28,10 +34,13 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import static io.littlehorse.usertasks.configurations.CustomIdentityProviderProperties.getCustomIdentityProviderProperties;
+import static io.littlehorse.usertasks.idp_adapters.keycloak.KeycloakAdapter.ACCESS_TOKEN_MAP_KEY;
+import static io.littlehorse.usertasks.idp_adapters.keycloak.KeycloakAdapter.USER_GROUP_ID_MAP_KEY;
 import static io.littlehorse.usertasks.util.constants.AuthoritiesConstants.LH_USER_TASKS_ADMIN_ROLE;
 
 @Tag(
@@ -45,12 +54,14 @@ import static io.littlehorse.usertasks.util.constants.AuthoritiesConstants.LH_US
 public class GroupManagementController {
     private final TenantService tenantService;
     private final GroupManagementService groupManagementService;
+    private final UserTaskService userTaskService;
     private final IdentityProviderConfigProperties identityProviderConfigProperties;
 
-    public GroupManagementController(TenantService tenantService, GroupManagementService groupManagementService,
+    public GroupManagementController(TenantService tenantService, GroupManagementService groupManagementService, UserTaskService userTaskService,
                                      IdentityProviderConfigProperties identityProviderConfigProperties) {
         this.tenantService = tenantService;
         this.groupManagementService = groupManagementService;
+        this.userTaskService = userTaskService;
         this.identityProviderConfigProperties = identityProviderConfigProperties;
     }
 
@@ -166,6 +177,73 @@ public class GroupManagementController {
         }
     }
 
+    @Operation(
+            summary = "Update Group",
+            description = "Updates a Group within a specific tenant's IdP"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "204",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Tenant Id is not valid.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "406",
+                    description = "Unknown Identity vendor.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "Group cannot be updated because there are UserTaskRuns already assigned to it and waiting to be completed." +
+                            "Or, name is already being used by an existing group.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            )
+    })
+    @PutMapping("/{tenant_id}/management/groups/{group_id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void rename(@RequestHeader(name = "Authorization") String accessToken,
+                       @PathVariable(name = "tenant_id") String tenantId,
+                       @PathVariable(name = "group_id") String groupId,
+                       @RequestParam(name = "ignore_orphan_tasks", required = false) boolean ignoreOrphanTasks,
+                       @RequestBody UpdateGroupRequest request) {
+        if (!tenantService.isValidTenant(tenantId, accessToken)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+
+        try {
+            CustomIdentityProviderProperties customIdentityProviderProperties =
+                    getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
+            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
+
+            validateRequestBody(request);
+
+            Map<String, Object> lookupParams = Map.of(ACCESS_TOKEN_MAP_KEY, accessToken, USER_GROUP_ID_MAP_KEY, groupId);
+
+            UserGroupDTO userGroup = identityProviderHandler.getUserGroup(lookupParams);
+
+            if (!ignoreOrphanTasks) {
+                validateCurrentlyAssignedUserTaskRuns(tenantId, userGroup.getName());
+            }
+
+            groupManagementService.updateGroup(accessToken, groupId, request, identityProviderHandler);
+        } catch (JsonProcessingException e) {
+            log.error("Something went wrong when getting claims from token while trying to update group.");
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (ValidationException e) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage());
+        }
+    }
+
     private IStandardIdentityProviderAdapter getIdentityProviderHandler(@NonNull IdentityProviderVendor vendor) {
         if (vendor == IdentityProviderVendor.KEYCLOAK) {
             return new KeycloakAdapter();
@@ -174,10 +252,10 @@ public class GroupManagementController {
         }
     }
 
-    private void validateRequestBody(CreateGroupRequest requestBody) {
+    private <T> void validateRequestBody(T requestBody) {
         try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
             Validator validator = factory.getValidator();
-            Set<ConstraintViolation<CreateGroupRequest>> constraintViolations = validator.validate(requestBody);
+            Set<ConstraintViolation<T>> constraintViolations = validator.validate(requestBody);
 
             if (!CollectionUtils.isEmpty(constraintViolations)) {
                 String validationMessage = constraintViolations.stream()
@@ -186,6 +264,20 @@ public class GroupManagementController {
 
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, validationMessage);
             }
+        }
+    }
+
+    private void validateCurrentlyAssignedUserTaskRuns(String tenantId, String groupName) {
+        UserTaskRequestFilter requestFilter = UserTaskRequestFilter.builder()
+                .status(UserTaskStatus.UNASSIGNED)
+                .build();
+
+        UserTaskRunListDTO pendingTasks = userTaskService.getTasks(tenantId, null, groupName,
+                requestFilter, 1, null, true);
+
+        if (!CollectionUtils.isEmpty(pendingTasks.getUserTasks())) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Cannot rename/delete Group with Task(s) assigned that are pending to be claimed!");
         }
     }
 }
