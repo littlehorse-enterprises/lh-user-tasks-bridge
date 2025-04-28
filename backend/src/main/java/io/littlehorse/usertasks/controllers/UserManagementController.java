@@ -201,6 +201,13 @@ public class UserManagementController {
                             schema = @Schema(implementation = ProblemDetail.class))}
             ),
             @ApiResponse(
+                    responseCode = "404",
+                    description = "User could not be found.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
                     responseCode = "406",
                     description = "Unknown Identity vendor.",
                     content = {@Content(
@@ -229,6 +236,8 @@ public class UserManagementController {
         } catch (JsonProcessingException e) {
             log.error("Something went wrong when getting claims from token while trying to upsert a user's password.");
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (NotFoundException e) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
         }
     }
 
