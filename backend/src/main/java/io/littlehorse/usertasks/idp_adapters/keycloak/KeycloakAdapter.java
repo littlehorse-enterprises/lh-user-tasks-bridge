@@ -609,6 +609,33 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
         }
     }
 
+    @Override
+    public void updateGroup(Map<String, Object> params) {
+        log.info("Starting Group's renaming!");
+
+        var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
+        var groupId = (String) params.get(USER_GROUP_ID_MAP_KEY);
+        var groupName = (String) params.get(USER_GROUP_NAME_MAP_KEY);
+        var realm = getRealmFromToken(accessToken);
+
+        try (Keycloak keycloak = getKeycloakInstance(realm, accessToken)) {
+            GroupResource groupResource = keycloak.realm(realm).groups().group(groupId);
+            GroupRepresentation groupRepresentation = groupResource.toRepresentation();
+            groupRepresentation.setName(groupName);
+
+            groupResource.update(groupRepresentation);
+
+            log.info("Group successfully renamed within realm {}!", realm);
+        } catch (AdapterException e) {
+            log.error(e.getMessage());
+            throw new AdapterException(e.getMessage());
+        } catch (Exception e) {
+            var errorMessage = "Something went wrong while renaming a Group in Keycloak realm.";
+            log.error(errorMessage, e);
+            throw new AdapterException(errorMessage);
+        }
+    }
+
     public static Map<String, Object> buildParamsForUsersSearch(String accessToken, IDPUserSearchRequestFilter requestFilter,
                                                                 int firstResult, int maxResults) {
         Map<String, Object> params = new HashMap<>();

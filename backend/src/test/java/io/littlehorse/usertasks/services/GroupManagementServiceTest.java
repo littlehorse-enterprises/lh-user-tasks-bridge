@@ -4,6 +4,7 @@ import io.littlehorse.usertasks.idp_adapters.IStandardIdentityProviderAdapter;
 import io.littlehorse.usertasks.idp_adapters.keycloak.KeycloakAdapter;
 import io.littlehorse.usertasks.models.common.UserGroupDTO;
 import io.littlehorse.usertasks.models.requests.CreateGroupRequest;
+import io.littlehorse.usertasks.models.requests.UpdateGroupRequest;
 import io.littlehorse.usertasks.models.responses.IDPGroupDTO;
 import jakarta.validation.ValidationException;
 import org.apache.commons.lang3.StringUtils;
@@ -209,5 +210,79 @@ class GroupManagementServiceTest {
         assertEquals(expectedParamsCount, paramsSent.size());
         assertEquals(expectedFirstResult, paramsSent.get("firstResult"));
         assertEquals(expectedMaxResults, paramsSent.get("maxResults"));
+    }
+
+    @Test
+    void updateGroup_shouldThrowNullPointerExceptionWhenNullAccessTokenIsReceived() {
+        UpdateGroupRequest request = new UpdateGroupRequest("some-group");
+
+        assertThrows(NullPointerException.class,
+                ()-> groupManagementService.updateGroup(null, UUID.randomUUID().toString(), request, keycloakAdapter));
+    }
+
+    @Test
+    void updateGroup_shouldThrowNullPointerExceptionWhenNullGroupIdIsReceived() {
+        UpdateGroupRequest request = new UpdateGroupRequest("some-group");
+
+        assertThrows(NullPointerException.class,
+                ()-> groupManagementService.updateGroup(fakeAccessToken, null, request, keycloakAdapter));
+    }
+
+    @Test
+    void updateGroup_shouldThrowNullPointerExceptionWhenNullRequestIsReceived() {
+        assertThrows(NullPointerException.class,
+                ()-> groupManagementService.updateGroup(fakeAccessToken, UUID.randomUUID().toString(), null, keycloakAdapter));
+    }
+
+    @Test
+    void updateGroup_shouldThrowNullPointerExceptionWhenNullIdentityProviderAdapterIsReceived() {
+        UpdateGroupRequest request = new UpdateGroupRequest("some-group");
+
+        assertThrows(NullPointerException.class,
+                ()-> groupManagementService.updateGroup(fakeAccessToken, UUID.randomUUID().toString(), request, null));
+    }
+
+    @Test
+    void updateGroup_shouldThrowValidationExceptionWhenThereIsAnExistingGroupAlreadyUsingTheRequestedName() {
+        String groupIdBeingUpdated = UUID.randomUUID().toString();
+        String groupName = "some-group";
+        UpdateGroupRequest request = new UpdateGroupRequest(groupName);
+        String groupIdFromAnotherGroup = UUID.randomUUID().toString();
+
+        UserGroupDTO foundGroup = new UserGroupDTO(groupIdFromAnotherGroup, groupName, true);
+
+        when(keycloakAdapter.getUserGroup(anyMap())).thenReturn(foundGroup);
+
+        ValidationException thrownException = assertThrows(ValidationException.class,
+                () -> groupManagementService.updateGroup(fakeAccessToken, groupIdBeingUpdated, request, keycloakAdapter));
+
+        assertTrue(StringUtils.equalsIgnoreCase("Group already exists with the requested name!", thrownException.getMessage()));
+
+        verify(keycloakAdapter).getUserGroup(anyMap());
+        verify(keycloakAdapter, never()).updateGroup(anyMap());
+    }
+
+    @Test
+    void updateGroup_shouldSucceedWhenNoExceptionsAreThrown() {
+        String groupIdBeingUpdated = UUID.randomUUID().toString();
+        String groupName = "some-group";
+        UpdateGroupRequest request = new UpdateGroupRequest(groupName);
+
+        when(keycloakAdapter.getUserGroup(anyMap())).thenReturn(null);
+
+        groupManagementService.updateGroup(fakeAccessToken, groupIdBeingUpdated, request, keycloakAdapter);
+
+        ArgumentCaptor<Map<String, Object>> argumentCaptor = ArgumentCaptor.forClass(Map.class);
+
+        verify(keycloakAdapter).getUserGroup(anyMap());
+        verify(keycloakAdapter).updateGroup(argumentCaptor.capture());
+
+        Map<String, Object> paramsSentToUpdate = argumentCaptor.getValue();
+
+        int expectedParamsCount = 3;
+
+        assertEquals(expectedParamsCount, paramsSentToUpdate.size());
+        assertTrue(StringUtils.equalsIgnoreCase(groupIdBeingUpdated, (String) paramsSentToUpdate.get("userGroupId")));
+        assertTrue(StringUtils.equalsIgnoreCase(groupName, (String) paramsSentToUpdate.get("userGroupName")));
     }
 }

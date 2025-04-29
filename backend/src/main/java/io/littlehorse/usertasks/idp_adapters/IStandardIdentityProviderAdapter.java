@@ -48,4 +48,6 @@ public interface IStandardIdentityProviderAdapter {
     void createGroup(Map<String, Object> params);
 
     Set<IDPGroupDTO> getGroups(Map<String, Object> params);
+
+    void updateGroup(Map<String, Object> params);
 }

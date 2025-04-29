@@ -3151,6 +3151,85 @@ class KeycloakAdapterTest {
         }
     }
 
+    @Test
+    void updateGroup_shouldThrowAdapterExceptionCreatingKeycloakInstanceWhenRuntimeExceptionIsThrownGettingNewInstance() {
+        String groupId = UUID.randomUUID().toString();
+        String groupName = "some-group";
+        Map<String, Object> params = Map.of(ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN, USER_GROUP_ID_MAP_KEY, groupId,
+                USER_GROUP_NAME_MAP_KEY, groupName);
+
+        try (MockedStatic<Keycloak> ignored = mockStatic(Keycloak.class)) {
+            when(Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenThrow(new RuntimeException("Error"));
+
+            AdapterException thrownException = assertThrows(AdapterException.class,
+                    () -> keycloakAdapter.updateGroup(params));
+
+            var expectedErrorMessage = "Something went wrong while creating Keycloak instance.";
+
+            assertEquals(expectedErrorMessage, thrownException.getMessage());
+        }
+    }
+
+    @Test
+    void updateGroup_shouldThrowExceptionCreatingKeycloakInstanceWhenAccessingRealms() {
+        String groupId = UUID.randomUUID().toString();
+        String groupName = "some-group";
+        Map<String, Object> params = Map.of(ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN, USER_GROUP_ID_MAP_KEY, groupId,
+                USER_GROUP_NAME_MAP_KEY, groupName);
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenThrow(new RuntimeException());
+
+            AdapterException thrownException = assertThrows(AdapterException.class,
+                    () -> keycloakAdapter.updateGroup(params));
+
+            var expectedErrorMessage = "Something went wrong while renaming a Group in Keycloak realm.";
+
+            assertEquals(expectedErrorMessage, thrownException.getMessage());
+        }
+    }
+
+    @Test
+    void updateGroup_shouldSucceedWhenNoExceptionsAreThrown() {
+        String groupId = UUID.randomUUID().toString();
+        String groupName = "some-group";
+        Map<String, Object> params = Map.of(ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN, USER_GROUP_ID_MAP_KEY, groupId,
+                USER_GROUP_NAME_MAP_KEY, groupName);
+
+        try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+            Keycloak mockKeycloakInstance = mock(Keycloak.class);
+            RealmResource fakeRealmResource = mock(RealmResource.class);
+            GroupsResource fakeGroupsResource = mock(GroupsResource.class);
+            GroupResource fakeGroupResource = mock(GroupResource.class);
+
+            GroupRepresentation groupRepresentation = new GroupRepresentation();
+            groupRepresentation.setId(groupId);
+            groupRepresentation.setName("some-other-name");
+
+            mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                    .thenReturn(mockKeycloakInstance);
+            when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
+            when(fakeRealmResource.groups()).thenReturn(fakeGroupsResource);
+            when(fakeGroupsResource.group(eq(groupId))).thenReturn(fakeGroupResource);
+            when(fakeGroupResource.toRepresentation()).thenReturn(groupRepresentation);
+
+            keycloakAdapter.updateGroup(params);
+
+            ArgumentCaptor<GroupRepresentation> argumentCaptor = ArgumentCaptor.forClass(GroupRepresentation.class);
+
+            verify(fakeGroupResource).update(argumentCaptor.capture());
+
+            GroupRepresentation updateGroupRepresentation = argumentCaptor.getValue();
+
+            assertTrue(StringUtils.equalsIgnoreCase(groupId, updateGroupRepresentation.getId()));
+            assertTrue(StringUtils.equalsIgnoreCase(groupName, updateGroupRepresentation.getName()));
+        }
+    }
+
     private UserRepresentation getFakeUserRepresentation(String username) {
         UserRepresentation userRepresentation = new UserRepresentation();
         userRepresentation.setId(UUID.randomUUID().toString());

@@ -384,7 +384,7 @@ public class UserManagementController {
     public void deleteUser(@RequestHeader(name = "Authorization") String accessToken,
                            @PathVariable(name = "tenant_id") String tenantId,
                            @PathVariable(name = "user_id") String userId,
-                           @RequestParam(required = false) boolean ignoreOrphanTasks) {
+                           @RequestParam(name = "ignore_orphan_tasks", required = false) boolean ignoreOrphanTasks) {
         if (!tenantService.isValidTenant(tenantId, accessToken)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
