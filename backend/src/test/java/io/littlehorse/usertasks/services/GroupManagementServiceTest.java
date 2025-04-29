@@ -285,4 +285,39 @@ class GroupManagementServiceTest {
         assertTrue(StringUtils.equalsIgnoreCase(groupIdBeingUpdated, (String) paramsSentToUpdate.get("userGroupId")));
         assertTrue(StringUtils.equalsIgnoreCase(groupName, (String) paramsSentToUpdate.get("userGroupName")));
     }
+
+    @Test
+    void deleteGroup_shouldThrowNullPointerExceptionWhenNullAccessTokenIsReceived() {
+        assertThrows(NullPointerException.class,
+                ()-> groupManagementService.deleteGroup(null, UUID.randomUUID().toString(), keycloakAdapter));
+    }
+
+    @Test
+    void deleteGroup_shouldThrowNullPointerExceptionWhenNullGroupIdIsReceived() {
+        assertThrows(NullPointerException.class,
+                ()-> groupManagementService.deleteGroup(fakeAccessToken, null, keycloakAdapter));
+    }
+
+    @Test
+    void deleteGroup_shouldThrowNullPointerExceptionWhenNullIdentityProviderAdapterIsReceived() {
+        assertThrows(NullPointerException.class,
+                ()-> groupManagementService.deleteGroup(fakeAccessToken, UUID.randomUUID().toString(), null));
+    }
+
+    @Test
+    void deleteGroup_shouldSucceedWhenNoExceptionsAreThrown() {
+        String fakeGroupId = UUID.randomUUID().toString();
+        groupManagementService.deleteGroup(fakeAccessToken, fakeGroupId, keycloakAdapter);
+
+        ArgumentCaptor<Map<String, Object>> argumentCaptor = ArgumentCaptor.forClass(Map.class);
+
+        verify(keycloakAdapter).deleteGroup(argumentCaptor.capture());
+
+        Map<String, Object> paramsSent = argumentCaptor.getValue();
+
+        int expectedParamsCount = 2;
+
+        assertEquals(expectedParamsCount, paramsSent.size());
+        assertTrue(StringUtils.equalsIgnoreCase(fakeGroupId, (String) paramsSent.get("userGroupId")));
+    }
 }

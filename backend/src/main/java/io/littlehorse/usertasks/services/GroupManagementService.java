@@ -49,7 +49,6 @@ public class GroupManagementService {
 
     public void updateGroup(@NonNull String accessToken, @NonNull String groupId, @NonNull UpdateGroupRequest request,
                             @NonNull IStandardIdentityProviderAdapter identityProviderAdapter) {
-
         Map<String, Object> lookupParams = Map.of(ACCESS_TOKEN_MAP_KEY, accessToken, USER_GROUP_NAME_MAP_KEY, request.getName());
         UserGroupDTO foundGroup = identityProviderAdapter.getUserGroup(lookupParams);
 
@@ -61,5 +60,12 @@ public class GroupManagementService {
                 USER_GROUP_NAME_MAP_KEY, request.getName());
 
         identityProviderAdapter.updateGroup(updateParams);
+    }
+
+    public void deleteGroup(@NonNull String accessToken, @NonNull String groupId,
+                            @NonNull IStandardIdentityProviderAdapter identityProviderAdapter) {
+        Map<String, Object> params = Map.of(ACCESS_TOKEN_MAP_KEY, accessToken, USER_GROUP_ID_MAP_KEY, groupId);
+
+        identityProviderAdapter.deleteGroup(params);
     }
 }
