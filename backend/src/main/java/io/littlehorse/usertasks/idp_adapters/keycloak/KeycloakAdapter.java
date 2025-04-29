@@ -636,6 +636,28 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
         }
     }
 
+    @Override
+    public void deleteGroup(Map<String, Object> params) {
+        log.debug("Starting Group's deletion!");
+
+        var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
+        var groupId = (String) params.get(USER_GROUP_ID_MAP_KEY);
+        var realm = getRealmFromToken(accessToken);
+
+        try (Keycloak keycloak = getKeycloakInstance(realm, accessToken)) {
+            keycloak.realm(realm).groups().group(groupId).remove();
+
+            log.debug("Group successfully deleted within realm {}!", realm);
+        } catch (AdapterException e) {
+            log.error(e.getMessage());
+            throw new AdapterException(e.getMessage());
+        } catch (Exception e) {
+            var errorMessage = "Something went wrong while deleting a Group in Keycloak realm.";
+            log.error(errorMessage, e);
+            throw new AdapterException(errorMessage);
+        }
+    }
+
     public static Map<String, Object> buildParamsForUsersSearch(String accessToken, IDPUserSearchRequestFilter requestFilter,
                                                                 int firstResult, int maxResults) {
         Map<String, Object> params = new HashMap<>();

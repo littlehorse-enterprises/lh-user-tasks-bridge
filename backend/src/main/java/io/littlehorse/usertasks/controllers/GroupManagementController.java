@@ -202,7 +202,7 @@ public class GroupManagementController {
             ),
             @ApiResponse(
                     responseCode = "409",
-                    description = "Group cannot be updated because there are UserTaskRuns already assigned to it and waiting to be completed." +
+                    description = "Group cannot be updated because there are UserTaskRuns already assigned to it and waiting to be claimed." +
                             "Or, name is already being used by an existing group.",
                     content = {@Content(
                             mediaType = "application/json",
@@ -211,7 +211,7 @@ public class GroupManagementController {
     })
     @PutMapping("/{tenant_id}/management/groups/{group_id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void rename(@RequestHeader(name = "Authorization") String accessToken,
+    public void updateGroup(@RequestHeader(name = "Authorization") String accessToken,
                        @PathVariable(name = "tenant_id") String tenantId,
                        @PathVariable(name = "group_id") String groupId,
                        @RequestParam(name = "ignore_orphan_tasks", required = false) boolean ignoreOrphanTasks,
@@ -238,6 +238,69 @@ public class GroupManagementController {
             groupManagementService.updateGroup(accessToken, groupId, request, identityProviderHandler);
         } catch (JsonProcessingException e) {
             log.error("Something went wrong when getting claims from token while trying to update group.");
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
+        } catch (ValidationException e) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage());
+        }
+    }
+
+    @Operation(
+            summary = "Delete Group",
+            description = "Deletes a Group within a specific tenant's IdP"
+    )
+    @ApiResponses(value = {
+            @ApiResponse(
+                    responseCode = "204",
+                    content = @Content
+            ),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Tenant Id is not valid.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "406",
+                    description = "Unknown Identity vendor.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "Group cannot be deleted because there are UserTaskRuns already assigned to it and waiting to be claimed.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
+            )
+    })
+    @DeleteMapping("/{tenant_id}/management/groups/{group_id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteGroup(@RequestHeader(name = "Authorization") String accessToken,
+                       @PathVariable(name = "tenant_id") String tenantId,
+                       @PathVariable(name = "group_id") String groupId,
+                       @RequestParam(name = "ignore_orphan_tasks", required = false) boolean ignoreOrphanTasks) {
+        if (!tenantService.isValidTenant(tenantId, accessToken)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+
+        try {
+            CustomIdentityProviderProperties customIdentityProviderProperties =
+                    getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
+            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
+
+            Map<String, Object> lookupParams = Map.of(ACCESS_TOKEN_MAP_KEY, accessToken, USER_GROUP_ID_MAP_KEY, groupId);
+
+            UserGroupDTO userGroup = identityProviderHandler.getUserGroup(lookupParams);
+
+            if (!ignoreOrphanTasks) {
+                validateCurrentlyAssignedUserTaskRuns(tenantId, userGroup.getName());
+            }
+
+            groupManagementService.deleteGroup(accessToken, groupId, identityProviderHandler);
+        } catch (JsonProcessingException e) {
+            log.error("Something went wrong when getting claims from token while trying to delete group.");
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
         } catch (ValidationException e) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage());
@@ -276,8 +339,7 @@ public class GroupManagementController {
                 requestFilter, 1, null, true);
 
         if (!CollectionUtils.isEmpty(pendingTasks.getUserTasks())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Cannot rename/delete Group with Task(s) assigned that are pending to be claimed!");
+            throw new ValidationException("Cannot rename/delete Group with Task(s) assigned that are pending to be claimed!");
         }
     }
 }
