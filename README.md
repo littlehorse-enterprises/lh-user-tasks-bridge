@@ -138,6 +138,6 @@ configured Identity Provider.
 - IMPORTANT: These endpoints will **_only work with Keycloak_** as Identity Provider, for there's only one IdP adapter currently implemented.
 - These endpoints are set to only allow Admin users to hit them
 - In order to properly manage users, besides having the `lh-user-tasks-admin` role that identifies Users as Admins,
-they also need to have the `manage-users` and `view-realm` roles assigned.
+they also need to have the `manage-users`, `view-clients` and `view-realm` roles assigned.
 
 **In case that all Admin users were deleted, you will need to create at least 1 by using your Identity Provider's dashboard.**

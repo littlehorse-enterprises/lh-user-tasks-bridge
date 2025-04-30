@@ -1942,9 +1942,33 @@ class KeycloakAdapterTest {
     @Test
     void createManagedUser_shouldSucceedWhenCreatingManagedUserOnlyWithUsernameNoExceptionsAreThrownAndResponseIsCreated() {
         var fakeUsername = "someUsername";
+        var fakeClientRepresentationId = UUID.randomUUID().toString();
+        var fakeViewUsersRoleId = UUID.randomUUID().toString();
+        var fakeUserId = UUID.randomUUID().toString();
+
         Map<String, Object> params = Map.of(USERNAME_MAP_KEY, fakeUsername, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
+
         RealmResource fakeRealmResource = mock(RealmResource.class);
         UsersResource fakeUsersResource = mock(UsersResource.class);
+        ClientsResource fakeClientsResource = mock(ClientsResource.class);
+        ClientResource fakeClientResource = mock(ClientResource.class);
+        RolesResource fakeRolesResource = mock(RolesResource.class);
+        RoleResource fakeRoleResource = mock(RoleResource.class);
+        UserResource fakeUserResource = mock(UserResource.class);
+        RoleMappingResource fakeRoleMappingResource = mock(RoleMappingResource.class);
+        RoleScopeResource fakeRoleScopeResource = mock(RoleScopeResource.class);
+
+        ClientRepresentation fakeClientRepresentation = new ClientRepresentation();
+        fakeClientRepresentation.setId(fakeClientRepresentationId);
+        fakeClientRepresentation.setClientId(REALM_MANAGEMENT_CLIENT_ID);
+
+        RoleRepresentation fakeRoleRepresentation = new RoleRepresentation();
+        fakeRoleRepresentation.setId(fakeViewUsersRoleId);
+
+        UserRepresentation fakeUserRepresentation = new UserRepresentation();
+        fakeUserRepresentation.setId(fakeUserId);
+        fakeUserRepresentation.setUsername(fakeUsername);
+
         Response fakeResponse = Response.created(URI.create("www.some-fake-uri.com"))
                 .status(HttpStatus.CREATED.value())
                 .build();
@@ -1956,8 +1980,21 @@ class KeycloakAdapterTest {
             when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
             when(fakeRealmResource.users()).thenReturn(fakeUsersResource);
             when(fakeUsersResource.create(any(UserRepresentation.class))).thenReturn(fakeResponse);
+            when(fakeRealmResource.clients()).thenReturn(fakeClientsResource);
+            when(fakeClientsResource.findByClientId(eq(REALM_MANAGEMENT_CLIENT_ID))).thenReturn(Collections.singletonList(fakeClientRepresentation));
+            when(fakeClientsResource.get(eq(fakeClientRepresentationId))).thenReturn(fakeClientResource);
+            when(fakeClientResource.roles()).thenReturn(fakeRolesResource);
+            when(fakeRolesResource.get(eq(VIEW_USERS_ROLE_NAME))).thenReturn(fakeRoleResource);
+            when(fakeRoleResource.toRepresentation()).thenReturn(fakeRoleRepresentation);
+            when(fakeUsersResource.searchByUsername(eq(fakeUsername), eq(true))).thenReturn(Collections.singletonList(fakeUserRepresentation));
+            when(fakeUsersResource.get(eq(fakeUserId))).thenReturn(fakeUserResource);
+            when(fakeUserResource.roles()).thenReturn(fakeRoleMappingResource);
+            when(fakeRoleMappingResource.clientLevel(eq(fakeClientRepresentationId))).thenReturn(fakeRoleScopeResource);
 
             assertDoesNotThrow(() -> keycloakAdapter.createManagedUser(params));
+
+            verify(fakeUsersResource).create(any(UserRepresentation.class));
+            verify(fakeRoleScopeResource).add(anyList());
         }
     }
 
@@ -1965,10 +2002,34 @@ class KeycloakAdapterTest {
     void createManagedUser_shouldSucceedWhenCreatingManagedUserOnlyWithUsernameAndEmailNoExceptionsAreThrownAndResponseIsCreated() {
         var fakeUsername = "someUsername";
         var fakeEmail = "somemail@somedomain.com";
+        var fakeClientRepresentationId = UUID.randomUUID().toString();
+        var fakeViewUsersRoleId = UUID.randomUUID().toString();
+        var fakeUserId = UUID.randomUUID().toString();
+
         Map<String, Object> params = Map.of(USERNAME_MAP_KEY, fakeUsername, EMAIL_MAP_KEY, fakeEmail,
                 ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
+
         RealmResource fakeRealmResource = mock(RealmResource.class);
         UsersResource fakeUsersResource = mock(UsersResource.class);
+        ClientsResource fakeClientsResource = mock(ClientsResource.class);
+        ClientResource fakeClientResource = mock(ClientResource.class);
+        RolesResource fakeRolesResource = mock(RolesResource.class);
+        RoleResource fakeRoleResource = mock(RoleResource.class);
+        UserResource fakeUserResource = mock(UserResource.class);
+        RoleMappingResource fakeRoleMappingResource = mock(RoleMappingResource.class);
+        RoleScopeResource fakeRoleScopeResource = mock(RoleScopeResource.class);
+
+        ClientRepresentation fakeClientRepresentation = new ClientRepresentation();
+        fakeClientRepresentation.setId(fakeClientRepresentationId);
+        fakeClientRepresentation.setClientId(REALM_MANAGEMENT_CLIENT_ID);
+
+        RoleRepresentation fakeRoleRepresentation = new RoleRepresentation();
+        fakeRoleRepresentation.setId(fakeViewUsersRoleId);
+
+        UserRepresentation fakeUserRepresentation = new UserRepresentation();
+        fakeUserRepresentation.setId(fakeUserId);
+        fakeUserRepresentation.setUsername(fakeUsername);
+
         Response fakeResponse = Response.created(URI.create("www.some-fake-uri.com"))
                 .status(HttpStatus.CREATED.value())
                 .build();
@@ -1980,8 +2041,21 @@ class KeycloakAdapterTest {
             when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
             when(fakeRealmResource.users()).thenReturn(fakeUsersResource);
             when(fakeUsersResource.create(any(UserRepresentation.class))).thenReturn(fakeResponse);
+            when(fakeRealmResource.clients()).thenReturn(fakeClientsResource);
+            when(fakeClientsResource.findByClientId(eq(REALM_MANAGEMENT_CLIENT_ID))).thenReturn(Collections.singletonList(fakeClientRepresentation));
+            when(fakeClientsResource.get(eq(fakeClientRepresentationId))).thenReturn(fakeClientResource);
+            when(fakeClientResource.roles()).thenReturn(fakeRolesResource);
+            when(fakeRolesResource.get(eq(VIEW_USERS_ROLE_NAME))).thenReturn(fakeRoleResource);
+            when(fakeRoleResource.toRepresentation()).thenReturn(fakeRoleRepresentation);
+            when(fakeUsersResource.searchByUsername(eq(fakeUsername), eq(true))).thenReturn(Collections.singletonList(fakeUserRepresentation));
+            when(fakeUsersResource.get(eq(fakeUserId))).thenReturn(fakeUserResource);
+            when(fakeUserResource.roles()).thenReturn(fakeRoleMappingResource);
+            when(fakeRoleMappingResource.clientLevel(eq(fakeClientRepresentationId))).thenReturn(fakeRoleScopeResource);
 
             assertDoesNotThrow(() -> keycloakAdapter.createManagedUser(params));
+
+            verify(fakeUsersResource).create(any(UserRepresentation.class));
+            verify(fakeRoleScopeResource).add(anyList());
         }
     }
 
@@ -1991,10 +2065,34 @@ class KeycloakAdapterTest {
         var fakeEmail = "somemail@somedomain.com";
         var firstName = "Name";
         var lastName = "LastName";
+        var fakeClientRepresentationId = UUID.randomUUID().toString();
+        var fakeViewUsersRoleId = UUID.randomUUID().toString();
+        var fakeUserId = UUID.randomUUID().toString();
+
         Map<String, Object> params = Map.of(USERNAME_MAP_KEY, fakeUsername, EMAIL_MAP_KEY, fakeEmail,
                 FIRST_NAME_MAP_KEY, firstName, LAST_NAME_MAP_KEY, lastName, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
+
         RealmResource fakeRealmResource = mock(RealmResource.class);
         UsersResource fakeUsersResource = mock(UsersResource.class);
+        ClientsResource fakeClientsResource = mock(ClientsResource.class);
+        ClientResource fakeClientResource = mock(ClientResource.class);
+        RolesResource fakeRolesResource = mock(RolesResource.class);
+        RoleResource fakeRoleResource = mock(RoleResource.class);
+        UserResource fakeUserResource = mock(UserResource.class);
+        RoleMappingResource fakeRoleMappingResource = mock(RoleMappingResource.class);
+        RoleScopeResource fakeRoleScopeResource = mock(RoleScopeResource.class);
+
+        ClientRepresentation fakeClientRepresentation = new ClientRepresentation();
+        fakeClientRepresentation.setId(fakeClientRepresentationId);
+        fakeClientRepresentation.setClientId(REALM_MANAGEMENT_CLIENT_ID);
+
+        RoleRepresentation fakeRoleRepresentation = new RoleRepresentation();
+        fakeRoleRepresentation.setId(fakeViewUsersRoleId);
+
+        UserRepresentation fakeUserRepresentation = new UserRepresentation();
+        fakeUserRepresentation.setId(fakeUserId);
+        fakeUserRepresentation.setUsername(fakeUsername);
+
         Response fakeResponse = Response.created(URI.create("www.some-fake-uri.com"))
                 .status(HttpStatus.CREATED.value())
                 .build();
@@ -2006,8 +2104,21 @@ class KeycloakAdapterTest {
             when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
             when(fakeRealmResource.users()).thenReturn(fakeUsersResource);
             when(fakeUsersResource.create(any(UserRepresentation.class))).thenReturn(fakeResponse);
+            when(fakeRealmResource.clients()).thenReturn(fakeClientsResource);
+            when(fakeClientsResource.findByClientId(eq(REALM_MANAGEMENT_CLIENT_ID))).thenReturn(Collections.singletonList(fakeClientRepresentation));
+            when(fakeClientsResource.get(eq(fakeClientRepresentationId))).thenReturn(fakeClientResource);
+            when(fakeClientResource.roles()).thenReturn(fakeRolesResource);
+            when(fakeRolesResource.get(eq(VIEW_USERS_ROLE_NAME))).thenReturn(fakeRoleResource);
+            when(fakeRoleResource.toRepresentation()).thenReturn(fakeRoleRepresentation);
+            when(fakeUsersResource.searchByUsername(eq(fakeUsername), eq(true))).thenReturn(Collections.singletonList(fakeUserRepresentation));
+            when(fakeUsersResource.get(eq(fakeUserId))).thenReturn(fakeUserResource);
+            when(fakeUserResource.roles()).thenReturn(fakeRoleMappingResource);
+            when(fakeRoleMappingResource.clientLevel(eq(fakeClientRepresentationId))).thenReturn(fakeRoleScopeResource);
 
             assertDoesNotThrow(() -> keycloakAdapter.createManagedUser(params));
+
+            verify(fakeUsersResource).create(any(UserRepresentation.class));
+            verify(fakeRoleScopeResource).add(anyList());
         }
     }
 

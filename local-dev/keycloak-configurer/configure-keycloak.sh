@@ -153,6 +153,7 @@ configure_keycloak() {
    USER_TASKS_BRIDGE_ADMIN_ROLE_ID=$(http --ignore-stdin -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/roles/lh-user-tasks-admin" | jq -r ".id")
    MANAGE_USERS_ROLE_ID=$(http --ignore-stdin -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/clients/${REALM_MANAGEMENT_CLIENT_ID}/roles/manage-users" | jq -r ".id")
    VIEW_REALM_ROLE_ID=$(http --ignore-stdin -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/clients/${REALM_MANAGEMENT_CLIENT_ID}/roles/view-realm" | jq -r ".id")
+   VIEW_CLIENTS_ROLE_ID=$(http --ignore-stdin -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/clients/${REALM_MANAGEMENT_CLIENT_ID}/roles/view-clients" | jq -r ".id")
 
 #  Here we assign the view-users role to the nonAdmin user, and subsequently to the admin user as well. The view-users role
 #  allows users to see their userInfo details.
@@ -178,10 +179,16 @@ configure_keycloak() {
               [0][name]="manage-users"
 
 # The view-realm role allows admin users to see resources such as roles from a Keycloak realm
-   echo "Assigning manage-users Role to Admin User"
+   echo "Assigning view-realm Role to Admin User"
    http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" POST "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/users/${ADMIN_USER_ID}/role-mappings/clients/${REALM_MANAGEMENT_CLIENT_ID}" \
               [0][id]="$VIEW_REALM_ROLE_ID" \
               [0][name]="view-realm"
+
+# The view-clients role allows admin users to see resources within a Keycloak client from a Keycloak realm
+   echo "Assigning view-clients Role to Admin User"
+   http --ignore-stdin -b -A bearer -a "${KEYCLOAK_ADMIN_ACCESS_TOKEN}" POST "${KEYCLOAK_URL}/admin/realms/${REALM_NAME}/users/${ADMIN_USER_ID}/role-mappings/clients/${REALM_MANAGEMENT_CLIENT_ID}" \
+              [0][id]="$VIEW_CLIENTS_ROLE_ID" \
+              [0][name]="view-clients"
 
    echo "Roles successfully assigned to users!"
 
