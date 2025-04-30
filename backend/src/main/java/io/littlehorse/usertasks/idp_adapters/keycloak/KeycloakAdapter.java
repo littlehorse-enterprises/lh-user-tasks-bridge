@@ -47,6 +47,9 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
     public static final String FIRST_RESULT_MAP_KEY = "firstResult";
     public static final String MAX_RESULTS_MAP_KEY = "maxResults";
     public static final String VIEW_USERS_ROLE_NAME = "view-users";
+    public static final String VIEW_REALM_ROLE_NAME = "view-realm";
+    public static final String VIEW_CLIENTS_ROLE_NAME = "view-clients";
+    public static final String MANAGE_USERS_ROLE_NAME = "manage-users";
     public static final String REALM_MANAGEMENT_CLIENT_ID = "realm-management";
 
     @Override
@@ -445,7 +448,7 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
 
     @Override
     public void assignAdminRole(Map<String, Object> params) {
-        log.info("Starting to assign Admin role!");
+        log.debug("Starting to assign Admin roles!");
 
         var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
         var realm = getRealmFromToken(accessToken);
@@ -455,10 +458,13 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
             RealmResource realmResource = keycloak.realm(realm);
 
             RoleRepresentation adminRoleRepresentation = realmResource.roles().get(LH_USER_TASKS_ADMIN_ROLE).toRepresentation();
+            UserResource userResource = realmResource.users().get(userId);
 
-            realmResource.users().get(userId).roles().realmLevel().add(Collections.singletonList(adminRoleRepresentation));
+            userResource.roles().realmLevel().add(Collections.singletonList(adminRoleRepresentation));
 
-            log.info("Admin role successfully added!");
+            addAdditionalAdminRoles(realmResource, userResource);
+
+            log.debug("Admin roles successfully added!");
         } catch (AdapterException e) {
             log.error(e.getMessage());
             throw new AdapterException(e.getMessage());
@@ -970,5 +976,19 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
         String userId = userRepresentations.getFirst().getId();
 
         usersResource.get(userId).roles().clientLevel(clientRepresentation.getId()).add(rolesToAdd);
+    }
+
+    private void addAdditionalAdminRoles(RealmResource realmResource, UserResource userResource) {
+        ClientsResource clientsResource = realmResource.clients();
+        ClientRepresentation clientRepresentation = clientsResource.findByClientId(REALM_MANAGEMENT_CLIENT_ID).getFirst();
+        RolesResource rolesResource = clientsResource.get(clientRepresentation.getId()).roles();
+
+        RoleRepresentation viewRealmRoleRepresentation = rolesResource.get(VIEW_REALM_ROLE_NAME).toRepresentation();
+        RoleRepresentation viewClientsRoleRepresentation = rolesResource.get(VIEW_CLIENTS_ROLE_NAME).toRepresentation();
+        RoleRepresentation manageUsersRoleRepresentation = rolesResource.get(MANAGE_USERS_ROLE_NAME).toRepresentation();
+
+        List<RoleRepresentation> rolesToAdd = List.of(viewRealmRoleRepresentation, viewClientsRoleRepresentation, manageUsersRoleRepresentation);
+
+        userResource.roles().clientLevel(clientRepresentation.getId()).add(rolesToAdd);
     }
 }

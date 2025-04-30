@@ -2711,6 +2711,8 @@ class KeycloakAdapterTest {
     @Test
     void assignAdminRole_shouldSucceedWhenNoExceptionsAreThrown() {
         var fakeUserId = UUID.randomUUID().toString();
+        var fakeClientRepresentationId = UUID.randomUUID().toString();
+
         Map<String, Object> params = Map.of(USER_ID_MAP_KEY, fakeUserId, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
 
         try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
@@ -2722,10 +2724,28 @@ class KeycloakAdapterTest {
             RoleResource fakeRoleResource = mock(RoleResource.class);
             RoleMappingResource fakeRoleMappingResource = mock(RoleMappingResource.class);
             RoleScopeResource fakeRoleScopeResource = mock(RoleScopeResource.class);
+            ClientsResource fakeClientsResource = mock(ClientsResource.class);
+            ClientResource fakeClientResource = mock(ClientResource.class);
 
-            RoleRepresentation fakeRoleRepresentation = new RoleRepresentation();
-            fakeRoleRepresentation.setId(UUID.randomUUID().toString());
-            fakeRoleRepresentation.setName(LH_USER_TASKS_ADMIN_ROLE);
+            RoleRepresentation fakeUTBAdminRoleRepresentation = new RoleRepresentation();
+            fakeUTBAdminRoleRepresentation.setId(UUID.randomUUID().toString());
+            fakeUTBAdminRoleRepresentation.setName(LH_USER_TASKS_ADMIN_ROLE);
+
+            RoleRepresentation fakeViewRealmRoleRepresentation = new RoleRepresentation();
+            fakeUTBAdminRoleRepresentation.setId(UUID.randomUUID().toString());
+            fakeUTBAdminRoleRepresentation.setName(VIEW_REALM_ROLE_NAME);
+
+            RoleRepresentation fakeViewClientsRoleRepresentation = new RoleRepresentation();
+            fakeUTBAdminRoleRepresentation.setId(UUID.randomUUID().toString());
+            fakeUTBAdminRoleRepresentation.setName(VIEW_CLIENTS_ROLE_NAME);
+
+            RoleRepresentation fakeManageUsersRoleRepresentation = new RoleRepresentation();
+            fakeUTBAdminRoleRepresentation.setId(UUID.randomUUID().toString());
+            fakeUTBAdminRoleRepresentation.setName(MANAGE_USERS_ROLE_NAME);
+
+            ClientRepresentation fakeClientRepresentation = new ClientRepresentation();
+            fakeClientRepresentation.setId(fakeClientRepresentationId);
+            fakeClientRepresentation.setClientId(REALM_MANAGEMENT_CLIENT_ID);
 
             mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
                     .thenReturn(mockKeycloakInstance);
@@ -2733,14 +2753,25 @@ class KeycloakAdapterTest {
             when(fakeRealmResource.users()).thenReturn(fakeUsersResource);
             when(fakeUsersResource.get(eq(fakeUserId))).thenReturn(fakeUserResource);
             when(fakeRealmResource.roles()).thenReturn(fakeRolesResource);
-            when(fakeRolesResource.get(eq(LH_USER_TASKS_ADMIN_ROLE))).thenReturn(fakeRoleResource);
-            when(fakeRoleResource.toRepresentation()).thenReturn(fakeRoleRepresentation);
+            when(fakeRolesResource.get(anyString())).thenReturn(fakeRoleResource);
+            when(fakeRoleResource.toRepresentation()).thenReturn(fakeUTBAdminRoleRepresentation, fakeViewRealmRoleRepresentation,
+                    fakeViewClientsRoleRepresentation, fakeManageUsersRoleRepresentation);
             when(fakeUserResource.roles()).thenReturn(fakeRoleMappingResource);
             when(fakeRoleMappingResource.realmLevel()).thenReturn(fakeRoleScopeResource);
+            when(fakeRealmResource.clients()).thenReturn(fakeClientsResource);
+            when(fakeClientsResource.findByClientId(eq(REALM_MANAGEMENT_CLIENT_ID)))
+                    .thenReturn(Collections.singletonList(fakeClientRepresentation));
+            when(fakeClientsResource.get(eq(fakeClientRepresentationId))).thenReturn(fakeClientResource);
+            when(fakeClientResource.roles()).thenReturn(fakeRolesResource);
+            when(fakeRoleMappingResource.clientLevel(eq(fakeClientRepresentationId))).thenReturn(fakeRoleScopeResource);
 
             keycloakAdapter.assignAdminRole(params);
 
-            verify(fakeRoleScopeResource).add(eq(Collections.singletonList(fakeRoleRepresentation)));
+            int expectedNumberOfRoleLookups = 4;
+            int expectedNumberOfRoleAssignmentRequests = 2;
+
+            verify(fakeRolesResource, times(expectedNumberOfRoleLookups)).get(anyString());
+            verify(fakeRoleScopeResource, times(expectedNumberOfRoleAssignmentRequests)).add(anyList());
         }
     }
 
