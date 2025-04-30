@@ -46,6 +46,8 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
     public static final String USER_GROUP_NAME_MAP_KEY = "userGroupName";
     public static final String FIRST_RESULT_MAP_KEY = "firstResult";
     public static final String MAX_RESULTS_MAP_KEY = "maxResults";
+    public static final String VIEW_USERS_ROLE_NAME = "view-users";
+    public static final String REALM_MANAGEMENT_CLIENT_ID = "realm-management";
 
     @Override
     public UserGroupListDTO getUserGroups(Map<String, Object> params) {
@@ -369,7 +371,7 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
 
     @Override
     public void createManagedUser(Map<String, Object> params) {
-        log.info("Starting User creation!");
+        log.debug("Starting User creation!");
 
         var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
         var realm = getRealmFromToken(accessToken);
@@ -377,16 +379,21 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
         try (Keycloak keycloak = getKeycloakInstance(realm, accessToken)) {
             UserRepresentation userRepresentation = buildBasicUserRepresentationForCreation(params);
 
-            try (Response response = keycloak.realm(realm).users().create(userRepresentation)) {
+            RealmResource realmResource = keycloak.realm(realm);
+            UsersResource usersResource = realmResource.users();
+
+            try (Response response = usersResource.create(userRepresentation)) {
                 if (response.getStatusInfo().getStatusCode() != 201) {
                     String exceptionMessage = String.format("User creation failed within realm %s with status: %s!", realm,
                             response.getStatusInfo().getStatusCode());
 
                     throw new AdapterException(exceptionMessage);
                 }
-
-                log.info("User successfully created within realm {}!", realm);
             }
+
+            addViewUsersRole(realmResource, usersResource, userRepresentation.getUsername());
+
+            log.debug("User successfully created within realm {}!", realm);
         } catch (AdapterException e) {
             log.error(e.getMessage());
             throw new AdapterException(e.getMessage());
@@ -893,7 +900,7 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
     private UserRepresentation buildBasicUserRepresentationForCreation(Map<String, Object> params) {
         var firstName = (String) params.get(FIRST_NAME_MAP_KEY);
         var lastName = (String) params.get(LAST_NAME_MAP_KEY);
-        var userName = (String) params.get(USERNAME_MAP_KEY);
+        var username = (String) params.get(USERNAME_MAP_KEY);
         var email = (String) params.get(EMAIL_MAP_KEY);
 
         UserRepresentation userRepresentation = new UserRepresentation();
@@ -906,8 +913,8 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
             userRepresentation.setLastName(lastName.trim());
         }
 
-        if (StringUtils.isNotBlank(userName)) {
-            userRepresentation.setUsername(userName.trim());
+        if (StringUtils.isNotBlank(username)) {
+            userRepresentation.setUsername(username.trim());
         } else {
             throw new AdapterException("Cannot create User without username!");
         }
@@ -950,5 +957,18 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
         userRepresentation.setEnabled(enabled);
 
         return userRepresentation;
+    }
+
+    private void addViewUsersRole(RealmResource realmResource, UsersResource usersResource, String username) {
+        ClientsResource clientsResource = realmResource.clients();
+        ClientRepresentation clientRepresentation = clientsResource.findByClientId(REALM_MANAGEMENT_CLIENT_ID).getFirst();
+        RoleRepresentation roleRepresentation = clientsResource.get(clientRepresentation.getId()).roles().get(VIEW_USERS_ROLE_NAME).toRepresentation();
+
+        List<RoleRepresentation> rolesToAdd = Collections.singletonList(roleRepresentation);
+        List<UserRepresentation> userRepresentations = usersResource.searchByUsername(username, true);
+
+        String userId = userRepresentations.getFirst().getId();
+
+        usersResource.get(userId).roles().clientLevel(clientRepresentation.getId()).add(rolesToAdd);
     }
 }
