@@ -48,7 +48,7 @@ public class TenantService {
         } catch (StatusRuntimeException e) {
             if (e.getStatus().getCode() == Status.Code.NOT_FOUND) {
                 log.atInfo()
-                        .setMessage("Tenant {} was not found in LH Server!")
+                        .setMessage("Tenant {} was not found in LH Kernel!")
                         .addArgument(requestTenantId)
                         .log();
             } else {

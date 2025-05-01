@@ -187,7 +187,7 @@ public class UserController {
             ),
             @ApiResponse(
                     responseCode = "404",
-                    description = "No UserTask/UserTaskDef data was found in LH Server using the given params.",
+                    description = "No UserTask/UserTaskDef data was found in LH Kernel using the given params.",
                     content = {@Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ProblemDetail.class))}
@@ -231,7 +231,7 @@ public class UserController {
     @Operation(
             summary = "Complete UserTask",
             description = "Completes a UserTask by making it transition to DONE status if the request is successfully processed in " +
-                    "LittleHorse Server."
+                    "LittleHorse Kernel."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -248,7 +248,7 @@ public class UserController {
             ),
             @ApiResponse(
                     responseCode = "404",
-                    description = "No UserTask/UserTaskDef data was found in LH Server using the given params.",
+                    description = "No UserTask/UserTaskDef data was found in LH Kernel using the given params.",
                     content = {@Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ProblemDetail.class))}
@@ -281,7 +281,7 @@ public class UserController {
     @Operation(
             summary = "Cancel UserTask",
             description = "Cancels a UserTask by making it transition to CANCELLED status if the request is successfully " +
-                    "processed in LittleHorse Server."
+                    "processed in LittleHorse Kernel."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -310,14 +310,14 @@ public class UserController {
             ),
             @ApiResponse(
                     responseCode = "404",
-                    description = "No UserTask data was found in LH Server using the given params.",
+                    description = "No UserTask data was found in LH Kernel using the given params.",
                     content = {@Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ProblemDetail.class))}
             ),
             @ApiResponse(
                     responseCode = "412",
-                    description = "Failed at a LittleHorse server condition.",
+                    description = "Failed at a LittleHorse Kernel condition.",
                     content = {@Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ProblemDetail.class))}
@@ -367,7 +367,7 @@ public class UserController {
             ),
             @ApiResponse(
                     responseCode = "404",
-                    description = "No UserTask data was found in LH Server using the given params.",
+                    description = "No UserTask data was found in LH Kernel using the given params.",
                     content = {@Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ProblemDetail.class))}
@@ -381,7 +381,7 @@ public class UserController {
             ),
             @ApiResponse(
                     responseCode = "412",
-                    description = "Failed at a LittleHorse server condition.",
+                    description = "Failed at a LittleHorse Kernel condition.",
                     content = {@Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ProblemDetail.class))}
@@ -588,7 +588,7 @@ public class UserController {
 
             Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
 
-            //Here we are hardcoding the UNASSIGNED status on purpose since that is the way in which we can fetch claimable tasks from LH Server
+            //Here we are hardcoding the UNASSIGNED status on purpose since that is the way in which we can fetch claimable tasks from LH Kernel
             UserTaskStatus claimableStatus = UserTaskStatus.UNASSIGNED;
 
             var additionalFilters = UserTaskRequestFilter.buildUserTaskRequestFilter(earliestStartDate, latestStartDate, claimableStatus, null);

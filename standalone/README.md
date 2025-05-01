@@ -32,13 +32,13 @@ docker run --rm -it --entrypoint="/bin/bash" littlehorse/lh-user-tasks-bridge-st
 
 ## Ports
 
-| Service                     | Port |
-| --------------------------- | ---- |
-| LittleHorse Server          | 2023 |
-| LittleHorse Dashboard       | 8080 |
-| Keycloak                    | 8888 |
-| User Task Bridge Backend    | 8089 |
-| User Task Bridge Console    | 3000 |
+| Service                  | Port |
+|--------------------------| ---- |
+| LittleHorse Kernel       | 2023 |
+| LittleHorse Dashboard    | 8080 |
+| Keycloak                 | 8888 |
+| User Task Bridge Backend | 8089 |
+| User Task Bridge Console | 3000 |
 
 ## Users
 

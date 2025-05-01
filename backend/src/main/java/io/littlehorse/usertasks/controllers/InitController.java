@@ -34,7 +34,7 @@ public class InitController {
 
     @Operation(
             summary = "Initialize Tenant-OIDC integration",
-            description = "Checks that the integration between your Identity Provider and LittleHorse Server is valid"
+            description = "Checks that the integration between your Identity Provider and LittleHorse Kernel is valid"
     )
     @ApiResponses(value = {
             @ApiResponse(

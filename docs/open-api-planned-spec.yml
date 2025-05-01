@@ -3,7 +3,7 @@
   "info": {
     "title": "UserTasks API (Planned)",
     "version": "0.0.1",
-    "description": "LittleHorse's custom API to manage UserTaskRuns existing in LittleHorse's Server."
+    "description": "LittleHorse's custom API to manage UserTaskRuns existing in LittleHorse's Kernel."
   },
   "servers": [
     {
@@ -78,11 +78,11 @@
                 }
               }
             },
-            "description": "No UserTask/UserTaskDef data was found in LH Server using the given params."
+            "description": "No UserTask/UserTaskDef data was found in LH Kernel using the given params."
           }
         },
         "operationId": "completeUserTask",
-        "summary": "Completes a UserTask by making it transition to DONE status if the request is successfully processed in LittleHorse Server."
+        "summary": "Completes a UserTask by making it transition to DONE status if the request is successfully processed in LittleHorse Kernel."
       },
       "parameters": [
         {
@@ -270,7 +270,7 @@
                 }
               }
             },
-            "description": "No UserTask/UserTaskDef data was found in LH Server using the given params."
+            "description": "No UserTask/UserTaskDef data was found in LH Kernel using the given params."
           }
         },
         "operationId": "getUserTaskDetail",
@@ -309,7 +309,7 @@
           }
         },
         "operationId": "initIntegrationForTenant",
-        "summary": "Initializes the integration between UI components and LittleHorse server after verifying that there is a valid Tenant-OIDC configuration"
+        "summary": "Initializes the integration between UI components and LittleHorse Kernel after verifying that there is a valid Tenant-OIDC configuration"
       }
     },
     "/{tenant_id}/tasks/{user_group}": {
@@ -495,7 +495,7 @@
                 }
               }
             },
-            "description": "No UserTaskRun data was found in LH Server using the given params."
+            "description": "No UserTaskRun data was found in LH Kernel using the given params."
           }
         },
         "summary": "Claims a User Task Run by assigning it to the requestor user."
@@ -557,11 +557,11 @@
                 }
               }
             },
-            "description": "No UserTask data was found in LH Server using the given params."
+            "description": "No UserTask data was found in LH Kernel using the given params."
           }
         },
         "operationId": "cancelUserTask",
-        "summary": "Cancels a UserTask by making it transition to CANCELLED status if the request is successfully processed in LittleHorse Server."
+        "summary": "Cancels a UserTask by making it transition to CANCELLED status if the request is successfully processed in LittleHorse Kernel."
       },
       "parameters": [
         {
@@ -872,7 +872,7 @@
                 }
               }
             },
-            "description": "No UserTask/UserTaskDef data was found in LH Server for the given tenant and/or the given search criteria."
+            "description": "No UserTask/UserTaskDef data was found in LH Kernel for the given tenant and/or the given search criteria."
           }
         },
         "operationId": "getUserTaskDetailForAdmin",
@@ -967,7 +967,7 @@
                 }
               }
             },
-            "description": "No UserTaskRun data was found in LH Server using the given params."
+            "description": "No UserTaskRun data was found in LH Kernel using the given params."
           }
         },
         "summary": "Assigns a User Task Run to a User or UserGroup."
@@ -1039,7 +1039,7 @@
                 }
               }
             },
-            "description": "No UserTask/UserTaskDef data was found in LH Server using the given params."
+            "description": "No UserTask/UserTaskDef data was found in LH Kernel using the given params."
           }
         },
         "operationId": "completeUserTaskAsAdmin",
@@ -1119,7 +1119,7 @@
                 }
               }
             },
-            "description": "No UserTask data was found in LH Server using the given params."
+            "description": "No UserTask data was found in LH Kernel using the given params."
           }
         },
         "operationId": "cancelUserTaskAsAdmin",
