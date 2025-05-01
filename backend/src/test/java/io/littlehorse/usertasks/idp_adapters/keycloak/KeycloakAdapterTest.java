@@ -2732,16 +2732,16 @@ class KeycloakAdapterTest {
             fakeUTBAdminRoleRepresentation.setName(LH_USER_TASKS_ADMIN_ROLE);
 
             RoleRepresentation fakeViewRealmRoleRepresentation = new RoleRepresentation();
-            fakeUTBAdminRoleRepresentation.setId(UUID.randomUUID().toString());
-            fakeUTBAdminRoleRepresentation.setName(VIEW_REALM_ROLE_NAME);
+            fakeViewRealmRoleRepresentation.setId(UUID.randomUUID().toString());
+            fakeViewRealmRoleRepresentation.setName(VIEW_REALM_ROLE_NAME);
 
             RoleRepresentation fakeViewClientsRoleRepresentation = new RoleRepresentation();
-            fakeUTBAdminRoleRepresentation.setId(UUID.randomUUID().toString());
-            fakeUTBAdminRoleRepresentation.setName(VIEW_CLIENTS_ROLE_NAME);
+            fakeViewClientsRoleRepresentation.setId(UUID.randomUUID().toString());
+            fakeViewClientsRoleRepresentation.setName(VIEW_CLIENTS_ROLE_NAME);
 
             RoleRepresentation fakeManageUsersRoleRepresentation = new RoleRepresentation();
-            fakeUTBAdminRoleRepresentation.setId(UUID.randomUUID().toString());
-            fakeUTBAdminRoleRepresentation.setName(MANAGE_USERS_ROLE_NAME);
+            fakeManageUsersRoleRepresentation.setId(UUID.randomUUID().toString());
+            fakeManageUsersRoleRepresentation.setName(MANAGE_USERS_ROLE_NAME);
 
             ClientRepresentation fakeClientRepresentation = new ClientRepresentation();
             fakeClientRepresentation.setId(fakeClientRepresentationId);
@@ -2816,6 +2816,8 @@ class KeycloakAdapterTest {
     @Test
     void removeAdminRole_shouldSucceedWhenNoExceptionsAreThrown() {
         var fakeUserId = UUID.randomUUID().toString();
+        var fakeClientRepresentationId = UUID.randomUUID().toString();
+
         Map<String, Object> params = Map.of(USER_ID_MAP_KEY, fakeUserId, ACCESS_TOKEN_MAP_KEY, STUBBED_ACCESS_TOKEN);
 
         try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
@@ -2827,8 +2829,28 @@ class KeycloakAdapterTest {
             RoleResource fakeRoleResource = mock(RoleResource.class);
             RoleMappingResource fakeRoleMappingResource = mock(RoleMappingResource.class);
             RoleScopeResource fakeRoleScopeResource = mock(RoleScopeResource.class);
+            ClientsResource fakeClientsResource = mock(ClientsResource.class);
+            ClientResource fakeClientResource = mock(ClientResource.class);
 
-            RoleRepresentation fakeRoleRepresentation = new RoleRepresentation(LH_USER_TASKS_ADMIN_ROLE, null, false);
+            RoleRepresentation fakeUTBAdminRoleRepresentation = new RoleRepresentation();
+            fakeUTBAdminRoleRepresentation.setId(UUID.randomUUID().toString());
+            fakeUTBAdminRoleRepresentation.setName(LH_USER_TASKS_ADMIN_ROLE);
+
+            RoleRepresentation fakeViewRealmRoleRepresentation = new RoleRepresentation();
+            fakeViewRealmRoleRepresentation.setId(UUID.randomUUID().toString());
+            fakeViewRealmRoleRepresentation.setName(VIEW_REALM_ROLE_NAME);
+
+            RoleRepresentation fakeViewClientsRoleRepresentation = new RoleRepresentation();
+            fakeViewClientsRoleRepresentation.setId(UUID.randomUUID().toString());
+            fakeViewClientsRoleRepresentation.setName(VIEW_CLIENTS_ROLE_NAME);
+
+            RoleRepresentation fakeManageUsersRoleRepresentation = new RoleRepresentation();
+            fakeManageUsersRoleRepresentation.setId(UUID.randomUUID().toString());
+            fakeManageUsersRoleRepresentation.setName(MANAGE_USERS_ROLE_NAME);
+
+            ClientRepresentation fakeClientRepresentation = new ClientRepresentation();
+            fakeClientRepresentation.setId(fakeClientRepresentationId);
+            fakeClientRepresentation.setClientId(REALM_MANAGEMENT_CLIENT_ID);
 
             mockStaticKeycloak.when(() -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
                     .thenReturn(mockKeycloakInstance);
@@ -2836,22 +2858,25 @@ class KeycloakAdapterTest {
             when(fakeRealmResource.users()).thenReturn(fakeUsersResource);
             when(fakeUsersResource.get(eq(fakeUserId))).thenReturn(fakeUserResource);
             when(fakeRealmResource.roles()).thenReturn(fakeRolesResource);
-            when(fakeRolesResource.get(eq(LH_USER_TASKS_ADMIN_ROLE))).thenReturn(fakeRoleResource);
-            when(fakeRoleResource.toRepresentation()).thenReturn(fakeRoleRepresentation);
+            when(fakeRolesResource.get(anyString())).thenReturn(fakeRoleResource);
+            when(fakeRoleResource.toRepresentation()).thenReturn(fakeUTBAdminRoleRepresentation, fakeViewRealmRoleRepresentation,
+                    fakeViewClientsRoleRepresentation, fakeManageUsersRoleRepresentation);
             when(fakeUserResource.roles()).thenReturn(fakeRoleMappingResource);
             when(fakeRoleMappingResource.realmLevel()).thenReturn(fakeRoleScopeResource);
+            when(fakeRealmResource.clients()).thenReturn(fakeClientsResource);
+            when(fakeClientsResource.findByClientId(eq(REALM_MANAGEMENT_CLIENT_ID)))
+                    .thenReturn(Collections.singletonList(fakeClientRepresentation));
+            when(fakeClientsResource.get(eq(fakeClientRepresentationId))).thenReturn(fakeClientResource);
+            when(fakeClientResource.roles()).thenReturn(fakeRolesResource);
+            when(fakeRoleMappingResource.clientLevel(eq(fakeClientRepresentationId))).thenReturn(fakeRoleScopeResource);
 
             keycloakAdapter.removeAdminRole(params);
 
-            ArgumentCaptor<List<RoleRepresentation>> argumentCaptor = ArgumentCaptor.forClass(List.class);
+            int expectedNumberOfRoleLookups = 4;
+            int expectedNumberOfRoleRemovalRequests = 2;
 
-            verify(fakeRoleScopeResource).remove(argumentCaptor.capture());
-
-            List<RoleRepresentation> removedRoles = argumentCaptor.getValue();
-
-            int expectedCountOfRemovedRoles = 1;
-            assertEquals(expectedCountOfRemovedRoles, removedRoles.size());
-            assertEquals(fakeRoleRepresentation, removedRoles.getFirst());
+            verify(fakeRolesResource, times(expectedNumberOfRoleLookups)).get(anyString());
+            verify(fakeRoleScopeResource, times(expectedNumberOfRoleRemovalRequests)).remove(anyList());
         }
     }
 
