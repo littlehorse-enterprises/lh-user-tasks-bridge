@@ -1,6 +1,8 @@
 import {
   AdminGetUserTaskResponse,
+  CreateGroupRequest,
   GetUserTaskResponse,
+  GroupManagementSearchRequest,
   ListClaimableUserTasksRequest,
   ListUserGroupsResponse,
   ListUserTaskDefNamesRequest,
@@ -8,6 +10,11 @@ import {
   ListUserTasksRequest,
   ListUserTasksResponse,
   ListUsersResponse,
+  UpdateGroupRequest,
+  UserManagementListGroupsResponse,
+  UserManagementListUsersResponse,
+  UserManagementSearchRequest,
+  UserManagementUser,
   UserTask,
   UserTaskResult,
 } from "./types";
@@ -618,6 +625,382 @@ export class LHUTBApiClient {
         "Content-Type": "application/json",
       },
       body: JSON.stringify(values),
+    });
+  }
+
+  // User and Group Management
+
+  /**
+   * List all users with optional search filters.
+   *
+   * @param search - Optional search parameters
+   * @param search.email - Filter by email
+   * @param search.firstName - Filter by first name
+   * @param search.lastName - Filter by last name
+   * @param search.username - Filter by username
+   * @param search.userGroupId - Filter by user group ID
+   * @param search.firstResult - Starting index for pagination (default: 0)
+   * @param search.maxResults - Maximum number of results to return (default: 10)
+   * @returns Promise resolving to the list of users
+   * @throws {UnauthorizedError} If the user is not authenticated
+   * @throws {ForbiddenError} If the user doesn't have administrative permissions
+   *
+   * @example
+   * ```typescript
+   * const result = await client.listUsers({
+   *   email: 'test@example.com',
+   *   maxResults: 20
+   * });
+   * ```
+   */
+  async listUsers(search: UserManagementSearchRequest = {}): Promise<UserManagementListUsersResponse> {
+    const params = new URLSearchParams();
+    if (search.email) params.append("email", search.email);
+    if (search.firstName) params.append("first_name", search.firstName);
+    if (search.lastName) params.append("last_name", search.lastName);
+    if (search.username) params.append("username", search.username);
+    if (search.userGroupId) params.append("user_group_id", search.userGroupId);
+    if (search.firstResult !== undefined) params.append("first_result", search.firstResult.toString());
+    if (search.maxResults !== undefined) params.append("max_results", search.maxResults.toString());
+
+    return await this.fetch(`/management/users${params.toString() ? `?${params.toString()}` : ""}`);
+  }
+
+  /**
+   * Create a new user.
+   *
+   * @param user - User details to create
+   * @param user.username - Username for the new user
+   * @param user.firstName - First name of the user
+   * @param user.lastName - Last name of the user
+   * @param user.email - Email address of the user
+   * @returns Promise resolving to the created user's ID
+   * @throws {UnauthorizedError} If the user is not authenticated
+   * @throws {ForbiddenError} If the user doesn't have administrative permissions
+   * @throws {ValidationError} If the user details are invalid
+   *
+   * @example
+   * ```typescript
+   * const userId = await client.createUser({
+   *   username: 'new-user',
+   *   firstName: 'John',
+   *   lastName: 'Doe',
+   *   email: 'john.doe@example.com'
+   * });
+   * ```
+   */
+  async createUser(user: {
+    username: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  }): Promise<string> {
+    const response = await this.fetch<{ id: string }>("/management/users", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(user),
+    });
+    return response.id;
+  }
+
+  /**
+   * Sets a new password for a user.
+   *
+   * @param userId - ID of the user to update
+   * @param password - New password to set
+   * @param temporary - Whether the password is temporary and must be changed on first login
+   * @returns Promise resolving to void
+   * @throws {UnauthorizedError} If the user is not authenticated
+   * @throws {ForbiddenError} If the user doesn't have administrative permissions
+   * @throws {NotFoundError} If the user doesn't exist
+   * @throws {ValidationError} If the password is invalid
+   *
+   * @example
+   * ```typescript
+   * await client.setUserPassword('user-123', 'new-password', true);
+   * ```
+   */
+  async setUserPassword(userId: string, password: string, temporary: boolean = false): Promise<void> {
+    await this.fetch(`/management/users/${userId}/password`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        password,
+        temporary,
+      }),
+    });
+  }
+
+  /**
+   * Gets detailed information about a specific user.
+   *
+   * @param userId - ID of the user to retrieve
+   * @returns Promise resolving to the user details
+   * @throws {UnauthorizedError} If the user is not authenticated
+   * @throws {ForbiddenError} If the user doesn't have administrative permissions
+   * @throws {NotFoundError} If the user doesn't exist
+   *
+   * @example
+   * ```typescript
+   * const userDetails = await client.getUser('user-123');
+   * console.log(userDetails.username); // User's username
+   * ```
+   */
+  async getUser(userId: string): Promise<UserManagementUser> {
+    return await this.fetch(`/management/users/${userId}`);
+  }
+
+  /**
+   * Updates a user's information.
+   *
+   * @param userId - ID of the user to update
+   * @param updates - Fields to update
+   * @param updates.email - New email address
+   * @param updates.enabled - Whether the user account is enabled
+   * @throws {UnauthorizedError} If the user is not authenticated
+   * @throws {ForbiddenError} If the user doesn't have administrative permissions
+   * @throws {NotFoundError} If the user doesn't exist
+   * @throws {ValidationError} If the update data is invalid
+   *
+   * @example
+   * ```typescript
+   * await client.updateUser('user-123', {
+   *   email: 'new.email@example.com',
+   *   enabled: true
+   * });
+   * ```
+   */
+  async updateUser(
+    userId: string,
+    updates: {
+      email?: string;
+      enabled?: boolean;
+    },
+  ): Promise<void> {
+    await this.fetch(`/management/users/${userId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(updates),
+    });
+  }
+
+  /**
+   * Deletes a user from the system.
+   *
+   * @param userId - ID of the user to delete
+   * @param ignoreOrphanTasks - Whether to ignore tasks assigned to this user
+   * @throws {UnauthorizedError} If the user is not authenticated
+   * @throws {ForbiddenError} If the user doesn't have administrative permissions
+   * @throws {NotFoundError} If the user doesn't exist
+   *
+   * @example
+   * ```typescript
+   * await client.deleteUser('user-123', true);
+   * ```
+   */
+  async deleteUser(userId: string, ignoreOrphanTasks: boolean = false): Promise<void> {
+    const params = new URLSearchParams();
+    if (ignoreOrphanTasks) {
+      params.append("ignore_orphan_tasks", "true");
+    }
+    await this.fetch(`/management/users/${userId}?${params.toString()}`, {
+      method: "DELETE",
+    });
+  }
+
+  /**
+   * Assigns the admin role to a user.
+   *
+   * @param userId - ID of the user to make admin
+   * @throws {UnauthorizedError} If the user is not authenticated
+   * @throws {ForbiddenError} If the user doesn't have administrative permissions
+   * @throws {NotFoundError} If the user doesn't exist
+   *
+   * @example
+   * ```typescript
+   * await client.assignAdminRole('user-123');
+   * ```
+   */
+  async assignAdminRole(userId: string): Promise<void> {
+    await this.fetch(`/management/users/${userId}/roles/admin`, {
+      method: "POST",
+    });
+  }
+
+  /**
+   * Removes the admin role from a user.
+   *
+   * @param userId - ID of the user to remove admin role from
+   * @throws {UnauthorizedError} If the user is not authenticated
+   * @throws {ForbiddenError} If the user doesn't have administrative permissions
+   * @throws {NotFoundError} If the user doesn't exist
+   *
+   * @example
+   * ```typescript
+   * await client.removeAdminRole('user-123');
+   * ```
+   */
+  async removeAdminRole(userId: string): Promise<void> {
+    await this.fetch(`/management/users/${userId}/roles/admin`, {
+      method: "DELETE",
+    });
+  }
+
+  /**
+   * Adds a user to a group.
+   *
+   * @param userId - ID of the user to add to the group
+   * @param groupId - ID of the group to add the user to
+   * @throws {UnauthorizedError} If the user is not authenticated
+   * @throws {ForbiddenError} If the user doesn't have administrative permissions
+   * @throws {NotFoundError} If the user or group doesn't exist
+   *
+   * @example
+   * ```typescript
+   * await client.joinGroup('user-123', 'group-456');
+   * ```
+   */
+  async joinGroup(userId: string, groupId: string): Promise<void> {
+    await this.fetch(`/management/users/${userId}/groups/${groupId}`, {
+      method: "POST",
+    });
+  }
+
+  /**
+   * Removes a user from a group.
+   *
+   * @param userId - ID of the user to remove from the group
+   * @param groupId - ID of the group to remove the user from
+   * @throws {UnauthorizedError} If the user is not authenticated
+   * @throws {ForbiddenError} If the user doesn't have administrative permissions
+   * @throws {NotFoundError} If the user or group doesn't exist
+   *
+   * @example
+   * ```typescript
+   * await client.removeFromGroup('user-123', 'group-456');
+   * ```
+   */
+  async removeFromGroup(userId: string, groupId: string): Promise<void> {
+    await this.fetch(`/management/users/${userId}/groups/${groupId}`, {
+      method: "DELETE",
+    });
+  }
+
+  /**
+   * Creates a new user group.
+   *
+   * @param request - Group creation request
+   * @returns Promise resolving to the created group's ID
+   * @throws {UnauthorizedError} If the user is not authenticated
+   * @throws {ForbiddenError} If the user doesn't have administrative permissions
+   * @throws {ValidationError} If the group name is invalid
+   * @throws {PreconditionFailedError} If a group with the same name already exists
+   *
+   * @example
+   * ```typescript
+   * const groupId = await client.createGroup({ name: 'new-group' });
+   * ```
+   */
+  async createGroup(request: CreateGroupRequest): Promise<string> {
+    const response = await this.fetch<{ id: string }>("/management/groups", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(request),
+    });
+    return response.id;
+  }
+
+  /**
+   * Gets a list of user groups with optional filtering.
+   *
+   * @param search - Search parameters for filtering groups
+   * @param search.name - Optional name filter
+   * @param search.firstResult - Starting index for pagination (default: 0)
+   * @param search.maxResults - Maximum number of results to return (default: 10)
+   * @returns Promise resolving to the list of groups
+   * @throws {UnauthorizedError} If the user is not authenticated
+   * @throws {ForbiddenError} If the user doesn't have administrative permissions
+   *
+   * @example
+   * ```typescript
+   * const groups = await client.getGroups({
+   *   name: 'admin',
+   *   firstResult: 0,
+   *   maxResults: 10
+   * });
+   * ```
+   */
+  async getGroups(search: GroupManagementSearchRequest = {}): Promise<UserManagementListGroupsResponse> {
+    const params = new URLSearchParams();
+    if (search.name) params.append("name", search.name);
+    if (search.firstResult !== undefined) params.append("first_result", search.firstResult.toString());
+    if (search.maxResults !== undefined) params.append("max_results", search.maxResults.toString());
+
+    return await this.fetch(`/management/groups${params.toString() ? `?${params.toString()}` : ""}`);
+  }
+
+  /**
+   * Updates a group's information.
+   *
+   * @param groupId - ID of the group to update
+   * @param request - Group update request
+   * @param ignoreOrphanTasks - Whether to ignore tasks assigned to this group
+   * @throws {UnauthorizedError} If the user is not authenticated
+   * @throws {ForbiddenError} If the user doesn't have administrative permissions
+   * @throws {NotFoundError} If the group doesn't exist
+   * @throws {ValidationError} If the update data is invalid
+   * @throws {PreconditionFailedError} If there are pending tasks assigned to the group
+   *
+   * @example
+   * ```typescript
+   * await client.updateGroup('group-123', { name: 'new-name' }, true);
+   * ```
+   */
+  async updateGroup(groupId: string, request: UpdateGroupRequest, ignoreOrphanTasks: boolean = false): Promise<void> {
+    const params = new URLSearchParams();
+    if (ignoreOrphanTasks) {
+      params.append("ignore_orphan_tasks", "true");
+    }
+
+    await this.fetch(`/management/groups/${groupId}${params.toString() ? `?${params.toString()}` : ""}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(request),
+    });
+  }
+
+  /**
+   * Deletes a user group.
+   *
+   * @param groupId - ID of the group to delete
+   * @param ignoreOrphanTasks - Whether to ignore tasks assigned to this group
+   * @throws {UnauthorizedError} If the user is not authenticated
+   * @throws {ForbiddenError} If the user doesn't have administrative permissions
+   * @throws {NotFoundError} If the group doesn't exist
+   * @throws {PreconditionFailedError} If there are pending tasks assigned to the group
+   *
+   * @example
+   * ```typescript
+   * await client.deleteGroup('group-123', true);
+   * ```
+   */
+  async deleteGroup(groupId: string, ignoreOrphanTasks: boolean = false): Promise<void> {
+    const params = new URLSearchParams();
+    if (ignoreOrphanTasks) {
+      params.append("ignore_orphan_tasks", "true");
+    }
+    await this.fetch(`/management/groups/${groupId}${params.toString() ? `?${params.toString()}` : ""}`, {
+      method: "DELETE",
     });
   }
 }
