@@ -477,7 +477,7 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
 
     @Override
     public void removeAdminRole(Map<String, Object> params) {
-        log.info("Starting to remove Admin role!");
+        log.debug("Starting to remove Admin role!");
 
         var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
         var realm = getRealmFromToken(accessToken);
@@ -487,10 +487,13 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
             RealmResource realmResource = keycloak.realm(realm);
 
             RoleRepresentation adminRoleRepresentation = realmResource.roles().get(LH_USER_TASKS_ADMIN_ROLE).toRepresentation();
+            UserResource userResource = realmResource.users().get(userId);
 
-            realmResource.users().get(userId).roles().realmLevel().remove(Collections.singletonList(adminRoleRepresentation));
+            userResource.roles().realmLevel().remove(Collections.singletonList(adminRoleRepresentation));
 
-            log.info("Admin role successfully removed!");
+            removeAdditionalAdminRoles(realmResource, userResource);
+
+            log.debug("Admin role successfully removed!");
         } catch (AdapterException e) {
             log.error(e.getMessage());
             throw new AdapterException(e.getMessage());
@@ -990,5 +993,19 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
         List<RoleRepresentation> rolesToAdd = List.of(viewRealmRoleRepresentation, viewClientsRoleRepresentation, manageUsersRoleRepresentation);
 
         userResource.roles().clientLevel(clientRepresentation.getId()).add(rolesToAdd);
+    }
+
+    private void removeAdditionalAdminRoles(RealmResource realmResource, UserResource userResource) {
+        ClientsResource clientsResource = realmResource.clients();
+        ClientRepresentation clientRepresentation = clientsResource.findByClientId(REALM_MANAGEMENT_CLIENT_ID).getFirst();
+        RolesResource rolesResource = clientsResource.get(clientRepresentation.getId()).roles();
+
+        RoleRepresentation viewRealmRoleRepresentation = rolesResource.get(VIEW_REALM_ROLE_NAME).toRepresentation();
+        RoleRepresentation viewClientsRoleRepresentation = rolesResource.get(VIEW_CLIENTS_ROLE_NAME).toRepresentation();
+        RoleRepresentation manageUsersRoleRepresentation = rolesResource.get(MANAGE_USERS_ROLE_NAME).toRepresentation();
+
+        List<RoleRepresentation> rolesToRemove = List.of(viewRealmRoleRepresentation, viewClientsRoleRepresentation, manageUsersRoleRepresentation);
+
+        userResource.roles().clientLevel(clientRepresentation.getId()).remove(rolesToRemove);
     }
 }
