@@ -233,7 +233,7 @@ public class AdminController {
             ),
             @ApiResponse(
                     responseCode = "404",
-                    description = "No UserTask/UserTaskDef data was found in LH Server using the given params.",
+                    description = "No UserTask/UserTaskDef data was found in LH Kernel using the given params.",
                     content = {@Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ProblemDetail.class))}
@@ -280,7 +280,7 @@ public class AdminController {
     @Operation(
             summary = "Complete UserTask",
             description = "Completes a UserTask by making it transition to DONE status if the request is successfully processed in " +
-                    "LittleHorse Server."
+                    "LittleHorse Kernel."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -296,7 +296,7 @@ public class AdminController {
             ),
             @ApiResponse(
                     responseCode = "404",
-                    description = "No UserTask/UserTaskDef data was found in LH Server using the given params.",
+                    description = "No UserTask/UserTaskDef data was found in LH Kernel using the given params.",
                     content = {@Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ProblemDetail.class))}
@@ -351,14 +351,14 @@ public class AdminController {
             ),
             @ApiResponse(
                     responseCode = "404",
-                    description = "No UserTask data was found in LH Server using the given params.",
+                    description = "No UserTask data was found in LH Kernel using the given params.",
                     content = {@Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ProblemDetail.class))}
             ),
             @ApiResponse(
                     responseCode = "412",
-                    description = "Failed at a LittleHorse server condition.",
+                    description = "Failed at a LittleHorse Kernel condition.",
                     content = {@Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ProblemDetail.class))}
@@ -446,14 +446,14 @@ public class AdminController {
             ),
             @ApiResponse(
                     responseCode = "404",
-                    description = "No UserTask data was found in LH Server using the given params.",
+                    description = "No UserTask data was found in LH Kernel using the given params.",
                     content = {@Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ProblemDetail.class))}
             ),
             @ApiResponse(
                     responseCode = "412",
-                    description = "Failed at a LittleHorse server condition.",
+                    description = "Failed at a LittleHorse Kernel condition.",
                     content = {@Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ProblemDetail.class))}
@@ -497,7 +497,7 @@ public class AdminController {
             ),
             @ApiResponse(
                     responseCode = "404",
-                    description = "No UserTask data was found in LH Server using the given params.",
+                    description = "No UserTask data was found in LH Kernel using the given params.",
                     content = {@Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ProblemDetail.class))}
@@ -511,7 +511,7 @@ public class AdminController {
             ),
             @ApiResponse(
                     responseCode = "412",
-                    description = "Failed at a LittleHorse server condition.",
+                    description = "Failed at a LittleHorse Kernel condition.",
                     content = {@Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ProblemDetail.class))}

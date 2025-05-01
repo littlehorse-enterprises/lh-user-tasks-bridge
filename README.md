@@ -1,6 +1,6 @@
 # User Tasks Bridge Backend
 
-Backend component that serves as a proxy between any OIDC compliant identity provider and LittleHorse Server `UserTasks`.
+Backend component that serves as a proxy between any OIDC compliant identity provider and LittleHorse Kernel `UserTasks`.
 
 ## Getting Started
 
@@ -27,7 +27,7 @@ First update your `/etc/hosts` file with next hostnames:
 
 We are using Keycloak to work as a sample Identity Provider that will support User Tasks Bridge API by having a basic
 identity provider configured. You can find a Docker Compose configuration
-in `docker-compose.yaml`. You can run Keycloak, a local LH Server and the User Tasks Bridge API locally with this command:
+in `docker-compose.yaml`. You can run Keycloak, a local LH Kernel and the User Tasks Bridge API locally with this command:
 
   ```shell
   ./local-dev/run.sh
@@ -38,7 +38,7 @@ in `docker-compose.yaml`. You can run Keycloak, a local LH Server and the User T
 If the command above ended successfully, then you should see 4 containers running:
 
 - 1 for Keycloak
-- 1 for LittleHorse Standalone (LH Server and LH Dashboard)
+- 1 for LittleHorse Standalone (LH Kernel and LH Dashboard)
 - 1 for lh-user-tasks-bridge-backend
 - 1 for user-tasks-bridge-console
 
@@ -108,7 +108,7 @@ You can set 1 of the following values: EMAIL, PREFERRED_USERNAME or SUB.
 - _**vendor**_: This indicates who is the vendor or identity provider in charge of the authentication of users for
   the previously set issuer. For now, Keycloak is the only vendor with access to all the features that this API
   provides.
-- **tenant-id**: This property must match your Tenant that MUST be already created within LittleHorse Server.
+- **tenant-id**: This property must match your Tenant that MUST be already created within LittleHorse Kernel.
 - **client-id-claim**: This property specifies what claim should be used to fetch the corresponding client id from the access token.
 - **clients**: Within this property you MUST set at least one client-id from your Keycloak realm from which your
   access tokens will be generated.

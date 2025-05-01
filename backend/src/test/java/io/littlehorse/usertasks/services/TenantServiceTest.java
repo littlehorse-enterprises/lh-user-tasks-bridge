@@ -124,7 +124,7 @@ class TenantServiceTest {
     @Test
     void isValidTenant_shouldReturnFalseWhenServerAPIThrowsAnExceptionDifferentFromNotFoundException() {
         var tenantIdToValidate = "someTenant";
-        var expectedExceptionMessage = "ERROR: Some pretty weird issue on LH Server";
+        var expectedExceptionMessage = "ERROR: Some pretty weird issue on LH Kernel";
 
         when(lhTenantClient.getTenant(any(TenantId.class))).thenThrow(new RuntimeException(expectedExceptionMessage));
 

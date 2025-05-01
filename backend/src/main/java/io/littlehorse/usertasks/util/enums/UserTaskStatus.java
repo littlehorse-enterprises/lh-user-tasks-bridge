@@ -15,7 +15,7 @@ public enum UserTaskStatus {
     /**
      * Converts an {@code io.littlehorse.sdk.common.proto.UserTaskRunStatus} to an {@code UserTaskStatus}
      *
-     * @param serverStatus {@code io.littlehorse.sdk.common.proto.UserTaskRunStatus} gotten from LittleHorse server
+     * @param serverStatus {@code io.littlehorse.sdk.common.proto.UserTaskRunStatus} gotten from LittleHorse Kernel
      * @return A custom representation of an {@code io.littlehorse.sdk.common.proto.UserTaskRunStatus}
      */
     public static UserTaskStatus fromServerStatus(@NonNull UserTaskRunStatus serverStatus) {

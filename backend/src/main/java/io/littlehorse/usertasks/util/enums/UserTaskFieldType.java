@@ -15,7 +15,7 @@ public enum UserTaskFieldType {
     /**
      * Converts a {@code io.littlehorse.sdk.common.proto.VariableType} to a {@code UserTaskFieldType}
      *
-     * @param type {@code io.littlehorse.sdk.common.proto.VariableType} gotten from LittleHorse server
+     * @param type {@code io.littlehorse.sdk.common.proto.VariableType} gotten from LittleHorse Kernel
      * @return A custom representation of an {@code io.littlehorse.sdk.common.proto.VariableType}
      * @see io.littlehorse.sdk.common.proto.VariableType
      */

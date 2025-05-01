@@ -145,7 +145,7 @@ public class UserTaskService {
                     .log();
         } catch (StatusRuntimeException e) {
             log.atError()
-                    .setMessage("Something went wrong in LH Server with completion process for UserTaskRun with " +
+                    .setMessage("Something went wrong in LH Kernel with completion process for UserTaskRun with " +
                             "wfRunId: {} and guid: {} ")
                     .addArgument(request.getWfRunId())
                     .addArgument(request.getUserTaskRunGuid())
@@ -235,7 +235,7 @@ public class UserTaskService {
                     .log();
         } catch (StatusRuntimeException e) {
             log.atError()
-                    .setMessage("Something went wrong in LH Server with assignment process for UserTaskRun with " +
+                    .setMessage("Something went wrong in LH Kernel with assignment process for UserTaskRun with " +
                             "wfRunId: {} and guid: {} ")
                     .addArgument(wfRunId)
                     .addArgument(userTaskRunGuid)
@@ -310,7 +310,7 @@ public class UserTaskService {
                     .log();
         } catch (StatusRuntimeException e) {
             log.atError()
-                    .setMessage("Something went wrong in LH Server with cancellation process for UserTaskRun with " +
+                    .setMessage("Something went wrong in LH Kernel with cancellation process for UserTaskRun with " +
                             "wfRunId: {} and guid: {} as Admin.")
                     .addArgument(wfRunId)
                     .addArgument(userTaskRunGuid)
@@ -388,7 +388,7 @@ public class UserTaskService {
                     .log();
         } catch (StatusRuntimeException e) {
             log.atError()
-                    .setMessage("Something went wrong in LH Server with cancellation process for UserTaskRun with " +
+                    .setMessage("Something went wrong in LH Kernel with cancellation process for UserTaskRun with " +
                             "wfRunId: {} and guid: {} ")
                     .addArgument(wfRunId)
                     .addArgument(userTaskRunGuid)
@@ -462,7 +462,7 @@ public class UserTaskService {
             }
         } catch (StatusRuntimeException e) {
             log.atError()
-                    .setMessage("Something went wrong in LH Server with claiming process for UserTaskRun with " +
+                    .setMessage("Something went wrong in LH Kernel with claiming process for UserTaskRun with " +
                             "wfRunId: {} and guid: {} ")
                     .addArgument(wfRunId)
                     .addArgument(userTaskRunGuid)
