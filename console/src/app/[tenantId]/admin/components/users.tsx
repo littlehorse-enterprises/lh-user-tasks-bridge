@@ -34,6 +34,7 @@ import {
 	IDPUserDTO
 } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
 import { Eye, EyeOff } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -95,6 +96,8 @@ const editFormSchema = z.object({
 
 export default function UsersManagement() {
 	const tenantId = useParams().tenantId as string;
+	const { data: session } = useSession();
+	const currentUserId = session?.user?.id;
 	
 	const [users, setUsers] = useState<IDPUserDTO[]>([]);
 	const [groups, setGroups] = useState<IDPGroupDTO[]>([]);
@@ -730,6 +733,7 @@ export default function UsersManagement() {
 							<TableHead>Email</TableHead>
 							<TableHead>Name</TableHead>
 							<TableHead>Status</TableHead>
+							<TableHead>Admin</TableHead>
 							<TableHead className="text-right">Actions</TableHead>
 						</TableRow>
 					</TableHeader>
@@ -763,6 +767,13 @@ export default function UsersManagement() {
 									<span className="inline-block py-1 px-2 text-xs rounded-md bg-green-100 text-green-800">
 										Active
 									</span>
+								</TableCell>
+								<TableCell>
+									<Switch 
+										checked={user.realmRoles?.includes('lh-user-tasks-admin') || false}
+										onCheckedChange={() => toggleAdminRole(user)}
+										disabled={user.id === currentUserId}
+									/>
 								</TableCell>
 								<TableCell className="text-right">
 									<div className="flex justify-end space-x-2">
