@@ -30,7 +30,7 @@ export class UserController {
   async getMyTasks(params: GetMyTasksParams): Promise<UserTaskRunListDTO> {
     const queryParams = objectToURLSearchParams(params);
     return this.client.fetch<UserTaskRunListDTO>(
-      `/admin/tasks?${queryParams.toString()}`,
+      `/tasks?${queryParams.toString()}`,
     );
   }
 
@@ -41,7 +41,7 @@ export class UserController {
     params: GetUserTaskDetailParams,
   ): Promise<DetailedUserTaskRunDTO> {
     return this.client.fetch<DetailedUserTaskRunDTO>(
-      `/admin/tasks/${params.wf_run_id}/${params.user_task_guid}`,
+      `/tasks/${params.wf_run_id}/${params.user_task_guid}`,
     );
   }
 

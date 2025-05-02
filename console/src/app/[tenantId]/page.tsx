@@ -1,3 +1,4 @@
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   getClaimableTasks,
   getUserGroupsFromIdentityProvider,
@@ -31,19 +32,29 @@ export default async function Home({
 
   return (
     <div className="flex gap-4 sm:flex-row flex-col [&>*]:w-full">
-      <ListUserTasks
-        userGroups={listUserGroupsResponse.groups}
+      <Tabs defaultValue="my-tasks">
+        <TabsList>
+          <TabsTrigger value="my-tasks">My Tasks</TabsTrigger>
+          <TabsTrigger value="claimable-tasks">Claimable Tasks</TabsTrigger>
+        </TabsList>
+        <TabsContent value="my-tasks">
+          <ListUserTasks
+            userGroups={listUserGroupsResponse.groups}
         initialData={listUserTasksResponse}
-      />
-      {listUserGroupsResponse.groups.length > 0 && (
-        <ListClaimableUserTasks
-          userGroups={[
-            listUserGroupsResponse.groups[0],
+          />
+        </TabsContent>
+        <TabsContent value="claimable-tasks">
+          {listUserGroupsResponse.groups.length > 0 && (
+            <ListClaimableUserTasks
+              userGroups={[
+                listUserGroupsResponse.groups[0],
             ...listUserGroupsResponse.groups.slice(1),
           ]}
-          initialData={listClaimableUserTasksResponse}
-        />
-      )}
+            initialData={listClaimableUserTasksResponse}
+            />
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
