@@ -1,8 +1,6 @@
 import { auth } from "@/app/api/auth/[...nextauth]/authOptions";
-import {
-  adminListUserTaskDefNames,
-  adminListUserTasks,
-} from "../actions/admin";
+import { UserTaskStatus } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
+import { adminGetAllTasks, adminGetAllUserTasksDef } from "../actions/admin";
 import AdminTabs from "./components/admin-tabs";
 
 export default async function AdminPage({
@@ -12,60 +10,55 @@ export default async function AdminPage({
   params: { tenantId: string };
   searchParams: { tab?: string };
 }) {
-  const adminListUserTaskDefNamesResponse = await adminListUserTaskDefNames(
+  const adminListUserTaskDefNamesResponse = await adminGetAllUserTasksDef(
     params.tenantId,
     {
       // TODO: add pagination so this needs to be on client using `useInfiniteQuery`
-      limit: 99,
+      limit: 999,
     },
   );
 
-  if ("message" in adminListUserTaskDefNamesResponse)
-    throw new Error(adminListUserTaskDefNamesResponse.message);
-
   // Get current user information from session
   const session = await auth();
-  if (!session?.user) throw new Error("Session found but user not found");
-  const userId = session.user.id;
+  const userId = session?.user?.id;
 
   // Get task counts for each definition
-  const taskCountsPromises =
-    adminListUserTaskDefNamesResponse.userTaskDefNames.map(
-      async (userTaskDefName) => {
-        // Get unassigned tasks count - limit to 99
-        const unassignedResponse = await adminListUserTasks(params.tenantId, {
-          type: userTaskDefName,
-          status: "UNASSIGNED",
-          limit: 99, // Fetch max 99 tasks
-        });
+  const taskCountsPromises = adminListUserTaskDefNamesResponse.userTaskDefNames.map(
+    async (userTaskDefName: string) => {
+      // Get unassigned tasks count - limit to 99
+      const unassignedResponse = await adminGetAllTasks(params.tenantId, {
+        type: userTaskDefName,
+        status: UserTaskStatus.UNASSIGNED,
+        limit: 99, // Fetch max 99 tasks
+      });
 
-        // Get tasks assigned to current user - limit to 99
-        const assignedToMeResponse = userId
-          ? await adminListUserTasks(params.tenantId, {
-              type: userTaskDefName,
-              status: "ASSIGNED",
-              user_id: userId,
-              limit: 99, // Fetch max 99 tasks
-            })
-          : { userTasks: [] };
+      // Get tasks assigned to current user - limit to 99
+      const assignedToMeResponse = userId
+        ? await adminGetAllTasks(params.tenantId, {
+            type: userTaskDefName,
+            status: UserTaskStatus.ASSIGNED,
+            user_id: userId,
+            limit: 99, // Fetch max 99 tasks
+          })
+        : { userTasks: [] };
 
-        // Handle error responses
-        const unassignedCount =
-          "userTasks" in unassignedResponse
-            ? unassignedResponse.userTasks.length
-            : 0;
-        const assignedToMeCount =
-          "userTasks" in assignedToMeResponse
-            ? assignedToMeResponse.userTasks.length
-            : 0;
+      // Handle error responses
+      const unassignedCount =
+        "userTasks" in unassignedResponse
+          ? unassignedResponse.userTasks.length
+          : 0;
+      const assignedToMeCount =
+        "userTasks" in assignedToMeResponse
+          ? assignedToMeResponse.userTasks.length
+          : 0;
 
-        return {
-          name: userTaskDefName,
-          unassignedCount,
-          assignedToMeCount,
-        };
-      },
-    );
+      return {
+        name: userTaskDefName,
+        unassignedCount,
+        assignedToMeCount,
+      };
+    },
+  );
 
   const taskCounts = await Promise.all(taskCountsPromises);
 

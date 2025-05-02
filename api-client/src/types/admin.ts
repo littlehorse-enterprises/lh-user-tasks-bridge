@@ -6,8 +6,8 @@ export interface UserListDTO {
 }
 
 export interface UserTaskDefListDTO {
-  userTaskDefs: string[];
-  bookmark?: string;
+  userTaskDefNames: string[];
+  bookmark: string | null;
 }
 
 // Request DTOs specific to AdminController

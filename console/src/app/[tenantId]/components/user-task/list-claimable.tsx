@@ -3,21 +3,21 @@
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  ListUserTasksResponse,
-  UserGroup,
+  UserGroupDTO,
+  UserTaskRunListDTO,
 } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
 import { Loader2Icon } from "lucide-react";
 import { useParams } from "next/navigation";
 import useSWRInfinite from "swr/infinite";
-import { listClaimableUserTasks } from "../../actions/user";
+import { getClaimableTasks } from "../../actions/user";
 import ListUserTasks from "./list";
 
 export default function ListClaimableUserTasks({
   userGroups,
   initialData,
 }: {
-  userGroups: [UserGroup, ...UserGroup[]];
-  initialData: ListUserTasksResponse[];
+  userGroups: [UserGroupDTO, ...UserGroupDTO[]];
+  initialData: UserTaskRunListDTO[];
 }) {
   const tenantId = useParams().tenantId as string;
   return (
@@ -36,7 +36,7 @@ export default function ListClaimableUserTasks({
         {userGroups.map((userGroup) => {
           const getKey = (
             pageIndex: number,
-            previousPageData: ListUserTasksResponse | null,
+            previousPageData: UserTaskRunListDTO | null,
           ) => {
             // Reached the end
             if (previousPageData && !previousPageData.bookmark) return null;
@@ -48,19 +48,16 @@ export default function ListClaimableUserTasks({
             return [tenantId, userGroup.id, previousPageData?.bookmark];
           };
 
-          const { data, error, size, setSize, isValidating } =
-            useSWRInfinite<ListUserTasksResponse>(
+          const { data, size, setSize, isValidating } =
+            useSWRInfinite<UserTaskRunListDTO>(
               getKey,
               async ([tenantId, userGroupId, bookmark]) => {
-                const data = await listClaimableUserTasks(tenantId, {
+                const data = await getClaimableTasks(tenantId, {
                   user_group_id: userGroupId,
                   limit: 10,
                   bookmark: bookmark || undefined,
                 });
                 console.log(data);
-                if ("message" in data) {
-                  throw new Error(data.message);
-                }
                 return data;
               },
               {
@@ -75,10 +72,6 @@ export default function ListClaimableUserTasks({
             return (
               <Loader2Icon className="size-4 animate-spin" key={userGroup.id} />
             );
-          if (error)
-            return (
-              <div key={userGroup.id}>Error loading tasks: {error.message}</div>
-            );
 
           const hasNextPage = data && data[data.length - 1]?.bookmark != null;
           const isFetchingNextPage = isValidating && data && data.length > 0;
@@ -88,9 +81,7 @@ export default function ListClaimableUserTasks({
               <ListUserTasks
                 userGroups={userGroups}
                 initialData={
-                  data
-                    ? (data[0] as ListUserTasksResponse)
-                    : { userTasks: [], bookmark: null }
+                  data ? data[0] : { userTasks: [], bookmark: undefined }
                 }
                 claimable
               />

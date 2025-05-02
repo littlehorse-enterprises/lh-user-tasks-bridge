@@ -13,15 +13,14 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { UserTask } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
+import { SimpleUserTaskRunDTO } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
 import { useParams } from "next/navigation";
-import { toast } from "sonner";
 
 export default function CancelUserTaskButton({
   userTask,
   admin,
 }: {
-  userTask: UserTask;
+  userTask: SimpleUserTaskRunDTO;
   admin?: boolean;
 }) {
   const tenantId = useParams().tenantId as string;
@@ -46,19 +45,15 @@ export default function CancelUserTaskButton({
           <AlertDialogAction
             className={buttonVariants({ variant: "destructive" })}
             onClick={async () => {
-              try {
-                const response = admin
-                  ? await adminCancelUserTask(tenantId, userTask)
-                  : await cancelUserTask(tenantId, userTask);
-
-                if (response && "message" in response)
-                  return toast.error(response.message);
-
-                toast.success("UserTask cancelled successfully");
-              } catch (error) {
-                toast.error("Failed to cancel userTask");
-                console.error(error);
-              }
+              admin
+                ? await adminCancelUserTask(tenantId, {
+                    wf_run_id: userTask.wfRunId,
+                    user_task_guid: userTask.id,
+                  })
+                : await cancelUserTask(tenantId, {
+                    wf_run_id: userTask.wfRunId,
+                    user_task_guid: userTask.id,
+                  });
             }}
           >
             Cancel UserTask

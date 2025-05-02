@@ -1,8 +1,8 @@
 "use client";
 import {
   adminAssignUserTask,
-  adminListUserGroups,
-  adminListUsers,
+  adminGetUserGroups,
+  adminGetUsers,
 } from "@/app/[tenantId]/actions/admin";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -23,128 +23,120 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  User,
-  UserGroup,
-  UserTask,
+  AdminTaskActionParams,
+  IDPUserDTO,
+  SimpleUserTaskRunDTO,
+  UserDTO,
+  UserGroupDTO,
 } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
+
 export default function AssignUserTaskButton({
   userTask,
 }: {
-  userTask: UserTask;
+  userTask: SimpleUserTaskRunDTO;
 }) {
   const tenantId = useParams().tenantId as string;
-  const [users, setUsers] = useState<User[]>([]);
-  const [selectedUser, setSelectedUser] = useState<User | undefined>(
-    userTask.user,
-  );
+  const [users, setUsers] = useState<UserDTO[]>([]);
+  const [selectedUser, setSelectedUser] = useState<UserDTO>();
 
-  const [userGroups, setUserGroups] = useState<UserGroup[]>([]);
+  const [userGroups, setUserGroups] = useState<UserGroupDTO[]>([]);
   const [selectedUserGroup, setSelectedUserGroup] = useState<
-    UserGroup | undefined
+    UserGroupDTO | undefined
   >(userTask.userGroup);
 
   useEffect(() => {
-    // TODO: data from server
-    adminListUsers(tenantId)
-      .then((data) => {
-        if ("message" in data) {
-          toast.error(data.message);
-          return;
-        }
-        setUsers(data.users);
-      })
-      .catch((e) => {
-        toast.error("Failed to get users");
-        console.error(e);
-      });
+    // Get users from server
+    adminGetUsers(tenantId, {}).then((data) => {
+      setUsers(data.users);
+    });
 
-    adminListUserGroups(tenantId)
-      .then((data) => {
-        if ("message" in data) {
-          toast.error(data.message);
-          return;
-        }
-        setUserGroups(data.groups);
-      })
-      .catch((e) => {
-        toast.error("Failed to get user groups");
-        console.error(e);
-      });
+    // Get user groups from server
+    adminGetUserGroups(tenantId).then((data) => {
+      setUserGroups(data.groups);
+    });
   }, [tenantId]);
 
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="ghost">Assign</Button>
+        <Button variant="outline">Assign</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>
-            Assign <span className="font-mono">{userTask.userTaskDefName}</span>
-          </DialogTitle>
+          <DialogTitle>Assign UserTask</DialogTitle>
         </DialogHeader>
-        <div>
-          <Label>User</Label>
-          <Select
-            onValueChange={(value) => {
-              if (value === "N/A") return setSelectedUser(undefined);
-              setSelectedUser(users.find((user) => user.id === value));
-            }}
-            value={selectedUser?.id}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select a user" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="N/A">Select a user</SelectItem>
-              {selectedUser?.valid === false && (
-                <SelectItem value={selectedUser.id}>
-                  {selectedUser.firstName && selectedUser.lastName
-                    ? `${selectedUser.firstName} ${selectedUser.lastName}`
-                    : selectedUser.id}{" "}
-                  <span className="text-destructive">INVALID USER</span>
-                </SelectItem>
-              )}
-              {users.map((user) => (
-                <SelectItem key={user.id} value={user.id}>
-                  {user.firstName} {user.lastName}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Label>Group</Label>
-          <Select
-            onValueChange={(value) => {
-              if (value === "N/A") return setSelectedUserGroup(undefined);
-              setSelectedUserGroup(
-                userGroups.find((userGroup) => userGroup.id === value),
-              );
-            }}
-            value={selectedUserGroup?.id}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select a group" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="N/A">Select a group</SelectItem>
-              {selectedUserGroup?.valid === false && (
-                <SelectItem value={selectedUserGroup.id}>
-                  {selectedUserGroup.name ?? selectedUserGroup.id}{" "}
-                  <span className="text-destructive">INVALID GROUP</span>
-                </SelectItem>
-              )}
-              {userGroups.map((userGroup) => (
-                <SelectItem key={userGroup.id} value={userGroup.id}>
-                  {userGroup.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+
+        <div className="space-y-4">
+          <div>
+            <Label>Current Assignee</Label>
+            <div>
+              {userTask.user
+                ? `User: ${userTask.user.username} (${userTask.user.id})`
+                : "No user assigned"}
+            </div>
+            <div>
+              {userTask.userGroup
+                ? `Group: ${userTask.userGroup.name} (${userTask.userGroup.id})`
+                : "No group assigned"}
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="user">
+              Assign User
+              <span className="ml-1 text-sm text-muted-foreground">
+                (optional)
+              </span>
+            </Label>
+            <Select
+              value={selectedUser?.id ?? ""}
+              onValueChange={(value) => {
+                const user = users.find((u) => u.id === value);
+                setSelectedUser(user);
+              }}
+            >
+              <SelectTrigger id="user">
+                <SelectValue placeholder="Select user" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">None</SelectItem>
+                {users.map((user) => (
+                  <SelectItem key={user.id} value={user.id}>
+                    {user.username}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="group">
+              Assign Group
+              <span className="ml-1 text-sm text-muted-foreground">
+                (recommended)
+              </span>
+            </Label>
+            <Select
+              value={selectedUserGroup?.id ?? ""}
+              onValueChange={(value) => {
+                const group = userGroups.find((g) => g.id === value);
+                setSelectedUserGroup(group || undefined);
+              }}
+            >
+              <SelectTrigger id="group">
+                <SelectValue placeholder="Select user group" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">None</SelectItem>
+                {userGroups.map((group) => (
+                  <SelectItem key={group.id} value={group.id}>
+                    {group.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         <DialogFooter>
@@ -155,34 +147,18 @@ export default function AssignUserTaskButton({
           <DialogClose
             className={buttonVariants()}
             onClick={async () => {
-              if (!selectedUser && !selectedUserGroup)
-                return toast.warning(
-                  "No user or group selected. Please select a user or group to assign the UserTask to.",
-                );
+              const taskParams: AdminTaskActionParams = {
+                wf_run_id: userTask.wfRunId,
+                user_task_guid: userTask.id,
+              };
 
-              if (
-                selectedUser?.id === userTask.user?.id &&
-                selectedUserGroup?.id === userTask.userGroup?.id
-              )
-                return toast.warning(
-                  "Please select a different user or group to assign the UserTask to.",
-                );
+              await adminAssignUserTask(tenantId, taskParams, {
+                userId: selectedUser?.id,
+                userGroup: selectedUserGroup?.id,
+              });
 
-              try {
-                const response = await adminAssignUserTask(tenantId, userTask, {
-                  userId: selectedUser?.id,
-                  userGroupId: selectedUserGroup?.id,
-                });
-                setSelectedUser(undefined);
-                setSelectedUserGroup(undefined);
-                if (response && "message" in response)
-                  return toast.error(response.message);
-
-                toast.success("UserTask assigned successfully");
-              } catch (error) {
-                console.error(error);
-                toast.error("Failed to assign UserTask");
-              }
+              setSelectedUser(undefined);
+              setSelectedUserGroup(undefined);
             }}
           >
             Assign Task

@@ -1,6 +1,6 @@
 import {
-  adminListUserGroups,
-  adminListUserTasks,
+  adminGetAllTasks,
+  adminGetUserGroups,
 } from "@/app/[tenantId]/actions/admin";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
@@ -12,18 +12,12 @@ export default async function TaskPage({
 }: {
   params: { tenantId: string; userTaskDefName: string };
 }) {
-  const adminListUserGroupsResponse = await adminListUserGroups(
-    params.tenantId,
-  );
-  if ("message" in adminListUserGroupsResponse)
-    throw new Error(adminListUserGroupsResponse.message);
+  const adminListUserGroupsResponse = await adminGetUserGroups(params.tenantId);
 
-  const adminListUserTasksResponse = await adminListUserTasks(params.tenantId, {
+  const adminListUserTasksResponse = await adminGetAllTasks(params.tenantId, {
     limit: 10,
     type: params.userTaskDefName,
   });
-  if ("message" in adminListUserTasksResponse)
-    throw new Error(adminListUserTasksResponse.message);
 
   return (
     <div>

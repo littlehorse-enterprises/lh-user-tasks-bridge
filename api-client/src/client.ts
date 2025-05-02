@@ -82,9 +82,17 @@ export class LHUTBApiClient {
       headers: {
         ...init?.headers,
         Authorization: `Bearer ${this.accessToken}`,
+        "Content-Type": "application/json",
       },
     });
 
+    const contentType = response.headers.get("content-type");
+    if (contentType && contentType.includes("application/json")) {
+      return response.json();
+    } else if (!contentType && response.status === 204) {
+      // Handle no-content responses explicitly
+      return undefined as T;
+    }
     return response as T;
   }
 }

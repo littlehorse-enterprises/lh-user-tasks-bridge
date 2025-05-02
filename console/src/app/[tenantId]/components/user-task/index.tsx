@@ -13,7 +13,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import type { UserTask } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
+import type { SimpleUserTaskRunDTO } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
 import { useSession } from "next-auth/react";
 import { ReactNode, useEffect, useRef, useState } from "react";
 import AssignUserTaskButton from "./action-buttons/assign";
@@ -26,7 +26,7 @@ export default function UserTask({
   userTask,
   admin,
 }: {
-  userTask: UserTask;
+  userTask: SimpleUserTaskRunDTO;
   admin?: boolean;
 }) {
   const session = useSession();
@@ -57,12 +57,6 @@ export default function UserTask({
               <>
                 {userTask.user.firstName} {userTask.user.lastName}{" "}
                 <span className="font-medium">{userTask.user.email}</span>
-                {userTask.user.valid === false && (
-                  <>
-                    {userTask.user.id}{" "}
-                    <span className="text-destructive">INVALID USER</span>
-                  </>
-                )}
               </>
             )
           }
@@ -71,12 +65,7 @@ export default function UserTask({
           label="Assigned To (Group)"
           value={
             userTask.userGroup && (
-              <>
-                {userTask.userGroup.name ?? userTask.userGroup.id}{" "}
-                <span className="text-destructive">
-                  {userTask.userGroup.valid === false && "INVALID USER GROUP"}
-                </span>
-              </>
+              <>{userTask.userGroup.name ?? userTask.userGroup.id}</>
             )
           }
         />
@@ -85,73 +74,83 @@ export default function UserTask({
           <NotesTextArea notes={userTask.notes} />
         </div>
       </CardContent>
-      <CardFooter className="w-full flex items-center justify-end gap-2 flex-wrap p-0">
-        {userTask.status !== "CANCELLED" && userTask.status !== "DONE" && (
+      <CardFooter className="flex gap-2 p-0">
+        {userTask.status === "UNASSIGNED" && (
           <>
-            {admin && (
-              <>
-                <AssignUserTaskButton userTask={userTask} />
-              </>
-            )}
-            <CancelUserTaskButton userTask={userTask} admin={admin} />
-            {user.id !== userTask.user?.id && (
-              <ClaimUserTaskButton userTask={userTask} admin={admin} />
-            )}
-            <CompleteUserTaskButton userTask={userTask} admin={admin} />
+            {admin && <AssignUserTaskButton userTask={userTask} />}
+            {!admin && <ClaimUserTaskButton userTask={userTask} />}
           </>
         )}
+        {userTask.status === "ASSIGNED" && admin && (
+          <AssignUserTaskButton userTask={userTask} />
+        )}
+        {userTask.status === "ASSIGNED" &&
+          (admin || (userTask.user && userTask.user.id === user.id)) && (
+            <CompleteUserTaskButton userTask={userTask} admin={admin} />
+          )}
         {userTask.status === "DONE" && (
           <CompleteUserTaskButton userTask={userTask} admin={admin} readOnly />
         )}
+        {["UNASSIGNED", "ASSIGNED"].includes(userTask.status) &&
+          (admin || (userTask.user && userTask.user.id === user.id)) && (
+            <CancelUserTaskButton userTask={userTask} admin={admin} />
+          )}
       </CardFooter>
     </Card>
   );
 }
 
-function Metadata({ label, value }: { label: string; value?: ReactNode }) {
-  const textRef = useRef<HTMLParagraphElement>(null);
+function Metadata({
+  label,
+  value,
+  iconValue,
+}: {
+  label: string;
+  value: string | ReactNode | null | undefined;
+  iconValue?: string;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  // Check if the text is truncated
   const [isTruncated, setIsTruncated] = useState(false);
-
   useEffect(() => {
-    const checkTruncation = () => {
-      if (textRef.current) {
-        const { offsetWidth, scrollWidth } = textRef.current;
-        setIsTruncated(scrollWidth > offsetWidth);
-      }
-    };
-
-    checkTruncation();
-    window.addEventListener("resize", checkTruncation);
-    return () => window.removeEventListener("resize", checkTruncation);
+    if (!ref.current) return;
+    setIsTruncated(
+      ref.current.scrollWidth > ref.current.clientWidth &&
+        typeof value === "string",
+    );
   }, [value]);
 
-  const content = (
-    <div className="overflow-hidden">
-      <p
-        ref={textRef}
-        className="text-sm text-muted-foreground text-right truncate"
-      >
-        {value ?? "N/A"}
-      </p>
-    </div>
-  );
+  if (!value) return null;
 
   return (
-    <div className="grid grid-cols-[auto_minmax(0,1fr)] gap-4 pb-2 border-b items-center">
-      <p className="text-sm font-medium leading-none capitalize whitespace-nowrap">
-        {label}:
-      </p>
-      {isTruncated ? (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>{content}</TooltipTrigger>
-            <TooltipContent>
-              <p className="max-w-xs break-all">{value ?? "N/A"}</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+    <div className="flex flex-col space-y-1">
+      <div className="text-muted-foreground text-sm">{label}</div>
+      {typeof value === "string" ? (
+        <div className="flex items-center gap-2">
+          {iconValue && (
+            <span className="text-muted-foreground">{iconValue}</span>
+          )}
+          <TooltipProvider>
+            <Tooltip delayDuration={0}>
+              <TooltipTrigger asChild>
+                <div
+                  ref={ref}
+                  className={`max-w-xs ${
+                    isTruncated ? "truncate cursor-help" : ""
+                  }`}
+                >
+                  {value}
+                </div>
+              </TooltipTrigger>
+              {isTruncated && (
+                <TooltipContent>{value as string}</TooltipContent>
+              )}
+            </Tooltip>
+          </TooltipProvider>
+        </div>
       ) : (
-        content
+        value
       )}
     </div>
   );

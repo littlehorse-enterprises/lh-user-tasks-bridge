@@ -1,6 +1,6 @@
 "use client";
-import { adminListUserTasks } from "@/app/[tenantId]/actions/admin";
-import { listUserTasks } from "@/app/[tenantId]/actions/user";
+import { adminGetAllTasks } from "@/app/[tenantId]/actions/admin";
+import { getUserTasks } from "@/app/[tenantId]/actions/user";
 import { Button } from "@/components/ui/button";
 import { DateRangePicker } from "@/components/ui/data-range-picker";
 import { Input } from "@/components/ui/input";
@@ -18,21 +18,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  ListUserTasksResponse,
-  Status,
-  UserGroup,
+  UserGroupDTO,
+  UserTaskRunListDTO,
+  UserTaskStatus,
 } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
 import { FilterIcon } from "lucide-react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useLayoutEffect, useState } from "react";
-import { toast } from "sonner";
 import useSWRInfinite from "swr/infinite";
 import UserTask from "../../components/user-task";
 import Loading from "../loading";
 
 type Query = {
-  user_group_id?: UserGroup["id"];
-  status?: Status;
+  user_group_id?: UserGroupDTO["id"];
+  status?: UserTaskStatus;
   earliest_start_date?: string;
   latest_start_date?: string;
 };
@@ -43,9 +42,9 @@ export default function ListUserTasks({
   initialData,
   claimable,
 }: {
-  userGroups: UserGroup[];
+  userGroups: UserGroupDTO[];
   userTaskDefName?: string;
-  initialData: ListUserTasksResponse;
+  initialData: UserTaskRunListDTO;
   claimable?: boolean;
 }) {
   const [query, setQuery] = useState<Query>({});
@@ -75,7 +74,7 @@ export default function ListUserTasks({
 
   const getKey = (
     pageIndex: number,
-    previousPageData: ListUserTasksResponse | null,
+    previousPageData: UserTaskRunListDTO | null,
   ) => {
     if (claimable) return null;
 
@@ -83,48 +82,40 @@ export default function ListUserTasks({
     return ["userTask", query, limit, previousPageData?.bookmark];
   };
 
-  const { data, error, setSize, isValidating } =
-    useSWRInfinite<ListUserTasksResponse>(
-      getKey,
-      async (key): Promise<ListUserTasksResponse> => {
-        const [, query, limit, bookmark] = key;
-        const response = await (userTaskDefName
-          ? adminListUserTasks(tenantId, {
-              ...query,
-              limit,
-              type: userTaskDefName,
-              bookmark,
-            })
-          : listUserTasks(tenantId, {
-              ...query,
-              limit,
-              bookmark,
-            }));
+  const { data, setSize, isValidating } = useSWRInfinite<UserTaskRunListDTO>(
+    getKey,
+    async (key): Promise<UserTaskRunListDTO> => {
+      const [, query, limit, bookmark] = key;
+      const response = await (userTaskDefName
+        ? adminGetAllTasks(tenantId, {
+            ...query,
+            limit,
+            type: userTaskDefName,
+            bookmark,
+          })
+        : getUserTasks(tenantId, {
+            ...query,
+            limit,
+            bookmark,
+          }));
 
-        if ("message" in response) {
-          toast.error(response.message);
-          return {
-            userTasks: [],
-            bookmark: null,
-          };
-        }
-        return response;
-      },
-      {
-        refreshInterval: 1000,
-        revalidateOnFocus: true,
-        revalidateOnReconnect: true,
-        revalidateOnMount: !claimable,
-        revalidateIfStale: !claimable,
-        fallbackData: [initialData],
-      },
-    );
+      return response;
+    },
+    {
+      refreshInterval: 1000,
+      revalidateOnFocus: true,
+      revalidateOnReconnect: true,
+      revalidateOnMount: !claimable,
+      revalidateIfStale: !claimable,
+      fallbackData: [initialData],
+    },
+  );
 
   const fetchNextPage = () => {
     setSize((size) => size + 1);
   };
 
-  const isPending = (!data && !error) || !data;
+  const isPending = !data;
   if (isPending) return <Loading />;
   const hasNextPage = !!(data && data[data.length - 1]?.bookmark);
 
@@ -178,7 +169,8 @@ export default function ListUserTasks({
                   onValueChange={(value) => {
                     setQuery({
                       ...query,
-                      status: value === "ALL" ? undefined : (value as Status),
+                      status:
+                        value === "ALL" ? undefined : (value as UserTaskStatus),
                     });
                   }}
                 >
@@ -203,10 +195,7 @@ export default function ListUserTasks({
                   onValueChange={(value) => {
                     setQuery({
                       ...query,
-                      user_group_id:
-                        value === "ALL"
-                          ? undefined
-                          : (value as UserGroup["id"]),
+                      user_group_id: value === "ALL" ? undefined : value,
                     });
                   }}
                 >

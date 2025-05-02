@@ -1,9 +1,12 @@
 "use client";
 import {
   adminCompleteUserTask,
-  adminGetUserTask,
+  adminGetUserTaskDetail,
 } from "@/app/[tenantId]/actions/admin";
-import { completeUserTask, getUserTask } from "@/app/[tenantId]/actions/user";
+import {
+  completeUserTask,
+  getUserTaskDetail,
+} from "@/app/[tenantId]/actions/user";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Dialog,
@@ -24,13 +27,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  GetUserTaskResponse,
-  UserTask,
-  UserTaskResult,
+  DetailedUserTaskRunDTO,
+  SimpleUserTaskRunDTO,
+  UserTaskFieldDTO,
+  UserTaskFieldType,
+  UserTaskVariableValue,
 } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 import Loading from "../../loading";
 import NotesTextArea from "../notes";
 
@@ -39,31 +43,30 @@ export default function CompleteUserTaskButton({
   admin = false,
   readOnly = false,
 }: {
-  userTask: UserTask;
+  userTask: SimpleUserTaskRunDTO;
   admin?: boolean;
   readOnly?: boolean;
 }) {
-  const [userTaskDetails, setUserTaskDetails] = useState<GetUserTaskResponse>();
-  const [userTaskResult, setUserTaskResult] = useState<UserTaskResult>({});
+  const [userTaskDetails, setUserTaskDetails] =
+    useState<DetailedUserTaskRunDTO>();
+  const [userTaskResult, setUserTaskResult] = useState<
+    Record<string, UserTaskVariableValue>
+  >({});
   const tenantId = useParams().tenantId as string;
 
   useEffect(() => {
+    const params = {
+      wf_run_id: userTask.wfRunId,
+      user_task_guid: userTask.id,
+    };
+
     (admin
-      ? adminGetUserTask(tenantId, userTask)
-      : getUserTask(tenantId, userTask)
-    )
-      .then((res) => {
-        if ("message" in res) {
-          toast.error(res.message);
-          return;
-        }
-        setUserTaskDetails(res);
-        setUserTaskResult(res.results);
-      })
-      .catch((err) => {
-        toast.error("Failed to get UserTask");
-        console.error(err);
-      });
+      ? adminGetUserTaskDetail(tenantId, params)
+      : getUserTaskDetail(tenantId, params)
+    ).then((res) => {
+      setUserTaskDetails(res);
+      setUserTaskResult(res.results || {});
+    });
   }, [tenantId, userTask, admin]);
 
   return (
@@ -92,7 +95,7 @@ export default function CompleteUserTaskButton({
                 Fill out the form
               </h1>
             )}
-            {userTaskDetails.fields.map((field) => (
+            {userTaskDetails.fields.map((field: UserTaskFieldDTO) => (
               <div key={field.name} className="space-y-2">
                 <Label>
                   {field.displayName}
@@ -129,7 +132,7 @@ export default function CompleteUserTaskButton({
                         ...userTaskResult,
                         [field.name]: {
                           value,
-                          type: field.type,
+                          type: field.type as UserTaskFieldType,
                         },
                       });
                     }}
@@ -144,7 +147,7 @@ export default function CompleteUserTaskButton({
                         ...userTaskResult,
                         [field.name]: {
                           value: value === "true",
-                          type: field.type,
+                          type: field.type as UserTaskFieldType,
                         },
                       });
                     }}
@@ -180,38 +183,18 @@ export default function CompleteUserTaskButton({
                 variant="default"
                 onClick={async () => {
                   if (!userTaskDetails) return;
-                  if (
-                    userTaskDetails.fields.filter((field) => field.required)
-                      .length >
-                    Object.keys(userTaskResult).filter((oneResult) =>
-                      userTaskDetails.fields.find(
-                        (field) => field.name === oneResult && field.required,
-                      ),
-                    ).length
-                  )
-                    return toast.warning("All required fields must be filled.");
-                  try {
-                    const response = admin
-                      ? await adminCompleteUserTask(
-                          tenantId,
-                          userTask,
-                          userTaskResult,
-                        )
-                      : await completeUserTask(
-                          tenantId,
-                          userTask,
-                          userTaskResult,
-                        );
-                    setUserTaskResult({});
-                    if (response && "message" in response) {
-                      toast.error(response.message);
-                      return;
-                    }
-                    toast.success("UserTask completed");
-                  } catch (error) {
-                    console.error(error);
-                    toast.error("Failed to complete UserTask");
-                  }
+
+                  const params = {
+                    wf_run_id: userTask.wfRunId,
+                    user_task_guid: userTask.id,
+                  };
+
+                  await (admin
+                    ? adminCompleteUserTask(tenantId, params, userTaskResult)
+                    : completeUserTask(tenantId, params, {
+                        variableResults: userTaskResult,
+                      }));
+                  setUserTaskResult({});
                 }}
               >
                 Complete
