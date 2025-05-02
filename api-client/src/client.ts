@@ -89,7 +89,7 @@ export class LHUTBApiClient {
     const contentType = response.headers.get("content-type");
     if (contentType && contentType.includes("application/json")) {
       return response.json();
-    } else if (!contentType && response.status === 204) {
+    } else if (!contentType) {
       // Handle no-content responses explicitly
       return undefined as T;
     }

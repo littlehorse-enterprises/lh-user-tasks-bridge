@@ -13,7 +13,9 @@ export async function createGroup(
   request: CreateGroupRequest,
 ) {
   const client = await getClient(tenantId);
-  return client.groupManagement.createGroup(request);
+  const response = await client.groupManagement.createGroup(request);
+  console.log(response);
+  return response;
 }
 
 export async function getGroups(tenantId: string, params: GetGroupsParams) {

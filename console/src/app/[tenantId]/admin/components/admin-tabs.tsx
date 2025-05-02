@@ -2,9 +2,9 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePathname, useRouter } from "next/navigation";
-// import GroupsManagement from "./groups";
+import GroupsManagement from "./groups";
 import UserTaskDefs from "./userTaskDefs";
-// import UsersManagement from "./users";
+import UsersManagement from "./users";
 
 export default function AdminTabs({
   currentTab,
@@ -55,9 +55,13 @@ export default function AdminTabs({
         )}
       </TabsContent>
 
-      <TabsContent value="users">{/* <UsersManagement /> */}</TabsContent>
+      <TabsContent value="users">
+        <UsersManagement />
+      </TabsContent>
 
-      <TabsContent value="groups">{/* <GroupsManagement /> */}</TabsContent>
+      <TabsContent value="groups">
+        <GroupsManagement />
+      </TabsContent>
     </Tabs>
   );
 }

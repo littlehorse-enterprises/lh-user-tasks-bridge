@@ -1,4 +1,3 @@
-import { UserGroupDTO } from "./common";
 import { IDPGroupDTO } from "./group-management";
 
 // Response DTOs
@@ -81,7 +80,7 @@ export interface AdminRoleParams {
   user_id: string;
 }
 
-export interface UserGroupParams {
+export interface JoinOrLeaveGroupParams {
   user_id: string;
   group_id: string;
 }
