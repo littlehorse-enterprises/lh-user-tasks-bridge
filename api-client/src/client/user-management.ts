@@ -1,18 +1,16 @@
-import {
-  GetUsersFromIdentityProviderParams,
-  UserListDTO,
-} from "../types/admin";
+import { LHUTBApiClient } from "../client";
+import { GetUsersFromIdentityProviderParams } from "../types/admin";
 import {
   CreateManagedUserRequest,
   GetUserFromIdPParams,
   IDPUserDTO,
+  IDPUserListDTO,
   UpdateManagedUserRequest,
   UpdateUserParams,
   UpsertPasswordParams,
   UpsertPasswordRequest,
 } from "../types/user-management";
 import { objectToURLSearchParams } from "../utils";
-import { LHUTBApiClient } from "./index";
 
 export class UserManagementController {
   private client: LHUTBApiClient;
@@ -26,9 +24,9 @@ export class UserManagementController {
    */
   async getUsersFromIdP(
     params: GetUsersFromIdentityProviderParams,
-  ): Promise<UserListDTO> {
+  ): Promise<IDPUserListDTO> {
     const queryParams = objectToURLSearchParams(params);
-    return this.client.fetch<UserListDTO>(
+    return this.client.fetch<IDPUserListDTO>(
       `/management/users?${queryParams.toString()}`,
     );
   }

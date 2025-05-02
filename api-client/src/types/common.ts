@@ -31,14 +31,17 @@ export enum CustomUserIdClaim {
 // Common DTOs
 export interface UserDTO {
   id: string;
-  name?: string;
   email?: string;
+  username?: string;
+  firstName?: string;
+  lastName?: string;
+  valid?: boolean;
 }
 
 export interface UserGroupDTO {
   id: string;
   name: string;
-  description?: string;
+  valid?: boolean;
 }
 
 export interface UserTaskVariableValue {
@@ -71,7 +74,7 @@ export interface UserTaskFieldDTO {
   displayName?: string;
   description?: string;
   required: boolean;
-  type: string;
+  type: UserTaskFieldType;
   options?: string[];
 }
 

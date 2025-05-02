@@ -1,15 +1,16 @@
 import { UserGroupDTO } from "./common";
+import { IDPGroupDTO } from "./group-management";
 
 // Response DTOs
 export interface IDPUserDTO {
   id: string;
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-  username?: string;
-  enabled: boolean;
-  groups?: UserGroupDTO[];
-  isAdmin?: boolean;
+  username: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  groups: IDPGroupDTO[];
+  realmRoles: string[];
+  clientRoles: Record<string, string[]>;
 }
 
 export interface IDPUserListDTO {

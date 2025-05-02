@@ -2,8 +2,6 @@
 export interface IDPGroupDTO {
   id: string;
   name: string;
-  description?: string;
-  membersCount?: number;
 }
 
 export interface IDPGroupListDTO {

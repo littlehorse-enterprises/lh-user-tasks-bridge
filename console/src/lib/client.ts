@@ -1,7 +1,4 @@
-import {
-  LHUserTasksError,
-  LHUTBApiClient,
-} from "@littlehorse-enterprises/user-tasks-bridge-api-client";
+import { LHUTBApiClient } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
 import { redirect } from "next/navigation";
 import { auth } from "../app/api/auth/[...nextauth]/authOptions";
 
@@ -44,20 +41,4 @@ export class LHUTBApiClientSingleton {
 
 export async function getClient(tenantId: string) {
   return LHUTBApiClientSingleton.getInstance(tenantId);
-}
-
-export async function clientWithErrorHandling<T>(
-  tenantId: string,
-  action: (client: LHUTBApiClient) => Promise<T>,
-) {
-  const client = await getClient(tenantId);
-  try {
-    return await action(client);
-  } catch (error) {
-    console.error(error);
-    if (error instanceof LHUserTasksError) {
-      return { message: error.message };
-    }
-    throw error;
-  }
 }

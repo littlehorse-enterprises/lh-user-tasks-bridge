@@ -3,7 +3,7 @@ import {
   IdentityProviderListDTO,
 } from "../types";
 import { objectToURLSearchParams } from "../utils";
-import { LHUTBApiClient } from "./index";
+import { LHUTBApiClient } from "../client";
 
 export class PublicController {
   private client: LHUTBApiClient;

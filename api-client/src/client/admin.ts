@@ -1,4 +1,4 @@
-import { LHUTBApiClient } from ".";
+import { LHUTBApiClient } from "../client";
 
 import {
   AdminGetUserTaskDetailParams,

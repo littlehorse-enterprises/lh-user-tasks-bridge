@@ -1,4 +1,4 @@
-import { LHUTBApiClient } from "./index";
+import { LHUTBApiClient } from "../client";
 
 /**
  * Methods for initializing tenant-OIDC integration

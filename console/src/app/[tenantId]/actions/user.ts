@@ -1,58 +1,67 @@
 "use server";
-import { clientWithErrorHandling } from "@/lib/client";
+import { getClient } from "@/lib/client";
 import {
-  ListClaimableUserTasksRequest,
-  ListUserTasksRequest,
-  UserTask,
-  UserTaskResult,
+  CancelUserTaskParams,
+  ClaimUserTaskParams,
+  CompleteUserTaskParams,
+  CompleteUserTaskRequest,
+  GetClaimableTasksParams,
+  GetMyTasksParams,
+  GetUserTaskDetailParams,
 } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
 
-export async function claimUserTask(tenantId: string, userTask: UserTask) {
-  return clientWithErrorHandling(tenantId, (client) =>
-    client.claimUserTask(userTask),
-  );
+export async function getUserTasks(tenantId: string, params: GetMyTasksParams) {
+  const client = await getClient(tenantId);
+  return client.user.getMyTasks(params);
 }
 
-export async function cancelUserTask(tenantId: string, userTask: UserTask) {
-  return clientWithErrorHandling(tenantId, (client) =>
-    client.cancelUserTask(userTask),
-  );
-}
-
-export async function listUserTasks(
+export async function getUserTaskDetail(
   tenantId: string,
-  search: Omit<ListUserTasksRequest, "type">,
+  params: GetUserTaskDetailParams,
 ) {
-  return clientWithErrorHandling(tenantId, (client) =>
-    client.listUserTasks(search),
-  );
-}
-
-export async function listClaimableUserTasks(
-  tenantId: string,
-  search: ListClaimableUserTasksRequest,
-) {
-  return clientWithErrorHandling(tenantId, (client) =>
-    client.listClaimableUserTasks(search),
-  );
-}
-
-export async function listUserGroups(tenantId: string) {
-  return clientWithErrorHandling(tenantId, (client) => client.listUserGroups());
-}
-
-export async function getUserTask(tenantId: string, userTask: UserTask) {
-  return clientWithErrorHandling(tenantId, (client) =>
-    client.getUserTask(userTask),
-  );
+  const client = await getClient(tenantId);
+  return client.user.getUserTaskDetail(params);
 }
 
 export async function completeUserTask(
   tenantId: string,
-  userTask: UserTask,
-  values: UserTaskResult,
+  params: CompleteUserTaskParams,
+  results: CompleteUserTaskRequest,
 ) {
-  return clientWithErrorHandling(tenantId, (client) =>
-    client.completeUserTask(userTask, values),
-  );
+  const client = await getClient(tenantId);
+  return client.user.completeUserTask(params, results);
+}
+
+export async function cancelUserTask(
+  tenantId: string,
+  params: CancelUserTaskParams,
+) {
+  const client = await getClient(tenantId);
+  return client.user.cancelUserTask(params);
+}
+
+export async function claimUserTask(
+  tenantId: string,
+  params: ClaimUserTaskParams,
+) {
+  const client = await getClient(tenantId);
+  return client.user.claimUserTask(params);
+}
+
+export async function getUserGroupsFromIdentityProvider(tenantId: string) {
+  const client = await getClient(tenantId);
+  return client.user.getUserGroupsFromIdentityProvider();
+}
+
+export async function getMyUserInfo(tenantId: string) {
+  const client = await getClient(tenantId);
+  return client.user.getMyUserInfo();
+}
+
+export async function getClaimableTasks(
+  tenantId: string,
+  params: GetClaimableTasksParams,
+) {
+  const client = await getClient(tenantId);
+  return client.user.getClaimableTasks(params);
 }
