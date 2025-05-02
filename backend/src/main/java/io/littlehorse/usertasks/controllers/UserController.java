@@ -231,7 +231,7 @@ public class UserController {
     @Operation(
             summary = "Complete UserTask",
             description = "Completes a UserTask by making it transition to DONE status if the request is successfully processed in " +
-                    "LittleHorse Kernel."
+                    "the LittleHorse Kernel."
     )
     @ApiResponses(value = {
             @ApiResponse(
@@ -281,7 +281,7 @@ public class UserController {
     @Operation(
             summary = "Cancel UserTask",
             description = "Cancels a UserTask by making it transition to CANCELLED status if the request is successfully " +
-                    "processed in LittleHorse Kernel."
+                    "processed in the LittleHorse Kernel."
     )
     @ApiResponses(value = {
             @ApiResponse(
