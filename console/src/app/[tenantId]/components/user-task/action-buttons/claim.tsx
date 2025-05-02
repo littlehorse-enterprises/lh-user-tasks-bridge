@@ -16,6 +16,7 @@ import {
 import { Button, buttonVariants } from "@/components/ui/button";
 import { SimpleUserTaskRunDTO } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
 import { useParams } from "next/navigation";
+import { toast } from "sonner";
 
 export default function ClaimUserTaskButton({
   userTask,
@@ -46,15 +47,21 @@ export default function ClaimUserTaskButton({
           <AlertDialogAction
             className={buttonVariants({ variant: "default" })}
             onClick={async () => {
-              admin
-                ? await adminClaimUserTask(tenantId, {
-                    wf_run_id: userTask.wfRunId,
-                    user_task_guid: userTask.id,
-                  })
-                : await claimUserTask(tenantId, {
-                    wf_run_id: userTask.wfRunId,
-                    user_task_guid: userTask.id,
-                  });
+              try {
+                admin
+                  ? await adminClaimUserTask(tenantId, {
+                      wf_run_id: userTask.wfRunId,
+                      user_task_guid: userTask.id,
+                    })
+                  : await claimUserTask(tenantId, {
+                      wf_run_id: userTask.wfRunId,
+                      user_task_guid: userTask.id,
+                    });
+                toast.success("UserTask claimed successfully");
+              } catch (error) {
+                console.error(error);
+                toast.error("Failed to claim UserTask");
+              }
             }}
           >
             Claim UserTask

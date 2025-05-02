@@ -35,6 +35,7 @@ import {
 } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import Loading from "../../loading";
 import NotesTextArea from "../notes";
 
@@ -188,13 +189,19 @@ export default function CompleteUserTaskButton({
                     wf_run_id: userTask.wfRunId,
                     user_task_guid: userTask.id,
                   };
-
-                  await (admin
-                    ? adminCompleteUserTask(tenantId, params, userTaskResult)
-                    : completeUserTask(tenantId, params, {
-                        variableResults: userTaskResult,
-                      }));
-                  setUserTaskResult({});
+                  
+                  try {
+                    await (admin
+                      ? adminCompleteUserTask(tenantId, params, userTaskResult)
+                      : completeUserTask(tenantId, params, {
+                          variableResults: userTaskResult,
+                        }));
+                    toast.success("UserTask completed successfully");
+                    setUserTaskResult({});
+                  } catch (error) {
+                    console.error(error);
+                    toast.error("Failed to complete UserTask");
+                  }
                 }}
               >
                 Complete

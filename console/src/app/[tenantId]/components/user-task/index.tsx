@@ -14,6 +14,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import type { SimpleUserTaskRunDTO } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
+import { Check, ClipboardCopy } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { ReactNode, useEffect, useRef, useState } from "react";
 import AssignUserTaskButton from "./action-buttons/assign";
@@ -53,19 +54,39 @@ export default function UserTask({
         <Metadata
           label="Assigned To (User)"
           value={
-            userTask.user && (
-              <>
-                {userTask.user.firstName} {userTask.user.lastName}{" "}
-                <span className="font-medium">{userTask.user.email}</span>
-              </>
+            userTask.user ? (
+              userTask.user.valid ? (
+                <>
+                  {userTask.user.firstName} {userTask.user.lastName}{" "}
+                  <span className="font-medium">{userTask.user.email}</span>
+                </>
+              ) : (
+                <>
+                  {userTask.user.id}{" "}
+                  <span className="text-red-500">(NOT VALID USER)</span>
+                </>
+              )
+            ) : (
+              "N/A"
             )
           }
         />
         <Metadata
           label="Assigned To (Group)"
           value={
-            userTask.userGroup && (
-              <>{userTask.userGroup.name ?? userTask.userGroup.id}</>
+            userTask.userGroup ? (
+              userTask.userGroup.valid ? (
+                <>
+                  {userTask.userGroup.name ?? userTask.userGroup.id}
+                </>
+              ) : (
+                <>
+                  {userTask.userGroup.id}{" "}
+                  <span className="text-red-500">(NOT VALID GROUP)</span>
+                </>
+              )
+            ) : (
+              "N/A"
             )
           }
         />
@@ -113,6 +134,8 @@ function Metadata({
 
   // Check if the text is truncated
   const [isTruncated, setIsTruncated] = useState(false);
+  const [copied, setCopied] = useState(false);
+
   useEffect(() => {
     if (!ref.current) return;
     setIsTruncated(
@@ -121,11 +144,36 @@ function Metadata({
     );
   }, [value]);
 
+  useEffect(() => {
+    if (copied) {
+      const timer = setTimeout(() => setCopied(false), 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [copied]);
+
+  const handleCopy = () => {
+    if (typeof value === "string") {
+      navigator.clipboard.writeText(value);
+      setCopied(true);
+    }
+  };
+
   if (!value) return null;
 
   return (
     <div className="flex flex-col space-y-1">
-      <div className="text-muted-foreground text-sm">{label}</div>
+      <div className="text-muted-foreground text-sm flex items-center gap-1">
+        {typeof value === "string" && (
+          <button
+            onClick={handleCopy}
+            className="h-4 w-4 text-muted-foreground hover:text-foreground"
+            aria-label={copied ? "Copied" : "Copy to clipboard"}
+          >
+            {copied ? <Check size={14} /> : <ClipboardCopy size={14} />}
+          </button>
+        )}
+        {label}
+      </div>
       {typeof value === "string" ? (
         <div className="flex items-center gap-2">
           {iconValue && (

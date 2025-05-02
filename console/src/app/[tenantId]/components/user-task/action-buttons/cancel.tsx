@@ -15,6 +15,7 @@ import {
 import { Button, buttonVariants } from "@/components/ui/button";
 import { SimpleUserTaskRunDTO } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
 import { useParams } from "next/navigation";
+import { toast } from "sonner";
 
 export default function CancelUserTaskButton({
   userTask,
@@ -45,15 +46,21 @@ export default function CancelUserTaskButton({
           <AlertDialogAction
             className={buttonVariants({ variant: "destructive" })}
             onClick={async () => {
-              admin
-                ? await adminCancelUserTask(tenantId, {
-                    wf_run_id: userTask.wfRunId,
-                    user_task_guid: userTask.id,
-                  })
-                : await cancelUserTask(tenantId, {
-                    wf_run_id: userTask.wfRunId,
-                    user_task_guid: userTask.id,
-                  });
+              try {
+                admin
+                  ? await adminCancelUserTask(tenantId, {
+                      wf_run_id: userTask.wfRunId,
+                      user_task_guid: userTask.id,
+                    })
+                  : await cancelUserTask(tenantId, {
+                      wf_run_id: userTask.wfRunId,
+                      user_task_guid: userTask.id,
+                    });
+                toast.success("UserTask cancelled successfully");
+              } catch (error) {
+                console.error(error);
+                toast.error("Failed to cancel UserTask");
+              }
             }}
           >
             Cancel UserTask

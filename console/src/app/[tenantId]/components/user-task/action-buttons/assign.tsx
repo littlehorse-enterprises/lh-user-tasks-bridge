@@ -23,14 +23,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  AdminTaskActionParams,
-  IDPUserDTO,
   SimpleUserTaskRunDTO,
   UserDTO,
   UserGroupDTO,
 } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 export default function AssignUserTaskButton({
   userTask,
@@ -39,7 +38,9 @@ export default function AssignUserTaskButton({
 }) {
   const tenantId = useParams().tenantId as string;
   const [users, setUsers] = useState<UserDTO[]>([]);
-  const [selectedUser, setSelectedUser] = useState<UserDTO>();
+  const [selectedUser, setSelectedUser] = useState<UserDTO | undefined>(
+    userTask.user,
+  );
 
   const [userGroups, setUserGroups] = useState<UserGroupDTO[]>([]);
   const [selectedUserGroup, setSelectedUserGroup] = useState<
@@ -58,10 +59,13 @@ export default function AssignUserTaskButton({
     });
   }, [tenantId]);
 
+  const [open, setOpen] = useState(false);
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline">Assign</Button>
+        <Button variant="outline" onClick={() => setOpen(true)}>
+          Assign
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
@@ -72,14 +76,38 @@ export default function AssignUserTaskButton({
           <div>
             <Label>Current Assignee</Label>
             <div>
-              {userTask.user
-                ? `User: ${userTask.user.username} (${userTask.user.id})`
-                : "No user assigned"}
+              <span className="text-muted-foreground">User:</span>{" "}
+              {userTask.user ? (
+                userTask.user.valid ? (
+                  <>
+                    {userTask.user.firstName} {userTask.user.lastName}
+                  </>
+                ) : (
+                  <>
+                    {userTask.user.id}{" "}
+                    <span className="text-red-500">(NOT VALID USER)</span>
+                  </>
+                )
+              ) : (
+                "N/A"
+              )}
             </div>
             <div>
-              {userTask.userGroup
-                ? `Group: ${userTask.userGroup.name} (${userTask.userGroup.id})`
-                : "No group assigned"}
+              <span className="text-muted-foreground">Group:</span>{" "}
+              {userTask.userGroup ? (
+                userTask.userGroup.valid ? (
+                  <>
+                    {userTask.userGroup.name}
+                  </>
+                ) : (
+                  <>
+                    {userTask.userGroup.id}{" "}
+                    <span className="text-red-500">(NOT VALID GROUP)</span>
+                  </>
+                )
+              ) : (
+                "N/A"
+              )}
             </div>
           </div>
 
@@ -101,7 +129,7 @@ export default function AssignUserTaskButton({
                 <SelectValue placeholder="Select user" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">None</SelectItem>
+                <SelectItem value="none">Deselect User</SelectItem>
                 {users.map((user) => (
                   <SelectItem key={user.id} value={user.id}>
                     {user.username}
@@ -128,7 +156,7 @@ export default function AssignUserTaskButton({
                 <SelectValue placeholder="Select user group" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">None</SelectItem>
+                <SelectItem value="none">Deselect Group</SelectItem>
                 {userGroups.map((group) => (
                   <SelectItem key={group.id} value={group.id}>
                     {group.name}
@@ -144,25 +172,44 @@ export default function AssignUserTaskButton({
             Close
           </DialogClose>
 
-          <DialogClose
-            className={buttonVariants()}
+          <Button
             onClick={async () => {
-              const taskParams: AdminTaskActionParams = {
-                wf_run_id: userTask.wfRunId,
-                user_task_guid: userTask.id,
-              };
+              if (!selectedUserGroup && !selectedUser) {
+                toast.error("Please select a user or group");
+                return;
+              }
 
-              await adminAssignUserTask(tenantId, taskParams, {
-                userId: selectedUser?.id,
-                userGroup: selectedUserGroup?.id,
-              });
+              if (selectedUser && !selectedUser.valid) {
+                toast.error("Selected user is not valid");
+                return;
+              }
 
-              setSelectedUser(undefined);
-              setSelectedUserGroup(undefined);
+              if (selectedUserGroup && !selectedUserGroup.valid) {
+                toast.error("Selected user group is not valid");
+                return;
+              }
+              
+              try {
+                await adminAssignUserTask(
+                  tenantId,
+                  {
+                    wf_run_id: userTask.wfRunId,
+                    user_task_guid: userTask.id,
+                  },
+                  {
+                    userId: selectedUser?.id,
+                    userGroup: selectedUserGroup?.id,
+                  },
+                );
+                toast.success("UserTask assigned successfully");
+                setOpen(false);
+              } catch (error) {
+                toast.error("Error assigning UserTask");
+              }
             }}
           >
             Assign Task
-          </DialogClose>
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
