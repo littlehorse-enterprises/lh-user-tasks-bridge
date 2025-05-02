@@ -31,6 +31,9 @@ import useSWRInfinite from "swr/infinite";
 import UserTask from "../../components/user-task";
 import Loading from "../loading";
 
+// Add a counter for generating unique keys
+const getUniqueId = () => Date.now().toString();
+
 type Query = {
   user_group_id?: UserGroupDTO["id"];
   status?: UserTaskStatus;
@@ -56,6 +59,7 @@ export default function ListUserTasks({
   const [limit] = useState(100);
   const [error, setError] = useState<ErrorResponse | undefined>(initialError);
   const tenantId = useParams().tenantId as string;
+  const [mountId] = useState(getUniqueId());
 
   // Ensure userGroups is an array, even if undefined
   const safeUserGroups = Array.isArray(userGroups) ? userGroups : [];
@@ -87,7 +91,7 @@ export default function ListUserTasks({
     if (claimable) return null;
 
     if (previousPageData && !previousPageData.bookmark) return null; // reached the end
-    return ["userTask", query, limit, previousPageData?.bookmark];
+    return [mountId, "userTask", query, limit, previousPageData?.bookmark];
   };
 
   const { data, setSize, isValidating, mutate } = useSWRInfinite<UserTaskRunListDTO>(
@@ -95,7 +99,7 @@ export default function ListUserTasks({
     async (key): Promise<UserTaskRunListDTO> => {
       setError(undefined);
       
-      const [, query, limit, bookmark] = key;
+      const [, , query, limit, bookmark] = key;
       const response = await (userTaskDefName
         ? adminGetAllTasks(tenantId, {
             ...query,
@@ -121,9 +125,11 @@ export default function ListUserTasks({
       refreshInterval: 1000,
       revalidateOnFocus: true,
       revalidateOnReconnect: true,
-      revalidateOnMount: !claimable,
-      revalidateIfStale: !claimable,
+      revalidateOnMount: true,
+      revalidateIfStale: true,
       fallbackData: [initialData],
+      dedupingInterval: 500,
+      shouldRetryOnError: false
     },
   );
 
