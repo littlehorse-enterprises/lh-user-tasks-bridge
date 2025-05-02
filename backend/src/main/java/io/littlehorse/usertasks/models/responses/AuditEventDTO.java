@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import io.littlehorse.sdk.common.proto.TaskRunId;
 import io.littlehorse.sdk.common.proto.UserTaskEvent;
 import io.littlehorse.usertasks.util.DateUtil;
-import io.littlehorse.usertasks.util.enums.UserTaskEvenType;
+import io.littlehorse.usertasks.util.enums.UserTaskEventType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -31,22 +31,22 @@ public class AuditEventDTO {
     @Schema(oneOf = {UserTaskExecutedEvent.class, UserTaskAssignedEvent.class, UserTaskCancelledEvent.class})
     private IUserTaskEvent event;
     @NotNull
-    private UserTaskEvenType type;
+    private UserTaskEventType type;
 
     @NotNull
     public static AuditEventDTO fromUserTaskEvent(@NonNull UserTaskEvent serverEvent) {
         final IUserTaskEvent parsedEvent;
-        final UserTaskEvenType eventType;
+        final UserTaskEventType eventType;
 
         if (serverEvent.hasTaskExecuted()) {
             parsedEvent = UserTaskExecutedEvent.parseFromServer(serverEvent.getTaskExecuted());
-            eventType = UserTaskEvenType.TASK_EXECUTED;
+            eventType = UserTaskEventType.TASK_EXECUTED;
         } else if (serverEvent.hasAssigned()) {
             parsedEvent = UserTaskAssignedEvent.parseFromServer(serverEvent.getAssigned());
-            eventType = UserTaskEvenType.TASK_ASSIGNED;
+            eventType = UserTaskEventType.TASK_ASSIGNED;
         } else if (serverEvent.hasCancelled()) {
             parsedEvent = UserTaskCancelledEvent.parseFromServer(serverEvent.getCancelled());
-            eventType = UserTaskEvenType.TASK_CANCELLED;
+            eventType = UserTaskEventType.TASK_CANCELLED;
         } else {
             throw new IllegalArgumentException("Unknown audit event.");
         }

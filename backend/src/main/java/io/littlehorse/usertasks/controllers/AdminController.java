@@ -280,7 +280,7 @@ public class AdminController {
     @Operation(
             summary = "Complete UserTask",
             description = "Completes a UserTask by making it transition to DONE status if the request is successfully processed in " +
-                    "LittleHorse Kernel."
+                    "the LittleHorse Kernel."
     )
     @ApiResponses(value = {
             @ApiResponse(
