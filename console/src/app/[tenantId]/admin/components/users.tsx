@@ -159,7 +159,13 @@ export default function UsersManagement() {
 		setIsLoading(true);
 		try {
 			const response = await getUsersFromIdP(tenantId, {});
-			setUsers(response.users || []);
+			// Sort users by last name (case-insensitive)
+			const sortedUsers = [...(response.users || [])].sort((a, b) => {
+				const lastNameA = (a.lastName || '').toLowerCase();
+				const lastNameB = (b.lastName || '').toLowerCase();
+				return lastNameA.localeCompare(lastNameB);
+			});
+			setUsers(sortedUsers);
 		} catch (error) {
 			toast.error("Failed to load users from identity provider.");
 			console.error("Error loading users:", error);
@@ -172,7 +178,13 @@ export default function UsersManagement() {
 		setIsGroupsLoading(true);
 		try {
 			const response = await getGroups(tenantId, {});
-			setGroups(response.groups || []);
+			// Sort groups by name (case-insensitive)
+			const sortedGroups = [...(response.groups || [])].sort((a, b) => {
+				const nameA = (a.name || '').toLowerCase();
+				const nameB = (b.name || '').toLowerCase();
+				return nameA.localeCompare(nameB);
+			});
+			setGroups(sortedGroups);
 		} catch (error) {
 			toast.error("Failed to load groups.");
 			console.error("Error loading groups:", error);

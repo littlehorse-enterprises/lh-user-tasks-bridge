@@ -97,7 +97,13 @@ export default function GroupsManagement() {
     setIsLoading(true);
     try {
       const response = await getGroups(tenantId, {});
-      setGroups(response.groups || []);
+      // Sort groups by name (case-insensitive)
+      const sortedGroups = [...(response.groups || [])].sort((a, b) => {
+        const nameA = (a.name || '').toLowerCase();
+        const nameB = (b.name || '').toLowerCase();
+        return nameA.localeCompare(nameB);
+      });
+      setGroups(sortedGroups);
     } catch (error) {
       toast.error("Failed to load groups.");
       console.error("Error loading groups:", error);
