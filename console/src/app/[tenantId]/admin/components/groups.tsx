@@ -3,29 +3,29 @@
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-	Dialog,
-	DialogContent,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-	DialogTrigger,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-	Form,
-	FormControl,
-	FormField,
-	FormItem,
-	FormLabel,
-	FormMessage,
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
-	Table,
-	TableBody,
-	TableCell,
-	TableHead,
-	TableHeader,
-	TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { IDPGroupDTO, IDPUserDTO } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
@@ -35,15 +35,15 @@ import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import * as z from "zod";
 import {
-	createGroup,
-	deleteGroup,
-	getGroups,
-	updateGroup,
+  createGroup,
+  deleteGroup,
+  getGroups,
+  updateGroup,
 } from "../../actions/group-management";
 import {
-	addUserToGroup,
-	getUsersFromIdP,
-	removeUserFromGroup,
+  addUserToGroup,
+  getUsersFromIdP,
+  removeUserFromGroup,
 } from "../../actions/user-management";
 
 const formSchema = z.object({
@@ -98,7 +98,7 @@ export default function GroupsManagement() {
     try {
       const response = await getGroups(tenantId, {});
       // Sort groups by name (case-insensitive)
-      const sortedGroups = [...(response.groups || [])].sort((a, b) => {
+      const sortedGroups = [...(response.data?.groups || [])].sort((a, b) => {
         const nameA = (a.name || '').toLowerCase();
         const nameB = (b.name || '').toLowerCase();
         return nameA.localeCompare(nameB);
@@ -119,17 +119,17 @@ export default function GroupsManagement() {
     try {
       // Load all users
       const response = await getUsersFromIdP(tenantId, {});
-      const allUsers = response.users || [];
+      const allUsers = response.data?.users || [];
       setUsers(allUsers);
       
       // Filter group members and available users
-      const members = allUsers.filter(user => 
-        user.groups?.some(group => group.id === selectedGroup.id)
+      const members = allUsers.filter((user) => 
+        user.groups?.some((group) => group.id === selectedGroup.id)
       );
       setGroupMembers(members);
       
-      const available = allUsers.filter(user => 
-        !user.groups?.some(group => group.id === selectedGroup.id)
+      const available = allUsers.filter((user) => 
+        !user.groups?.some((group) => group.id === selectedGroup.id)
       );
       setAvailableUsers(available);
     } catch (error) {
@@ -142,9 +142,22 @@ export default function GroupsManagement() {
 
   async function handleCreateGroup(values: z.infer<typeof formSchema>) {
     try {
-      await createGroup(tenantId, {
+      console.log("Calling createGroup with name:", values.name);
+      const response = await createGroup(tenantId, {
         name: values.name,
       });
+
+      console.log("Create group response:", response);
+
+      if (response.error) {
+        if (response.error.type === 'CONFLICT') {
+          toast.error(`Group "${values.name}" already exists.`);
+        } else {
+          toast.error(response.error.message || "Failed to create group.");
+        }
+        console.error("Error creating group:", response.error);
+        return;
+      }
 
       toast.success("Group was successfully created.");
       setIsCreateDialogOpen(false);
@@ -160,13 +173,19 @@ export default function GroupsManagement() {
     if (!selectedGroup) return;
     
     try {
-      await updateGroup(
+      const response = await updateGroup(
         tenantId,
         { group_id: selectedGroup.id },
         {
           name: values.name,
         }
       );
+
+      if (response.error) {
+        toast.error(response.error.message || "Failed to update group.");
+        console.error("Error updating group:", response.error);
+        return;
+      }
 
       toast.success("Group was successfully updated.");
       setIsEditDialogOpen(false);
@@ -182,7 +201,14 @@ export default function GroupsManagement() {
     if (!confirm("Are you sure you want to delete this group?")) return;
     
     try {
-      await deleteGroup(tenantId, { group_id: groupId });
+      const response = await deleteGroup(tenantId, { group_id: groupId });
+      
+      if (response.error) {
+        toast.error(response.error.message || "Failed to delete group.");
+        console.error("Error deleting group:", response.error);
+        return;
+      }
+
       toast.success("Group was successfully deleted.");
       loadGroups();
     } catch (error) {
@@ -195,10 +221,17 @@ export default function GroupsManagement() {
     if (!selectedGroup) return;
     
     try {
-      await addUserToGroup(tenantId, { 
+      const response = await addUserToGroup(tenantId, { 
         user_id: userId, 
         group_id: selectedGroup.id || '' 
       });
+      
+      if (response.error) {
+        toast.error(response.error.message || "Failed to add user to group.");
+        console.error("Error adding user to group:", response.error);
+        return;
+      }
+
       toast.success("User added to group successfully.");
       loadUsers();
     } catch (error) {
@@ -211,10 +244,17 @@ export default function GroupsManagement() {
     if (!selectedGroup) return;
     
     try {
-      await removeUserFromGroup(tenantId, { 
+      const response = await removeUserFromGroup(tenantId, { 
         user_id: userId, 
         group_id: selectedGroup.id || '' 
       });
+      
+      if (response.error) {
+        toast.error(response.error.message || "Failed to remove user from group.");
+        console.error("Error removing user from group:", response.error);
+        return;
+      }
+
       toast.success("User removed from group successfully.");
       loadUsers();
     } catch (error) {
@@ -253,8 +293,13 @@ export default function GroupsManagement() {
       // Delete each selected group
       for (const groupId of selectedGroups) {
         try {
-          await deleteGroup(tenantId, { group_id: groupId });
-          successCount++;
+          const response = await deleteGroup(tenantId, { group_id: groupId });
+          if (response.error) {
+            errorCount++;
+            console.error(`Error deleting group ${groupId}:`, response.error);
+          } else {
+            successCount++;
+          }
         } catch (error) {
           errorCount++;
           console.error(`Error deleting group ${groupId}:`, error);

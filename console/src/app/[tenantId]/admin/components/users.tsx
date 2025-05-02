@@ -160,7 +160,7 @@ export default function UsersManagement() {
 		try {
 			const response = await getUsersFromIdP(tenantId, {});
 			// Sort users by last name (case-insensitive)
-			const sortedUsers = [...(response.users || [])].sort((a, b) => {
+			const sortedUsers = [...(response.data?.users || [])].sort((a, b) => {
 				const lastNameA = (a.lastName || '').toLowerCase();
 				const lastNameB = (b.lastName || '').toLowerCase();
 				return lastNameA.localeCompare(lastNameB);
@@ -179,7 +179,7 @@ export default function UsersManagement() {
 		try {
 			const response = await getGroups(tenantId, {});
 			// Sort groups by name (case-insensitive)
-			const sortedGroups = [...(response.groups || [])].sort((a, b) => {
+			const sortedGroups = [...(response.data?.groups || [])].sort((a, b) => {
 				const nameA = (a.name || '').toLowerCase();
 				const nameB = (b.name || '').toLowerCase();
 				return nameA.localeCompare(nameB);
@@ -212,7 +212,7 @@ export default function UsersManagement() {
 						continue;
 					}
 					
-					await createUser(tenantId, {
+					const response = await createUser(tenantId, {
 						username,
 						email,
 						firstName: firstName || username,
@@ -221,6 +221,14 @@ export default function UsersManagement() {
 						tempPassword: true,
 						enabled: true,
 					});
+					
+					if (response.error) {
+						errors.push({ 
+							username: username,
+							error: response.error.message || "Unknown error"
+						});
+						continue;
+					}
 					
 					successCount++;
 				} catch (error: any) {
@@ -262,13 +270,18 @@ export default function UsersManagement() {
 				enabled: true,
 			});
 			
+			if (response.error) {
+				toast.error(response.error.message || "Failed to create user.");
+				console.error("Error creating user:", response.error);
+				return;
+			}
+			
 			toast.success("User was successfully created.");
 			setIsCreateDialogOpen(false);
 			createForm.reset();
 			loadUsers();
 		} catch (error) {
 			console.error("Detailed error creating user:", error);
-			
 			toast.error("Failed to create user. See console for details.");
 		}
 	}
@@ -285,22 +298,30 @@ export default function UsersManagement() {
 				lastName: values.lastName,
 			};
 			
-			// Note: Since enabled property doesn't exist on IDPUserDTO type,
-			// we might need a different API call to toggle enabled status, or
-			// this property might be sent differently in the actual implementation
-			
-			await updateUser(
+			const updateResponse = await updateUser(
 				tenantId,
 				{ user_id: selectedUser.username },
 				updateData
 			);
 
+			if (updateResponse.error) {
+				toast.error(updateResponse.error.message || "Failed to update user.");
+				console.error("Error updating user:", updateResponse.error);
+				return;
+			}
+
 			if (values.password && values.password.length > 0) {
-				await upsertPassword(
+				const passwordResponse = await upsertPassword(
 					tenantId,
 					{ user_id: values.username },
 					{ value: values.password }
 				);
+				
+				if (passwordResponse.error) {
+					toast.error(passwordResponse.error.message || "Failed to update password.");
+					console.error("Error updating password:", passwordResponse.error);
+					return;
+				}
 			}
 
 			toast.success("User was successfully updated.");
@@ -319,7 +340,14 @@ export default function UsersManagement() {
 		}
 		
 		try {
-			await deleteUser(tenantId, { user_id: userId });
+			const response = await deleteUser(tenantId, { user_id: userId });
+			
+			if (response.error) {
+				toast.error(response.error.message || "Failed to delete user.");
+				console.error("Error deleting user:", response.error);
+				return;
+			}
+			
 			toast.success("User was successfully deleted.");
 			loadUsers();
 		} catch (error) {
@@ -331,15 +359,15 @@ export default function UsersManagement() {
 	async function handleEditClick(userId: string) {
 		try {
 			const userResponse = await getUserFromIdP(tenantId, { user_id: userId });
-			if (userResponse) {
-				setSelectedUser(userResponse);
+			if (userResponse.data) {
+				setSelectedUser(userResponse.data);
 				setIsAccountEnabled(true);
 				editForm.reset({
-					username: userResponse.username || "",
+					username: userResponse.data.username || "",
 					password: "",  // Don't set password for security reasons
-					email: userResponse.email || "",
-					firstName: userResponse.firstName || "",
-					lastName: userResponse.lastName || "",
+					email: userResponse.data.email || "",
+					firstName: userResponse.data.firstName || "",
+					lastName: userResponse.data.lastName || "",
 				});
 				setIsEditDialogOpen(true);
 			} else {
@@ -360,19 +388,34 @@ export default function UsersManagement() {
 
 	async function handleToggleGroup(userId: string, groupId: string, isActive: boolean) {
 		try {
+			let response;
 			if (isActive) {
 				// Add user to group
-				await addUserToGroup(tenantId, { 
+				response = await addUserToGroup(tenantId, { 
 					user_id: userId, 
 					group_id: groupId 
 				});
+				
+				if (response.error) {
+					toast.error(response.error.message || "Failed to add user to group.");
+					console.error("Error adding user to group:", response.error);
+					return;
+				}
+				
 				toast.success("User added to group successfully.");
 			} else {
 				// Remove user from group
-				await removeUserFromGroup(tenantId, { 
+				response = await removeUserFromGroup(tenantId, { 
 					user_id: userId, 
 					group_id: groupId 
 				});
+				
+				if (response.error) {
+					toast.error(response.error.message || "Failed to remove user from group.");
+					console.error("Error removing user from group:", response.error);
+					return;
+				}
+				
 				toast.success("User removed from group successfully.");
 			}
 			
@@ -392,11 +435,26 @@ export default function UsersManagement() {
 		const hasAdminRole = user.realmRoles?.includes('lh-user-tasks-admin') || false;
 		
 		try {
+			let response;
 			if (hasAdminRole) {
-				await removeAdminRole(tenantId, { user_id: user.id });
+				response = await removeAdminRole(tenantId, { user_id: user.id });
+				
+				if (response.error) {
+					toast.error(response.error.message || "Failed to remove admin role.");
+					console.error("Error removing admin role:", response.error);
+					return;
+				}
+				
 				toast.success("Admin role removed successfully.");
 			} else {
-				await assignAdminRole(tenantId, { user_id: user.id });
+				response = await assignAdminRole(tenantId, { user_id: user.id });
+				
+				if (response.error) {
+					toast.error(response.error.message || "Failed to assign admin role.");
+					console.error("Error assigning admin role:", response.error);
+					return;
+				}
+				
 				toast.success("Admin role assigned successfully.");
 			}
 			loadUsers();
@@ -417,14 +475,29 @@ export default function UsersManagement() {
 		}
 
 		try {
+			let successCount = 0;
+			let errorCount = 0;
+			
 			// Delete each selected user
 			for (const userId of selectedUsers) {
-				await deleteUser(tenantId, { user_id: userId });
+				const response = await deleteUser(tenantId, { user_id: userId });
+				if (response.error) {
+					errorCount++;
+					console.error(`Error deleting user ${userId}:`, response.error);
+				} else {
+					successCount++;
+				}
 			}
-
-			toast.success(`${selectedUsers.length} users were successfully deleted.`);
-			setSelectedUsers([]);
-			loadUsers();
+			
+			if (errorCount > 0) {
+				toast.error(`Failed to delete ${errorCount} of ${selectedUsers.length} users.`);
+			}
+			
+			if (successCount > 0) {
+				toast.success(`Successfully deleted ${successCount} users.`);
+				setSelectedUsers([]);
+				loadUsers();
+			}
 		} catch (error) {
 			toast.error("Failed to delete users.");
 			console.error("Error deleting users:", error);
@@ -456,11 +529,17 @@ export default function UsersManagement() {
 			for (const userId of selectedUsers) {
 				for (const groupId of selectedGroups) {
 					try {
-						await addUserToGroup(tenantId, { 
+						const response = await addUserToGroup(tenantId, { 
 							user_id: userId, 
 							group_id: groupId 
 						});
-						successCount++;
+						
+						if (response.error) {
+							errorCount++;
+							console.error(`Error adding user ${userId} to group ${groupId}:`, response.error);
+						} else {
+							successCount++;
+						}
 					} catch (error) {
 						errorCount++;
 						console.error(`Error adding user ${userId} to group ${groupId}:`, error);

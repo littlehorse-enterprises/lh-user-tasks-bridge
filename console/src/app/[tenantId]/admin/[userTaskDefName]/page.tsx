@@ -28,9 +28,10 @@ export default async function TaskPage({
         </Link>
       </Button>
       <ListUserTasks
-        userGroups={adminListUserGroupsResponse.groups}
+        userGroups={adminListUserGroupsResponse.data?.groups || []}
         userTaskDefName={params.userTaskDefName}
-        initialData={adminListUserTasksResponse}
+        initialData={adminListUserTasksResponse.data || { userTasks: [], bookmark: undefined }}
+        initialError={adminListUserTasksResponse.error}
       />
     </div>
   );

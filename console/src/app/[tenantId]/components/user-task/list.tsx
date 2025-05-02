@@ -1,6 +1,7 @@
 "use client";
 import { adminGetAllTasks } from "@/app/[tenantId]/actions/admin";
 import { getUserTasks } from "@/app/[tenantId]/actions/user";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { DateRangePicker } from "@/components/ui/data-range-picker";
 import { Input } from "@/components/ui/input";
@@ -17,12 +18,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ErrorResponse, ErrorType } from "@/lib/error-handling";
 import {
   UserGroupDTO,
   UserTaskRunListDTO,
   UserTaskStatus,
 } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
-import { FilterIcon } from "lucide-react";
+import { AlertCircle, FilterIcon, RefreshCw } from "lucide-react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useLayoutEffect, useState } from "react";
 import useSWRInfinite from "swr/infinite";
@@ -41,16 +43,22 @@ export default function ListUserTasks({
   userTaskDefName,
   initialData,
   claimable,
+  initialError,
 }: {
   userGroups: UserGroupDTO[];
   userTaskDefName?: string;
   initialData: UserTaskRunListDTO;
   claimable?: boolean;
+  initialError?: ErrorResponse;
 }) {
   const [query, setQuery] = useState<Query>({});
   const [search, setSearch] = useState("");
   const [limit] = useState(100);
+  const [error, setError] = useState<ErrorResponse | undefined>(initialError);
   const tenantId = useParams().tenantId as string;
+
+  // Ensure userGroups is an array, even if undefined
+  const safeUserGroups = Array.isArray(userGroups) ? userGroups : [];
 
   const router = useRouter();
 
@@ -70,7 +78,7 @@ export default function ListUserTasks({
     router.replace(
       `${window.location.pathname.split("?")[0]}?${searchParams.toString()}`,
     );
-  }, [query]);
+  }, [query, router]);
 
   const getKey = (
     pageIndex: number,
@@ -82,9 +90,11 @@ export default function ListUserTasks({
     return ["userTask", query, limit, previousPageData?.bookmark];
   };
 
-  const { data, setSize, isValidating } = useSWRInfinite<UserTaskRunListDTO>(
+  const { data, setSize, isValidating, mutate } = useSWRInfinite<UserTaskRunListDTO>(
     getKey,
     async (key): Promise<UserTaskRunListDTO> => {
+      setError(undefined);
+      
       const [, query, limit, bookmark] = key;
       const response = await (userTaskDefName
         ? adminGetAllTasks(tenantId, {
@@ -99,7 +109,13 @@ export default function ListUserTasks({
             bookmark,
           }));
 
-      return response;
+      // Handle error
+      if (response.error) {
+        setError(response.error);
+        return { userTasks: [], bookmark: undefined };
+      }
+
+      return response.data || { userTasks: [], bookmark: undefined };
     },
     {
       refreshInterval: 1000,
@@ -115,11 +131,48 @@ export default function ListUserTasks({
     setSize((size) => size + 1);
   };
 
+  const handleRetry = () => {
+    setError(undefined);
+    mutate();
+  };
+
   const isPending = !data;
   if (isPending) return <Loading />;
   const hasNextPage = !!(data && data[data.length - 1]?.bookmark);
 
   const isFetchingNextPage = isValidating && hasNextPage;
+
+  // Handle error display
+  if (error) {
+    return (
+      <div>
+        <h1 className="text-2xl font-bold">
+          {userTaskDefName ?? (!claimable && "My Assigned Tasks")}
+        </h1>
+        <Alert variant="destructive" className="mt-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>
+            {error.type === ErrorType.UNAUTHORIZED
+              ? "Authentication Error"
+              : error.type === ErrorType.FORBIDDEN
+              ? "Permission Denied"
+              : error.type === ErrorType.NETWORK
+              ? "Network Error"
+              : "Error Loading Tasks"}
+          </AlertTitle>
+          <AlertDescription>{error.message}</AlertDescription>
+          <Button 
+            onClick={handleRetry} 
+            variant="outline" 
+            size="sm" 
+            className="mt-2"
+          >
+            <RefreshCw className="mr-2 h-4 w-4" /> Retry
+          </Button>
+        </Alert>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -204,7 +257,7 @@ export default function ListUserTasks({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="ALL">ALL</SelectItem>
-                    {userGroups.map((group) => (
+                    {safeUserGroups.map((group) => (
                       <SelectItem key={group.id} value={group.id}>
                         {group.name}
                       </SelectItem>
@@ -248,27 +301,24 @@ export default function ListUserTasks({
                   key={userTask.id}
                   userTask={userTask}
                   admin={!!userTaskDefName}
+                  claimable={claimable}
                 />
               ))}
           </div>
+
           {hasNextPage && (
             <Button
-              onClick={() => fetchNextPage()}
-              loading={isFetchingNextPage}
-              className="w-fit"
+              variant="outline"
+              onClick={fetchNextPage}
+              disabled={isFetchingNextPage}
             >
-              Load More
+              {isFetchingNextPage ? "Loading more..." : "Load more"}
             </Button>
           )}
         </div>
       ) : (
-        <div>
-          <h1 className="text-center text-2xl font-bold">No UserTasks Found</h1>
-          <p className="text-center text-muted-foreground max-w-[60ch] mx-auto">
-            You currently have no UserTasks assigned to you or your group with
-            the current filter. Please try a different filter. Or contact your
-            administrator if you believe this is an error.
-          </p>
+        <div className="text-center py-8 text-muted-foreground">
+          No tasks found
         </div>
       )}
     </div>

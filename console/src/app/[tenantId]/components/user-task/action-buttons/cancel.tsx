@@ -2,19 +2,21 @@
 import { adminCancelUserTask } from "@/app/[tenantId]/actions/admin";
 import { cancelUserTask } from "@/app/[tenantId]/actions/user";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button, buttonVariants } from "@/components/ui/button";
+import { ErrorType } from "@/lib/error-handling";
 import { SimpleUserTaskRunDTO } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
 import { useParams } from "next/navigation";
+import { useState } from "react";
 import { toast } from "sonner";
 
 export default function CancelUserTaskButton({
@@ -25,6 +27,37 @@ export default function CancelUserTaskButton({
   admin?: boolean;
 }) {
   const tenantId = useParams().tenantId as string;
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleCancel = async () => {
+    setIsLoading(true);
+    
+    const response = await (admin
+      ? adminCancelUserTask(tenantId, {
+          wf_run_id: userTask.wfRunId,
+          user_task_guid: userTask.id,
+        })
+      : cancelUserTask(tenantId, {
+          wf_run_id: userTask.wfRunId,
+          user_task_guid: userTask.id,
+        }));
+    
+    setIsLoading(false);
+    
+    if (response.error) {
+      const errorMessage = 
+        response.error.type === ErrorType.FORBIDDEN
+          ? "You don't have permission to cancel this task"
+          : response.error.type === ErrorType.NOT_FOUND
+          ? "Task not found or already cancelled"
+          : `Failed to cancel task: ${response.error.message}`;
+      
+      toast.error(errorMessage);
+      return;
+    }
+    
+    toast.success("Task cancelled successfully");
+  };
 
   return (
     <AlertDialog>
@@ -34,7 +67,7 @@ export default function CancelUserTaskButton({
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
-            Are you sure you want to permanently cancel this UserTask?
+            Are you sure you want to permanently cancel this task?
           </AlertDialogTitle>
           <AlertDialogDescription>
             This action cannot be undone.
@@ -45,25 +78,10 @@ export default function CancelUserTaskButton({
 
           <AlertDialogAction
             className={buttonVariants({ variant: "destructive" })}
-            onClick={async () => {
-              try {
-                admin
-                  ? await adminCancelUserTask(tenantId, {
-                      wf_run_id: userTask.wfRunId,
-                      user_task_guid: userTask.id,
-                    })
-                  : await cancelUserTask(tenantId, {
-                      wf_run_id: userTask.wfRunId,
-                      user_task_guid: userTask.id,
-                    });
-                toast.success("UserTask cancelled successfully");
-              } catch (error) {
-                console.error(error);
-                toast.error("Failed to cancel UserTask");
-              }
-            }}
+            onClick={handleCancel}
+            disabled={isLoading}
           >
-            Cancel UserTask
+            {isLoading ? "Cancelling..." : "Cancel Task"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

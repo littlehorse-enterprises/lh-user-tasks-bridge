@@ -1,32 +1,37 @@
 "use server";
 import { getClient } from "@/lib/client";
+import { withErrorHandling } from "@/lib/error-handling";
 import {
-  AdminRoleParams,
-  CreateManagedUserRequest,
-  DeleteUserParams,
-  GetUserFromIdPParams,
-  GetUsersFromIdentityProviderParams,
-  JoinOrLeaveGroupParams,
-  UpdateManagedUserRequest,
-  UpdateUserParams,
-  UpsertPasswordParams,
-  UpsertPasswordRequest,
+    AdminRoleParams,
+    CreateManagedUserRequest,
+    DeleteUserParams,
+    GetUserFromIdPParams,
+    GetUsersFromIdentityProviderParams,
+    JoinOrLeaveGroupParams,
+    UpdateManagedUserRequest,
+    UpdateUserParams,
+    UpsertPasswordParams,
+    UpsertPasswordRequest,
 } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
 
 export async function getUsersFromIdP(
   tenantId: string,
   params: GetUsersFromIdentityProviderParams,
 ) {
-  const client = await getClient(tenantId);
-  return client.userManagement.getUsersFromIdP(params);
+  return withErrorHandling(async () => {
+    const client = await getClient(tenantId);
+    return client.userManagement.getUsersFromIdP(params);
+  });
 }
 
 export async function createUser(
   tenantId: string,
   request: CreateManagedUserRequest,
 ) {
-  const client = await getClient(tenantId);
-  return client.userManagement.createUser(request);
+  return withErrorHandling(async () => {
+    const client = await getClient(tenantId);
+    return client.userManagement.createUser(request);
+  });
 }
 
 export async function upsertPassword(
@@ -34,16 +39,20 @@ export async function upsertPassword(
   params: UpsertPasswordParams,
   request: UpsertPasswordRequest,
 ) {
-  const client = await getClient(tenantId);
-  return client.userManagement.upsertPassword(params, request);
+  return withErrorHandling(async () => {
+    const client = await getClient(tenantId);
+    return client.userManagement.upsertPassword(params, request);
+  });
 }
 
 export async function getUserFromIdP(
   tenantId: string,
   params: GetUserFromIdPParams,
 ) {
-  const client = await getClient(tenantId);
-  return client.userManagement.getUserFromIdP(params);
+  return withErrorHandling(async () => {
+    const client = await getClient(tenantId);
+    return client.userManagement.getUserFromIdP(params);
+  });
 }
 
 export async function updateUser(
@@ -51,46 +60,58 @@ export async function updateUser(
   params: UpdateUserParams,
   request: UpdateManagedUserRequest,
 ) {
-  const client = await getClient(tenantId);
-  return client.userManagement.updateUser(params, request);
+  return withErrorHandling(async () => {
+    const client = await getClient(tenantId);
+    return client.userManagement.updateUser(params, request);
+  });
 }
 
 export async function deleteUser(
   tenantId: string,
   params: DeleteUserParams,
 ) {
-  const client = await getClient(tenantId);
-  return client.userManagement.deleteUser(params);
+  return withErrorHandling(async () => {
+    const client = await getClient(tenantId);
+    return client.userManagement.deleteUser(params);
+  });
 }
 
 export async function assignAdminRole(
   tenantId: string,
   params: AdminRoleParams,
 ) {
-  const client = await getClient(tenantId);
-  return client.userManagement.assignAdminRole(params);
+  return withErrorHandling(async () => {
+    const client = await getClient(tenantId);
+    return client.userManagement.assignAdminRole(params);
+  });
 }
 
 export async function removeAdminRole(
   tenantId: string,
   params: AdminRoleParams,
 ) {
-  const client = await getClient(tenantId);
-  return client.userManagement.removeAdminRole(params);
+  return withErrorHandling(async () => {
+    const client = await getClient(tenantId);
+    return client.userManagement.removeAdminRole(params);
+  });
 }
 
 export async function addUserToGroup(
   tenantId: string,
   params: JoinOrLeaveGroupParams,
 ) {
-  const client = await getClient(tenantId);
-  return client.userManagement.addUserToGroup(params);
+  return withErrorHandling(async () => {
+    const client = await getClient(tenantId);
+    return client.userManagement.addUserToGroup(params);
+  });
 }
 
 export async function removeUserFromGroup(
   tenantId: string,
   params: JoinOrLeaveGroupParams,
 ) {
-  const client = await getClient(tenantId);
-  return client.userManagement.removeUserFromGroup(params);
+  return withErrorHandling(async () => {
+    const client = await getClient(tenantId);
+    return client.userManagement.removeUserFromGroup(params);
+  });
 }

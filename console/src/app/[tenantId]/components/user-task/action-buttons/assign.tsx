@@ -1,31 +1,31 @@
 "use client";
 import {
-  adminAssignUserTask,
-  adminGetUserGroups,
-  adminGetUsers,
+    adminAssignUserTask,
+    adminGetUserGroups,
+    adminGetUsers,
 } from "@/app/[tenantId]/actions/admin";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from "@/components/ui/select";
 import {
-  SimpleUserTaskRunDTO,
-  UserDTO,
-  UserGroupDTO,
+    SimpleUserTaskRunDTO,
+    UserDTO,
+    UserGroupDTO,
 } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -50,12 +50,12 @@ export default function AssignUserTaskButton({
   useEffect(() => {
     // Get users from server
     adminGetUsers(tenantId, {}).then((data) => {
-      setUsers(data.users);
+      setUsers(data.data?.users || []);
     });
 
     // Get user groups from server
     adminGetUserGroups(tenantId).then((data) => {
-      setUserGroups(data.groups);
+      setUserGroups(data.data?.groups || []);
     });
   }, [tenantId]);
 
@@ -190,7 +190,7 @@ export default function AssignUserTaskButton({
               }
               
               try {
-                await adminAssignUserTask(
+                const response = await adminAssignUserTask(
                   tenantId,
                   {
                     wf_run_id: userTask.wfRunId,
@@ -201,10 +201,18 @@ export default function AssignUserTaskButton({
                     userGroup: selectedUserGroup?.id,
                   },
                 );
+                
+                if (response.error) {
+                  toast.error(response.error.message || "Error assigning UserTask");
+                  console.error("Error assigning UserTask:", response.error);
+                  return;
+                }
+                
                 toast.success("UserTask assigned successfully");
                 setOpen(false);
               } catch (error) {
                 toast.error("Error assigning UserTask");
+                console.error("Error assigning UserTask:", error);
               }
             }}
           >

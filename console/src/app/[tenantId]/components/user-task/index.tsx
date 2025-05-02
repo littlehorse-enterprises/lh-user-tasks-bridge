@@ -26,9 +26,11 @@ import NotesTextArea from "./notes";
 export default function UserTask({
   userTask,
   admin,
+  claimable,
 }: {
   userTask: SimpleUserTaskRunDTO;
   admin?: boolean;
+  claimable?: boolean;
 }) {
   const session = useSession();
   const user = session.data?.user;
@@ -96,26 +98,36 @@ export default function UserTask({
         </div>
       </CardContent>
       <CardFooter className="flex gap-2 p-0">
-        {userTask.status === "UNASSIGNED" && (
+        {/* If the task is claimable, only show claim button */}
+        {claimable && userTask.status === "UNASSIGNED" && (
+          <ClaimUserTaskButton userTask={userTask} />
+        )}
+        
+        {/* Only show these buttons if not in claimable mode */}
+        {!claimable && (
           <>
-            {admin && <AssignUserTaskButton userTask={userTask} />}
-            {!admin && <ClaimUserTaskButton userTask={userTask} />}
+            {userTask.status === "UNASSIGNED" && (
+              <>
+                {admin && <AssignUserTaskButton userTask={userTask} />}
+                {!admin && <ClaimUserTaskButton userTask={userTask} />}
+              </>
+            )}
+            {userTask.status === "ASSIGNED" && admin && (
+              <AssignUserTaskButton userTask={userTask} />
+            )}
+            {userTask.status === "ASSIGNED" &&
+              (admin || (userTask.user && userTask.user.id === user.id)) && (
+                <CompleteUserTaskButton userTask={userTask} admin={admin} />
+              )}
+            {userTask.status === "DONE" && (
+              <CompleteUserTaskButton userTask={userTask} admin={admin} readOnly />
+            )}
+            {["UNASSIGNED", "ASSIGNED"].includes(userTask.status) &&
+              (admin || (userTask.user && userTask.user.id === user.id)) && (
+                <CancelUserTaskButton userTask={userTask} admin={admin} />
+              )}
           </>
         )}
-        {userTask.status === "ASSIGNED" && admin && (
-          <AssignUserTaskButton userTask={userTask} />
-        )}
-        {userTask.status === "ASSIGNED" &&
-          (admin || (userTask.user && userTask.user.id === user.id)) && (
-            <CompleteUserTaskButton userTask={userTask} admin={admin} />
-          )}
-        {userTask.status === "DONE" && (
-          <CompleteUserTaskButton userTask={userTask} admin={admin} readOnly />
-        )}
-        {["UNASSIGNED", "ASSIGNED"].includes(userTask.status) &&
-          (admin || (userTask.user && userTask.user.id === user.id)) && (
-            <CancelUserTaskButton userTask={userTask} admin={admin} />
-          )}
       </CardFooter>
     </Card>
   );
@@ -192,7 +204,7 @@ function Metadata({
                 </div>
               </TooltipTrigger>
               {isTruncated && (
-                <TooltipContent>{value as string}</TooltipContent>
+                <TooltipContent>{value}</TooltipContent>
               )}
             </Tooltip>
           </TooltipProvider>
