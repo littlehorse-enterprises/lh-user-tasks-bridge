@@ -9,17 +9,9 @@ import UsersManagement from "./users";
 export default function AdminTabs({
   currentTab,
   tenantId,
-  userTaskDefNames,
-  userTaskDefCounts,
 }: {
   currentTab: string;
   tenantId: string;
-  userTaskDefNames: string[];
-  userTaskDefCounts: {
-    name: string;
-    unassignedCount: number;
-    assignedToMeCount: number;
-  }[];
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -37,22 +29,7 @@ export default function AdminTabs({
       </TabsList>
 
       <TabsContent value="tasks">
-        {!userTaskDefNames.length ? (
-          <div>
-            <h1 className="text-center text-2xl font-bold">
-              No UserTask Definitions Found
-            </h1>
-            <p className="text-center text-muted-foreground">
-              You currently have no UserTask Definitions registered.
-            </p>
-          </div>
-        ) : (
-          <UserTaskDefs
-            tenantId={tenantId}
-            userTaskDefNames={userTaskDefNames}
-            userTaskDefCounts={userTaskDefCounts}
-          />
-        )}
+        <UserTaskDefs tenantId={tenantId} />
       </TabsContent>
 
       <TabsContent value="users">
