@@ -251,7 +251,7 @@ export default function UsersManagement() {
 
       const updateResponse = await updateUser(
         tenantId,
-        { user_id: selectedUser.username },
+        { user_id: selectedUser.id },
         updateData,
       );
 
@@ -975,8 +975,9 @@ export default function UsersManagement() {
                   <FormItem>
                     <FormLabel>Username*</FormLabel>
                     <FormControl>
-                      <Input {...field} readOnly />
+                      <Input {...field} disabled />
                     </FormControl>
+                    <p className="text-xs text-muted-foreground mt-1">Username cannot be changed after creation.</p>
                     <FormMessage />
                   </FormItem>
                 )}
