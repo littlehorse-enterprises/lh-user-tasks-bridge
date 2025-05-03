@@ -26,13 +26,10 @@ export interface IDPUserSearchRequestFilter {
 }
 
 export interface CreateManagedUserRequest {
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-  username?: string;
-  password?: string;
-  tempPassword?: boolean;
-  enabled: boolean;
+  firstName: string;
+  lastName: string;
+  username: string;
+  email: string;
 }
 
 export interface UpsertPasswordRequest {

@@ -82,7 +82,6 @@ const editFormSchema = z.object({
 	username: z.string().min(2, {
 		message: "Username must be at least 2 characters.",
 	}),
-	password: z.string().optional(),
 	email: z.string().email({
 		message: "Please enter a valid email address.",
 	}),
@@ -91,6 +90,12 @@ const editFormSchema = z.object({
 	}),
 	lastName: z.string().min(2, {
 		message: "Last name must be at least 2 characters.",
+	}),
+});
+
+const passwordResetSchema = z.object({
+	password: z.string().min(6, {
+		message: "Password must be at least 6 characters.",
 	}),
 });
 
@@ -108,6 +113,7 @@ export default function UsersManagement() {
 	const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 	const [isGroupsDialogOpen, setIsGroupsDialogOpen] = useState(false);
 	const [isBulkGroupsDialogOpen, setIsBulkGroupsDialogOpen] = useState(false);
+	const [isPasswordResetDialogOpen, setIsPasswordResetDialogOpen] = useState(false);
 	const [selectedUser, setSelectedUser] = useState<IDPUserDTO | null>(null);
 	const [userGroups, setUserGroups] = useState<string[]>([]);
 	const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
@@ -143,10 +149,16 @@ export default function UsersManagement() {
 		resolver: zodResolver(editFormSchema),
 		defaultValues: {
 			username: "",
-			password: "",
 			email: "",
 			firstName: "",
 			lastName: "",
+		},
+	});
+
+	const passwordResetForm = useForm<z.infer<typeof passwordResetSchema>>({
+		resolver: zodResolver(passwordResetSchema),
+		defaultValues: {
+			password: "",
 		},
 	});
 
@@ -207,25 +219,48 @@ export default function UsersManagement() {
 					// Expected format: username,email,firstName,lastName,password
 					const [username, email, firstName, lastName, password] = userLine.split(',').map(s => s.trim());
 					
-					if (!username || !email) {
-						errors.push({ username: username || "Unknown", error: "Username and email are required" });
+					if (!username || !email || !firstName || !lastName) {
+						errors.push({ 
+							username: username || "Unknown", 
+							error: "All fields (username, email, firstName, lastName) are required" 
+						});
 						continue;
 					}
 					
 					const response = await createUser(tenantId, {
 						username,
 						email,
-						firstName: firstName || username,
-						lastName: lastName || "",
-						password: password || "tempPassword123",
-						tempPassword: true,
-						enabled: true,
+						firstName,
+						lastName,
 					});
 					
 					if (response.error) {
 						errors.push({ 
 							username: username,
 							error: response.error.message || "Unknown error"
+						});
+						continue;
+					}
+					
+					// Set password separately
+					if (password) {
+						const passwordResponse = await upsertPassword(
+							tenantId,
+							{ user_id: username },
+							{ value: password, temporary: true }
+						);
+						
+						if (passwordResponse.error) {
+							errors.push({ 
+								username: username,
+								error: `User created but password setting failed: ${passwordResponse.error.message || "Unknown error"}`
+							});
+							continue;
+						}
+					} else {
+						errors.push({ 
+							username: username,
+							error: "Password is required. User created but no password was set." 
 						});
 						continue;
 					}
@@ -260,19 +295,30 @@ export default function UsersManagement() {
 
 	async function handleCreateUser(values: z.infer<typeof formSchema>) {
 		try {
+			// First create the user without password
 			const response = await createUser(tenantId, {
 				username: values.username,
 				email: values.email,
 				firstName: values.firstName,
 				lastName: values.lastName,
-				password: values.password,
-				tempPassword: true,
-				enabled: true,
 			});
 			
 			if (response.error) {
 				toast.error(response.error.message || "Failed to create user.");
 				console.error("Error creating user:", response.error);
+				return;
+			}
+			
+			// Set password separately
+			const passwordResponse = await upsertPassword(
+				tenantId,
+				{ user_id: values.username },
+				{ value: values.password, temporary: true }
+			);
+			
+			if (passwordResponse.error) {
+				toast.error(`User created but password setting failed: ${passwordResponse.error.message || "Unknown error"}`);
+				console.error("Error setting password:", passwordResponse.error);
 				return;
 			}
 			
@@ -310,20 +356,6 @@ export default function UsersManagement() {
 				return;
 			}
 
-			if (values.password && values.password.length > 0) {
-				const passwordResponse = await upsertPassword(
-					tenantId,
-					{ user_id: values.username },
-					{ value: values.password }
-				);
-				
-				if (passwordResponse.error) {
-					toast.error(passwordResponse.error.message || "Failed to update password.");
-					console.error("Error updating password:", passwordResponse.error);
-					return;
-				}
-			}
-
 			toast.success("User was successfully updated.");
 			setIsEditDialogOpen(false);
 			editForm.reset();
@@ -331,6 +363,31 @@ export default function UsersManagement() {
 		} catch (error) {
 			toast.error("Failed to update user.");
 			console.error("Error updating user:", error);
+		}
+	}
+
+	async function handleResetPassword(values: z.infer<typeof passwordResetSchema>) {
+		if (!selectedUser) return;
+		
+		try {
+			const passwordResponse = await upsertPassword(
+				tenantId,
+				{ user_id: selectedUser.username },
+				{ value: values.password, temporary: true }
+			);
+			
+			if (passwordResponse.error) {
+				toast.error(passwordResponse.error.message || "Failed to reset password.");
+				console.error("Error resetting password:", passwordResponse.error);
+				return;
+			}
+
+			toast.success("Password was successfully reset.");
+			setIsPasswordResetDialogOpen(false);
+			passwordResetForm.reset();
+		} catch (error) {
+			toast.error("Failed to reset password.");
+			console.error("Error resetting password:", error);
 		}
 	}
 
@@ -364,7 +421,6 @@ export default function UsersManagement() {
 				setIsAccountEnabled(true);
 				editForm.reset({
 					username: userResponse.data.username || "",
-					password: "",  // Don't set password for security reasons
 					email: userResponse.data.email || "",
 					firstName: userResponse.data.firstName || "",
 					lastName: userResponse.data.lastName || "",
@@ -377,6 +433,12 @@ export default function UsersManagement() {
 			toast.error("Failed to fetch user details.");
 			console.error("Error fetching user:", error);
 		}
+	}
+
+	function handleResetPasswordClick(user: IDPUserDTO) {
+		setSelectedUser(user);
+		passwordResetForm.reset();
+		setIsPasswordResetDialogOpen(true);
 	}
 
 	async function handleManageGroups(user: IDPUserDTO) {
@@ -624,7 +686,7 @@ export default function UsersManagement() {
 									<div className="text-sm text-muted-foreground mb-2">
 										Enter one user per line in the format: <span className="font-mono">username,email,firstName,lastName,password</span>
 										<br/>
-										Only username and email are required. Passwords will be temporary.
+										All fields are required. Passwords will be set as temporary and users will need to change them on first login.
 									</div>
 									<FormField
 										control={bulkCreateForm.control}
@@ -702,7 +764,7 @@ export default function UsersManagement() {
 											name="firstName"
 											render={({ field }) => (
 												<FormItem>
-													<FormLabel>First Name</FormLabel>
+													<FormLabel>First Name*</FormLabel>
 													<FormControl>
 														<Input {...field} />
 													</FormControl>
@@ -715,7 +777,7 @@ export default function UsersManagement() {
 											name="lastName"
 											render={({ field }) => (
 												<FormItem>
-													<FormLabel>Last Name</FormLabel>
+													<FormLabel>Last Name*</FormLabel>
 													<FormControl>
 														<Input {...field} />
 													</FormControl>
@@ -755,7 +817,7 @@ export default function UsersManagement() {
 										name="password"
 										render={({ field }) => (
 											<FormItem>
-												<FormLabel>Password</FormLabel>
+												<FormLabel>Password*</FormLabel>
 												<div className="relative">
 													<FormControl>
 														<Input 
@@ -823,7 +885,6 @@ export default function UsersManagement() {
 							<TableHead>Username</TableHead>
 							<TableHead>Email</TableHead>
 							<TableHead>Name</TableHead>
-							<TableHead>Status</TableHead>
 							<TableHead>Admin</TableHead>
 							<TableHead className="text-right">Actions</TableHead>
 						</TableRow>
@@ -855,11 +916,6 @@ export default function UsersManagement() {
 								<TableCell>{user.email}</TableCell>
 								<TableCell>{`${user.firstName || ''} ${user.lastName || ''}`}</TableCell>
 								<TableCell>
-									<span className="inline-block py-1 px-2 text-xs rounded-md bg-green-100 text-green-800">
-										Active
-									</span>
-								</TableCell>
-								<TableCell>
 									<Switch 
 										checked={user.realmRoles?.includes('lh-user-tasks-admin') || false}
 										onCheckedChange={() => toggleAdminRole(user)}
@@ -877,6 +933,17 @@ export default function UsersManagement() {
 											<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-pencil">
 												<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
 												<path d="m15 5 4 4" />
+											</svg>
+										</Button>
+										<Button 
+											variant="ghost" 
+											size="icon"
+											onClick={() => handleResetPasswordClick(user)}
+											className="h-8 w-8"
+										>
+											<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+												<rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+												<path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
 											</svg>
 										</Button>
 										<Button 
@@ -968,34 +1035,6 @@ export default function UsersManagement() {
 										<FormLabel>Email*</FormLabel>
 										<FormControl>
 											<Input type="email" {...field} />
-										</FormControl>
-										<FormMessage />
-									</FormItem>
-								)}
-							/>
-							<div className="flex items-center space-x-2">
-								<Checkbox 
-									id="account-enabled"
-									checked={isAccountEnabled}
-									onCheckedChange={(checked) => {
-										setIsAccountEnabled(checked === true);
-									}}
-								/>
-								<label
-									htmlFor="account-enabled"
-									className="text-sm font-medium leading-none"
-								>
-									Account Enabled
-								</label>
-							</div>
-							<FormField
-								control={editForm.control}
-								name="password"
-								render={({ field }) => (
-									<FormItem>
-										<FormLabel>Reset Password (leave blank to keep current)</FormLabel>
-										<FormControl>
-											<Input type="password" {...field} />
 										</FormControl>
 										<FormMessage />
 									</FormItem>
@@ -1124,6 +1163,65 @@ export default function UsersManagement() {
 							</DialogFooter>
 						</div>
 					)}
+				</DialogContent>
+			</Dialog>
+
+			<Dialog open={isPasswordResetDialogOpen} onOpenChange={setIsPasswordResetDialogOpen}>
+				<DialogContent className="sm:max-w-[425px]">
+					<DialogHeader>
+						<DialogTitle>Reset Password for {selectedUser?.username}</DialogTitle>
+					</DialogHeader>
+					<Form {...passwordResetForm}>
+						<form onSubmit={passwordResetForm.handleSubmit(handleResetPassword)} className="space-y-4">
+							<FormField
+								control={passwordResetForm.control}
+								name="password"
+								render={({ field }) => (
+									<FormItem>
+										<FormLabel>New Password</FormLabel>
+										<div className="relative">
+											<FormControl>
+												<Input 
+													type={showPassword ? "text" : "password"} 
+													{...field} 
+												/>
+											</FormControl>
+											<Button
+												type="button"
+												variant="ghost"
+												size="icon"
+												className="absolute right-0 top-0 h-full"
+												onClick={() => setShowPassword(!showPassword)}
+											>
+												{showPassword ? (
+													<EyeOff className="h-4 w-4" />
+												) : (
+													<Eye className="h-4 w-4" />
+												)}
+												<span className="sr-only">
+													{showPassword ? "Hide password" : "Show password"}
+												</span>
+											</Button>
+										</div>
+										<FormMessage />
+									</FormItem>
+								)}
+							/>
+							<div className="text-sm text-muted-foreground">
+								User will be required to change their password on next login.
+							</div>
+							<DialogFooter className="gap-2">
+								<Button 
+									variant="outline" 
+									type="button" 
+									onClick={() => setIsPasswordResetDialogOpen(false)}
+								>
+									Cancel
+								</Button>
+								<Button type="submit">Reset Password</Button>
+							</DialogFooter>
+						</form>
+					</Form>
 				</DialogContent>
 			</Dialog>
 		</div>

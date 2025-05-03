@@ -78,7 +78,6 @@ export class LHUTBApiClient {
    */
   async fetch<T>(path: string, init?: RequestInit): Promise<T> {
     const url = `${this.baseUrl}/${this.tenantId}${path}`;
-    console.log(`API Request: ${init?.method || 'GET'} ${url}`);
     
     try {
       const response = await fetch(url, {
@@ -90,11 +89,8 @@ export class LHUTBApiClient {
         },
       });
   
-      console.log(`API Response: ${response.status} ${response.statusText}`);
-  
       // Throw the response object for non-2xx status codes
       if (!response.ok) {
-        console.error(`API Error: ${response.status} ${response.statusText}`);
         
         // Clone the response before reading its body
         const responseClone = response.clone();
