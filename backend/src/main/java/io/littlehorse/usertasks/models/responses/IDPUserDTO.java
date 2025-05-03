@@ -26,7 +26,7 @@ public class IDPUserDTO {
     private Set<IDPGroupDTO> groups;
     private Set<String> realmRoles;
     private Map<String, Set<String>> clientRoles;
-
+    private boolean enabled;
     /**
      * Transforms a {@code UserRepresentation}, and optionally its respective collection of {@code GroupRepresentation},
      * into an {@code IDPUserDTO}.
@@ -44,6 +44,7 @@ public class IDPUserDTO {
                 .firstName(userRepresentation.getFirstName())
                 .lastName(userRepresentation.getLastName())
                 .email(userRepresentation.getEmail())
+                .enabled(userRepresentation.isEnabled())
                 .groups(foundGroups)
                 .build();
     }
