@@ -1,38 +1,38 @@
 "use client";
 import {
-    adminCompleteUserTask,
-    adminGetUserTaskDetail,
+  adminCompleteUserTask,
+  adminGetUserTaskDetail,
 } from "@/app/[tenantId]/actions/admin";
 import {
-    completeUserTask,
-    getUserTaskDetail,
+  completeUserTask,
+  getUserTaskDetail,
 } from "@/app/[tenantId]/actions/user";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
-    Dialog,
-    DialogClose,
-    DialogContent,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import { ErrorResponse } from "@/lib/error-handling";
 import {
-    DetailedUserTaskRunDTO,
-    SimpleUserTaskRunDTO,
-    UserTaskFieldDTO,
-    UserTaskFieldType,
-    UserTaskVariableValue,
+  DetailedUserTaskRunDTO,
+  SimpleUserTaskRunDTO,
+  UserTaskFieldDTO,
+  UserTaskFieldType,
+  UserTaskVariableValue,
 } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -176,10 +176,7 @@ export default function CompleteUserTaskButton({
                 value={userTaskResult[field.name]?.value?.toString() || ""}
                 readOnly={readOnly}
                 onChange={(e) => {
-                  const value =
-                    field.type === "DOUBLE"
-                      ? parseFloat(e.target.value)
-                      : parseInt(e.target.value);
+                  const value = Number(e.target.value);
                   setUserTaskResult({
                     ...userTaskResult,
                     [field.name]: {
