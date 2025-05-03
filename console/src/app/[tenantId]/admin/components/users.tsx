@@ -1,5 +1,6 @@
 "use client";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -39,7 +40,15 @@ import {
   IDPGroupDTO,
   IDPUserDTO,
 } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
-import { Eye, EyeOff, Lock, MoreHorizontal, Pencil, Trash, Users } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  Lock,
+  MoreHorizontal,
+  Pencil,
+  Trash,
+  Users,
+} from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -59,12 +68,6 @@ import {
   updateUser,
   upsertPassword,
 } from "../../actions/user-management";
-
-const bulkCreateSchema = z.object({
-  users: z.string().min(1, {
-    message: "Please provide at least one user to create",
-  }),
-});
 
 const formSchema = z.object({
   username: z.string().min(2, {
@@ -97,6 +100,7 @@ const editFormSchema = z.object({
   lastName: z.string().min(2, {
     message: "Last name must be at least 2 characters.",
   }),
+  enabled: z.boolean().optional(),
 });
 
 const passwordResetSchema = z.object({
@@ -121,9 +125,7 @@ export default function UsersManagement() {
   const [isPasswordResetDialogOpen, setIsPasswordResetDialogOpen] =
     useState(false);
   const [selectedUser, setSelectedUser] = useState<IDPUserDTO | null>(null);
-  const [userGroups, setUserGroups] = useState<string[]>([]);
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
-  const [isAccountEnabled, setIsAccountEnabled] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [selectAll, setSelectAll] = useState(false);
@@ -244,15 +246,12 @@ export default function UsersManagement() {
     if (!selectedUser) return;
 
     try {
-      // Create update object without the enabled property
+      // Create update object
       const updateData = {
-        username:
-          values.username === selectedUser.username
-            ? undefined
-            : values.username,
         email: values.email,
         firstName: values.firstName,
         lastName: values.lastName,
+        enabled: values.enabled,
       };
 
       const updateResponse = await updateUser(
@@ -333,12 +332,12 @@ export default function UsersManagement() {
       const userResponse = await getUserFromIdP(tenantId, { user_id: userId });
       if (userResponse.data) {
         setSelectedUser(userResponse.data);
-        setIsAccountEnabled(true);
         editForm.reset({
           username: userResponse.data.username || "",
           email: userResponse.data.email || "",
           firstName: userResponse.data.firstName || "",
           lastName: userResponse.data.lastName || "",
+          enabled: userResponse.data.enabled !== false,
         });
         setIsEditDialogOpen(true);
       } else {
@@ -358,7 +357,6 @@ export default function UsersManagement() {
 
   async function handleManageGroups(user: IDPUserDTO) {
     setSelectedUser(user);
-    setUserGroups(user.groups?.map((g) => g.id) || []);
     setSelectedGroups(user.groups?.map((g) => g.id) || []);
     setIsGroupsDialogOpen(true);
   }
@@ -574,6 +572,38 @@ export default function UsersManagement() {
     }
   }, [selectAll]);
 
+  // Fix the toggleUserEnabled function
+  async function toggleUserEnabled(user: IDPUserDTO) {
+    try {
+      const updateData = {
+        email: user.email,
+        enabled: !user.enabled,
+      };
+
+      const updateResponse = await updateUser(
+        tenantId,
+        { user_id: user.id },
+        updateData,
+      );
+
+      if (updateResponse.error) {
+        toast.error(
+          updateResponse.error.message || "Failed to update user status.",
+        );
+        console.error("Error updating user status:", updateResponse.error);
+        return;
+      }
+
+      toast.success(
+        `User ${user.enabled ? "disabled" : "enabled"} successfully.`,
+      );
+      loadUsers();
+    } catch (error) {
+      toast.error("Failed to update user status.");
+      console.error("Error updating user status:", error);
+    }
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -783,6 +813,7 @@ export default function UsersManagement() {
               <TableHead>Username</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Name</TableHead>
+              <TableHead>Enabled</TableHead>
               <TableHead>Admin</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -822,6 +853,34 @@ export default function UsersManagement() {
                 <TableCell>{user.email}</TableCell>
                 <TableCell>{`${user.firstName || ""} ${user.lastName || ""}`}</TableCell>
                 <TableCell>
+                  {user.enabled !== false ? (
+                    <Badge
+                      className={`bg-green-500 ${user.id !== currentUserId ? "hover:bg-green-600 cursor-pointer" : ""}`}
+                      onClick={
+                        user.id !== currentUserId
+                          ? () => toggleUserEnabled(user)
+                          : undefined
+                      }
+                    >
+                      Enabled
+                    </Badge>
+                  ) : (
+                    <Badge
+                      variant="destructive"
+                      className={
+                        user.id !== currentUserId ? "cursor-pointer" : ""
+                      }
+                      onClick={
+                        user.id !== currentUserId
+                          ? () => toggleUserEnabled(user)
+                          : undefined
+                      }
+                    >
+                      Disabled
+                    </Badge>
+                  )}
+                </TableCell>
+                <TableCell>
                   <Switch
                     checked={
                       user.realmRoles?.includes("lh-user-tasks-admin") || false
@@ -834,28 +893,30 @@ export default function UsersManagement() {
                   <div className="flex justify-end space-x-2">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                        >
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
                           <MoreHorizontal size={16} />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleEditClick(user.id)}>
+                        <DropdownMenuItem
+                          onClick={() => handleEditClick(user.id)}
+                        >
                           <Pencil size={16} className="mr-2" />
                           Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleResetPasswordClick(user)}>
+                        <DropdownMenuItem
+                          onClick={() => handleResetPasswordClick(user)}
+                        >
                           <Lock size={16} className="mr-2" />
                           Reset Password
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleManageGroups(user)}>
+                        <DropdownMenuItem
+                          onClick={() => handleManageGroups(user)}
+                        >
                           <Users size={16} className="mr-2" />
                           Manage Groups
                         </DropdownMenuItem>
-                        <DropdownMenuItem 
+                        <DropdownMenuItem
                           onClick={() => handleDeleteUser(user.id)}
                           className="text-red-600 focus:text-red-600 focus:bg-red-100"
                         >
@@ -919,7 +980,9 @@ export default function UsersManagement() {
                     <FormControl>
                       <Input {...field} disabled />
                     </FormControl>
-                    <p className="text-xs text-muted-foreground mt-1">Username cannot be changed after creation.</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Username cannot be changed after creation.
+                    </p>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -934,6 +997,27 @@ export default function UsersManagement() {
                       <Input type="email" {...field} />
                     </FormControl>
                     <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="enabled"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                    <div className="space-y-0.5">
+                      <FormLabel>Account Enabled</FormLabel>
+                      <div className="text-sm text-muted-foreground">
+                        Disable to temporarily block the user's access
+                      </div>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled={selectedUser?.id === currentUserId}
+                      />
+                    </FormControl>
                   </FormItem>
                 )}
               />

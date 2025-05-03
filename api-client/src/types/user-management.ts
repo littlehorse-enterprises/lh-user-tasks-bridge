@@ -41,7 +41,7 @@ export interface UpsertPasswordRequest {
 export interface UpdateManagedUserRequest {
   firstName?: string;
   lastName?: string;
-  email?: string;
+  email: string;
   username?: string;
   enabled?: boolean;
 }
