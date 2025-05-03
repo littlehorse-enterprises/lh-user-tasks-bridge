@@ -167,11 +167,22 @@ export default function UsersManagement() {
     setIsLoading(true);
     try {
       const response = await getUsersFromIdP(tenantId, {});
-      // Sort users by last name (case-insensitive)
+      // Sort users by last name (case-insensitive) and then by first name
       const sortedUsers = [...(response.data?.users || [])].sort((a, b) => {
         const lastNameA = (a.lastName || "").toLowerCase();
         const lastNameB = (b.lastName || "").toLowerCase();
-        return lastNameA.localeCompare(lastNameB);
+
+        // First compare last names
+        const lastNameComparison = lastNameA.localeCompare(lastNameB);
+
+        // If last names are the same, compare first names
+        if (lastNameComparison === 0) {
+          const firstNameA = (a.firstName || "").toLowerCase();
+          const firstNameB = (b.firstName || "").toLowerCase();
+          return firstNameA.localeCompare(firstNameB);
+        }
+
+        return lastNameComparison;
       });
       setUsers(sortedUsers);
     } catch (error) {
@@ -1052,39 +1063,46 @@ export default function UsersManagement() {
           ) : (
             <div className="py-4">
               <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
-                {groups.map((group) => {
-                  const isInGroup = selectedGroups.includes(group.id);
-                  return (
-                    <div
-                      key={group.id}
-                      className="flex items-center justify-between border p-3 rounded-md"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <label
-                          htmlFor={`toggle-${group.id}`}
-                          className="font-medium"
-                        >
-                          {group.name}
-                        </label>
+                {groups
+                  .slice()
+                  .sort((a, b) => {
+                    const nameA = (a.name || "").toLowerCase();
+                    const nameB = (b.name || "").toLowerCase();
+                    return nameA.localeCompare(nameB);
+                  })
+                  .map((group) => {
+                    const isInGroup = selectedGroups.includes(group.id);
+                    return (
+                      <div
+                        key={group.id}
+                        className="flex items-center justify-between border p-3 rounded-md"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <label
+                            htmlFor={`toggle-${group.id}`}
+                            className="font-medium"
+                          >
+                            {group.name}
+                          </label>
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <Switch
+                            id={`toggle-${group.id}`}
+                            checked={isInGroup}
+                            onCheckedChange={(checked) => {
+                              if (selectedUser) {
+                                handleToggleGroup(
+                                  selectedUser.id,
+                                  group.id,
+                                  checked,
+                                );
+                              }
+                            }}
+                          />
+                        </div>
                       </div>
-                      <div className="flex items-center space-x-3">
-                        <Switch
-                          id={`toggle-${group.id}`}
-                          checked={isInGroup}
-                          onCheckedChange={(checked) => {
-                            if (selectedUser) {
-                              handleToggleGroup(
-                                selectedUser.id,
-                                group.id,
-                                checked,
-                              );
-                            }
-                          }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
               </div>
               <DialogFooter className="mt-6">
                 <Button
@@ -1123,32 +1141,39 @@ export default function UsersManagement() {
                 </p>
               </div>
               <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
-                {groups.map((group) => (
-                  <div
-                    key={group.id}
-                    className="flex items-center justify-between border p-3 rounded-md"
-                  >
-                    <label
-                      htmlFor={`bulkgroup-${group.id}`}
-                      className="font-medium cursor-pointer flex-1"
+                {groups
+                  .slice()
+                  .sort((a, b) => {
+                    const nameA = (a.name || "").toLowerCase();
+                    const nameB = (b.name || "").toLowerCase();
+                    return nameA.localeCompare(nameB);
+                  })
+                  .map((group) => (
+                    <div
+                      key={group.id}
+                      className="flex items-center justify-between border p-3 rounded-md"
                     >
-                      {group.name}
-                    </label>
-                    <Checkbox
-                      id={`bulkgroup-${group.id}`}
-                      checked={selectedGroups.includes(group.id)}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setSelectedGroups([...selectedGroups, group.id]);
-                        } else {
-                          setSelectedGroups(
-                            selectedGroups.filter((id) => id !== group.id),
-                          );
-                        }
-                      }}
-                    />
-                  </div>
-                ))}
+                      <label
+                        htmlFor={`bulkgroup-${group.id}`}
+                        className="font-medium cursor-pointer flex-1"
+                      >
+                        {group.name}
+                      </label>
+                      <Checkbox
+                        id={`bulkgroup-${group.id}`}
+                        checked={selectedGroups.includes(group.id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedGroups([...selectedGroups, group.id]);
+                          } else {
+                            setSelectedGroups(
+                              selectedGroups.filter((id) => id !== group.id),
+                            );
+                          }
+                        }}
+                      />
+                    </div>
+                  ))}
               </div>
               <DialogFooter className="mt-6 gap-2">
                 <Button
