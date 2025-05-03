@@ -10,6 +10,7 @@ export interface IDPUserDTO {
   groups: IDPGroupDTO[];
   realmRoles: string[];
   clientRoles: Record<string, string[]>;
+  enabled: boolean;
 }
 
 export interface IDPUserListDTO {
