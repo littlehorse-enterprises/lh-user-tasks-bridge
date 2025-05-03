@@ -62,7 +62,7 @@ export default function CancelUserTaskButton({
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="destructive">Cancel</Button>
+        <Button variant="destructive" className="w-full">Cancel</Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>

@@ -219,7 +219,7 @@ export default function CompleteUserTaskButton({
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="default">
+        <Button variant="default" className="w-full">
           {readOnly ? "View Results" : "Complete"}
         </Button>
       </DialogTrigger>

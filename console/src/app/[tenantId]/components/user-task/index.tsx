@@ -39,13 +39,13 @@ export default function UserTask({
   return (
     <Card
       className={
-        "px-4 py-6 shadow-[0px_1px_8px_0px_rgba(0,0,0,0.15)] border-none bg-card hover:bg-accent/50 transition-[all_150ms_ease-out] flex flex-col gap-6 w-full"
+        "px-4 py-6 shadow-[0px_1px_8px_0px_rgba(0,0,0,0.15)] border-none bg-card hover:bg-accent/50 transition-[all_150ms_ease-out] flex flex-col h-full"
       }
     >
       <CardHeader className="p-0">
         <CardTitle>{userTask.userTaskDefName}</CardTitle>
       </CardHeader>
-      <CardContent className="grid gap-2 p-0">
+      <CardContent className="grid gap-2 p-0 flex-grow">
         <Metadata label="Workflow Run ID" value={userTask.wfRunId} />
         <Metadata label="UserTask Run ID" value={userTask.id} />
         <Metadata label="Status" value={userTask.status} />
@@ -92,7 +92,7 @@ export default function UserTask({
             )
           }
         />
-        <div>
+        <div className="mb-6">
           <Label>Notes:</Label>
           <NotesTextArea notes={userTask.notes} />
         </div>
@@ -100,33 +100,35 @@ export default function UserTask({
       <CardFooter className="flex gap-2 p-0">
         {/* If the task is claimable, only show claim button */}
         {claimable && userTask.status === "UNASSIGNED" && (
-          <ClaimUserTaskButton userTask={userTask} />
+          <div className="w-full">
+            <ClaimUserTaskButton userTask={userTask} />
+          </div>
         )}
         
         {/* Only show these buttons if not in claimable mode */}
         {!claimable && (
-          <>
+          <div className="flex gap-2 w-full">
             {userTask.status === "UNASSIGNED" && (
               <>
-                {admin && <AssignUserTaskButton userTask={userTask} />}
-                {!admin && <ClaimUserTaskButton userTask={userTask} />}
+                {admin && <div className="flex-1"><AssignUserTaskButton userTask={userTask} /></div>}
+                {!admin && <div className="flex-1"><ClaimUserTaskButton userTask={userTask} /></div>}
               </>
             )}
             {userTask.status === "ASSIGNED" && admin && (
-              <AssignUserTaskButton userTask={userTask} />
+              <div className="flex-1"><AssignUserTaskButton userTask={userTask} /></div>
             )}
             {userTask.status === "ASSIGNED" &&
               (admin || (userTask.user && userTask.user.id === user.id)) && (
-                <CompleteUserTaskButton userTask={userTask} admin={admin} />
+                <div className="flex-1"><CompleteUserTaskButton userTask={userTask} admin={admin} /></div>
               )}
             {userTask.status === "DONE" && (
-              <CompleteUserTaskButton userTask={userTask} admin={admin} readOnly />
+              <div className="flex-1"><CompleteUserTaskButton userTask={userTask} admin={admin} readOnly /></div>
             )}
             {["UNASSIGNED", "ASSIGNED"].includes(userTask.status) &&
               (admin || (userTask.user && userTask.user.id === user.id)) && (
-                <CancelUserTaskButton userTask={userTask} admin={admin} />
+                <div className="flex-1"><CancelUserTaskButton userTask={userTask} admin={admin} /></div>
               )}
-          </>
+          </div>
         )}
       </CardFooter>
     </Card>

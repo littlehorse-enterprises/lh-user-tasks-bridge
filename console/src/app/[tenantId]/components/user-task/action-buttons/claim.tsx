@@ -63,7 +63,7 @@ export default function ClaimUserTaskButton({
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="outline">Claim</Button>
+        <Button variant="outline" className="w-full">Claim</Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
