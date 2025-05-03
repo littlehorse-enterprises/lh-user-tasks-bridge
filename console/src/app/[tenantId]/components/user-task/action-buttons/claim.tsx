@@ -1,5 +1,6 @@
 "use client";
 
+import { adminClaimUserTask } from "@/app/[tenantId]/actions/admin";
 import { claimUserTask } from "@/app/[tenantId]/actions/user";
 import {
   AlertDialog,
@@ -13,29 +14,66 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { UserTask } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
+import { ErrorType } from "@/lib/error-handling";
+import { SimpleUserTaskRunDTO } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
 import { useParams } from "next/navigation";
+import { useState } from "react";
 import { toast } from "sonner";
 
 export default function ClaimUserTaskButton({
   userTask,
+  admin,
 }: {
-  userTask: UserTask;
+  userTask: SimpleUserTaskRunDTO;
+  admin?: boolean;
 }) {
   const tenantId = useParams().tenantId as string;
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleClaim = async () => {
+    setIsLoading(true);
+
+    const response = await (admin
+      ? adminClaimUserTask(tenantId, {
+          wf_run_id: userTask.wfRunId,
+          user_task_guid: userTask.id,
+        })
+      : claimUserTask(tenantId, {
+          wf_run_id: userTask.wfRunId,
+          user_task_guid: userTask.id,
+        }));
+
+    setIsLoading(false);
+
+    if (response.error) {
+      const errorMessage =
+        response.error.type === ErrorType.FORBIDDEN
+          ? "You don't have permission to claim this task"
+          : response.error.type === ErrorType.NOT_FOUND
+            ? "Task not found or already claimed"
+            : `Failed to claim task: ${response.error.message}`;
+
+      toast.error(errorMessage);
+      return;
+    }
+
+    toast.success("Task claimed successfully");
+  };
 
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="outline">Claim</Button>
+        <Button variant="outline" className="w-full">
+          Claim
+        </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
-            Are you sure you want to claim this UserTask?
+            Are you sure you want to claim this task?
           </AlertDialogTitle>
           <AlertDialogDescription>
-            This UserTask will be assigned to you.
+            This task will be assigned to you.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -43,21 +81,10 @@ export default function ClaimUserTaskButton({
 
           <AlertDialogAction
             className={buttonVariants({ variant: "default" })}
-            onClick={async () => {
-              try {
-                const response = await claimUserTask(tenantId, userTask);
-
-                if (response && "message" in response)
-                  return toast.error(response.message);
-
-                toast.success("UserTask claimed successfully");
-              } catch (error) {
-                toast.error("Failed to claim UserTask");
-                console.error(error);
-              }
-            }}
+            onClick={handleClaim}
+            disabled={isLoading}
           >
-            Claim UserTask
+            {isLoading ? "Claiming..." : "Claim Task"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

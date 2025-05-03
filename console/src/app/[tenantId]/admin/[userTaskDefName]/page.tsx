@@ -1,7 +1,8 @@
 import {
-  adminListUserGroups,
-  adminListUserTasks,
+  adminGetAllTasks,
+  adminGetUserGroups,
 } from "@/app/[tenantId]/actions/admin";
+import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import ListUserTasks from "../../components/user-task/list";
@@ -11,32 +12,31 @@ export default async function TaskPage({
 }: {
   params: { tenantId: string; userTaskDefName: string };
 }) {
-  const adminListUserGroupsResponse = await adminListUserGroups(
-    params.tenantId,
-  );
-  if ("message" in adminListUserGroupsResponse)
-    throw new Error(adminListUserGroupsResponse.message);
+  const adminListUserGroupsResponse = await adminGetUserGroups(params.tenantId);
 
-  const adminListUserTasksResponse = await adminListUserTasks(params.tenantId, {
+  const adminListUserTasksResponse = await adminGetAllTasks(params.tenantId, {
     limit: 10,
     type: params.userTaskDefName,
   });
-  if ("message" in adminListUserTasksResponse)
-    throw new Error(adminListUserTasksResponse.message);
 
   return (
     <div>
-      <Link
-        href={`/${params.tenantId}/admin`}
-        className="mb-2 text-sm text-blue-500 flex items-center gap-2"
-      >
-        <ArrowLeft className="size-4" />
-        Back to UserTask Definitions
-      </Link>
+      <Button variant="link" asChild>
+        <Link href={`/${params.tenantId}/admin`}>
+          <ArrowLeft className="size-4" />
+          Back to UserTask Definitions
+        </Link>
+      </Button>
       <ListUserTasks
-        userGroups={adminListUserGroupsResponse.groups}
+        userGroups={adminListUserGroupsResponse.data?.groups || []}
         userTaskDefName={params.userTaskDefName}
-        initialData={adminListUserTasksResponse}
+        initialData={
+          adminListUserTasksResponse.data || {
+            userTasks: [],
+            bookmark: undefined,
+          }
+        }
+        initialError={adminListUserTasksResponse.error}
       />
     </div>
   );

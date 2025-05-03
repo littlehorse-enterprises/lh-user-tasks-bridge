@@ -1,71 +1,112 @@
 "use server";
-import { clientWithErrorHandling } from "@/lib/client";
+import { getClient } from "@/lib/client";
+import { withErrorHandling } from "@/lib/error-handling";
 import {
-  ListUserTaskDefNamesRequest,
-  ListUserTasksRequest,
-  UserTask,
-  UserTaskResult,
+  AdminGetUserTaskDetailParams,
+  AdminTaskActionParams,
+  AssignmentRequest,
+  GetAllTasksParams,
+  GetAllUserTasksDefParams,
+  GetUserFromIdentityProviderParams,
+  GetUsersFromIdentityProviderParams,
+  UserTaskVariableValue,
 } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
 
-export async function adminCancelUserTask(
+export async function adminGetAllTasks(
   tenantId: string,
-  userTask: UserTask,
+  params: GetAllTasksParams,
 ) {
-  return clientWithErrorHandling(tenantId, (client) =>
-    client.adminCancelUserTask(userTask),
-  );
+  return withErrorHandling(async () => {
+    const client = await getClient(tenantId);
+    return client.admin.getAllTasks(params);
+  });
 }
 
-export async function adminAssignUserTask(
+export async function adminGetAllUserTasksDef(
   tenantId: string,
-  userTask: UserTask,
-  assignment: { userId?: string; userGroupId?: string },
+  params: GetAllUserTasksDefParams,
 ) {
-  return clientWithErrorHandling(tenantId, (client) =>
-    client.adminAssignUserTask(userTask, assignment),
-  );
+  return withErrorHandling(async () => {
+    const client = await getClient(tenantId);
+    return client.admin.getAllUserTasksDef(params);
+  });
 }
 
-export async function adminListUsers(tenantId: string) {
-  return clientWithErrorHandling(tenantId, (client) => client.adminListUsers());
-}
-
-export async function adminListUserGroups(tenantId: string) {
-  return clientWithErrorHandling(tenantId, (client) =>
-    client.adminListUserGroups(),
-  );
-}
-
-export async function adminListUserTaskDefNames(
+export async function adminGetUserTaskDetail(
   tenantId: string,
-  search: ListUserTaskDefNamesRequest,
+  params: AdminGetUserTaskDetailParams,
 ) {
-  return clientWithErrorHandling(tenantId, (client) =>
-    client.adminListUserTaskDefNames(search),
-  );
-}
-
-export async function adminListUserTasks(
-  tenantId: string,
-  search: ListUserTasksRequest,
-) {
-  return clientWithErrorHandling(tenantId, (client) =>
-    client.adminListUserTasks(search),
-  );
-}
-
-export async function adminGetUserTask(tenantId: string, userTask: UserTask) {
-  return clientWithErrorHandling(tenantId, (client) =>
-    client.adminGetUserTask(userTask),
-  );
+  return withErrorHandling(async () => {
+    const client = await getClient(tenantId);
+    return client.admin.getUserTaskDetail(params);
+  });
 }
 
 export async function adminCompleteUserTask(
   tenantId: string,
-  userTask: UserTask,
-  values: UserTaskResult,
+  params: AdminTaskActionParams,
+  results: Record<string, UserTaskVariableValue>,
 ) {
-  return clientWithErrorHandling(tenantId, (client) =>
-    client.adminCompleteUserTask(userTask, values),
-  );
+  return withErrorHandling(async () => {
+    const client = await getClient(tenantId);
+    return client.admin.completeUserTask(params, results);
+  });
+}
+
+export async function adminAssignUserTask(
+  tenantId: string,
+  params: AdminTaskActionParams,
+  assignmentRequest: AssignmentRequest,
+) {
+  return withErrorHandling(async () => {
+    const client = await getClient(tenantId);
+    return client.admin.assignUserTask(params, assignmentRequest);
+  });
+}
+
+export async function adminCancelUserTask(
+  tenantId: string,
+  params: AdminTaskActionParams,
+) {
+  return withErrorHandling(async () => {
+    const client = await getClient(tenantId);
+    return client.admin.cancelUserTask(params);
+  });
+}
+
+export async function adminClaimUserTask(
+  tenantId: string,
+  params: AdminTaskActionParams,
+) {
+  return withErrorHandling(async () => {
+    const client = await getClient(tenantId);
+    return client.admin.claimUserTask(params);
+  });
+}
+
+export async function adminGetUserGroups(tenantId: string) {
+  return withErrorHandling(async () => {
+    const client = await getClient(tenantId);
+    return client.admin.getUserGroups();
+  });
+}
+
+export async function adminGetUsers(
+  tenantId: string,
+  params: GetUsersFromIdentityProviderParams,
+) {
+  return withErrorHandling(async () => {
+    const client = await getClient(tenantId);
+    return client.admin.getUsers(params);
+  });
+}
+
+export async function adminGetUserInfo(
+  tenantId: string,
+  params: GetUserFromIdentityProviderParams,
+) {
+  return withErrorHandling(async () => {
+    const client = await getClient(tenantId);
+    return client.admin.getUserInfo(params);
+  });
 }

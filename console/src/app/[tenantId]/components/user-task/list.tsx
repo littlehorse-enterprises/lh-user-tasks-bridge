@@ -1,6 +1,7 @@
 "use client";
-import { adminListUserTasks } from "@/app/[tenantId]/actions/admin";
-import { listUserTasks } from "@/app/[tenantId]/actions/user";
+import { adminGetAllTasks } from "@/app/[tenantId]/actions/admin";
+import { getUserTasks } from "@/app/[tenantId]/actions/user";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { DateRangePicker } from "@/components/ui/data-range-picker";
 import { Input } from "@/components/ui/input";
@@ -17,22 +18,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ErrorResponse, ErrorType } from "@/lib/error-handling";
 import {
-  ListUserTasksResponse,
-  Status,
-  UserGroup,
+  UserGroupDTO,
+  UserTaskRunListDTO,
+  UserTaskStatus,
 } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
-import { FilterIcon } from "lucide-react";
+import { AlertCircle, FilterIcon, RefreshCw } from "lucide-react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useLayoutEffect, useState } from "react";
-import { toast } from "sonner";
 import useSWRInfinite from "swr/infinite";
 import UserTask from "../../components/user-task";
 import Loading from "../loading";
 
+// Add a counter for generating unique keys
+const getUniqueId = () => Date.now().toString();
+
 type Query = {
-  user_group_id?: UserGroup["id"];
-  status?: Status;
+  user_group_id?: UserGroupDTO["id"];
+  status?: UserTaskStatus;
   earliest_start_date?: string;
   latest_start_date?: string;
 };
@@ -42,16 +46,23 @@ export default function ListUserTasks({
   userTaskDefName,
   initialData,
   claimable,
+  initialError,
 }: {
-  userGroups: UserGroup[];
+  userGroups: UserGroupDTO[];
   userTaskDefName?: string;
-  initialData: ListUserTasksResponse;
+  initialData: UserTaskRunListDTO;
   claimable?: boolean;
+  initialError?: ErrorResponse;
 }) {
   const [query, setQuery] = useState<Query>({});
   const [search, setSearch] = useState("");
   const [limit] = useState(100);
+  const [error, setError] = useState<ErrorResponse | undefined>(initialError);
   const tenantId = useParams().tenantId as string;
+  const [mountId] = useState(getUniqueId());
+
+  // Ensure userGroups is an array, even if undefined
+  const safeUserGroups = Array.isArray(userGroups) ? userGroups : [];
 
   const router = useRouter();
 
@@ -71,52 +82,55 @@ export default function ListUserTasks({
     router.replace(
       `${window.location.pathname.split("?")[0]}?${searchParams.toString()}`,
     );
-  }, [query]);
+  }, [query, router]);
 
   const getKey = (
     pageIndex: number,
-    previousPageData: ListUserTasksResponse | null,
+    previousPageData: UserTaskRunListDTO | null,
   ) => {
     if (claimable) return null;
 
     if (previousPageData && !previousPageData.bookmark) return null; // reached the end
-    return ["userTask", query, limit, previousPageData?.bookmark];
+    return [mountId, "userTask", query, limit, previousPageData?.bookmark];
   };
 
-  const { data, error, setSize, isValidating } =
-    useSWRInfinite<ListUserTasksResponse>(
+  const { data, setSize, isValidating, mutate } =
+    useSWRInfinite<UserTaskRunListDTO>(
       getKey,
-      async (key): Promise<ListUserTasksResponse> => {
-        const [, query, limit, bookmark] = key;
+      async (key): Promise<UserTaskRunListDTO> => {
+        setError(undefined);
+
+        const [, , query, limit, bookmark] = key;
         const response = await (userTaskDefName
-          ? adminListUserTasks(tenantId, {
+          ? adminGetAllTasks(tenantId, {
               ...query,
               limit,
               type: userTaskDefName,
               bookmark,
             })
-          : listUserTasks(tenantId, {
+          : getUserTasks(tenantId, {
               ...query,
               limit,
               bookmark,
             }));
 
-        if ("message" in response) {
-          toast.error(response.message);
-          return {
-            userTasks: [],
-            bookmark: null,
-          };
+        // Handle error
+        if (response.error) {
+          setError(response.error);
+          return { userTasks: [], bookmark: undefined };
         }
-        return response;
+
+        return response.data || { userTasks: [], bookmark: undefined };
       },
       {
         refreshInterval: 1000,
         revalidateOnFocus: true,
         revalidateOnReconnect: true,
-        revalidateOnMount: !claimable,
-        revalidateIfStale: !claimable,
+        revalidateOnMount: true,
+        revalidateIfStale: true,
         fallbackData: [initialData],
+        dedupingInterval: 500,
+        shouldRetryOnError: false,
       },
     );
 
@@ -124,11 +138,48 @@ export default function ListUserTasks({
     setSize((size) => size + 1);
   };
 
-  const isPending = (!data && !error) || !data;
+  const handleRetry = () => {
+    setError(undefined);
+    mutate();
+  };
+
+  const isPending = !data;
   if (isPending) return <Loading />;
   const hasNextPage = !!(data && data[data.length - 1]?.bookmark);
 
   const isFetchingNextPage = isValidating && hasNextPage;
+
+  // Handle error display
+  if (error) {
+    return (
+      <div>
+        <h1 className="text-2xl font-bold">
+          {userTaskDefName ?? (!claimable && "My Assigned Tasks")}
+        </h1>
+        <Alert variant="destructive" className="mt-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>
+            {error.type === ErrorType.UNAUTHORIZED
+              ? "Authentication Error"
+              : error.type === ErrorType.FORBIDDEN
+                ? "Permission Denied"
+                : error.type === ErrorType.NETWORK
+                  ? "Network Error"
+                  : "Error Loading Tasks"}
+          </AlertTitle>
+          <AlertDescription>{error.message}</AlertDescription>
+          <Button
+            onClick={handleRetry}
+            variant="outline"
+            size="sm"
+            className="mt-2"
+          >
+            <RefreshCw className="mr-2 h-4 w-4" /> Retry
+          </Button>
+        </Alert>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -178,7 +229,8 @@ export default function ListUserTasks({
                   onValueChange={(value) => {
                     setQuery({
                       ...query,
-                      status: value === "ALL" ? undefined : (value as Status),
+                      status:
+                        value === "ALL" ? undefined : (value as UserTaskStatus),
                     });
                   }}
                 >
@@ -203,10 +255,7 @@ export default function ListUserTasks({
                   onValueChange={(value) => {
                     setQuery({
                       ...query,
-                      user_group_id:
-                        value === "ALL"
-                          ? undefined
-                          : (value as UserGroup["id"]),
+                      user_group_id: value === "ALL" ? undefined : value,
                     });
                   }}
                 >
@@ -215,7 +264,7 @@ export default function ListUserTasks({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="ALL">ALL</SelectItem>
-                    {userGroups.map((group) => (
+                    {safeUserGroups.map((group) => (
                       <SelectItem key={group.id} value={group.id}>
                         {group.name}
                       </SelectItem>
@@ -238,8 +287,8 @@ export default function ListUserTasks({
       </div>
 
       {data.flatMap((page) => page.userTasks).length ? (
-        <div className="flex flex-col gap-8 items-center">
-          <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="flex flex-col gap-8 items-center w-full">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
             {data
               .flatMap((page) => page.userTasks)
               .sort(
@@ -259,27 +308,24 @@ export default function ListUserTasks({
                   key={userTask.id}
                   userTask={userTask}
                   admin={!!userTaskDefName}
+                  claimable={claimable}
                 />
               ))}
           </div>
+
           {hasNextPage && (
             <Button
-              onClick={() => fetchNextPage()}
-              loading={isFetchingNextPage}
-              className="w-fit"
+              variant="outline"
+              onClick={fetchNextPage}
+              disabled={isFetchingNextPage}
             >
-              Load More
+              {isFetchingNextPage ? "Loading more..." : "Load more"}
             </Button>
           )}
         </div>
       ) : (
-        <div>
-          <h1 className="text-center text-2xl font-bold">No UserTasks Found</h1>
-          <p className="text-center text-muted-foreground max-w-[60ch] mx-auto">
-            You currently have no UserTasks assigned to you or your group with
-            the current filter. Please try a different filter. Or contact your
-            administrator if you believe this is an error.
-          </p>
+        <div className="text-center py-8 text-muted-foreground">
+          No tasks found
         </div>
       )}
     </div>
