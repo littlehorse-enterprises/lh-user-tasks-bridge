@@ -1,38 +1,38 @@
 "use client";
 import {
-  adminCompleteUserTask,
-  adminGetUserTaskDetail,
+    adminCompleteUserTask,
+    adminGetUserTaskDetail,
 } from "@/app/[tenantId]/actions/admin";
 import {
-  completeUserTask,
-  getUserTaskDetail,
+    completeUserTask,
+    getUserTaskDetail,
 } from "@/app/[tenantId]/actions/user";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+    Dialog,
+    DialogClose,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from "@/components/ui/select";
 import { ErrorResponse } from "@/lib/error-handling";
 import {
-  DetailedUserTaskRunDTO,
-  SimpleUserTaskRunDTO,
-  UserTaskFieldDTO,
-  UserTaskFieldType,
-  UserTaskVariableValue,
+    DetailedUserTaskRunDTO,
+    SimpleUserTaskRunDTO,
+    UserTaskFieldDTO,
+    UserTaskFieldType,
+    UserTaskVariableValue,
 } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -81,13 +81,55 @@ export default function CompleteUserTaskButton({
       return;
     }
 
+    // Clean up the results data to ensure all values have valid types
+    const cleanedResults: Record<string, UserTaskVariableValue> = {};
+    const results = response.data?.results || {};
+
+    // Loop through all result values
+    for (const fieldName in results) {
+      const fieldValue = results[fieldName];
+      
+      // Only include fields with a defined type
+      if (fieldValue && fieldValue.type) {
+        cleanedResults[fieldName] = fieldValue;
+      } else if (fieldValue && fieldValue.value !== undefined && fieldValue.value !== null) {
+        // Find the field definition to get its type
+        const field = response.data?.fields.find(f => f.name === fieldName);
+        let inferredType = field?.type || UserTaskFieldType.STRING;
+        
+        // Fallback to STRING if no type is found
+        if (!inferredType) {
+          console.warn(`No type found for field ${fieldName} in results, defaulting to STRING`);
+          inferredType = UserTaskFieldType.STRING;
+        }
+        
+        cleanedResults[fieldName] = {
+          value: fieldValue.value,
+          type: inferredType
+        };
+      }
+    }
+
     setUserTaskDetails(response.data);
-    setUserTaskResult(response.data?.results || {});
+    setUserTaskResult(cleanedResults);
   };
 
   useEffect(() => {
     fetchTaskDetails();
   }, [tenantId, userTask, admin]);
+
+  // Check for fields with missing types
+  useEffect(() => {
+    if (userTaskDetails?.fields) {
+      const fieldsWithMissingTypes = userTaskDetails.fields.filter(f => !f.type);
+      if (fieldsWithMissingTypes.length > 0) {
+        toast.warning(`Some fields have missing types: ${fieldsWithMissingTypes.map(f => f.name).join(', ')}`, {
+          duration: 5000,
+        });
+        console.warn('Fields with missing types:', fieldsWithMissingTypes);
+      }
+    }
+  }, [userTaskDetails]);
 
   const handleSubmit = async () => {
     if (!userTaskDetails) return;
@@ -99,16 +141,47 @@ export default function CompleteUserTaskButton({
       user_task_guid: userTask.id,
     };
     
+    // Clean the data by ensuring all variable values have a defined type
+    const cleanedResult: Record<string, UserTaskVariableValue> = {};
+    
+    // Loop through all form fields
+    for (const fieldName in userTaskResult) {
+      const fieldValue = userTaskResult[fieldName];
+      
+      // Only include fields with a defined type
+      if (fieldValue && fieldValue.type) {
+        cleanedResult[fieldName] = fieldValue;
+      } else if (fieldValue && fieldValue.value !== undefined && fieldValue.value !== null) {
+        // If we have a value but no type, try to infer a safe type
+        const field = userTaskDetails.fields.find(f => f.name === fieldName);
+        let inferredType = field?.type || UserTaskFieldType.STRING;
+        
+        // Last resort fallback - always use STRING if nothing else works
+        if (!inferredType) {
+          console.warn(`No type found for field ${fieldName}, defaulting to STRING`);
+          inferredType = UserTaskFieldType.STRING;
+        }
+        
+        cleanedResult[fieldName] = {
+          value: fieldValue.value,
+          type: inferredType
+        };
+      }
+    }
+    
+    console.log('Submitting cleaned form data:', cleanedResult);
+    
     const response = await (admin
-      ? adminCompleteUserTask(tenantId, params, userTaskResult)
+      ? adminCompleteUserTask(tenantId, params, cleanedResult)
       : completeUserTask(tenantId, params, {
-          variableResults: userTaskResult,
+          variableResults: cleanedResult,
         }));
     
     setIsSubmitting(false);
     
     if (response.error) {
-      toast.error(`Failed to complete task: ${response.error.message}`);
+      toast.error(`Failed to complete task: ${response.error.message || 'Unknown error'}`);
+      console.error('Error response:', response.error);
       return;
     }
     
@@ -155,7 +228,7 @@ export default function CompleteUserTaskButton({
                 <span className="text-destructive">*</span>
               )}
             </Label>
-            {field.type === "STRING" && (
+            {field.type && field.type === "STRING" && (
               <Input
                 name={field.name}
                 placeholder={field.description}
@@ -165,12 +238,12 @@ export default function CompleteUserTaskButton({
                   const value = e.target.value;
                   setUserTaskResult({
                     ...userTaskResult,
-                    [field.name]: { type: field.type, value: value },
+                    [field.name]: { type: field.type || UserTaskFieldType.STRING, value: value },
                   });
                 }}
               />
             )}
-            {(field.type === "DOUBLE" || field.type === "INTEGER") && (
+            {field.type && (field.type === "DOUBLE" || field.type === "INTEGER") && (
               <Input
                 type="number"
                 value={userTaskResult[field.name]?.value?.toString() || ""}
@@ -181,13 +254,13 @@ export default function CompleteUserTaskButton({
                     ...userTaskResult,
                     [field.name]: {
                       value,
-                      type: field.type as UserTaskFieldType,
+                      type: field.type || UserTaskFieldType.DOUBLE,
                     },
                   });
                 }}
               />
             )}
-            {field.type === "BOOLEAN" && (
+            {field.type && field.type === "BOOLEAN" && (
               <Select
                 value={userTaskResult[field.name]?.value?.toString() ?? ""}
                 disabled={readOnly}
@@ -196,7 +269,7 @@ export default function CompleteUserTaskButton({
                     ...userTaskResult,
                     [field.name]: {
                       value: value === "true",
-                      type: field.type as UserTaskFieldType,
+                      type: field.type || UserTaskFieldType.BOOLEAN,
                     },
                   });
                 }}
@@ -209,6 +282,11 @@ export default function CompleteUserTaskButton({
                   <SelectItem value="false">False</SelectItem>
                 </SelectContent>
               </Select>
+            )}
+            {!field.type && (
+              <div className="p-2 text-sm bg-yellow-50 text-yellow-800 rounded border border-yellow-200">
+                Unknown field type
+              </div>
             )}
           </div>
         ))}
