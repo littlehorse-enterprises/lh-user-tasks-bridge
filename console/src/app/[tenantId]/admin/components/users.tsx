@@ -109,7 +109,6 @@ export default function UsersManagement() {
   const [isLoading, setIsLoading] = useState(true);
   const [isGroupsLoading, setIsGroupsLoading] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isBulkCreateDialogOpen, setIsBulkCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isGroupsDialogOpen, setIsGroupsDialogOpen] = useState(false);
   const [isBulkGroupsDialogOpen, setIsBulkGroupsDialogOpen] = useState(false);
@@ -122,21 +121,6 @@ export default function UsersManagement() {
   const [showPassword, setShowPassword] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [selectAll, setSelectAll] = useState(false);
-  const [bulkCreateResults, setBulkCreateResults] = useState<{
-    success: number;
-    errors: { username: string; error: string }[];
-  }>({
-    success: 0,
-    errors: [],
-  });
-  const [isBulkCreateLoading, setIsBulkCreateLoading] = useState(false);
-
-  const bulkCreateForm = useForm<z.infer<typeof bulkCreateSchema>>({
-    resolver: zodResolver(bulkCreateSchema),
-    defaultValues: {
-      users: "",
-    },
-  });
 
   const createForm = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -209,101 +193,6 @@ export default function UsersManagement() {
     }
   }
 
-  async function handleBulkCreateUsers(
-    values: z.infer<typeof bulkCreateSchema>,
-  ) {
-    setIsBulkCreateLoading(true);
-    setBulkCreateResults({ success: 0, errors: [] });
-
-    try {
-      const userLines = values.users
-        .split("\n")
-        .filter((line) => line.trim() !== "");
-      let successCount = 0;
-      const errors: { username: string; error: string }[] = [];
-
-      for (const userLine of userLines) {
-        try {
-          // Expected format: username,email,firstName,lastName,password
-          const [username, email, firstName, lastName, password] = userLine
-            .split(",")
-            .map((s) => s.trim());
-
-          if (!username || !email || !firstName || !lastName) {
-            errors.push({
-              username: username || "Unknown",
-              error:
-                "All fields (username, email, firstName, lastName) are required",
-            });
-            continue;
-          }
-
-          const response = await createUser(tenantId, {
-            username,
-            email,
-            firstName,
-            lastName,
-          });
-
-          if (response.error) {
-            errors.push({
-              username: username,
-              error: response.error.message || "Unknown error",
-            });
-            continue;
-          }
-
-          // Set password separately
-          if (password) {
-            const passwordResponse = await upsertPassword(
-              tenantId,
-              { user_id: username },
-              { value: password, temporary: true },
-            );
-
-            if (passwordResponse.error) {
-              errors.push({
-                username: username,
-                error: `User created but password setting failed: ${passwordResponse.error.message || "Unknown error"}`,
-              });
-              continue;
-            }
-          } else {
-            errors.push({
-              username: username,
-              error:
-                "Password is required. User created but no password was set.",
-            });
-            continue;
-          }
-
-          successCount++;
-        } catch (error: any) {
-          const userInfo = userLine.split(",")[0] || "Unknown";
-          errors.push({
-            username: userInfo,
-            error: error.message || "Unknown error",
-          });
-        }
-      }
-
-      setBulkCreateResults({
-        success: successCount,
-        errors,
-      });
-
-      if (successCount > 0) {
-        toast.success(`Successfully created ${successCount} users`);
-        loadUsers();
-      }
-    } catch (error) {
-      console.error("Error in bulk user creation:", error);
-      toast.error("Failed to process bulk user creation");
-    } finally {
-      setIsBulkCreateLoading(false);
-    }
-  }
-
   async function handleCreateUser(values: z.infer<typeof formSchema>) {
     try {
       // First create the user without password
@@ -324,7 +213,7 @@ export default function UsersManagement() {
       const passwordResponse = await upsertPassword(
         tenantId,
         { user_id: values.username },
-        { value: values.password, temporary: true },
+        { password: values.password, temporary: true },
       );
 
       if (passwordResponse.error) {
@@ -351,7 +240,10 @@ export default function UsersManagement() {
     try {
       // Create update object without the enabled property
       const updateData = {
-        username: values.username,
+        username:
+          values.username === selectedUser.username
+            ? undefined
+            : values.username,
         email: values.email,
         firstName: values.firstName,
         lastName: values.lastName,
@@ -387,8 +279,8 @@ export default function UsersManagement() {
     try {
       const passwordResponse = await upsertPassword(
         tenantId,
-        { user_id: selectedUser.username },
-        { value: values.password, temporary: true },
+        { user_id: selectedUser.id },
+        { password: values.password, temporary: true },
       );
 
       if (passwordResponse.error) {
@@ -730,112 +622,6 @@ export default function UsersManagement() {
               </Button>
             </>
           )}
-          <Dialog
-            open={isBulkCreateDialogOpen}
-            onOpenChange={setIsBulkCreateDialogOpen}
-          >
-            <DialogTrigger asChild>
-              <Button variant="outline" className="space-x-1">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                </svg>
-                <span>Bulk Create</span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px]">
-              <DialogHeader>
-                <DialogTitle>Bulk Create Users</DialogTitle>
-              </DialogHeader>
-              <Form {...bulkCreateForm}>
-                <form
-                  onSubmit={bulkCreateForm.handleSubmit(handleBulkCreateUsers)}
-                  className="space-y-4"
-                >
-                  <div className="text-sm text-muted-foreground mb-2">
-                    Enter one user per line in the format:{" "}
-                    <span className="font-mono">
-                      username,email,firstName,lastName,password
-                    </span>
-                    <br />
-                    All fields are required. Passwords will be set as temporary
-                    and users will need to change them on first login.
-                  </div>
-                  <FormField
-                    control={bulkCreateForm.control}
-                    name="users"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormControl>
-                          <textarea
-                            className="w-full h-60 p-2 border rounded-md font-mono text-sm"
-                            placeholder="user1,user1@example.com,First,Last,password123&#10;user2,user2@example.com,First,Last,password123"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {bulkCreateResults.errors.length > 0 && (
-                    <div className="border border-red-200 bg-red-50 p-3 rounded-md text-sm">
-                      <div className="font-medium text-red-800 mb-2">
-                        Failed to create {bulkCreateResults.errors.length}{" "}
-                        users:
-                      </div>
-                      <div className="max-h-40 overflow-y-auto">
-                        {bulkCreateResults.errors.map((error, i) => (
-                          <div key={i} className="flex mb-1">
-                            <span className="font-mono mr-2">
-                              {error.username}:
-                            </span>
-                            <span>{error.error}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {bulkCreateResults.success > 0 && (
-                    <div className="border border-green-200 bg-green-50 p-3 rounded-md">
-                      <div className="font-medium text-green-800">
-                        Successfully created {bulkCreateResults.success} users
-                      </div>
-                    </div>
-                  )}
-
-                  <DialogFooter className="gap-2">
-                    <Button
-                      variant="outline"
-                      type="button"
-                      onClick={() => setIsBulkCreateDialogOpen(false)}
-                    >
-                      Close
-                    </Button>
-                    <Button
-                      type="submit"
-                      className="bg-yellow-400 hover:bg-yellow-500 text-black"
-                      disabled={isBulkCreateLoading}
-                    >
-                      {isBulkCreateLoading
-                        ? "Creating Users..."
-                        : "Create Users"}
-                    </Button>
-                  </DialogFooter>
-                </form>
-              </Form>
-            </DialogContent>
-          </Dialog>
 
           <Dialog
             open={isCreateDialogOpen}

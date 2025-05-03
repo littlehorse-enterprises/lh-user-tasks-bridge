@@ -34,7 +34,7 @@ export interface CreateManagedUserRequest {
 }
 
 export interface UpsertPasswordRequest {
-  value: string;
+  password: string;
   temporary?: boolean;
 }
 
