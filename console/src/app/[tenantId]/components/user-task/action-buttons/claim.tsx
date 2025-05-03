@@ -3,15 +3,15 @@
 import { adminClaimUserTask } from "@/app/[tenantId]/actions/admin";
 import { claimUserTask } from "@/app/[tenantId]/actions/user";
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { ErrorType } from "@/lib/error-handling";
@@ -32,7 +32,7 @@ export default function ClaimUserTaskButton({
 
   const handleClaim = async () => {
     setIsLoading(true);
-    
+
     const response = await (admin
       ? adminClaimUserTask(tenantId, {
           wf_run_id: userTask.wfRunId,
@@ -42,28 +42,30 @@ export default function ClaimUserTaskButton({
           wf_run_id: userTask.wfRunId,
           user_task_guid: userTask.id,
         }));
-    
+
     setIsLoading(false);
-    
+
     if (response.error) {
-      const errorMessage = 
+      const errorMessage =
         response.error.type === ErrorType.FORBIDDEN
           ? "You don't have permission to claim this task"
           : response.error.type === ErrorType.NOT_FOUND
-          ? "Task not found or already claimed"
-          : `Failed to claim task: ${response.error.message}`;
-      
+            ? "Task not found or already claimed"
+            : `Failed to claim task: ${response.error.message}`;
+
       toast.error(errorMessage);
       return;
     }
-    
+
     toast.success("Task claimed successfully");
   };
 
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="outline" className="w-full">Claim</Button>
+        <Button variant="outline" className="w-full">
+          Claim
+        </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>

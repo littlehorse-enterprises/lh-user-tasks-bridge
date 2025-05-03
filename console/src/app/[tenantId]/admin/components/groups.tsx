@@ -28,7 +28,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { IDPGroupDTO, IDPUserDTO } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
+import {
+  IDPGroupDTO,
+  IDPUserDTO,
+} from "@littlehorse-enterprises/user-tasks-bridge-api-client";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -54,7 +57,7 @@ const formSchema = z.object({
 
 export default function GroupsManagement() {
   const tenantId = useParams().tenantId as string;
-  
+
   const [groups, setGroups] = useState<IDPGroupDTO[]>([]);
   const [users, setUsers] = useState<IDPUserDTO[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -75,7 +78,7 @@ export default function GroupsManagement() {
       name: "",
     },
   });
-  
+
   const editForm = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -99,8 +102,8 @@ export default function GroupsManagement() {
       const response = await getGroups(tenantId, {});
       // Sort groups by name (case-insensitive)
       const sortedGroups = [...(response.data?.groups || [])].sort((a, b) => {
-        const nameA = (a.name || '').toLowerCase();
-        const nameB = (b.name || '').toLowerCase();
+        const nameA = (a.name || "").toLowerCase();
+        const nameB = (b.name || "").toLowerCase();
         return nameA.localeCompare(nameB);
       });
       setGroups(sortedGroups);
@@ -114,22 +117,22 @@ export default function GroupsManagement() {
 
   async function loadUsers() {
     if (!selectedGroup) return;
-    
+
     setIsUsersLoading(true);
     try {
       // Load all users
       const response = await getUsersFromIdP(tenantId, {});
       const allUsers = response.data?.users || [];
       setUsers(allUsers);
-      
+
       // Filter group members and available users
-      const members = allUsers.filter((user) => 
-        user.groups?.some((group) => group.id === selectedGroup.id)
+      const members = allUsers.filter((user) =>
+        user.groups?.some((group) => group.id === selectedGroup.id),
       );
       setGroupMembers(members);
-      
-      const available = allUsers.filter((user) => 
-        !user.groups?.some((group) => group.id === selectedGroup.id)
+
+      const available = allUsers.filter(
+        (user) => !user.groups?.some((group) => group.id === selectedGroup.id),
       );
       setAvailableUsers(available);
     } catch (error) {
@@ -150,7 +153,7 @@ export default function GroupsManagement() {
       console.log("Create group response:", response);
 
       if (response.error) {
-        if (response.error.type === 'CONFLICT') {
+        if (response.error.type === "CONFLICT") {
           toast.error(`Group "${values.name}" already exists.`);
         } else {
           toast.error(response.error.message || "Failed to create group.");
@@ -171,14 +174,14 @@ export default function GroupsManagement() {
 
   async function handleEditGroup(values: z.infer<typeof formSchema>) {
     if (!selectedGroup) return;
-    
+
     try {
       const response = await updateGroup(
         tenantId,
         { group_id: selectedGroup.id },
         {
           name: values.name,
-        }
+        },
       );
 
       if (response.error) {
@@ -199,10 +202,10 @@ export default function GroupsManagement() {
 
   async function handleDeleteGroup(groupId: string) {
     if (!confirm("Are you sure you want to delete this group?")) return;
-    
+
     try {
       const response = await deleteGroup(tenantId, { group_id: groupId });
-      
+
       if (response.error) {
         toast.error(response.error.message || "Failed to delete group.");
         console.error("Error deleting group:", response.error);
@@ -219,13 +222,13 @@ export default function GroupsManagement() {
 
   async function handleAddUserToGroup(userId: string) {
     if (!selectedGroup) return;
-    
+
     try {
-      const response = await addUserToGroup(tenantId, { 
-        user_id: userId, 
-        group_id: selectedGroup.id || '' 
+      const response = await addUserToGroup(tenantId, {
+        user_id: userId,
+        group_id: selectedGroup.id || "",
       });
-      
+
       if (response.error) {
         toast.error(response.error.message || "Failed to add user to group.");
         console.error("Error adding user to group:", response.error);
@@ -242,15 +245,17 @@ export default function GroupsManagement() {
 
   async function handleRemoveUserFromGroup(userId: string) {
     if (!selectedGroup) return;
-    
+
     try {
-      const response = await removeUserFromGroup(tenantId, { 
-        user_id: userId, 
-        group_id: selectedGroup.id || '' 
+      const response = await removeUserFromGroup(tenantId, {
+        user_id: userId,
+        group_id: selectedGroup.id || "",
       });
-      
+
       if (response.error) {
-        toast.error(response.error.message || "Failed to remove user from group.");
+        toast.error(
+          response.error.message || "Failed to remove user from group.",
+        );
         console.error("Error removing user from group:", response.error);
         return;
       }
@@ -282,7 +287,11 @@ export default function GroupsManagement() {
       return;
     }
 
-    if (!confirm(`Are you sure you want to delete ${selectedGroups.length} selected groups?`)) {
+    if (
+      !confirm(
+        `Are you sure you want to delete ${selectedGroups.length} selected groups?`,
+      )
+    ) {
       return;
     }
 
@@ -309,7 +318,7 @@ export default function GroupsManagement() {
       if (successCount > 0) {
         toast.success(`${successCount} groups were successfully deleted.`);
       }
-      
+
       if (errorCount > 0) {
         toast.error(`Failed to delete ${errorCount} groups.`);
       }
@@ -324,7 +333,7 @@ export default function GroupsManagement() {
 
   useEffect(() => {
     if (selectAll) {
-      setSelectedGroups(groups.map(group => group.id || ''));
+      setSelectedGroups(groups.map((group) => group.id || ""));
     } else if (selectedGroups.length === groups.length) {
       setSelectedGroups([]);
     }
@@ -336,12 +345,22 @@ export default function GroupsManagement() {
         <h2 className="text-xl font-semibold">Groups</h2>
         <div className="flex space-x-2">
           {selectedGroups.length > 0 && (
-            <Button 
-              variant="destructive" 
+            <Button
+              variant="destructive"
               onClick={handleBulkDelete}
               className="space-x-1"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <path d="M3 6h18" />
                 <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
                 <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
@@ -350,10 +369,24 @@ export default function GroupsManagement() {
             </Button>
           )}
 
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <Dialog
+            open={isCreateDialogOpen}
+            onOpenChange={setIsCreateDialogOpen}
+          >
             <DialogTrigger asChild>
               <Button className="bg-yellow-400 hover:bg-yellow-500 text-black">
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-2">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="mr-2"
+                >
                   <path d="M12 5v14M5 12h14" />
                 </svg>
                 Add Group
@@ -364,7 +397,10 @@ export default function GroupsManagement() {
                 <DialogTitle>Create New Group</DialogTitle>
               </DialogHeader>
               <Form {...createForm}>
-                <form onSubmit={createForm.handleSubmit(handleCreateGroup)} className="space-y-4">
+                <form
+                  onSubmit={createForm.handleSubmit(handleCreateGroup)}
+                  className="space-y-4"
+                >
                   <FormField
                     control={createForm.control}
                     name="name"
@@ -379,10 +415,19 @@ export default function GroupsManagement() {
                     )}
                   />
                   <DialogFooter className="gap-2">
-                    <Button variant="outline" type="button" onClick={() => setIsCreateDialogOpen(false)}>
+                    <Button
+                      variant="outline"
+                      type="button"
+                      onClick={() => setIsCreateDialogOpen(false)}
+                    >
                       Cancel
                     </Button>
-                    <Button type="submit" className="bg-yellow-400 hover:bg-yellow-500 text-black">Create Group</Button>
+                    <Button
+                      type="submit"
+                      className="bg-yellow-400 hover:bg-yellow-500 text-black"
+                    >
+                      Create Group
+                    </Button>
                   </DialogFooter>
                 </form>
               </Form>
@@ -396,7 +441,9 @@ export default function GroupsManagement() {
       ) : groups.length === 0 ? (
         <div className="py-4 text-center">
           <h3 className="text-lg font-medium">No groups found</h3>
-          <p className="text-muted-foreground">Create a new group to get started.</p>
+          <p className="text-muted-foreground">
+            Create a new group to get started.
+          </p>
         </div>
       ) : (
         <Table>
@@ -404,7 +451,11 @@ export default function GroupsManagement() {
             <TableRow>
               <TableHead className="w-12">
                 <Checkbox
-                  checked={selectAll || (selectedGroups.length > 0 && selectedGroups.length === groups.length)}
+                  checked={
+                    selectAll ||
+                    (selectedGroups.length > 0 &&
+                      selectedGroups.length === groups.length)
+                  }
                   onCheckedChange={(checked) => {
                     setSelectAll(checked === true);
                   }}
@@ -417,19 +468,29 @@ export default function GroupsManagement() {
           </TableHeader>
           <TableBody>
             {groups.map((group) => (
-              <TableRow key={group.id} className={selectedGroups.includes(group.id || '') ? "bg-muted/50" : ""}>
+              <TableRow
+                key={group.id}
+                className={
+                  selectedGroups.includes(group.id || "") ? "bg-muted/50" : ""
+                }
+              >
                 <TableCell>
                   <Checkbox
-                    checked={selectedGroups.includes(group.id || '')}
+                    checked={selectedGroups.includes(group.id || "")}
                     onCheckedChange={(checked) => {
                       if (checked) {
-                        setSelectedGroups([...selectedGroups, group.id || '']);
+                        setSelectedGroups([...selectedGroups, group.id || ""]);
                       } else {
-                        setSelectedGroups(selectedGroups.filter(id => id !== group.id));
+                        setSelectedGroups(
+                          selectedGroups.filter((id) => id !== group.id),
+                        );
                       }
-                      
+
                       // Update select all state
-                      if (checked && selectedGroups.length + 1 === groups.length) {
+                      if (
+                        checked &&
+                        selectedGroups.length + 1 === groups.length
+                      ) {
                         setSelectAll(true);
                       } else if (!checked && selectAll) {
                         setSelectAll(false);
@@ -441,37 +502,67 @@ export default function GroupsManagement() {
                 <TableCell>{group.name}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end space-x-2">
-                    <Button 
-                      variant="ghost" 
+                    <Button
+                      variant="ghost"
                       size="icon"
                       onClick={() => handleEditClick(group)}
                       className="h-8 w-8"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
                         <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
                         <path d="m15 5 4 4" />
                       </svg>
                     </Button>
-                    <Button 
-                      variant="ghost" 
+                    <Button
+                      variant="ghost"
                       size="icon"
                       onClick={() => handleManageMembers(group)}
                       className="h-8 w-8"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
                         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                         <circle cx="9" cy="7" r="4"></circle>
                         <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
                         <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
                       </svg>
                     </Button>
-                    <Button 
-                      variant="destructive" 
+                    <Button
+                      variant="destructive"
                       size="icon"
-                      onClick={() => handleDeleteGroup(group.id || '')}
+                      onClick={() => handleDeleteGroup(group.id || "")}
                       className="h-8 w-8 bg-red-500 hover:bg-red-600"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="white"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
                         <path d="M3 6h18" />
                         <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
                         <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
@@ -503,7 +594,7 @@ export default function GroupsManagement() {
                   if (selectedGroup) {
                     setSelectedGroup({
                       ...selectedGroup,
-                      name: e.target.value
+                      name: e.target.value,
                     });
                   }
                 }}
@@ -511,11 +602,14 @@ export default function GroupsManagement() {
             </div>
           </div>
           <DialogFooter className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setIsEditDialogOpen(false)}
+            >
               Cancel
             </Button>
-            <Button 
-              className="bg-yellow-400 hover:bg-yellow-500 text-black" 
+            <Button
+              className="bg-yellow-400 hover:bg-yellow-500 text-black"
               onClick={() => {
                 if (selectedGroup) {
                   handleEditGroup({ name: selectedGroup.name || "" });
@@ -531,9 +625,11 @@ export default function GroupsManagement() {
       <Dialog open={isMembersDialogOpen} onOpenChange={setIsMembersDialogOpen}>
         <DialogContent className="sm:max-w-[800px]">
           <DialogHeader>
-            <DialogTitle>Manage Group Members: {selectedGroup?.name}</DialogTitle>
+            <DialogTitle>
+              Manage Group Members: {selectedGroup?.name}
+            </DialogTitle>
           </DialogHeader>
-          
+
           {isUsersLoading ? (
             <div className="py-4 text-center">Loading users...</div>
           ) : (
@@ -547,13 +643,16 @@ export default function GroupsManagement() {
                     </div>
                   ) : (
                     <div className="space-y-2 p-2">
-                      {availableUsers.map(user => (
-                        <div key={user.id} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                      {availableUsers.map((user) => (
+                        <div
+                          key={user.id}
+                          className="flex items-center justify-between bg-gray-50 p-2 rounded"
+                        >
                           <span>
                             {user.firstName} {user.lastName} ({user.username})
                           </span>
-                          <Button 
-                            size="sm" 
+                          <Button
+                            size="sm"
                             onClick={() => handleAddUserToGroup(user.id)}
                             className="bg-yellow-400 hover:bg-yellow-500 text-black"
                           >
@@ -565,7 +664,7 @@ export default function GroupsManagement() {
                   )}
                 </div>
               </div>
-              
+
               <div>
                 <h3 className="text-lg font-medium mb-4">Group Members</h3>
                 <div className="border rounded-md">
@@ -575,13 +674,16 @@ export default function GroupsManagement() {
                     </div>
                   ) : (
                     <div className="space-y-2 p-2">
-                      {groupMembers.map(user => (
-                        <div key={user.id} className="flex items-center justify-between bg-gray-50 p-2 rounded">
+                      {groupMembers.map((user) => (
+                        <div
+                          key={user.id}
+                          className="flex items-center justify-between bg-gray-50 p-2 rounded"
+                        >
                           <span>
                             {user.firstName} {user.lastName} ({user.username})
                           </span>
-                          <Button 
-                            size="sm" 
+                          <Button
+                            size="sm"
                             onClick={() => handleRemoveUserFromGroup(user.id)}
                             variant="destructive"
                           >
@@ -595,9 +697,9 @@ export default function GroupsManagement() {
               </div>
             </div>
           )}
-          
+
           <DialogFooter>
-            <Button 
+            <Button
               onClick={() => setIsMembersDialogOpen(false)}
               className="bg-yellow-400 hover:bg-yellow-500 text-black"
             >

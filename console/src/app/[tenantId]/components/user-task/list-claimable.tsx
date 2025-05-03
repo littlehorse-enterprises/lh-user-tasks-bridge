@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ErrorResponse, ErrorType } from "@/lib/error-handling";
 import {
-    UserGroupDTO,
-    UserTaskRunListDTO,
+  UserGroupDTO,
+  UserTaskRunListDTO,
 } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
 import { AlertCircle, Loader2Icon, RefreshCw } from "lucide-react";
 import { useParams } from "next/navigation";
@@ -32,7 +32,7 @@ export default function ListClaimableUserTasks({
     <div>
       <h1 className="text-2xl font-bold mb-4">Claimable User Tasks</h1>
 
-      <Tabs 
+      <Tabs
         defaultValue={userGroups[0].id}
         onValueChange={(value) => setActiveGroup(value)}
       >
@@ -46,14 +46,14 @@ export default function ListClaimableUserTasks({
 
         {userGroups.map((userGroup, index) => {
           const initialError = initialErrors?.[index];
-          
+
           const getKey = (
             pageIndex: number,
             previousPageData: UserTaskRunListDTO | null,
           ) => {
             // Only fetch when tab is active
             if (activeGroup !== userGroup.id) return null;
-            
+
             // Reached the end
             if (previousPageData && !previousPageData.bookmark) return null;
 
@@ -70,28 +70,28 @@ export default function ListClaimableUserTasks({
               async ([tenantId, userGroupId, bookmark]) => {
                 // Clear error when fetching
                 if (errors[userGroup.id]) {
-                  setErrors(prev => {
-                    const newErrors = {...prev};
+                  setErrors((prev) => {
+                    const newErrors = { ...prev };
                     delete newErrors[userGroup.id];
                     return newErrors;
                   });
                 }
-                
+
                 const result = await getClaimableTasks(tenantId, {
                   user_group_id: userGroupId,
                   limit: 10,
                   bookmark: bookmark || undefined,
                 });
-                
+
                 // Handle error
                 if (result.error) {
-                  setErrors(prev => ({
+                  setErrors((prev) => ({
                     ...prev,
-                    [userGroup.id]: result.error as ErrorResponse
+                    [userGroup.id]: result.error as ErrorResponse,
                   }));
                   return { userTasks: [], bookmark: undefined };
                 }
-                
+
                 return result.data || { userTasks: [], bookmark: undefined };
               },
               {
@@ -110,9 +110,9 @@ export default function ListClaimableUserTasks({
                 </div>
               </TabsContent>
             );
-            
+
           const groupError = errors[userGroup.id] || initialError;
-          
+
           if (groupError) {
             return (
               <TabsContent key={userGroup.id} value={userGroup.id}>
@@ -122,16 +122,16 @@ export default function ListClaimableUserTasks({
                     {groupError.type === ErrorType.UNAUTHORIZED
                       ? "Authentication Error"
                       : groupError.type === ErrorType.FORBIDDEN
-                      ? "Permission Denied"
-                      : groupError.type === ErrorType.NETWORK
-                      ? "Network Error"
-                      : "Error Loading Claimable Tasks"}
+                        ? "Permission Denied"
+                        : groupError.type === ErrorType.NETWORK
+                          ? "Network Error"
+                          : "Error Loading Claimable Tasks"}
                   </AlertTitle>
                   <AlertDescription>{groupError.message}</AlertDescription>
-                  <Button 
-                    onClick={() => mutate()} 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    onClick={() => mutate()}
+                    variant="outline"
+                    size="sm"
                     className="mt-2"
                   >
                     <RefreshCw className="mr-2 h-4 w-4" /> Retry

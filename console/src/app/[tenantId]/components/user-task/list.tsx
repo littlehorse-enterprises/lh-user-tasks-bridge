@@ -94,44 +94,45 @@ export default function ListUserTasks({
     return [mountId, "userTask", query, limit, previousPageData?.bookmark];
   };
 
-  const { data, setSize, isValidating, mutate } = useSWRInfinite<UserTaskRunListDTO>(
-    getKey,
-    async (key): Promise<UserTaskRunListDTO> => {
-      setError(undefined);
-      
-      const [, , query, limit, bookmark] = key;
-      const response = await (userTaskDefName
-        ? adminGetAllTasks(tenantId, {
-            ...query,
-            limit,
-            type: userTaskDefName,
-            bookmark,
-          })
-        : getUserTasks(tenantId, {
-            ...query,
-            limit,
-            bookmark,
-          }));
+  const { data, setSize, isValidating, mutate } =
+    useSWRInfinite<UserTaskRunListDTO>(
+      getKey,
+      async (key): Promise<UserTaskRunListDTO> => {
+        setError(undefined);
 
-      // Handle error
-      if (response.error) {
-        setError(response.error);
-        return { userTasks: [], bookmark: undefined };
-      }
+        const [, , query, limit, bookmark] = key;
+        const response = await (userTaskDefName
+          ? adminGetAllTasks(tenantId, {
+              ...query,
+              limit,
+              type: userTaskDefName,
+              bookmark,
+            })
+          : getUserTasks(tenantId, {
+              ...query,
+              limit,
+              bookmark,
+            }));
 
-      return response.data || { userTasks: [], bookmark: undefined };
-    },
-    {
-      refreshInterval: 1000,
-      revalidateOnFocus: true,
-      revalidateOnReconnect: true,
-      revalidateOnMount: true,
-      revalidateIfStale: true,
-      fallbackData: [initialData],
-      dedupingInterval: 500,
-      shouldRetryOnError: false
-    },
-  );
+        // Handle error
+        if (response.error) {
+          setError(response.error);
+          return { userTasks: [], bookmark: undefined };
+        }
+
+        return response.data || { userTasks: [], bookmark: undefined };
+      },
+      {
+        refreshInterval: 1000,
+        revalidateOnFocus: true,
+        revalidateOnReconnect: true,
+        revalidateOnMount: true,
+        revalidateIfStale: true,
+        fallbackData: [initialData],
+        dedupingInterval: 500,
+        shouldRetryOnError: false,
+      },
+    );
 
   const fetchNextPage = () => {
     setSize((size) => size + 1);
@@ -161,16 +162,16 @@ export default function ListUserTasks({
             {error.type === ErrorType.UNAUTHORIZED
               ? "Authentication Error"
               : error.type === ErrorType.FORBIDDEN
-              ? "Permission Denied"
-              : error.type === ErrorType.NETWORK
-              ? "Network Error"
-              : "Error Loading Tasks"}
+                ? "Permission Denied"
+                : error.type === ErrorType.NETWORK
+                  ? "Network Error"
+                  : "Error Loading Tasks"}
           </AlertTitle>
           <AlertDescription>{error.message}</AlertDescription>
-          <Button 
-            onClick={handleRetry} 
-            variant="outline" 
-            size="sm" 
+          <Button
+            onClick={handleRetry}
+            variant="outline"
+            size="sm"
             className="mt-2"
           >
             <RefreshCw className="mr-2 h-4 w-4" /> Retry

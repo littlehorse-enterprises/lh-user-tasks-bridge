@@ -8,7 +8,7 @@ export async function getIdentityProviderConfig(
   params: GetIdentityProviderConfigParams,
 ) {
   return withErrorHandling(async () => {
-  const client = await getClient(tenantId);
-  return client.public.getIdentityProviderConfig(params);
+    const client = await getClient(tenantId);
+    return client.public.getIdentityProviderConfig(params);
   });
 }

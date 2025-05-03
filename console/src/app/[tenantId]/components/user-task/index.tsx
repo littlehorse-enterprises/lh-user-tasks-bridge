@@ -78,9 +78,7 @@ export default function UserTask({
           value={
             userTask.userGroup ? (
               userTask.userGroup.valid ? (
-                <>
-                  {userTask.userGroup.name ?? userTask.userGroup.id}
-                </>
+                <>{userTask.userGroup.name ?? userTask.userGroup.id}</>
               ) : (
                 <>
                   {userTask.userGroup.id}{" "}
@@ -104,29 +102,49 @@ export default function UserTask({
             <ClaimUserTaskButton userTask={userTask} />
           </div>
         )}
-        
+
         {/* Only show these buttons if not in claimable mode */}
         {!claimable && (
           <div className="flex gap-2 w-full">
             {userTask.status === "UNASSIGNED" && (
               <>
-                {admin && <div className="flex-1"><AssignUserTaskButton userTask={userTask} /></div>}
-                {!admin && <div className="flex-1"><ClaimUserTaskButton userTask={userTask} /></div>}
+                {admin && (
+                  <div className="flex-1">
+                    <AssignUserTaskButton userTask={userTask} />
+                  </div>
+                )}
+                {!admin && (
+                  <div className="flex-1">
+                    <ClaimUserTaskButton userTask={userTask} />
+                  </div>
+                )}
               </>
             )}
             {userTask.status === "ASSIGNED" && admin && (
-              <div className="flex-1"><AssignUserTaskButton userTask={userTask} /></div>
+              <div className="flex-1">
+                <AssignUserTaskButton userTask={userTask} />
+              </div>
             )}
             {userTask.status === "ASSIGNED" &&
               (admin || (userTask.user && userTask.user.id === user.id)) && (
-                <div className="flex-1"><CompleteUserTaskButton userTask={userTask} admin={admin} /></div>
+                <div className="flex-1">
+                  <CompleteUserTaskButton userTask={userTask} admin={admin} />
+                </div>
               )}
             {userTask.status === "DONE" && (
-              <div className="flex-1"><CompleteUserTaskButton userTask={userTask} admin={admin} readOnly /></div>
+              <div className="flex-1">
+                <CompleteUserTaskButton
+                  userTask={userTask}
+                  admin={admin}
+                  readOnly
+                />
+              </div>
             )}
             {["UNASSIGNED", "ASSIGNED"].includes(userTask.status) &&
               (admin || (userTask.user && userTask.user.id === user.id)) && (
-                <div className="flex-1"><CancelUserTaskButton userTask={userTask} admin={admin} /></div>
+                <div className="flex-1">
+                  <CancelUserTaskButton userTask={userTask} admin={admin} />
+                </div>
               )}
           </div>
         )}
@@ -205,9 +223,7 @@ function Metadata({
                   {value}
                 </div>
               </TooltipTrigger>
-              {isTruncated && (
-                <TooltipContent>{value}</TooltipContent>
-              )}
+              {isTruncated && <TooltipContent>{value}</TooltipContent>}
             </Tooltip>
           </TooltipProvider>
         </div>

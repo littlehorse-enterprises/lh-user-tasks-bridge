@@ -2,16 +2,16 @@
 import { getClient } from "@/lib/client";
 import { withErrorHandling } from "@/lib/error-handling";
 import {
-    AdminRoleParams,
-    CreateManagedUserRequest,
-    DeleteUserParams,
-    GetUserFromIdPParams,
-    GetUsersFromIdentityProviderParams,
-    JoinOrLeaveGroupParams,
-    UpdateManagedUserRequest,
-    UpdateUserParams,
-    UpsertPasswordParams,
-    UpsertPasswordRequest,
+  AdminRoleParams,
+  CreateManagedUserRequest,
+  DeleteUserParams,
+  GetUserFromIdPParams,
+  GetUsersFromIdentityProviderParams,
+  JoinOrLeaveGroupParams,
+  UpdateManagedUserRequest,
+  UpdateUserParams,
+  UpsertPasswordParams,
+  UpsertPasswordRequest,
 } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
 
 export async function getUsersFromIdP(
@@ -66,10 +66,7 @@ export async function updateUser(
   });
 }
 
-export async function deleteUser(
-  tenantId: string,
-  params: DeleteUserParams,
-) {
+export async function deleteUser(tenantId: string, params: DeleteUserParams) {
   return withErrorHandling(async () => {
     const client = await getClient(tenantId);
     return client.userManagement.deleteUser(params);

@@ -12,13 +12,10 @@ export default async function AdminPage({
   params: { tenantId: string };
   searchParams: { tab?: string };
 }) {
-  const userTaskDefResult = await adminGetAllUserTasksDef(
-    params.tenantId,
-    {
-      // TODO: add pagination so this needs to be on client using `useInfiniteQuery`
-      limit: 999,
-    },
-  );
+  const userTaskDefResult = await adminGetAllUserTasksDef(params.tenantId, {
+    // TODO: add pagination so this needs to be on client using `useInfiniteQuery`
+    limit: 999,
+  });
 
   // Handle error getting user task def names
   if (userTaskDefResult.error) {
@@ -26,9 +23,7 @@ export default async function AdminPage({
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
         <AlertTitle>Error loading task definitions</AlertTitle>
-        <AlertDescription>
-          {userTaskDefResult.error.message}
-        </AlertDescription>
+        <AlertDescription>{userTaskDefResult.error.message}</AlertDescription>
       </Alert>
     );
   }
@@ -39,9 +34,7 @@ export default async function AdminPage({
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
         <AlertTitle>Error loading task definitions</AlertTitle>
-        <AlertDescription>
-          Failed to load task definition data
-        </AlertDescription>
+        <AlertDescription>Failed to load task definition data</AlertDescription>
       </Alert>
     );
   }
@@ -84,11 +77,11 @@ export default async function AdminPage({
   );
 
   const taskCounts = await Promise.all(taskCountsPromises);
-  
+
   // Check if all task counts have errors
-  const allTaskCountsHaveErrors = taskCounts.length > 0 && 
-    taskCounts.every(count => count.hasError);
-    
+  const allTaskCountsHaveErrors =
+    taskCounts.length > 0 && taskCounts.every((count) => count.hasError);
+
   if (allTaskCountsHaveErrors) {
     return (
       <Alert variant="destructive">

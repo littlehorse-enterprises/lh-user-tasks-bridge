@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,7 @@ export function ErrorHandler({
 
   const getErrorTitle = () => {
     if (title) return title;
-    
+
     switch (error.type) {
       case ErrorType.UNAUTHORIZED:
         return "Authentication Error";
@@ -57,28 +57,20 @@ export function ErrorHandler({
       <AlertCircle className="h-4 w-4" />
       <AlertTitle>{getErrorTitle()}</AlertTitle>
       <AlertDescription>{error.message}</AlertDescription>
-      
+
       <div className="flex gap-2 mt-4">
         {onRetry && (
-          <Button 
-            onClick={onRetry} 
-            variant="outline" 
-            size="sm"
-          >
+          <Button onClick={onRetry} variant="outline" size="sm">
             <RefreshCw className="mr-2 h-4 w-4" /> Retry
           </Button>
         )}
-        
+
         {allowReturn && (
-          <Button 
-            onClick={handleGoBack}
-            variant="outline" 
-            size="sm"
-          >
+          <Button onClick={handleGoBack} variant="outline" size="sm">
             Return to Previous Page
           </Button>
         )}
       </div>
     </Alert>
   );
-} 
+}

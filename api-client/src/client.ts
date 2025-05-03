@@ -78,7 +78,7 @@ export class LHUTBApiClient {
    */
   async fetch<T>(path: string, init?: RequestInit): Promise<T> {
     const url = `${this.baseUrl}/${this.tenantId}${path}`;
-    
+
     try {
       const response = await fetch(url, {
         ...init,
@@ -88,13 +88,12 @@ export class LHUTBApiClient {
           "Content-Type": "application/json",
         },
       });
-  
+
       // Throw the response object for non-2xx status codes
       if (!response.ok) {
-        
         // Clone the response before reading its body
         const responseClone = response.clone();
-        
+
         // Try to get more error details from the response
         try {
           const contentType = response.headers.get("content-type");
@@ -108,11 +107,11 @@ export class LHUTBApiClient {
         } catch (e) {
           console.error("Failed to parse error response:", e);
         }
-        
+
         // Throw the cloned response so it can still be processed by error handlers
         throw responseClone;
       }
-  
+
       const contentType = response.headers.get("content-type");
       if (contentType && contentType.includes("application/json")) {
         return response.json();

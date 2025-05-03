@@ -2,11 +2,11 @@
 import { getClient } from "@/lib/client";
 import { withErrorHandling } from "@/lib/error-handling";
 import {
-    CreateGroupRequest,
-    DeleteGroupParams,
-    GetGroupsParams,
-    UpdateGroupParams,
-    UpdateGroupRequest,
+  CreateGroupRequest,
+  DeleteGroupParams,
+  GetGroupsParams,
+  UpdateGroupParams,
+  UpdateGroupRequest,
 } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
 
 export async function createGroup(

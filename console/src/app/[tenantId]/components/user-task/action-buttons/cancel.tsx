@@ -2,15 +2,15 @@
 import { adminCancelUserTask } from "@/app/[tenantId]/actions/admin";
 import { cancelUserTask } from "@/app/[tenantId]/actions/user";
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { ErrorType } from "@/lib/error-handling";
@@ -31,7 +31,7 @@ export default function CancelUserTaskButton({
 
   const handleCancel = async () => {
     setIsLoading(true);
-    
+
     const response = await (admin
       ? adminCancelUserTask(tenantId, {
           wf_run_id: userTask.wfRunId,
@@ -41,28 +41,30 @@ export default function CancelUserTaskButton({
           wf_run_id: userTask.wfRunId,
           user_task_guid: userTask.id,
         }));
-    
+
     setIsLoading(false);
-    
+
     if (response.error) {
-      const errorMessage = 
+      const errorMessage =
         response.error.type === ErrorType.FORBIDDEN
           ? "You don't have permission to cancel this task"
           : response.error.type === ErrorType.NOT_FOUND
-          ? "Task not found or already cancelled"
-          : `Failed to cancel task: ${response.error.message}`;
-      
+            ? "Task not found or already cancelled"
+            : `Failed to cancel task: ${response.error.message}`;
+
       toast.error(errorMessage);
       return;
     }
-    
+
     toast.success("Task cancelled successfully");
   };
 
   return (
     <AlertDialog>
       <AlertDialogTrigger asChild>
-        <Button variant="destructive" className="w-full">Cancel</Button>
+        <Button variant="destructive" className="w-full">
+          Cancel
+        </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>

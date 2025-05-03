@@ -86,36 +86,48 @@ export class UserManagementController {
    */
   async deleteUser(params: DeleteUserParams): Promise<void> {
     const queryParams = objectToURLSearchParams(params);
-    return this.client.fetch<void>(`/management/users/${params.user_id}?${queryParams.toString()}`, {
-      method: "DELETE",
-    });
+    return this.client.fetch<void>(
+      `/management/users/${params.user_id}?${queryParams.toString()}`,
+      {
+        method: "DELETE",
+      },
+    );
   }
 
   /**
    * Assigns the Admin role to a specific user.
    */
   async assignAdminRole(params: AdminRoleParams): Promise<void> {
-    return this.client.fetch<void>(`/management/users/${params.user_id}/roles/admin`, {
-      method: "POST",
-    });
+    return this.client.fetch<void>(
+      `/management/users/${params.user_id}/roles/admin`,
+      {
+        method: "POST",
+      },
+    );
   }
 
   /**
    * Removes the Admin role from a specific user.
    */
   async removeAdminRole(params: AdminRoleParams): Promise<void> {
-    return this.client.fetch<void>(`/management/users/${params.user_id}/roles/admin`, {
-      method: "DELETE",
-    });
+    return this.client.fetch<void>(
+      `/management/users/${params.user_id}/roles/admin`,
+      {
+        method: "DELETE",
+      },
+    );
   }
 
   /**
    * Adds a user to a group.
    */
   async addUserToGroup(params: JoinOrLeaveGroupParams): Promise<void> {
-    return this.client.fetch<void>(`/management/users/${params.user_id}/groups/${params.group_id}`, {
-      method: "POST",
-    });
+    return this.client.fetch<void>(
+      `/management/users/${params.user_id}/groups/${params.group_id}`,
+      {
+        method: "POST",
+      },
+    );
   }
 
   /**
