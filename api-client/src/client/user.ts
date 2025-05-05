@@ -4,12 +4,12 @@ import {
   UserDTO,
   UserGroupListDTO,
   UserTaskRunListDTO,
+  UserTaskVariableValue,
 } from "../types/common";
 import {
   CancelUserTaskParams,
   ClaimUserTaskParams,
   CompleteUserTaskParams,
-  CompleteUserTaskRequest,
   GetClaimableTasksParams,
   GetMyTasksParams,
   GetUserTaskDetailParams,
@@ -50,7 +50,7 @@ export class UserController {
    */
   async completeUserTask(
     params: CompleteUserTaskParams,
-    results: CompleteUserTaskRequest,
+    results: Record<string, UserTaskVariableValue>,
   ): Promise<void> {
     return this.client.fetch<void>(
       `/tasks/${params.wf_run_id}/${params.user_task_guid}/result`,

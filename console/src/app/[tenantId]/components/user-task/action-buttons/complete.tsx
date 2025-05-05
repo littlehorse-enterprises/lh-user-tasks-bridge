@@ -189,9 +189,7 @@ export default function CompleteUserTaskButton({
 
     const response = await (admin
       ? adminCompleteUserTask(tenantId, params, cleanedResult)
-      : completeUserTask(tenantId, params, {
-          variableResults: cleanedResult,
-        }));
+      : completeUserTask(tenantId, params, cleanedResult));
 
     setIsSubmitting(false);
 

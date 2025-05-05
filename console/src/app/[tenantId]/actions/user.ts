@@ -5,10 +5,10 @@ import {
   CancelUserTaskParams,
   ClaimUserTaskParams,
   CompleteUserTaskParams,
-  CompleteUserTaskRequest,
   GetClaimableTasksParams,
   GetMyTasksParams,
   GetUserTaskDetailParams,
+  UserTaskVariableValue,
 } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
 
 export async function getUserTasks(tenantId: string, params: GetMyTasksParams) {
@@ -31,7 +31,7 @@ export async function getUserTaskDetail(
 export async function completeUserTask(
   tenantId: string,
   params: CompleteUserTaskParams,
-  results: CompleteUserTaskRequest,
+  results: Record<string, UserTaskVariableValue>,
 ) {
   return withErrorHandling(async () => {
     const client = await getClient(tenantId);

@@ -21,10 +21,6 @@ export interface CompleteUserTaskParams {
   user_task_guid: string;
 }
 
-export interface CompleteUserTaskRequest {
-  variableResults: Record<string, UserTaskVariableValue>;
-}
-
 export interface ClaimUserTaskParams {
   wf_run_id: string;
   user_task_guid: string;
