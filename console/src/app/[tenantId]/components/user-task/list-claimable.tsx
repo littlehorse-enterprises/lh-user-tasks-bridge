@@ -36,13 +36,16 @@ export default function ListClaimableUserTasks({
         defaultValue={userGroups[0].id}
         onValueChange={(value) => setActiveGroup(value)}
       >
-        <TabsList>
-          {userGroups.map((userGroup) => (
-            <TabsTrigger key={userGroup.id} value={userGroup.id}>
-              {userGroup.name}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+        <div className="flex items-center gap-2 mb-2">
+          <span className="font-medium text-sm">Groups:</span>
+          <TabsList>
+            {userGroups.map((userGroup) => (
+              <TabsTrigger key={userGroup.id} value={userGroup.id}>
+                {userGroup.name}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
 
         {userGroups.map((userGroup, index) => {
           const initialError = initialErrors?.[index];
