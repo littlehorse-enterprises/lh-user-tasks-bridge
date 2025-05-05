@@ -53,9 +53,9 @@ export class UserManagementController {
   ): Promise<void> {
     const queryParams = objectToURLSearchParams(params);
     return this.client.fetch<void>(
-      `/management/users/${params.user_id}/password`,
+      `/management/users/${params.user_id}/password?${queryParams.toString()}`,
       {
-        method: "POST",
+        method: "PUT",
         body: JSON.stringify(request),
       },
     );

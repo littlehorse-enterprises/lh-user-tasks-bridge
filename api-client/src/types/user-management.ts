@@ -10,6 +10,7 @@ export interface IDPUserDTO {
   groups: IDPGroupDTO[];
   realmRoles: string[];
   clientRoles: Record<string, string[]>;
+  enabled: boolean;
 }
 
 export interface IDPUserListDTO {
@@ -33,14 +34,14 @@ export interface CreateManagedUserRequest {
 }
 
 export interface UpsertPasswordRequest {
-  value: string;
+  password: string;
   temporary?: boolean;
 }
 
 export interface UpdateManagedUserRequest {
   firstName?: string;
   lastName?: string;
-  email?: string;
+  email: string;
   username?: string;
   enabled?: boolean;
 }

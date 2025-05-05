@@ -1,5 +1,6 @@
 "use client";
 
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -10,6 +11,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Form,
   FormControl,
@@ -33,7 +40,15 @@ import {
   IDPGroupDTO,
   IDPUserDTO,
 } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
-import { Eye, EyeOff } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  Lock,
+  MoreHorizontal,
+  Pencil,
+  Trash,
+  Users,
+} from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -53,12 +68,6 @@ import {
   updateUser,
   upsertPassword,
 } from "../../actions/user-management";
-
-const bulkCreateSchema = z.object({
-  users: z.string().min(1, {
-    message: "Please provide at least one user to create",
-  }),
-});
 
 const formSchema = z.object({
   username: z.string().min(2, {
@@ -91,6 +100,7 @@ const editFormSchema = z.object({
   lastName: z.string().min(2, {
     message: "Last name must be at least 2 characters.",
   }),
+  enabled: z.boolean().optional(),
 });
 
 const passwordResetSchema = z.object({
@@ -109,34 +119,16 @@ export default function UsersManagement() {
   const [isLoading, setIsLoading] = useState(true);
   const [isGroupsLoading, setIsGroupsLoading] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [isBulkCreateDialogOpen, setIsBulkCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isGroupsDialogOpen, setIsGroupsDialogOpen] = useState(false);
   const [isBulkGroupsDialogOpen, setIsBulkGroupsDialogOpen] = useState(false);
   const [isPasswordResetDialogOpen, setIsPasswordResetDialogOpen] =
     useState(false);
   const [selectedUser, setSelectedUser] = useState<IDPUserDTO | null>(null);
-  const [userGroups, setUserGroups] = useState<string[]>([]);
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
-  const [isAccountEnabled, setIsAccountEnabled] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [selectAll, setSelectAll] = useState(false);
-  const [bulkCreateResults, setBulkCreateResults] = useState<{
-    success: number;
-    errors: { username: string; error: string }[];
-  }>({
-    success: 0,
-    errors: [],
-  });
-  const [isBulkCreateLoading, setIsBulkCreateLoading] = useState(false);
-
-  const bulkCreateForm = useForm<z.infer<typeof bulkCreateSchema>>({
-    resolver: zodResolver(bulkCreateSchema),
-    defaultValues: {
-      users: "",
-    },
-  });
 
   const createForm = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -175,11 +167,22 @@ export default function UsersManagement() {
     setIsLoading(true);
     try {
       const response = await getUsersFromIdP(tenantId, {});
-      // Sort users by last name (case-insensitive)
+      // Sort users by last name (case-insensitive) and then by first name
       const sortedUsers = [...(response.data?.users || [])].sort((a, b) => {
         const lastNameA = (a.lastName || "").toLowerCase();
         const lastNameB = (b.lastName || "").toLowerCase();
-        return lastNameA.localeCompare(lastNameB);
+
+        // First compare last names
+        const lastNameComparison = lastNameA.localeCompare(lastNameB);
+
+        // If last names are the same, compare first names
+        if (lastNameComparison === 0) {
+          const firstNameA = (a.firstName || "").toLowerCase();
+          const firstNameB = (b.firstName || "").toLowerCase();
+          return firstNameA.localeCompare(firstNameB);
+        }
+
+        return lastNameComparison;
       });
       setUsers(sortedUsers);
     } catch (error) {
@@ -209,101 +212,6 @@ export default function UsersManagement() {
     }
   }
 
-  async function handleBulkCreateUsers(
-    values: z.infer<typeof bulkCreateSchema>,
-  ) {
-    setIsBulkCreateLoading(true);
-    setBulkCreateResults({ success: 0, errors: [] });
-
-    try {
-      const userLines = values.users
-        .split("\n")
-        .filter((line) => line.trim() !== "");
-      let successCount = 0;
-      const errors: { username: string; error: string }[] = [];
-
-      for (const userLine of userLines) {
-        try {
-          // Expected format: username,email,firstName,lastName,password
-          const [username, email, firstName, lastName, password] = userLine
-            .split(",")
-            .map((s) => s.trim());
-
-          if (!username || !email || !firstName || !lastName) {
-            errors.push({
-              username: username || "Unknown",
-              error:
-                "All fields (username, email, firstName, lastName) are required",
-            });
-            continue;
-          }
-
-          const response = await createUser(tenantId, {
-            username,
-            email,
-            firstName,
-            lastName,
-          });
-
-          if (response.error) {
-            errors.push({
-              username: username,
-              error: response.error.message || "Unknown error",
-            });
-            continue;
-          }
-
-          // Set password separately
-          if (password) {
-            const passwordResponse = await upsertPassword(
-              tenantId,
-              { user_id: username },
-              { value: password, temporary: true },
-            );
-
-            if (passwordResponse.error) {
-              errors.push({
-                username: username,
-                error: `User created but password setting failed: ${passwordResponse.error.message || "Unknown error"}`,
-              });
-              continue;
-            }
-          } else {
-            errors.push({
-              username: username,
-              error:
-                "Password is required. User created but no password was set.",
-            });
-            continue;
-          }
-
-          successCount++;
-        } catch (error: any) {
-          const userInfo = userLine.split(",")[0] || "Unknown";
-          errors.push({
-            username: userInfo,
-            error: error.message || "Unknown error",
-          });
-        }
-      }
-
-      setBulkCreateResults({
-        success: successCount,
-        errors,
-      });
-
-      if (successCount > 0) {
-        toast.success(`Successfully created ${successCount} users`);
-        loadUsers();
-      }
-    } catch (error) {
-      console.error("Error in bulk user creation:", error);
-      toast.error("Failed to process bulk user creation");
-    } finally {
-      setIsBulkCreateLoading(false);
-    }
-  }
-
   async function handleCreateUser(values: z.infer<typeof formSchema>) {
     try {
       // First create the user without password
@@ -324,7 +232,7 @@ export default function UsersManagement() {
       const passwordResponse = await upsertPassword(
         tenantId,
         { user_id: values.username },
-        { value: values.password, temporary: true },
+        { password: values.password, temporary: true },
       );
 
       if (passwordResponse.error) {
@@ -349,17 +257,17 @@ export default function UsersManagement() {
     if (!selectedUser) return;
 
     try {
-      // Create update object without the enabled property
+      // Create update object
       const updateData = {
-        username: values.username,
         email: values.email,
         firstName: values.firstName,
         lastName: values.lastName,
+        enabled: values.enabled,
       };
 
       const updateResponse = await updateUser(
         tenantId,
-        { user_id: selectedUser.username },
+        { user_id: selectedUser.id },
         updateData,
       );
 
@@ -387,8 +295,8 @@ export default function UsersManagement() {
     try {
       const passwordResponse = await upsertPassword(
         tenantId,
-        { user_id: selectedUser.username },
-        { value: values.password, temporary: true },
+        { user_id: selectedUser.id },
+        { password: values.password, temporary: true },
       );
 
       if (passwordResponse.error) {
@@ -435,12 +343,12 @@ export default function UsersManagement() {
       const userResponse = await getUserFromIdP(tenantId, { user_id: userId });
       if (userResponse.data) {
         setSelectedUser(userResponse.data);
-        setIsAccountEnabled(true);
         editForm.reset({
           username: userResponse.data.username || "",
           email: userResponse.data.email || "",
           firstName: userResponse.data.firstName || "",
           lastName: userResponse.data.lastName || "",
+          enabled: userResponse.data.enabled !== false,
         });
         setIsEditDialogOpen(true);
       } else {
@@ -460,7 +368,6 @@ export default function UsersManagement() {
 
   async function handleManageGroups(user: IDPUserDTO) {
     setSelectedUser(user);
-    setUserGroups(user.groups?.map((g) => g.id) || []);
     setSelectedGroups(user.groups?.map((g) => g.id) || []);
     setIsGroupsDialogOpen(true);
   }
@@ -676,6 +583,38 @@ export default function UsersManagement() {
     }
   }, [selectAll]);
 
+  // Fix the toggleUserEnabled function
+  async function toggleUserEnabled(user: IDPUserDTO) {
+    try {
+      const updateData = {
+        email: user.email,
+        enabled: !user.enabled,
+      };
+
+      const updateResponse = await updateUser(
+        tenantId,
+        { user_id: user.id },
+        updateData,
+      );
+
+      if (updateResponse.error) {
+        toast.error(
+          updateResponse.error.message || "Failed to update user status.",
+        );
+        console.error("Error updating user status:", updateResponse.error);
+        return;
+      }
+
+      toast.success(
+        `User ${user.enabled ? "disabled" : "enabled"} successfully.`,
+      );
+      loadUsers();
+    } catch (error) {
+      toast.error("Failed to update user status.");
+      console.error("Error updating user status:", error);
+    }
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -730,112 +669,6 @@ export default function UsersManagement() {
               </Button>
             </>
           )}
-          <Dialog
-            open={isBulkCreateDialogOpen}
-            onOpenChange={setIsBulkCreateDialogOpen}
-          >
-            <DialogTrigger asChild>
-              <Button variant="outline" className="space-x-1">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                </svg>
-                <span>Bulk Create</span>
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[600px]">
-              <DialogHeader>
-                <DialogTitle>Bulk Create Users</DialogTitle>
-              </DialogHeader>
-              <Form {...bulkCreateForm}>
-                <form
-                  onSubmit={bulkCreateForm.handleSubmit(handleBulkCreateUsers)}
-                  className="space-y-4"
-                >
-                  <div className="text-sm text-muted-foreground mb-2">
-                    Enter one user per line in the format:{" "}
-                    <span className="font-mono">
-                      username,email,firstName,lastName,password
-                    </span>
-                    <br />
-                    All fields are required. Passwords will be set as temporary
-                    and users will need to change them on first login.
-                  </div>
-                  <FormField
-                    control={bulkCreateForm.control}
-                    name="users"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormControl>
-                          <textarea
-                            className="w-full h-60 p-2 border rounded-md font-mono text-sm"
-                            placeholder="user1,user1@example.com,First,Last,password123&#10;user2,user2@example.com,First,Last,password123"
-                            {...field}
-                          />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  {bulkCreateResults.errors.length > 0 && (
-                    <div className="border border-red-200 bg-red-50 p-3 rounded-md text-sm">
-                      <div className="font-medium text-red-800 mb-2">
-                        Failed to create {bulkCreateResults.errors.length}{" "}
-                        users:
-                      </div>
-                      <div className="max-h-40 overflow-y-auto">
-                        {bulkCreateResults.errors.map((error, i) => (
-                          <div key={i} className="flex mb-1">
-                            <span className="font-mono mr-2">
-                              {error.username}:
-                            </span>
-                            <span>{error.error}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {bulkCreateResults.success > 0 && (
-                    <div className="border border-green-200 bg-green-50 p-3 rounded-md">
-                      <div className="font-medium text-green-800">
-                        Successfully created {bulkCreateResults.success} users
-                      </div>
-                    </div>
-                  )}
-
-                  <DialogFooter className="gap-2">
-                    <Button
-                      variant="outline"
-                      type="button"
-                      onClick={() => setIsBulkCreateDialogOpen(false)}
-                    >
-                      Close
-                    </Button>
-                    <Button
-                      type="submit"
-                      className="bg-yellow-400 hover:bg-yellow-500 text-black"
-                      disabled={isBulkCreateLoading}
-                    >
-                      {isBulkCreateLoading
-                        ? "Creating Users..."
-                        : "Create Users"}
-                    </Button>
-                  </DialogFooter>
-                </form>
-              </Form>
-            </DialogContent>
-          </Dialog>
 
           <Dialog
             open={isCreateDialogOpen}
@@ -991,6 +824,7 @@ export default function UsersManagement() {
               <TableHead>Username</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Name</TableHead>
+              <TableHead>Enabled</TableHead>
               <TableHead>Admin</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -1030,6 +864,34 @@ export default function UsersManagement() {
                 <TableCell>{user.email}</TableCell>
                 <TableCell>{`${user.firstName || ""} ${user.lastName || ""}`}</TableCell>
                 <TableCell>
+                  {user.enabled !== false ? (
+                    <Badge
+                      className={`bg-green-500 ${user.id !== currentUserId ? "hover:bg-green-600 cursor-pointer" : ""}`}
+                      onClick={
+                        user.id !== currentUserId
+                          ? () => toggleUserEnabled(user)
+                          : undefined
+                      }
+                    >
+                      Enabled
+                    </Badge>
+                  ) : (
+                    <Badge
+                      variant="destructive"
+                      className={
+                        user.id !== currentUserId ? "cursor-pointer" : ""
+                      }
+                      onClick={
+                        user.id !== currentUserId
+                          ? () => toggleUserEnabled(user)
+                          : undefined
+                      }
+                    >
+                      Disabled
+                    </Badge>
+                  )}
+                </TableCell>
+                <TableCell>
                   <Switch
                     checked={
                       user.realmRoles?.includes("lh-user-tasks-admin") || false
@@ -1040,102 +902,40 @@ export default function UsersManagement() {
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end space-x-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleEditClick(user.id)}
-                      className="h-8 w-8"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="lucide lucide-pencil"
-                      >
-                        <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                        <path d="m15 5 4 4" />
-                      </svg>
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleResetPasswordClick(user)}
-                      className="h-8 w-8"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <rect
-                          x="3"
-                          y="11"
-                          width="18"
-                          height="11"
-                          rx="2"
-                          ry="2"
-                        ></rect>
-                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                      </svg>
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleManageGroups(user)}
-                      className="h-8 w-8"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                        <circle cx="9" cy="7" r="4"></circle>
-                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                        <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                      </svg>
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      onClick={() => handleDeleteUser(user.id)}
-                      className="h-8 w-8 bg-red-500 hover:bg-red-600"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="white"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="lucide lucide-trash"
-                      >
-                        <path d="M3 6h18" />
-                        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                      </svg>
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <MoreHorizontal size={16} />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => handleEditClick(user.id)}
+                        >
+                          <Pencil size={16} className="mr-2" />
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => handleResetPasswordClick(user)}
+                        >
+                          <Lock size={16} className="mr-2" />
+                          Reset Password
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => handleManageGroups(user)}
+                        >
+                          <Users size={16} className="mr-2" />
+                          Manage Groups
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => handleDeleteUser(user.id)}
+                          className="text-red-600 focus:text-red-600 focus:bg-red-100"
+                        >
+                          <Trash size={16} className="mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </TableCell>
               </TableRow>
@@ -1189,8 +989,11 @@ export default function UsersManagement() {
                   <FormItem>
                     <FormLabel>Username*</FormLabel>
                     <FormControl>
-                      <Input {...field} readOnly />
+                      <Input {...field} disabled />
                     </FormControl>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Username cannot be changed after creation.
+                    </p>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -1205,6 +1008,27 @@ export default function UsersManagement() {
                       <Input type="email" {...field} />
                     </FormControl>
                     <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={editForm.control}
+                name="enabled"
+                render={({ field }) => (
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                    <div className="space-y-0.5">
+                      <FormLabel>Account Enabled</FormLabel>
+                      <div className="text-sm text-muted-foreground">
+                        Disable to temporarily block the user's access
+                      </div>
+                    </div>
+                    <FormControl>
+                      <Switch
+                        checked={field.value}
+                        onCheckedChange={field.onChange}
+                        disabled={selectedUser?.id === currentUserId}
+                      />
+                    </FormControl>
                   </FormItem>
                 )}
               />
@@ -1239,39 +1063,46 @@ export default function UsersManagement() {
           ) : (
             <div className="py-4">
               <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
-                {groups.map((group) => {
-                  const isInGroup = selectedGroups.includes(group.id);
-                  return (
-                    <div
-                      key={group.id}
-                      className="flex items-center justify-between border p-3 rounded-md"
-                    >
-                      <div className="flex items-center space-x-2">
-                        <label
-                          htmlFor={`toggle-${group.id}`}
-                          className="font-medium"
-                        >
-                          {group.name}
-                        </label>
+                {groups
+                  .slice()
+                  .sort((a, b) => {
+                    const nameA = (a.name || "").toLowerCase();
+                    const nameB = (b.name || "").toLowerCase();
+                    return nameA.localeCompare(nameB);
+                  })
+                  .map((group) => {
+                    const isInGroup = selectedGroups.includes(group.id);
+                    return (
+                      <div
+                        key={group.id}
+                        className="flex items-center justify-between border p-3 rounded-md"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <label
+                            htmlFor={`toggle-${group.id}`}
+                            className="font-medium"
+                          >
+                            {group.name}
+                          </label>
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <Switch
+                            id={`toggle-${group.id}`}
+                            checked={isInGroup}
+                            onCheckedChange={(checked) => {
+                              if (selectedUser) {
+                                handleToggleGroup(
+                                  selectedUser.id,
+                                  group.id,
+                                  checked,
+                                );
+                              }
+                            }}
+                          />
+                        </div>
                       </div>
-                      <div className="flex items-center space-x-3">
-                        <Switch
-                          id={`toggle-${group.id}`}
-                          checked={isInGroup}
-                          onCheckedChange={(checked) => {
-                            if (selectedUser) {
-                              handleToggleGroup(
-                                selectedUser.id,
-                                group.id,
-                                checked,
-                              );
-                            }
-                          }}
-                        />
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
               </div>
               <DialogFooter className="mt-6">
                 <Button
@@ -1310,32 +1141,39 @@ export default function UsersManagement() {
                 </p>
               </div>
               <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
-                {groups.map((group) => (
-                  <div
-                    key={group.id}
-                    className="flex items-center justify-between border p-3 rounded-md"
-                  >
-                    <label
-                      htmlFor={`bulkgroup-${group.id}`}
-                      className="font-medium cursor-pointer flex-1"
+                {groups
+                  .slice()
+                  .sort((a, b) => {
+                    const nameA = (a.name || "").toLowerCase();
+                    const nameB = (b.name || "").toLowerCase();
+                    return nameA.localeCompare(nameB);
+                  })
+                  .map((group) => (
+                    <div
+                      key={group.id}
+                      className="flex items-center justify-between border p-3 rounded-md"
                     >
-                      {group.name}
-                    </label>
-                    <Checkbox
-                      id={`bulkgroup-${group.id}`}
-                      checked={selectedGroups.includes(group.id)}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setSelectedGroups([...selectedGroups, group.id]);
-                        } else {
-                          setSelectedGroups(
-                            selectedGroups.filter((id) => id !== group.id),
-                          );
-                        }
-                      }}
-                    />
-                  </div>
-                ))}
+                      <label
+                        htmlFor={`bulkgroup-${group.id}`}
+                        className="font-medium cursor-pointer flex-1"
+                      >
+                        {group.name}
+                      </label>
+                      <Checkbox
+                        id={`bulkgroup-${group.id}`}
+                        checked={selectedGroups.includes(group.id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedGroups([...selectedGroups, group.id]);
+                          } else {
+                            setSelectedGroups(
+                              selectedGroups.filter((id) => id !== group.id),
+                            );
+                          }
+                        }}
+                      />
+                    </div>
+                  ))}
               </div>
               <DialogFooter className="mt-6 gap-2">
                 <Button
