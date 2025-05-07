@@ -66,8 +66,6 @@ export class LHUTBApiClient {
     this.groupManagement = new GroupManagementController(this);
     this.init = new InitController(this);
     this.public = new PublicController(this);
-
-    this.init.checkConnection();
   }
 
   /**
