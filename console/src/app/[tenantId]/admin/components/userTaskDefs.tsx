@@ -172,12 +172,8 @@ export default function UserTaskDefs({ tenantId }: UserTaskDefsProps) {
     );
   }
 
-  // Loading state or empty state
-  if (
-    !userTaskDefData?.pages ||
-    userTaskDefData.pages.length === 0 ||
-    !taskCounts
-  ) {
+  // Loading state
+  if (!userTaskDefData?.pages || typeof taskCounts === "undefined") {
     return (
       <div className="flex justify-center items-center p-8">
         <div className="animate-pulse space-y-4">
@@ -192,16 +188,13 @@ export default function UserTaskDefs({ tenantId }: UserTaskDefsProps) {
     );
   }
 
-  // No data state
-  if (allUserTaskDefNames.length === 0) {
+  // Empty state
+  if (userTaskDefData.pages.length === 0) {
     return (
-      <div>
-        <h1 className="text-center text-2xl font-bold text-foreground">
-          No UserTask Definitions Found
-        </h1>
-        <p className="text-center text-muted-foreground">
-          You currently have no UserTask Definitions registered.
-        </p>
+      <div className="flex justify-center items-center p-8">
+        <span className="text-muted-foreground text-lg">
+          You do not have any user task defs registered.
+        </span>
       </div>
     );
   }
