@@ -69,12 +69,9 @@ import {
   upsertPassword,
 } from "../../actions/user-management";
 
-const formSchema = z.object({
+const createFormSchema = z.object({
   username: z.string().min(2, {
     message: "Username must be at least 2 characters.",
-  }),
-  password: z.string().min(4, {
-    message: "Password must be at least 4 characters.",
   }),
   email: z.string().email({
     message: "Please enter a valid email address.",
@@ -130,11 +127,10 @@ export default function UsersManagement() {
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [selectAll, setSelectAll] = useState(false);
 
-  const createForm = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  const createForm = useForm<z.infer<typeof createFormSchema>>({
+    resolver: zodResolver(createFormSchema),
     defaultValues: {
       username: "",
-      password: "",
       email: "",
       firstName: "",
       lastName: "",
@@ -212,7 +208,7 @@ export default function UsersManagement() {
     }
   }
 
-  async function handleCreateUser(values: z.infer<typeof formSchema>) {
+  async function handleCreateUser(values: z.infer<typeof createFormSchema>) {
     try {
       // First create the user without password
       const response = await createUser(tenantId, {
@@ -225,21 +221,6 @@ export default function UsersManagement() {
       if (response.error) {
         toast.error(response.error.message || "Failed to create user.");
         console.error("Error creating user:", response.error);
-        return;
-      }
-
-      // Set password separately
-      const passwordResponse = await upsertPassword(
-        tenantId,
-        { user_id: values.username },
-        { password: values.password, temporary: true },
-      );
-
-      if (passwordResponse.error) {
-        toast.error(
-          `User created but password setting failed: ${passwordResponse.error.message || "Unknown error"}`,
-        );
-        console.error("Error setting password:", passwordResponse.error);
         return;
       }
 
@@ -740,44 +721,6 @@ export default function UsersManagement() {
                       </FormItem>
                     )}
                   />
-                  <FormField
-                    control={createForm.control}
-                    name="password"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Password*</FormLabel>
-                        <div className="relative">
-                          <FormControl>
-                            <Input
-                              type={showPassword ? "text" : "password"}
-                              {...field}
-                            />
-                          </FormControl>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="absolute right-0 top-0 h-full"
-                            onClick={() => setShowPassword(!showPassword)}
-                          >
-                            {showPassword ? (
-                              <EyeOff className="h-4 w-4" />
-                            ) : (
-                              <Eye className="h-4 w-4" />
-                            )}
-                            <span className="sr-only">
-                              {showPassword ? "Hide password" : "Show password"}
-                            </span>
-                          </Button>
-                        </div>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <div className="text-sm text-muted-foreground">
-                    Users will be required to change their password on first
-                    login.
-                  </div>
                   <DialogFooter className="gap-2">
                     <Button
                       variant="outline"
