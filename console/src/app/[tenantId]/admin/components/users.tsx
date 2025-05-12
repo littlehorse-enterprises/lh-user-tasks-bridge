@@ -391,6 +391,7 @@ export default function UsersManagement() {
 
         toast.success("User removed from group successfully.");
       }
+      loadUsers();
 
       // Update local state
       if (isActive) {
