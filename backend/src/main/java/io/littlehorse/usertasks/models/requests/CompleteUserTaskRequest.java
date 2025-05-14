@@ -35,9 +35,9 @@ public class CompleteUserTaskRequest {
                 .setUserId(userId)
                 .setUserTaskRunId(UserTaskRunId.newBuilder()
                         .setWfRunId(WfRunId.newBuilder()
-                                .setId(this.wfRunId)
+                                .setId(getWfRunId())
                                 .build())
-                        .setUserTaskGuid(userTaskRunGuid)
+                        .setUserTaskGuid(getUserTaskRunGuid())
                         .build())
                 .putAllResults(parsedResults)
                 .build();

@@ -6,6 +6,7 @@ import io.grpc.StatusRuntimeException;
 import io.littlehorse.sdk.common.proto.*;
 import io.littlehorse.usertasks.exceptions.CustomUnauthorizedException;
 import io.littlehorse.usertasks.exceptions.NotFoundException;
+import io.littlehorse.usertasks.models.common.UserTaskVariableValue;
 import io.littlehorse.usertasks.models.requests.AssignmentRequest;
 import io.littlehorse.usertasks.models.requests.CompleteUserTaskRequest;
 import io.littlehorse.usertasks.models.requests.StandardPagination;
@@ -15,6 +16,7 @@ import io.littlehorse.usertasks.models.responses.DetailedUserTaskRunDTO;
 import io.littlehorse.usertasks.models.responses.SimpleUserTaskRunDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskDefListDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskRunListDTO;
+import io.littlehorse.usertasks.util.enums.UserTaskFieldType;
 import jakarta.annotation.Nullable;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -85,7 +87,7 @@ public class UserTaskService {
 
         LittleHorseGrpc.LittleHorseBlockingStub tenantClient = getTenantLHClient(tenantId);
 
-        var userTaskRunResult = tenantClient.getUserTaskRun(getUserTaskRunRequest);
+        UserTaskRun userTaskRunResult = tenantClient.getUserTaskRun(getUserTaskRunRequest);
 
         if (!Objects.nonNull(userTaskRunResult)) {
             throw new NotFoundException("Could not find UserTaskRun!");
@@ -95,7 +97,7 @@ public class UserTaskService {
             validateIfUserIsAllowedToSeeUserTask(userId, userGroup, userTaskRunResult);
         }
 
-        var userTaskDefResult = tenantClient.getUserTaskDef(userTaskRunResult.getUserTaskDefId());
+        UserTaskDef userTaskDefResult = tenantClient.getUserTaskDef(userTaskRunResult.getUserTaskDefId());
 
         if (!Objects.nonNull(userTaskDefResult)) {
             throw new NotFoundException("Could not find associated UserTaskDef!");
@@ -130,19 +132,21 @@ public class UserTaskService {
                     throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                             "The UserTask you are trying to complete is already DONE or CANCELLED");
                 }
+
+                LittleHorseGrpc.LittleHorseBlockingStub tenantClient = getTenantLHClient(tenantId);
+
+                validateMandatoryStringFields(request, userTaskDetails.get().getUserTaskDefName(), tenantClient);
+
+                CompleteUserTaskRunRequest serverRequest = request.toServerRequest(userId);
+
+                tenantClient.completeUserTaskRun(serverRequest);
+
+                log.atInfo()
+                        .setMessage("UserTaskRun with wfRunId: {}, guid: {} was successfully completed")
+                        .addArgument(request.getWfRunId())
+                        .addArgument(request.getUserTaskRunGuid())
+                        .log();
             }
-
-            CompleteUserTaskRunRequest serverRequest = request.toServerRequest(userId);
-
-            LittleHorseGrpc.LittleHorseBlockingStub tenantClient = getTenantLHClient(tenantId);
-
-            tenantClient.completeUserTaskRun(serverRequest);
-
-            log.atInfo()
-                    .setMessage("UserTaskRun with wfRunId: {}, guid: {} was successfully completed")
-                    .addArgument(request.getWfRunId())
-                    .addArgument(request.getUserTaskRunGuid())
-                    .log();
         } catch (StatusRuntimeException e) {
             log.atError()
                     .setMessage("Something went wrong in LH Kernel with completion process for UserTaskRun with " +
@@ -575,6 +579,30 @@ public class UserTaskService {
         }
     }
 
+    private void validateMandatoryStringFields(CompleteUserTaskRequest request, String userTaskDefName, LittleHorseGrpc.LittleHorseBlockingStub tenantClient) {
+        UserTaskDefId userTaskDefId = UserTaskDefId.newBuilder()
+                .setName(userTaskDefName)
+                .build();
+
+        UserTaskDef userTaskDef = tenantClient.getUserTaskDef(userTaskDefId);
+        List<String> mandatoryStringFieldsNames = getMandatoryStringFieldsNames(userTaskDef);
+
+        if (!CollectionUtils.isEmpty(mandatoryStringFieldsNames)) {
+            Map<String, UserTaskVariableValue> onlyStringVariableValues = getStringVariableValues(request);
+
+            if (!CollectionUtils.isEmpty(onlyStringVariableValues)) {
+                boolean stringFieldsHaveValidInputs = haveStringFieldsValidInputs(onlyStringVariableValues, mandatoryStringFieldsNames);
+
+                if (!stringFieldsHaveValidInputs) {
+                    String joinedFieldNames = String.join(", ", mandatoryStringFieldsNames);
+                    String errorMessage = String.format("Mandatory Field(s): %s contain invalid inputs (null or whitespace-only values)", joinedFieldNames);
+
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, errorMessage);
+                }
+            }
+        }
+    }
+
     private boolean isUserTaskTerminated(UserTaskRunStatus currentStatus) {
         return TERMINAL_STATUSES.contains(currentStatus);
     }
@@ -600,5 +628,25 @@ public class UserTaskService {
         return userTaskRun.getStatus().equals(UserTaskRunStatus.UNASSIGNED)
                 && !CollectionUtils.isEmpty(userGroups)
                 && userGroups.contains(userTaskRun.getUserGroup().trim());
+    }
+
+    private List<String> getMandatoryStringFieldsNames(UserTaskDef userTaskDef) {
+        return userTaskDef.getFieldsList().stream()
+                .filter(userTaskField -> userTaskField.getType().equals(VariableType.STR) && userTaskField.getRequired())
+                .map(UserTaskField::getName)
+                .toList();
+    }
+
+    private Map<String, UserTaskVariableValue> getStringVariableValues(CompleteUserTaskRequest request) {
+        return request.getResults().entrySet().stream()
+                .filter(entry -> entry.getValue().getType().equals(UserTaskFieldType.STRING))
+                .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
+    }
+
+    private boolean haveStringFieldsValidInputs(Map<String, UserTaskVariableValue> stringVariableValues,
+                                                List<String> mandatoryStringFieldsNames) {
+        return stringVariableValues.entrySet().stream()
+                .filter(entry -> mandatoryStringFieldsNames.contains(entry.getKey()))
+                .allMatch(entry -> StringUtils.hasText((String) entry.getValue().getValue()));
     }
 }
