@@ -882,7 +882,7 @@ class UserTaskServiceTest {
         userTaskService.completeUserTask(userId, request, tenantId, false);
 
         verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
-        verify(lhTenantClient).getUserTaskDef(any(UserTaskDefId.class));
+        verify(lhTenantClient, times(2)).getUserTaskDef(any(UserTaskDefId.class));
         verify(lhTenantClient).completeUserTaskRun(any(CompleteUserTaskRunRequest.class));
     }
 
@@ -920,7 +920,45 @@ class UserTaskServiceTest {
         userTaskService.completeUserTask(userId, request, tenantId, true);
 
         verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
-        verify(lhTenantClient).getUserTaskDef(any(UserTaskDefId.class));
+        verify(lhTenantClient, times(2)).getUserTaskDef(any(UserTaskDefId.class));
+        verify(lhTenantClient).completeUserTaskRun(any(CompleteUserTaskRunRequest.class));
+    }
+
+    @Test
+    void completeUserTask_shouldSucceedForAdminUserWhenServerDoesNotThrowAnExceptionAndStringVariableValuesAreNotRequired() {
+        var userId = "my-admin-user-id";
+        var wfRunId = buildStringGuid();
+        var userTaskRunGuid = buildStringGuid();
+        var request = CompleteUserTaskRequest.builder()
+                .wfRunId(wfRunId)
+                .userTaskRunGuid(userTaskRunGuid)
+                .results(Map.of(
+                                "string-field", UserTaskVariableValue.builder()
+                                        .value("some-value")
+                                        .type(UserTaskFieldType.STRING)
+                                        .build(),
+                                "integer-field", UserTaskVariableValue.builder()
+                                        .value(1)
+                                        .type(UserTaskFieldType.INTEGER)
+                                        .build(),
+                                "double-field", UserTaskVariableValue.builder()
+                                        .type(UserTaskFieldType.DOUBLE)
+                                        .value(2.0)
+                                        .build()
+                        )
+                ).build();
+
+        var userTaskRun = buildFakeUserTaskRun(userId, wfRunId);
+        var userTaskDef = buildFakeUserTaskDefWithOptionalFields(userTaskRun.getUserTaskDefId().getName());
+
+        when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun);
+        when(lhTenantClient.getUserTaskDef(any(UserTaskDefId.class))).thenReturn(userTaskDef);
+        when(lhTenantClient.completeUserTaskRun(any(CompleteUserTaskRunRequest.class))).thenReturn(Empty.getDefaultInstance());
+
+        userTaskService.completeUserTask(userId, request, tenantId, true);
+
+        verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient, times(2)).getUserTaskDef(any(UserTaskDefId.class));
         verify(lhTenantClient).completeUserTaskRun(any(CompleteUserTaskRunRequest.class));
     }
 
@@ -1065,7 +1103,7 @@ class UserTaskServiceTest {
         assertEquals("INVALID_ARGUMENT", thrownException.getReason());
 
         verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
-        verify(lhTenantClient).getUserTaskDef(any(UserTaskDefId.class));
+        verify(lhTenantClient, times(2)).getUserTaskDef(any(UserTaskDefId.class));
         verify(lhTenantClient).completeUserTaskRun(any(CompleteUserTaskRunRequest.class));
     }
 
@@ -1105,8 +1143,52 @@ class UserTaskServiceTest {
                 () -> userTaskService.completeUserTask(userId, request, tenantId, false));
 
         verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
-        verify(lhTenantClient).getUserTaskDef(any(UserTaskDefId.class));
+        verify(lhTenantClient, times(2)).getUserTaskDef(any(UserTaskDefId.class));
         verify(lhTenantClient).completeUserTaskRun(any(CompleteUserTaskRunRequest.class));
+    }
+
+    @Test
+    void completeUserTask_shouldThrowAResponseStatusExceptionAsBadRequestWhenRequiredStringUserTaskVariableValueInputIsInvalid() {
+        var userId = "my-user-id";
+        var wfRunId = buildStringGuid();
+        var userTaskRunGuid = buildStringGuid();
+        var request = CompleteUserTaskRequest.builder()
+                .wfRunId(wfRunId)
+                .userTaskRunGuid(userTaskRunGuid)
+                .results(Map.of(
+                        "Requested by", UserTaskVariableValue.builder()
+                                .value("    ")
+                                .type(UserTaskFieldType.STRING)
+                                .build(),
+                        "Request", UserTaskVariableValue.builder()
+                                .value("  ")
+                                .type(UserTaskFieldType.STRING)
+                                .build(),
+                        "integer-field", UserTaskVariableValue.builder()
+                                .value(1)
+                                .type(UserTaskFieldType.INTEGER)
+                                .build(),
+                        "not-defined-field", UserTaskVariableValue.builder()
+                                .value(true)
+                                .type(UserTaskFieldType.BOOLEAN)
+                                .build()
+                ))
+                .build();
+
+        var userTaskRun = buildFakeUserTaskRun(userId, wfRunId);
+        var userTaskDef = buildFakeUserTaskDef(userTaskRun.getUserTaskDefId().getName());
+
+        when(lhTenantClient.getUserTaskRun(any(UserTaskRunId.class))).thenReturn(userTaskRun);
+        when(lhTenantClient.getUserTaskDef(any(UserTaskDefId.class))).thenReturn(userTaskDef);
+
+        ResponseStatusException responseStatusException = assertThrows(ResponseStatusException.class,
+                () -> userTaskService.completeUserTask(userId, request, tenantId, false));
+
+        assertEquals("Mandatory Field(s): Requested by, Request contain invalid inputs (null or whitespace-only values)", responseStatusException.getReason());
+
+        verify(lhTenantClient).getUserTaskRun(any(UserTaskRunId.class));
+        verify(lhTenantClient, times(2)).getUserTaskDef(any(UserTaskDefId.class));
+        verify(lhTenantClient, never()).completeUserTaskRun(any(CompleteUserTaskRunRequest.class));
     }
 
     @Test
@@ -2088,6 +2170,15 @@ class UserTaskServiceTest {
                 .build();
     }
 
+    private UserTaskDef buildFakeUserTaskDefWithOptionalFields(String userTaskDefId) {
+        return UserTaskDef.newBuilder()
+                .setName(userTaskDefId)
+                .addFields(buildFakeUserTaskFieldAsOptional(VariableType.STR, "Requested by"))
+                .addFields(buildFakeUserTaskFieldAsOptional(VariableType.STR, "Request"))
+                .addFields(buildFakeUserTaskFieldAsOptional(VariableType.BOOL, "Approved"))
+                .build();
+    }
+
     private UserTaskField buildFakeUserTaskField(VariableType type, String fieldName) {
         return UserTaskField.newBuilder()
                 .setName(fieldName)
@@ -2095,6 +2186,16 @@ class UserTaskServiceTest {
                 .setDescription("Random description")
                 .setType(type)
                 .setRequired(true)
+                .build();
+    }
+
+    private UserTaskField buildFakeUserTaskFieldAsOptional(VariableType type, String fieldName) {
+        return UserTaskField.newBuilder()
+                .setName(fieldName)
+                .setDisplayName(fieldName)
+                .setDescription("Random description")
+                .setType(type)
+                .setRequired(false)
                 .build();
     }
 
