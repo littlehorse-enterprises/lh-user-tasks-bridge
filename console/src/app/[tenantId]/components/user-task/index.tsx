@@ -39,7 +39,7 @@ export default function UserTask({
   return (
     <Card
       className={
-        "px-4 py-6 shadow-[0px_1px_8px_0px_rgba(0,0,0,0.15)] border-none bg-card hover:bg-accent/50 transition-[all_150ms_ease-out] flex flex-col h-full"
+        "px-4 py-6 shadow-[0px_1px_8px_0px_rgba(0,0,0,0.15)] bg-card hover:bg-accent/50 transition-[all_150ms_ease-out] flex flex-col h-full border border-neutral-200 dark:border-neutral-700"
       }
     >
       <CardHeader className="p-0">
