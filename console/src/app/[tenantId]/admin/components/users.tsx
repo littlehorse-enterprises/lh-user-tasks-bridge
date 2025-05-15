@@ -4,50 +4,52 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from "@/components/ui/table";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-  IDPGroupDTO,
-  IDPUserDTO,
+    IDPGroupDTO,
+    IDPUserDTO,
 } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
 import {
-  Eye,
-  EyeOff,
-  Lock,
-  MoreHorizontal,
-  Pencil,
-  Trash,
-  Users,
+    ChevronDown,
+    ChevronUp,
+    Eye,
+    EyeOff,
+    Lock,
+    MoreHorizontal,
+    Pencil,
+    Trash,
+    Users,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
@@ -57,16 +59,16 @@ import { toast } from "sonner";
 import * as z from "zod";
 import { getGroups } from "../../actions/group-management";
 import {
-  addUserToGroup,
-  assignAdminRole,
-  createUser,
-  deleteUser,
-  getUserFromIdP,
-  getUsersFromIdP,
-  removeAdminRole,
-  removeUserFromGroup,
-  updateUser,
-  upsertPassword,
+    addUserToGroup,
+    assignAdminRole,
+    createUser,
+    deleteUser,
+    getUserFromIdP,
+    getUsersFromIdP,
+    removeAdminRole,
+    removeUserFromGroup,
+    updateUser,
+    upsertPassword,
 } from "../../actions/user-management";
 
 const createFormSchema = z.object({
@@ -126,6 +128,8 @@ export default function UsersManagement() {
   const [showPassword, setShowPassword] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [selectAll, setSelectAll] = useState(false);
+  const [sortColumn, setSortColumn] = useState<string>('name');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   const createForm = useForm<z.infer<typeof createFormSchema>>({
     resolver: zodResolver(createFormSchema),
@@ -597,6 +601,57 @@ export default function UsersManagement() {
     }
   }
 
+  function handleSort(column: string) {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  }
+
+  function getSortedUsers() {
+    const sorted = [...users];
+    if (!sortColumn) return sorted;
+    sorted.sort((a, b) => {
+      let aValue: any = '';
+      let bValue: any = '';
+      switch (sortColumn) {
+        case 'username':
+          aValue = a.username || '';
+          bValue = b.username || '';
+          break;
+        case 'email':
+          aValue = a.email || '';
+          bValue = b.email || '';
+          break;
+        case 'name':
+          aValue = `${a.firstName || ''} ${a.lastName || ''}`.trim();
+          bValue = `${b.firstName || ''} ${b.lastName || ''}`.trim();
+          break;
+        case 'enabled':
+          aValue = a.enabled ? 1 : 0;
+          bValue = b.enabled ? 1 : 0;
+          break;
+        case 'admin':
+          aValue = a.realmRoles?.includes('lh-user-tasks-admin') ? 1 : 0;
+          bValue = b.realmRoles?.includes('lh-user-tasks-admin') ? 1 : 0;
+          break;
+        default:
+          return 0;
+      }
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        const cmp = aValue.localeCompare(bValue);
+        return sortDirection === 'asc' ? cmp : -cmp;
+      } else {
+        return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+      }
+    });
+    return sorted;
+  }
+
+  const sortedUsers = getSortedUsers();
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -764,17 +819,31 @@ export default function UsersManagement() {
                   }}
                 />
               </TableHead>
-              <TableHead>ID</TableHead>
-              <TableHead>Username</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Enabled</TableHead>
-              <TableHead>Admin</TableHead>
+              <TableHead onClick={() => handleSort('username')} className="cursor-pointer select-none">
+                Username
+                {sortColumn === 'username' && (sortDirection === 'asc' ? <ChevronUp className="inline w-4 h-4" /> : <ChevronDown className="inline w-4 h-4" />)}
+              </TableHead>
+              <TableHead onClick={() => handleSort('email')} className="cursor-pointer select-none">
+                Email
+                {sortColumn === 'email' && (sortDirection === 'asc' ? <ChevronUp className="inline w-4 h-4" /> : <ChevronDown className="inline w-4 h-4" />)}
+              </TableHead>
+              <TableHead onClick={() => handleSort('name')} className="cursor-pointer select-none">
+                Name
+                {sortColumn === 'name' && (sortDirection === 'asc' ? <ChevronUp className="inline w-4 h-4" /> : <ChevronDown className="inline w-4 h-4" />)}
+              </TableHead>
+              <TableHead onClick={() => handleSort('enabled')} className="cursor-pointer select-none">
+                Enabled
+                {sortColumn === 'enabled' && (sortDirection === 'asc' ? <ChevronUp className="inline w-4 h-4" /> : <ChevronDown className="inline w-4 h-4" />)}
+              </TableHead>
+              <TableHead onClick={() => handleSort('admin')} className="cursor-pointer select-none">
+                Admin
+                {sortColumn === 'admin' && (sortDirection === 'asc' ? <ChevronUp className="inline w-4 h-4" /> : <ChevronDown className="inline w-4 h-4" />)}
+              </TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.map((user) => (
+            {sortedUsers.map((user) => (
               <TableRow
                 key={user.username}
                 className={selectedUsers.includes(user.id) ? "bg-muted/50" : ""}
@@ -803,7 +872,6 @@ export default function UsersManagement() {
                     }}
                   />
                 </TableCell>
-                <TableCell>{user.id}</TableCell>
                 <TableCell>{user.username}</TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>{`${user.firstName || ""} ${user.lastName || ""}`}</TableCell>

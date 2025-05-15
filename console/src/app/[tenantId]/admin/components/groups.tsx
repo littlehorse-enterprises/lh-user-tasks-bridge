@@ -32,6 +32,7 @@ import {
   IDPGroupDTO,
   IDPUserDTO,
 } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -71,6 +72,7 @@ export default function GroupsManagement() {
   const [availableUsers, setAvailableUsers] = useState<IDPUserDTO[]>([]);
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
   const [selectAll, setSelectAll] = useState(false);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   const createForm = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -339,6 +341,23 @@ export default function GroupsManagement() {
     }
   }, [selectAll]);
 
+  function handleSort() {
+    setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+  }
+
+  function getSortedGroups() {
+    const sorted = [...groups];
+    sorted.sort((a, b) => {
+      const nameA = (a.name || '').toLowerCase();
+      const nameB = (b.name || '').toLowerCase();
+      const cmp = nameA.localeCompare(nameB);
+      return sortDirection === 'asc' ? cmp : -cmp;
+    });
+    return sorted;
+  }
+
+  const sortedGroups = getSortedGroups();
+
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
@@ -462,12 +481,15 @@ export default function GroupsManagement() {
                 />
               </TableHead>
               <TableHead>ID</TableHead>
-              <TableHead>Name</TableHead>
+              <TableHead onClick={handleSort} className="cursor-pointer select-none">
+                Name
+                {sortDirection === 'asc' ? <ChevronUp className="inline w-4 h-4" /> : <ChevronDown className="inline w-4 h-4" />}
+              </TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {groups.map((group) => (
+            {sortedGroups.map((group) => (
               <TableRow
                 key={group.id}
                 className={
