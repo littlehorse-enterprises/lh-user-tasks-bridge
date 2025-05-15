@@ -473,21 +473,30 @@ export default function UsersManagement() {
     try {
       let successCount = 0;
       let errorCount = 0;
+      let failedUserId: string | null = null;
+
+      // Map userId to username for error reporting
+      const userIdToUsername: Record<string, string> = {};
+      allUsers.forEach((user: any) => {
+        userIdToUsername[user.id] = user.username;
+      });
 
       // Delete each selected user
       for (const userId of selectedUsers) {
         const response = await deleteUser(tenantId, { user_id: userId });
         if (response.error) {
           errorCount++;
+          if (!failedUserId) failedUserId = userId;
           console.error(`Error deleting user ${userId}:`, response.error);
         } else {
           successCount++;
         }
       }
 
-      if (errorCount > 0) {
+      if (errorCount > 0 && failedUserId) {
+        const failedUsername = userIdToUsername[failedUserId] || failedUserId;
         toast.error(
-          `Failed to delete ${errorCount} of ${selectedUsers.length} users.`,
+          `Delete the user "${failedUsername}" individually to find out more details!`
         );
       }
 
