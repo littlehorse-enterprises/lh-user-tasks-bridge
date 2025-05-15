@@ -240,7 +240,7 @@ export default function CompleteUserTaskButton({
           <div key={field.name} className="space-y-2">
             <Label>
               {field.displayName}
-              {field.required && <span className="text-destructive">*</span>}
+              {!readOnly && field.required && <span className="text-destructive">*</span>}
             </Label>
             {field.type && field.type === "STRING" && (
               <Input
@@ -329,7 +329,7 @@ export default function CompleteUserTaskButton({
 
         {renderContent()}
 
-        {!error && (
+        {!readOnly && !error && (
           <p className="text-sm text-muted-foreground">
             <span className="text-destructive">*</span> Required fields
           </p>
