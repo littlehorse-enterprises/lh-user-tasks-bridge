@@ -3,7 +3,7 @@ name: Publish API Client
 on:
   push:
     tags:
-      - "v*.*.*"
+      - "v*"
 
 permissions:
   contents: read
@@ -31,10 +31,15 @@ jobs:
         with:
           node-version: 22
           registry-url: 'https://registry.npmjs.org'
-          cache: 'npm'
 
       - name: Install Dependencies
         run: npm install
+
+      - name: Update version in api-client/package.json
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          cd api-client
+          npm version $VERSION --no-git-tag-version
 
       - name: Publish
         run: npm publish -w api-client --access public
