@@ -36,9 +36,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  IDPUserDTO
-} from "@littlehorse-enterprises/user-tasks-bridge-api-client";
+import { IDPUserDTO } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
 import {
   ChevronDown,
   ChevronUp,
@@ -117,27 +115,29 @@ export default function UsersManagement() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isGroupsDialogOpen, setIsGroupsDialogOpen] = useState(false);
   const [isBulkGroupsDialogOpen, setIsBulkGroupsDialogOpen] = useState(false);
-  const [isPasswordResetDialogOpen, setIsPasswordResetDialogOpen] = useState(false);
+  const [isPasswordResetDialogOpen, setIsPasswordResetDialogOpen] =
+    useState(false);
   const [selectedUser, setSelectedUser] = useState<IDPUserDTO | null>(null);
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
   const [showPassword, setShowPassword] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
   const [selectAll, setSelectAll] = useState(false);
-  const [sortColumn, setSortColumn] = useState<string>('name');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [sortColumn, setSortColumn] = useState<string>("name");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 25;
 
-  const { data: usersData, error: usersError, mutate: mutateUsers } = useSWR(
-    [`users-${tenantId}`, currentPage],
-    async () => {
-      const response = await getUsersFromIdP(tenantId, {
-        first_result: (currentPage - 1) * pageSize,
-        max_results: pageSize + 1
-      });
-      return response.data;
-    }
-  );
+  const {
+    data: usersData,
+    error: usersError,
+    mutate: mutateUsers,
+  } = useSWR([`users-${tenantId}`, currentPage], async () => {
+    const response = await getUsersFromIdP(tenantId, {
+      first_result: (currentPage - 1) * pageSize,
+      max_results: pageSize + 1,
+    });
+    return response.data;
+  });
 
   const { data: groupsData, error: groupsError } = useSWR(
     `groups-${tenantId}`,
@@ -146,44 +146,46 @@ export default function UsersManagement() {
         max_results: 1000,
       });
       return response.data;
-    }
+    },
   );
 
   const allUsers = usersData?.users || [];
   const hasMoreUsers = allUsers.length > pageSize;
   const pagedUsers = allUsers.slice(0, pageSize);
   pagedUsers.sort((a: any, b: any) => {
-    let aValue: any = '';
-    let bValue: any = '';
+    let aValue: any = "";
+    let bValue: any = "";
     switch (sortColumn) {
-      case 'username':
-        aValue = a.username || '';
-        bValue = b.username || '';
+      case "username":
+        aValue = a.username || "";
+        bValue = b.username || "";
         break;
-      case 'email':
-        aValue = a.email || '';
-        bValue = b.email || '';
+      case "email":
+        aValue = a.email || "";
+        bValue = b.email || "";
         break;
-      case 'name':
-        aValue = `${a.firstName || ''} ${a.lastName || ''}`.trim();
-        bValue = `${b.firstName || ''} ${b.lastName || ''}`.trim();
+      case "name":
+        aValue = `${a.firstName || ""} ${a.lastName || ""}`.trim();
+        bValue = `${b.firstName || ""} ${b.lastName || ""}`.trim();
         break;
-      case 'enabled':
+      case "enabled":
         aValue = a.enabled ? 1 : 0;
         bValue = b.enabled ? 1 : 0;
         break;
-      case 'admin':
-        aValue = a.realmRoles?.includes('lh-user-tasks-admin') ? 1 : 0;
-        bValue = b.realmRoles?.includes('lh-user-tasks-admin') ? 1 : 0;
+      case "admin":
+        aValue = a.realmRoles?.includes("lh-user-tasks-admin") ? 1 : 0;
+        bValue = b.realmRoles?.includes("lh-user-tasks-admin") ? 1 : 0;
         break;
       default:
         return 0;
     }
-    if (typeof aValue === 'string' && typeof bValue === 'string') {
+    if (typeof aValue === "string" && typeof bValue === "string") {
       const cmp = aValue.localeCompare(bValue);
-      return sortDirection === 'asc' ? cmp : -cmp;
+      return sortDirection === "asc" ? cmp : -cmp;
     } else {
-      return sortDirection === 'asc' ? Number(aValue) - Number(bValue) : Number(bValue) - Number(aValue);
+      return sortDirection === "asc"
+        ? Number(aValue) - Number(bValue)
+        : Number(bValue) - Number(aValue);
     }
   });
 
@@ -496,7 +498,7 @@ export default function UsersManagement() {
       if (errorCount > 0 && failedUserId) {
         const failedUsername = userIdToUsername[failedUserId] || failedUserId;
         toast.error(
-          `Delete the user "${failedUsername}" individually to find out more details!`
+          `Delete the user "${failedUsername}" individually to find out more details!`,
         );
       }
 
@@ -620,10 +622,10 @@ export default function UsersManagement() {
 
   function handleSort(column: string) {
     if (sortColumn === column) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
     } else {
       setSortColumn(column);
-      setSortDirection('asc');
+      setSortDirection("asc");
     }
   }
 
@@ -770,7 +772,9 @@ export default function UsersManagement() {
       </div>
 
       {usersError ? (
-        <div className="py-4 text-center text-red-500">Failed to load users</div>
+        <div className="py-4 text-center text-red-500">
+          Failed to load users
+        </div>
       ) : !usersData ? (
         <div className="py-4 text-center">Loading users...</div>
       ) : pagedUsers.length === 0 ? (
@@ -797,25 +801,65 @@ export default function UsersManagement() {
                     }}
                   />
                 </TableHead>
-                <TableHead onClick={() => handleSort('username')} className="cursor-pointer select-none">
+                <TableHead
+                  onClick={() => handleSort("username")}
+                  className="cursor-pointer select-none"
+                >
                   Username
-                  {sortColumn === 'username' && (sortDirection === 'asc' ? <ChevronUp className="inline w-4 h-4" /> : <ChevronDown className="inline w-4 h-4" />)}
+                  {sortColumn === "username" &&
+                    (sortDirection === "asc" ? (
+                      <ChevronUp className="inline w-4 h-4" />
+                    ) : (
+                      <ChevronDown className="inline w-4 h-4" />
+                    ))}
                 </TableHead>
-                <TableHead onClick={() => handleSort('email')} className="cursor-pointer select-none">
+                <TableHead
+                  onClick={() => handleSort("email")}
+                  className="cursor-pointer select-none"
+                >
                   Email
-                  {sortColumn === 'email' && (sortDirection === 'asc' ? <ChevronUp className="inline w-4 h-4" /> : <ChevronDown className="inline w-4 h-4" />)}
+                  {sortColumn === "email" &&
+                    (sortDirection === "asc" ? (
+                      <ChevronUp className="inline w-4 h-4" />
+                    ) : (
+                      <ChevronDown className="inline w-4 h-4" />
+                    ))}
                 </TableHead>
-                <TableHead onClick={() => handleSort('name')} className="cursor-pointer select-none">
+                <TableHead
+                  onClick={() => handleSort("name")}
+                  className="cursor-pointer select-none"
+                >
                   Name
-                  {sortColumn === 'name' && (sortDirection === 'asc' ? <ChevronUp className="inline w-4 h-4" /> : <ChevronDown className="inline w-4 h-4" />)}
+                  {sortColumn === "name" &&
+                    (sortDirection === "asc" ? (
+                      <ChevronUp className="inline w-4 h-4" />
+                    ) : (
+                      <ChevronDown className="inline w-4 h-4" />
+                    ))}
                 </TableHead>
-                <TableHead onClick={() => handleSort('enabled')} className="cursor-pointer select-none">
+                <TableHead
+                  onClick={() => handleSort("enabled")}
+                  className="cursor-pointer select-none"
+                >
                   Enabled
-                  {sortColumn === 'enabled' && (sortDirection === 'asc' ? <ChevronUp className="inline w-4 h-4" /> : <ChevronDown className="inline w-4 h-4" />)}
+                  {sortColumn === "enabled" &&
+                    (sortDirection === "asc" ? (
+                      <ChevronUp className="inline w-4 h-4" />
+                    ) : (
+                      <ChevronDown className="inline w-4 h-4" />
+                    ))}
                 </TableHead>
-                <TableHead onClick={() => handleSort('admin')} className="cursor-pointer select-none">
+                <TableHead
+                  onClick={() => handleSort("admin")}
+                  className="cursor-pointer select-none"
+                >
                   Admin
-                  {sortColumn === 'admin' && (sortDirection === 'asc' ? <ChevronUp className="inline w-4 h-4" /> : <ChevronDown className="inline w-4 h-4" />)}
+                  {sortColumn === "admin" &&
+                    (sortDirection === "asc" ? (
+                      <ChevronUp className="inline w-4 h-4" />
+                    ) : (
+                      <ChevronDown className="inline w-4 h-4" />
+                    ))}
                 </TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -824,7 +868,9 @@ export default function UsersManagement() {
               {pagedUsers.map((user: any) => (
                 <TableRow
                   key={user.username}
-                  className={selectedUsers.includes(user.id) ? "bg-muted/50" : ""}
+                  className={
+                    selectedUsers.includes(user.id) ? "bg-muted/50" : ""
+                  }
                 >
                   <TableCell>
                     <Checkbox
@@ -884,7 +930,8 @@ export default function UsersManagement() {
                   <TableCell>
                     <Switch
                       checked={
-                        user.realmRoles?.includes("lh-user-tasks-admin") || false
+                        user.realmRoles?.includes("lh-user-tasks-admin") ||
+                        false
                       }
                       onCheckedChange={() => toggleAdminRole(user)}
                       disabled={user.id === currentUserId}
@@ -894,7 +941,11 @@ export default function UsersManagement() {
                     <div className="flex justify-end space-x-2">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                          >
                             <MoreHorizontal size={16} />
                           </Button>
                         </DropdownMenuTrigger>
@@ -934,13 +985,18 @@ export default function UsersManagement() {
           </Table>
           <div className="flex items-center justify-between px-2 py-4">
             <div className="text-sm text-muted-foreground">
-              Showing {((currentPage - 1) * pageSize) + 1} to {((currentPage - 1) * pageSize) + pagedUsers.length} of {hasMoreUsers ? 'many' : ((currentPage - 1) * pageSize) + pagedUsers.length} users
+              Showing {(currentPage - 1) * pageSize + 1} to{" "}
+              {(currentPage - 1) * pageSize + pagedUsers.length} of{" "}
+              {hasMoreUsers
+                ? "many"
+                : (currentPage - 1) * pageSize + pagedUsers.length}{" "}
+              users
             </div>
             <div className="flex items-center space-x-2">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
               >
                 Previous
@@ -948,7 +1004,7 @@ export default function UsersManagement() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage(prev => prev + 1)}
+                onClick={() => setCurrentPage((prev) => prev + 1)}
                 disabled={!hasMoreUsers}
               >
                 Next
@@ -1069,7 +1125,9 @@ export default function UsersManagement() {
             </DialogTitle>
           </DialogHeader>
           {groupsError ? (
-            <div className="py-4 text-center text-red-500">Failed to load groups</div>
+            <div className="py-4 text-center text-red-500">
+              Failed to load groups
+            </div>
           ) : !groupsData ? (
             <div className="py-4 text-center">Loading groups...</div>
           ) : groups.length === 0 ? (
@@ -1144,7 +1202,9 @@ export default function UsersManagement() {
             </DialogTitle>
           </DialogHeader>
           {groupsError ? (
-            <div className="py-4 text-center text-red-500">Failed to load groups</div>
+            <div className="py-4 text-center text-red-500">
+              Failed to load groups
+            </div>
           ) : !groupsData ? (
             <div className="py-4 text-center">Loading groups...</div>
           ) : groups.length === 0 ? (

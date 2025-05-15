@@ -154,7 +154,8 @@ export default function CompleteUserTaskButton({
         (!userTaskResult[field.name]?.value ||
           userTaskResult[field.name]?.value.toString().trim() === "")
       ) {
-        newFieldErrors[field.name] = "Empty or whitespace-only values are not valid.";
+        newFieldErrors[field.name] =
+          "Empty or whitespace-only values are not valid.";
       }
     });
     setFieldErrors(newFieldErrors);
@@ -260,7 +261,9 @@ export default function CompleteUserTaskButton({
           <div key={field.name} className="space-y-2">
             <Label>
               {field.displayName}
-              {!readOnly && field.required && <span className="text-destructive">*</span>}
+              {!readOnly && field.required && (
+                <span className="text-destructive">*</span>
+              )}
             </Label>
             {field.type && field.type === "STRING" && (
               <>
@@ -289,7 +292,9 @@ export default function CompleteUserTaskButton({
                   }}
                 />
                 {fieldErrors[field.name] && (
-                  <p className="text-sm font-medium text-destructive">{fieldErrors[field.name]}</p>
+                  <p className="text-sm font-medium text-destructive">
+                    {fieldErrors[field.name]}
+                  </p>
                 )}
               </>
             )}

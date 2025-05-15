@@ -12,7 +12,12 @@ import {
   useInfiniteQuery,
   useQuery,
 } from "@tanstack/react-query";
-import { AlertCircle, ChevronDown, ClipboardList, RefreshCw } from "lucide-react";
+import {
+  AlertCircle,
+  ChevronDown,
+  ClipboardList,
+  RefreshCw,
+} from "lucide-react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 

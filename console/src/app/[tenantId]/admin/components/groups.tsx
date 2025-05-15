@@ -69,37 +69,39 @@ export default function GroupsManagement() {
   const [availableUsers, setAvailableUsers] = useState<IDPUserDTO[]>([]);
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
   const [selectAll, setSelectAll] = useState(false);
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 25;
 
-  const { data: groupsData, error: groupsError, mutate: mutateGroups } = useSWR(
-    [`groups-${tenantId}`, currentPage],
-    async () => {
-      const response = await getGroups(tenantId, {
-        first_result: (currentPage - 1) * pageSize,
-        max_results: pageSize + 1
-      });
-      return response.data;
-    }
-  );
+  const {
+    data: groupsData,
+    error: groupsError,
+    mutate: mutateGroups,
+  } = useSWR([`groups-${tenantId}`, currentPage], async () => {
+    const response = await getGroups(tenantId, {
+      first_result: (currentPage - 1) * pageSize,
+      max_results: pageSize + 1,
+    });
+    return response.data;
+  });
 
-  const { data: usersData, error: usersError, mutate: mutateUsers } = useSWR(
-    isMembersDialogOpen ? `users-${tenantId}` : null,
-    async () => {
-      const response = await getUsersFromIdP(tenantId, {});
-      return response.data;
-    }
-  );
+  const {
+    data: usersData,
+    error: usersError,
+    mutate: mutateUsers,
+  } = useSWR(isMembersDialogOpen ? `users-${tenantId}` : null, async () => {
+    const response = await getUsersFromIdP(tenantId, {});
+    return response.data;
+  });
 
   const allGroups = groupsData?.groups || [];
   const hasMoreGroups = allGroups.length > pageSize;
   const pagedGroups = allGroups.slice(0, pageSize);
   pagedGroups.sort((a: any, b: any) => {
-    const nameA = (a.name || '').toLowerCase();
-    const nameB = (b.name || '').toLowerCase();
+    const nameA = (a.name || "").toLowerCase();
+    const nameB = (b.name || "").toLowerCase();
     const cmp = nameA.localeCompare(nameB);
-    return sortDirection === 'asc' ? cmp : -cmp;
+    return sortDirection === "asc" ? cmp : -cmp;
   });
 
   // Auto-bounce back if page is empty (but not on first page)
@@ -128,12 +130,12 @@ export default function GroupsManagement() {
     if (isMembersDialogOpen && selectedGroup && usersData) {
       const allUsers = usersData.users || [];
       const members = allUsers.filter((user) =>
-        user.groups?.some((group) => group.id === selectedGroup.id)
+        user.groups?.some((group) => group.id === selectedGroup.id),
       );
       setGroupMembers(members);
 
       const available = allUsers.filter(
-        (user) => !user.groups?.some((group) => group.id === selectedGroup.id)
+        (user) => !user.groups?.some((group) => group.id === selectedGroup.id),
       );
       setAvailableUsers(available);
     }
@@ -326,14 +328,16 @@ export default function GroupsManagement() {
 
   useEffect(() => {
     if (selectAll) {
-      setSelectedGroups(groupsData?.groups?.map((group) => group.id || "") || []);
+      setSelectedGroups(
+        groupsData?.groups?.map((group) => group.id || "") || [],
+      );
     } else if (selectedGroups.length === groupsData?.groups?.length) {
       setSelectedGroups([]);
     }
   }, [selectAll, groupsData]);
 
   function handleSort() {
-    setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    setSortDirection(sortDirection === "asc" ? "desc" : "asc");
   }
 
   const sortedGroups = pagedGroups;
@@ -436,7 +440,9 @@ export default function GroupsManagement() {
       </div>
 
       {groupsError ? (
-        <div className="py-4 text-center text-red-500">Failed to load groups</div>
+        <div className="py-4 text-center text-red-500">
+          Failed to load groups
+        </div>
       ) : !groupsData ? (
         <div className="py-4 text-center">Loading groups...</div>
       ) : groupsData.groups.length === 0 ? (
@@ -464,9 +470,16 @@ export default function GroupsManagement() {
                   />
                 </TableHead>
                 <TableHead>ID</TableHead>
-                <TableHead onClick={handleSort} className="cursor-pointer select-none">
+                <TableHead
+                  onClick={handleSort}
+                  className="cursor-pointer select-none"
+                >
                   Name
-                  {sortDirection === 'asc' ? <ChevronUp className="inline w-4 h-4" /> : <ChevronDown className="inline w-4 h-4" />}
+                  {sortDirection === "asc" ? (
+                    <ChevronUp className="inline w-4 h-4" />
+                  ) : (
+                    <ChevronDown className="inline w-4 h-4" />
+                  )}
                 </TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -484,7 +497,10 @@ export default function GroupsManagement() {
                       checked={selectedGroups.includes(group.id || "")}
                       onCheckedChange={(checked) => {
                         if (checked) {
-                          setSelectedGroups([...selectedGroups, group.id || ""]);
+                          setSelectedGroups([
+                            ...selectedGroups,
+                            group.id || "",
+                          ]);
                         } else {
                           setSelectedGroups(
                             selectedGroups.filter((id) => id !== group.id),
@@ -503,7 +519,9 @@ export default function GroupsManagement() {
                       }}
                     />
                   </TableCell>
-                  <TableCell className="font-mono text-sm">{group.id}</TableCell>
+                  <TableCell className="font-mono text-sm">
+                    {group.id}
+                  </TableCell>
                   <TableCell>{group.name}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end space-x-2">
@@ -581,13 +599,18 @@ export default function GroupsManagement() {
           </Table>
           <div className="flex items-center justify-between px-2 py-4">
             <div className="text-sm text-muted-foreground">
-              Showing {((currentPage - 1) * pageSize) + 1} to {((currentPage - 1) * pageSize) + pagedGroups.length} of {hasMoreGroups ? 'many' : ((currentPage - 1) * pageSize) + pagedGroups.length} groups
+              Showing {(currentPage - 1) * pageSize + 1} to{" "}
+              {(currentPage - 1) * pageSize + pagedGroups.length} of{" "}
+              {hasMoreGroups
+                ? "many"
+                : (currentPage - 1) * pageSize + pagedGroups.length}{" "}
+              groups
             </div>
             <div className="flex items-center space-x-2">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
               >
                 Previous
@@ -595,7 +618,7 @@ export default function GroupsManagement() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage(prev => prev + 1)}
+                onClick={() => setCurrentPage((prev) => prev + 1)}
                 disabled={!hasMoreGroups}
               >
                 Next
