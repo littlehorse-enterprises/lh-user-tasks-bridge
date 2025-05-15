@@ -12,7 +12,12 @@ import {
   useInfiniteQuery,
   useQuery,
 } from "@tanstack/react-query";
-import { AlertCircle, ChevronDown, RefreshCw, WrenchIcon } from "lucide-react";
+import {
+  AlertCircle,
+  ChevronDown,
+  ClipboardList,
+  RefreshCw,
+} from "lucide-react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 
@@ -214,7 +219,7 @@ export default function UserTaskDefs({ tenantId }: UserTaskDefsProps) {
             <Link key={name} href={`/${tenantId}/admin/${name}`}>
               <div className="rounded-lg border bg-card p-5 hover:bg-accent/50 transition-colors cursor-pointer h-full">
                 <div className="flex items-center gap-4">
-                  <WrenchIcon className="size-10 text-primary bg-primary/25 p-2 rounded-full" />
+                  <ClipboardList className="size-10 text-primary bg-primary/25 p-2 rounded-full" />
                   <h3 className="text-lg font-medium text-card-foreground">
                     {name}
                   </h3>

@@ -58,6 +58,7 @@ export default function CompleteUserTaskButton({
   const [error, setError] = useState<ErrorResponse>();
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const tenantId = useParams().tenantId as string;
 
   const fetchTaskDetails = async () => {
@@ -143,6 +144,26 @@ export default function CompleteUserTaskButton({
 
   const handleSubmit = async () => {
     if (!userTaskDetails) return;
+
+    // Validate required string fields for whitespace-only
+    const newFieldErrors: Record<string, string> = {};
+    userTaskDetails.fields.forEach((field) => {
+      if (
+        field.required &&
+        field.type === "STRING" &&
+        (!userTaskResult[field.name]?.value ||
+          userTaskResult[field.name]?.value.toString().trim() === "")
+      ) {
+        newFieldErrors[field.name] =
+          "Empty or whitespace-only values are not valid.";
+      }
+    });
+    setFieldErrors(newFieldErrors);
+    if (Object.keys(newFieldErrors).length > 0) {
+      toast.error("Please fill out all required fields correctly.");
+      setIsSubmitting(false);
+      return;
+    }
 
     setIsSubmitting(true);
 
@@ -240,25 +261,42 @@ export default function CompleteUserTaskButton({
           <div key={field.name} className="space-y-2">
             <Label>
               {field.displayName}
-              {field.required && <span className="text-destructive">*</span>}
+              {!readOnly && field.required && (
+                <span className="text-destructive">*</span>
+              )}
             </Label>
             {field.type && field.type === "STRING" && (
-              <Input
-                name={field.name}
-                placeholder={field.description}
-                value={userTaskResult[field.name]?.value?.toString() || ""}
-                readOnly={readOnly}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setUserTaskResult({
-                    ...userTaskResult,
-                    [field.name]: {
-                      type: field.type || UserTaskFieldType.STRING,
-                      value: value,
-                    },
-                  });
-                }}
-              />
+              <>
+                <Input
+                  name={field.name}
+                  placeholder={field.description}
+                  value={userTaskResult[field.name]?.value?.toString() || ""}
+                  readOnly={readOnly}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setUserTaskResult({
+                      ...userTaskResult,
+                      [field.name]: {
+                        type: field.type || UserTaskFieldType.STRING,
+                        value: value,
+                      },
+                    });
+                    // Clear error on change
+                    if (fieldErrors[field.name]) {
+                      setFieldErrors((prev) => {
+                        const copy = { ...prev };
+                        delete copy[field.name];
+                        return copy;
+                      });
+                    }
+                  }}
+                />
+                {fieldErrors[field.name] && (
+                  <p className="text-sm font-medium text-destructive">
+                    {fieldErrors[field.name]}
+                  </p>
+                )}
+              </>
             )}
             {field.type &&
               (field.type === "DOUBLE" || field.type === "INTEGER") && (
@@ -329,7 +367,7 @@ export default function CompleteUserTaskButton({
 
         {renderContent()}
 
-        {!error && (
+        {!readOnly && !error && (
           <p className="text-sm text-muted-foreground">
             <span className="text-destructive">*</span> Required fields
           </p>
