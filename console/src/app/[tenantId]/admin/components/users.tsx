@@ -4,71 +4,71 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-    Dialog,
-    DialogContent,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
-    IDPGroupDTO,
-    IDPUserDTO,
+  IDPUserDTO
 } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
 import {
-    ChevronDown,
-    ChevronUp,
-    Eye,
-    EyeOff,
-    Lock,
-    MoreHorizontal,
-    Pencil,
-    Trash,
-    Users,
+  ChevronDown,
+  ChevronUp,
+  Eye,
+  EyeOff,
+  Lock,
+  MoreHorizontal,
+  Pencil,
+  Trash,
+  Users,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
+import useSWR from "swr";
 import * as z from "zod";
 import { getGroups } from "../../actions/group-management";
 import {
-    addUserToGroup,
-    assignAdminRole,
-    createUser,
-    deleteUser,
-    getUserFromIdP,
-    getUsersFromIdP,
-    removeAdminRole,
-    removeUserFromGroup,
-    updateUser,
-    upsertPassword,
+  addUserToGroup,
+  assignAdminRole,
+  createUser,
+  deleteUser,
+  getUserFromIdP,
+  getUsersFromIdP,
+  removeAdminRole,
+  removeUserFromGroup,
+  updateUser,
+  upsertPassword,
 } from "../../actions/user-management";
 
 const createFormSchema = z.object({
@@ -113,16 +113,11 @@ export default function UsersManagement() {
   const { data: session } = useSession();
   const currentUserId = session?.user?.id;
 
-  const [users, setUsers] = useState<IDPUserDTO[]>([]);
-  const [groups, setGroups] = useState<IDPGroupDTO[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isGroupsLoading, setIsGroupsLoading] = useState(true);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isGroupsDialogOpen, setIsGroupsDialogOpen] = useState(false);
   const [isBulkGroupsDialogOpen, setIsBulkGroupsDialogOpen] = useState(false);
-  const [isPasswordResetDialogOpen, setIsPasswordResetDialogOpen] =
-    useState(false);
+  const [isPasswordResetDialogOpen, setIsPasswordResetDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<IDPUserDTO | null>(null);
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
   const [showPassword, setShowPassword] = useState(false);
@@ -130,6 +125,77 @@ export default function UsersManagement() {
   const [selectAll, setSelectAll] = useState(false);
   const [sortColumn, setSortColumn] = useState<string>('name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 25;
+
+  const { data: usersData, error: usersError, mutate: mutateUsers } = useSWR(
+    [`users-${tenantId}`, currentPage],
+    async () => {
+      const response = await getUsersFromIdP(tenantId, {
+        first_result: (currentPage - 1) * pageSize,
+        max_results: pageSize + 1
+      });
+      return response.data;
+    }
+  );
+
+  const { data: groupsData, error: groupsError } = useSWR(
+    `groups-${tenantId}`,
+    async () => {
+      const response = await getGroups(tenantId, {
+        max_results: 1000,
+      });
+      return response.data;
+    }
+  );
+
+  const allUsers = usersData?.users || [];
+  const hasMoreUsers = allUsers.length > pageSize;
+  const pagedUsers = allUsers.slice(0, pageSize);
+  pagedUsers.sort((a: any, b: any) => {
+    let aValue: any = '';
+    let bValue: any = '';
+    switch (sortColumn) {
+      case 'username':
+        aValue = a.username || '';
+        bValue = b.username || '';
+        break;
+      case 'email':
+        aValue = a.email || '';
+        bValue = b.email || '';
+        break;
+      case 'name':
+        aValue = `${a.firstName || ''} ${a.lastName || ''}`.trim();
+        bValue = `${b.firstName || ''} ${b.lastName || ''}`.trim();
+        break;
+      case 'enabled':
+        aValue = a.enabled ? 1 : 0;
+        bValue = b.enabled ? 1 : 0;
+        break;
+      case 'admin':
+        aValue = a.realmRoles?.includes('lh-user-tasks-admin') ? 1 : 0;
+        bValue = b.realmRoles?.includes('lh-user-tasks-admin') ? 1 : 0;
+        break;
+      default:
+        return 0;
+    }
+    if (typeof aValue === 'string' && typeof bValue === 'string') {
+      const cmp = aValue.localeCompare(bValue);
+      return sortDirection === 'asc' ? cmp : -cmp;
+    } else {
+      return sortDirection === 'asc' ? Number(aValue) - Number(bValue) : Number(bValue) - Number(aValue);
+    }
+  });
+
+  // Auto-bounce back if page is empty (but not on first page)
+  useEffect(() => {
+    if (currentPage > 1 && pagedUsers.length === 0) {
+      setCurrentPage(currentPage - 1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pagedUsers.length, currentPage]);
+
+  const groups = groupsData?.groups || [];
 
   const createForm = useForm<z.infer<typeof createFormSchema>>({
     resolver: zodResolver(createFormSchema),
@@ -158,63 +224,8 @@ export default function UsersManagement() {
     },
   });
 
-  useEffect(() => {
-    loadUsers();
-    loadGroups();
-  }, [tenantId]);
-
-  async function loadUsers() {
-    setIsLoading(true);
-    try {
-      const response = await getUsersFromIdP(tenantId, {});
-      // Sort users by last name (case-insensitive) and then by first name
-      const sortedUsers = [...(response.data?.users || [])].sort((a, b) => {
-        const lastNameA = (a.lastName || "").toLowerCase();
-        const lastNameB = (b.lastName || "").toLowerCase();
-
-        // First compare last names
-        const lastNameComparison = lastNameA.localeCompare(lastNameB);
-
-        // If last names are the same, compare first names
-        if (lastNameComparison === 0) {
-          const firstNameA = (a.firstName || "").toLowerCase();
-          const firstNameB = (b.firstName || "").toLowerCase();
-          return firstNameA.localeCompare(firstNameB);
-        }
-
-        return lastNameComparison;
-      });
-      setUsers(sortedUsers);
-    } catch (error) {
-      toast.error("Failed to load users from identity provider.");
-      console.error("Error loading users:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  async function loadGroups() {
-    setIsGroupsLoading(true);
-    try {
-      const response = await getGroups(tenantId, {});
-      // Sort groups by name (case-insensitive)
-      const sortedGroups = [...(response.data?.groups || [])].sort((a, b) => {
-        const nameA = (a.name || "").toLowerCase();
-        const nameB = (b.name || "").toLowerCase();
-        return nameA.localeCompare(nameB);
-      });
-      setGroups(sortedGroups);
-    } catch (error) {
-      toast.error("Failed to load groups.");
-      console.error("Error loading groups:", error);
-    } finally {
-      setIsGroupsLoading(false);
-    }
-  }
-
   async function handleCreateUser(values: z.infer<typeof createFormSchema>) {
     try {
-      // First create the user without password
       const response = await createUser(tenantId, {
         username: values.username,
         email: values.email,
@@ -231,7 +242,7 @@ export default function UsersManagement() {
       toast.success("User was successfully created.");
       setIsCreateDialogOpen(false);
       createForm.reset();
-      loadUsers();
+      mutateUsers();
     } catch (error) {
       console.error("Detailed error creating user:", error);
       toast.error("Failed to create user. See console for details.");
@@ -265,7 +276,7 @@ export default function UsersManagement() {
       toast.success("User was successfully updated.");
       setIsEditDialogOpen(false);
       editForm.reset();
-      loadUsers();
+      mutateUsers();
     } catch (error) {
       toast.error("Failed to update user.");
       console.error("Error updating user:", error);
@@ -316,7 +327,7 @@ export default function UsersManagement() {
       }
 
       toast.success("User was successfully deleted.");
-      loadUsers();
+      mutateUsers();
     } catch (error) {
       toast.error("Failed to delete user.");
       console.error("Error deleting user:", error);
@@ -365,7 +376,6 @@ export default function UsersManagement() {
     try {
       let response;
       if (isActive) {
-        // Add user to group
         response = await addUserToGroup(tenantId, {
           user_id: userId,
           group_id: groupId,
@@ -379,7 +389,6 @@ export default function UsersManagement() {
 
         toast.success("User added to group successfully.");
       } else {
-        // Remove user from group
         response = await removeUserFromGroup(tenantId, {
           user_id: userId,
           group_id: groupId,
@@ -395,7 +404,7 @@ export default function UsersManagement() {
 
         toast.success("User removed from group successfully.");
       }
-      loadUsers();
+      mutateUsers();
 
       // Update local state
       if (isActive) {
@@ -440,7 +449,7 @@ export default function UsersManagement() {
 
         toast.success("Admin role assigned successfully.");
       }
-      loadUsers();
+      mutateUsers();
     } catch (error) {
       toast.error("Failed to update admin role.");
       console.error("Error updating admin role:", error);
@@ -485,7 +494,7 @@ export default function UsersManagement() {
       if (successCount > 0) {
         toast.success(`Successfully deleted ${successCount} users.`);
         setSelectedUsers([]);
-        loadUsers();
+        mutateUsers();
       }
     } catch (error) {
       toast.error("Failed to delete users.");
@@ -554,7 +563,7 @@ export default function UsersManagement() {
 
       setIsBulkGroupsDialogOpen(false);
       setSelectedGroups([]);
-      loadUsers();
+      mutateUsers();
     } catch (error) {
       toast.error("Failed to add users to groups.");
       console.error("Error adding users to groups:", error);
@@ -563,13 +572,12 @@ export default function UsersManagement() {
 
   useEffect(() => {
     if (selectAll) {
-      setSelectedUsers(users.map((user) => user.id));
-    } else if (selectedUsers.length === users.length) {
+      setSelectedUsers(pagedUsers.map((user: any) => user.id));
+    } else if (selectedUsers.length === pagedUsers.length) {
       setSelectedUsers([]);
     }
-  }, [selectAll]);
+  }, [selectAll, pagedUsers, selectedUsers.length]);
 
-  // Fix the toggleUserEnabled function
   async function toggleUserEnabled(user: IDPUserDTO) {
     try {
       const updateData = {
@@ -594,7 +602,7 @@ export default function UsersManagement() {
       toast.success(
         `User ${user.enabled ? "disabled" : "enabled"} successfully.`,
       );
-      loadUsers();
+      mutateUsers();
     } catch (error) {
       toast.error("Failed to update user status.");
       console.error("Error updating user status:", error);
@@ -609,48 +617,6 @@ export default function UsersManagement() {
       setSortDirection('asc');
     }
   }
-
-  function getSortedUsers() {
-    const sorted = [...users];
-    if (!sortColumn) return sorted;
-    sorted.sort((a, b) => {
-      let aValue: any = '';
-      let bValue: any = '';
-      switch (sortColumn) {
-        case 'username':
-          aValue = a.username || '';
-          bValue = b.username || '';
-          break;
-        case 'email':
-          aValue = a.email || '';
-          bValue = b.email || '';
-          break;
-        case 'name':
-          aValue = `${a.firstName || ''} ${a.lastName || ''}`.trim();
-          bValue = `${b.firstName || ''} ${b.lastName || ''}`.trim();
-          break;
-        case 'enabled':
-          aValue = a.enabled ? 1 : 0;
-          bValue = b.enabled ? 1 : 0;
-          break;
-        case 'admin':
-          aValue = a.realmRoles?.includes('lh-user-tasks-admin') ? 1 : 0;
-          bValue = b.realmRoles?.includes('lh-user-tasks-admin') ? 1 : 0;
-          break;
-        default:
-          return 0;
-      }
-      if (typeof aValue === 'string' && typeof bValue === 'string') {
-        const cmp = aValue.localeCompare(bValue);
-        return sortDirection === 'asc' ? cmp : -cmp;
-      } else {
-        return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
-      }
-    });
-    return sorted;
-  }
-
-  const sortedUsers = getSortedUsers();
 
   return (
     <div className="space-y-4">
@@ -794,9 +760,11 @@ export default function UsersManagement() {
         </div>
       </div>
 
-      {isLoading ? (
+      {usersError ? (
+        <div className="py-4 text-center text-red-500">Failed to load users</div>
+      ) : !usersData ? (
         <div className="py-4 text-center">Loading users...</div>
-      ) : users.length === 0 ? (
+      ) : pagedUsers.length === 0 ? (
         <div className="py-4 text-center">
           <h3 className="text-lg font-medium">No users found</h3>
           <p className="text-muted-foreground">
@@ -804,156 +772,181 @@ export default function UsersManagement() {
           </p>
         </div>
       ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12">
-                <Checkbox
-                  checked={
-                    selectAll ||
-                    (selectedUsers.length > 0 &&
-                      selectedUsers.length === users.length)
-                  }
-                  onCheckedChange={(checked) => {
-                    setSelectAll(checked === true);
-                  }}
-                />
-              </TableHead>
-              <TableHead onClick={() => handleSort('username')} className="cursor-pointer select-none">
-                Username
-                {sortColumn === 'username' && (sortDirection === 'asc' ? <ChevronUp className="inline w-4 h-4" /> : <ChevronDown className="inline w-4 h-4" />)}
-              </TableHead>
-              <TableHead onClick={() => handleSort('email')} className="cursor-pointer select-none">
-                Email
-                {sortColumn === 'email' && (sortDirection === 'asc' ? <ChevronUp className="inline w-4 h-4" /> : <ChevronDown className="inline w-4 h-4" />)}
-              </TableHead>
-              <TableHead onClick={() => handleSort('name')} className="cursor-pointer select-none">
-                Name
-                {sortColumn === 'name' && (sortDirection === 'asc' ? <ChevronUp className="inline w-4 h-4" /> : <ChevronDown className="inline w-4 h-4" />)}
-              </TableHead>
-              <TableHead onClick={() => handleSort('enabled')} className="cursor-pointer select-none">
-                Enabled
-                {sortColumn === 'enabled' && (sortDirection === 'asc' ? <ChevronUp className="inline w-4 h-4" /> : <ChevronDown className="inline w-4 h-4" />)}
-              </TableHead>
-              <TableHead onClick={() => handleSort('admin')} className="cursor-pointer select-none">
-                Admin
-                {sortColumn === 'admin' && (sortDirection === 'asc' ? <ChevronUp className="inline w-4 h-4" /> : <ChevronDown className="inline w-4 h-4" />)}
-              </TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {sortedUsers.map((user) => (
-              <TableRow
-                key={user.username}
-                className={selectedUsers.includes(user.id) ? "bg-muted/50" : ""}
-              >
-                <TableCell>
+        <>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-12">
                   <Checkbox
-                    checked={selectedUsers.includes(user.id)}
+                    checked={
+                      selectAll ||
+                      (selectedUsers.length > 0 &&
+                        selectedUsers.length === pagedUsers.length)
+                    }
                     onCheckedChange={(checked) => {
-                      if (checked) {
-                        setSelectedUsers([...selectedUsers, user.id]);
-                      } else {
-                        setSelectedUsers(
-                          selectedUsers.filter((id) => id !== user.id),
-                        );
-                      }
-
-                      // Update select all state
-                      if (
-                        checked &&
-                        selectedUsers.length + 1 === users.length
-                      ) {
-                        setSelectAll(true);
-                      } else if (!checked && selectAll) {
-                        setSelectAll(false);
-                      }
+                      setSelectAll(checked === true);
                     }}
                   />
-                </TableCell>
-                <TableCell>{user.username}</TableCell>
-                <TableCell>{user.email}</TableCell>
-                <TableCell>{`${user.firstName || ""} ${user.lastName || ""}`}</TableCell>
-                <TableCell>
-                  {user.enabled !== false ? (
-                    <Badge
-                      className={`bg-green-500 ${user.id !== currentUserId ? "hover:bg-green-600 cursor-pointer" : ""}`}
-                      onClick={
-                        user.id !== currentUserId
-                          ? () => toggleUserEnabled(user)
-                          : undefined
-                      }
-                    >
-                      Enabled
-                    </Badge>
-                  ) : (
-                    <Badge
-                      variant="destructive"
-                      className={
-                        user.id !== currentUserId ? "cursor-pointer" : ""
-                      }
-                      onClick={
-                        user.id !== currentUserId
-                          ? () => toggleUserEnabled(user)
-                          : undefined
-                      }
-                    >
-                      Disabled
-                    </Badge>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <Switch
-                    checked={
-                      user.realmRoles?.includes("lh-user-tasks-admin") || false
-                    }
-                    onCheckedChange={() => toggleAdminRole(user)}
-                    disabled={user.id === currentUserId}
-                  />
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end space-x-2">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal size={16} />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => handleEditClick(user.id)}
-                        >
-                          <Pencil size={16} className="mr-2" />
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleResetPasswordClick(user)}
-                        >
-                          <Lock size={16} className="mr-2" />
-                          Reset Password
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleManageGroups(user)}
-                        >
-                          <Users size={16} className="mr-2" />
-                          Manage Groups
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleDeleteUser(user.id)}
-                          className="text-red-600 focus:text-red-600 focus:bg-red-100"
-                        >
-                          <Trash size={16} className="mr-2" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </TableCell>
+                </TableHead>
+                <TableHead onClick={() => handleSort('username')} className="cursor-pointer select-none">
+                  Username
+                  {sortColumn === 'username' && (sortDirection === 'asc' ? <ChevronUp className="inline w-4 h-4" /> : <ChevronDown className="inline w-4 h-4" />)}
+                </TableHead>
+                <TableHead onClick={() => handleSort('email')} className="cursor-pointer select-none">
+                  Email
+                  {sortColumn === 'email' && (sortDirection === 'asc' ? <ChevronUp className="inline w-4 h-4" /> : <ChevronDown className="inline w-4 h-4" />)}
+                </TableHead>
+                <TableHead onClick={() => handleSort('name')} className="cursor-pointer select-none">
+                  Name
+                  {sortColumn === 'name' && (sortDirection === 'asc' ? <ChevronUp className="inline w-4 h-4" /> : <ChevronDown className="inline w-4 h-4" />)}
+                </TableHead>
+                <TableHead onClick={() => handleSort('enabled')} className="cursor-pointer select-none">
+                  Enabled
+                  {sortColumn === 'enabled' && (sortDirection === 'asc' ? <ChevronUp className="inline w-4 h-4" /> : <ChevronDown className="inline w-4 h-4" />)}
+                </TableHead>
+                <TableHead onClick={() => handleSort('admin')} className="cursor-pointer select-none">
+                  Admin
+                  {sortColumn === 'admin' && (sortDirection === 'asc' ? <ChevronUp className="inline w-4 h-4" /> : <ChevronDown className="inline w-4 h-4" />)}
+                </TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {pagedUsers.map((user: any) => (
+                <TableRow
+                  key={user.username}
+                  className={selectedUsers.includes(user.id) ? "bg-muted/50" : ""}
+                >
+                  <TableCell>
+                    <Checkbox
+                      checked={selectedUsers.includes(user.id)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setSelectedUsers([...selectedUsers, user.id]);
+                        } else {
+                          setSelectedUsers(
+                            selectedUsers.filter((id) => id !== user.id),
+                          );
+                        }
+
+                        // Update select all state
+                        if (
+                          checked &&
+                          selectedUsers.length + 1 === pagedUsers.length
+                        ) {
+                          setSelectAll(true);
+                        } else if (!checked && selectAll) {
+                          setSelectAll(false);
+                        }
+                      }}
+                    />
+                  </TableCell>
+                  <TableCell>{user.username}</TableCell>
+                  <TableCell>{user.email}</TableCell>
+                  <TableCell>{`${user.firstName || ""} ${user.lastName || ""}`}</TableCell>
+                  <TableCell>
+                    {user.enabled !== false ? (
+                      <Badge
+                        className={`bg-green-500 ${user.id !== currentUserId ? "hover:bg-green-600 cursor-pointer" : ""}`}
+                        onClick={
+                          user.id !== currentUserId
+                            ? () => toggleUserEnabled(user)
+                            : undefined
+                        }
+                      >
+                        Enabled
+                      </Badge>
+                    ) : (
+                      <Badge
+                        variant="destructive"
+                        className={
+                          user.id !== currentUserId ? "cursor-pointer" : ""
+                        }
+                        onClick={
+                          user.id !== currentUserId
+                            ? () => toggleUserEnabled(user)
+                            : undefined
+                        }
+                      >
+                        Disabled
+                      </Badge>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Switch
+                      checked={
+                        user.realmRoles?.includes("lh-user-tasks-admin") || false
+                      }
+                      onCheckedChange={() => toggleAdminRole(user)}
+                      disabled={user.id === currentUserId}
+                    />
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end space-x-2">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <MoreHorizontal size={16} />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={() => handleEditClick(user.id)}
+                          >
+                            <Pencil size={16} className="mr-2" />
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleResetPasswordClick(user)}
+                          >
+                            <Lock size={16} className="mr-2" />
+                            Reset Password
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleManageGroups(user)}
+                          >
+                            <Users size={16} className="mr-2" />
+                            Manage Groups
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleDeleteUser(user.id)}
+                            className="text-red-600 focus:text-red-600 focus:bg-red-100"
+                          >
+                            <Trash size={16} className="mr-2" />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          <div className="flex items-center justify-between px-2 py-4">
+            <div className="text-sm text-muted-foreground">
+              Showing {((currentPage - 1) * pageSize) + 1} to {((currentPage - 1) * pageSize) + pagedUsers.length} of {hasMoreUsers ? 'many' : ((currentPage - 1) * pageSize) + pagedUsers.length} users
+            </div>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+              >
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => prev + 1)}
+                disabled={!hasMoreUsers}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
+        </>
       )}
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
@@ -1066,7 +1059,9 @@ export default function UsersManagement() {
               Manage Groups for User: {selectedUser?.username}
             </DialogTitle>
           </DialogHeader>
-          {isGroupsLoading ? (
+          {groupsError ? (
+            <div className="py-4 text-center text-red-500">Failed to load groups</div>
+          ) : !groupsData ? (
             <div className="py-4 text-center">Loading groups...</div>
           ) : groups.length === 0 ? (
             <div className="py-4 text-center">
@@ -1139,7 +1134,9 @@ export default function UsersManagement() {
               Add {selectedUsers.length} Users to Groups
             </DialogTitle>
           </DialogHeader>
-          {isGroupsLoading ? (
+          {groupsError ? (
+            <div className="py-4 text-center text-red-500">Failed to load groups</div>
+          ) : !groupsData ? (
             <div className="py-4 text-center">Loading groups...</div>
           ) : groups.length === 0 ? (
             <div className="py-4 text-center">
