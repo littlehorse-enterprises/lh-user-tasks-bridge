@@ -7,7 +7,8 @@ import {
   completeUserTask,
   getUserTaskDetail,
 } from "@/app/[tenantId]/actions/user";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { ErrorResponse } from "@/lib/error-handling";
+import { Button, buttonVariants } from "@littlehorse-enterprises/ui/button";
 import {
   Dialog,
   DialogClose,
@@ -16,17 +17,17 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+} from "@littlehorse-enterprises/ui/dialog";
+import { Input } from "@littlehorse-enterprises/ui/input";
+import { Label } from "@littlehorse-enterprises/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { ErrorResponse } from "@/lib/error-handling";
+} from "@littlehorse-enterprises/ui/select";
+import { toast } from "@littlehorse-enterprises/ui/sonner";
 import {
   DetailedUserTaskRunDTO,
   SimpleUserTaskRunDTO,
@@ -36,7 +37,6 @@ import {
 } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 import { ErrorHandler } from "../../error-handler";
 import Loading from "../../loading";
 import NotesTextArea from "../notes";

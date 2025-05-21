@@ -1,11 +1,8 @@
-import type { Metadata } from "next";
-import "./globals.css";
-
 import Providers from "@/app/providers";
-import { Toaster } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
-import { ThemeProvider } from "next-themes";
+import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import "./globals.css";
 
 export const metadata: Metadata = {
   title: "LittleHorse SSO Workflow Bridge",
@@ -26,15 +23,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={cn(inter.variable, "flex flex-col min-h-screen")}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <Providers>{children}</Providers>
-          <Toaster position="top-center" richColors />
-        </ThemeProvider>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

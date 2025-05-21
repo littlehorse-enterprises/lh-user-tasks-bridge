@@ -1,7 +1,11 @@
 "use client";
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@littlehorse-enterprises/ui/alert";
+import { Button } from "@littlehorse-enterprises/ui/button";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { useEffect } from "react";
 

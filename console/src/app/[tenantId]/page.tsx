@@ -1,5 +1,14 @@
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@littlehorse-enterprises/ui/alert";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@littlehorse-enterprises/ui/tabs";
 import { AlertCircle } from "lucide-react";
 import {
   getClaimableTasks,

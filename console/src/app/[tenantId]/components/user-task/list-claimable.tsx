@@ -1,9 +1,18 @@
 "use client";
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ErrorResponse, ErrorType } from "@/lib/error-handling";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@littlehorse-enterprises/ui/alert";
+import { Button } from "@littlehorse-enterprises/ui/button";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@littlehorse-enterprises/ui/tabs";
 import {
   UserGroupDTO,
   UserTaskRunListDTO,

@@ -4,7 +4,7 @@ import {
   adminGetUserGroups,
 } from "@/app/[tenantId]/actions/admin";
 import { getUsersFromIdP } from "@/app/[tenantId]/actions/user-management";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@littlehorse-enterprises/ui/button";
 import {
   Dialog,
   DialogClose,
@@ -13,15 +13,16 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+} from "@littlehorse-enterprises/ui/dialog";
+import { Label } from "@littlehorse-enterprises/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from "@littlehorse-enterprises/ui/select";
+import { toast } from "@littlehorse-enterprises/ui/sonner";
 import {
   IDPGroupDTO,
   IDPUserDTO,
@@ -31,8 +32,6 @@ import {
 } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
-
 export default function AssignUserTaskButton({
   userTask,
 }: {
