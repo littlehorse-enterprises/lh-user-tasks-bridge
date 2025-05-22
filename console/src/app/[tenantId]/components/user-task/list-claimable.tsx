@@ -5,14 +5,14 @@ import {
   Alert,
   AlertDescription,
   AlertTitle,
-} from "@littlehorse-enterprises/ui/alert";
-import { Button } from "@littlehorse-enterprises/ui/button";
+} from "@littlehorse-enterprises/ui-library/alert";
+import { Button } from "@littlehorse-enterprises/ui-library/button";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "@littlehorse-enterprises/ui/tabs";
+} from "@littlehorse-enterprises/ui-library/tabs";
 import {
   UserGroupDTO,
   UserTaskRunListDTO,

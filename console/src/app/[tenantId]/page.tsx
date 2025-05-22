@@ -2,13 +2,13 @@ import {
   Alert,
   AlertDescription,
   AlertTitle,
-} from "@littlehorse-enterprises/ui/alert";
+} from "@littlehorse-enterprises/ui-library/alert";
 import {
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "@littlehorse-enterprises/ui/tabs";
+} from "@littlehorse-enterprises/ui-library/tabs";
 import { AlertCircle } from "lucide-react";
 import {
   getClaimableTasks,

@@ -4,7 +4,10 @@ import {
   adminGetUserGroups,
 } from "@/app/[tenantId]/actions/admin";
 import { getUsersFromIdP } from "@/app/[tenantId]/actions/user-management";
-import { Button, buttonVariants } from "@littlehorse-enterprises/ui/button";
+import {
+  Button,
+  buttonVariants,
+} from "@littlehorse-enterprises/ui-library/button";
 import {
   Dialog,
   DialogClose,
@@ -13,16 +16,16 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@littlehorse-enterprises/ui/dialog";
-import { Label } from "@littlehorse-enterprises/ui/label";
+} from "@littlehorse-enterprises/ui-library/dialog";
+import { Label } from "@littlehorse-enterprises/ui-library/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@littlehorse-enterprises/ui/select";
-import { toast } from "@littlehorse-enterprises/ui/sonner";
+} from "@littlehorse-enterprises/ui-library/select";
+import { toast } from "@littlehorse-enterprises/ui-library/sonner";
 import {
   IDPGroupDTO,
   IDPUserDTO,

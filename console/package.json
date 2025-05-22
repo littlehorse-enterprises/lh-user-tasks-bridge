@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",
-    "@littlehorse-enterprises/ui": "^1.0.4",
+    "@littlehorse-enterprises/ui-library": "^1.0.0",
     "@littlehorse-enterprises/user-tasks-bridge-api-client": "*",
     "@opentelemetry/api": "^1.9.0",
     "@opentelemetry/context-async-hooks": "^1.30.1",

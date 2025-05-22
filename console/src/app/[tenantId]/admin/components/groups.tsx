@@ -1,8 +1,8 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button } from "@littlehorse-enterprises/ui/button";
-import { Checkbox } from "@littlehorse-enterprises/ui/checkbox";
+import { Button } from "@littlehorse-enterprises/ui-library/button";
+import { Checkbox } from "@littlehorse-enterprises/ui-library/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@littlehorse-enterprises/ui/dialog";
+} from "@littlehorse-enterprises/ui-library/dialog";
 import {
   Form,
   FormControl,
@@ -18,9 +18,9 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@littlehorse-enterprises/ui/form";
-import { Input } from "@littlehorse-enterprises/ui/input";
-import { toast } from "@littlehorse-enterprises/ui/sonner";
+} from "@littlehorse-enterprises/ui-library/form";
+import { Input } from "@littlehorse-enterprises/ui-library/input";
+import { toast } from "@littlehorse-enterprises/ui-library/sonner";
 import {
   Table,
   TableBody,
@@ -28,7 +28,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@littlehorse-enterprises/ui/table";
+} from "@littlehorse-enterprises/ui-library/table";
 import {
   IDPGroupDTO,
   IDPUserDTO,

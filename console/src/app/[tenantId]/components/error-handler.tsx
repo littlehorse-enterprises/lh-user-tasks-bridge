@@ -5,8 +5,8 @@ import {
   Alert,
   AlertDescription,
   AlertTitle,
-} from "@littlehorse-enterprises/ui/alert";
-import { Button } from "@littlehorse-enterprises/ui/button";
+} from "@littlehorse-enterprises/ui-library/alert";
+import { Button } from "@littlehorse-enterprises/ui-library/button";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 

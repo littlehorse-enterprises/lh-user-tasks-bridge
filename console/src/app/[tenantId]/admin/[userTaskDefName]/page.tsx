@@ -2,7 +2,7 @@ import {
   adminGetAllTasks,
   adminGetUserGroups,
 } from "@/app/[tenantId]/actions/admin";
-import { Button } from "@littlehorse-enterprises/ui/button";
+import { Button } from "@littlehorse-enterprises/ui-library/button";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import ListUserTasks from "../../components/user-task/list";
