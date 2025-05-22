@@ -7,22 +7,22 @@ import {
   Alert,
   AlertDescription,
   AlertTitle,
-} from "@littlehorse-enterprises/ui/alert";
-import { Button } from "@littlehorse-enterprises/ui/button";
-import { Input } from "@littlehorse-enterprises/ui/input";
-import { Label } from "@littlehorse-enterprises/ui/label";
+} from "@littlehorse-enterprises/ui-library/alert";
+import { Button } from "@littlehorse-enterprises/ui-library/button";
+import { Input } from "@littlehorse-enterprises/ui-library/input";
+import { Label } from "@littlehorse-enterprises/ui-library/label";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@littlehorse-enterprises/ui/popover";
+} from "@littlehorse-enterprises/ui-library/popover";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@littlehorse-enterprises/ui/select";
+} from "@littlehorse-enterprises/ui-library/select";
 import {
   UserGroupDTO,
   UserTaskRunListDTO,

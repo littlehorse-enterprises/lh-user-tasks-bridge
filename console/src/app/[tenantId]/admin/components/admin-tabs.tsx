@@ -5,7 +5,7 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-} from "@littlehorse-enterprises/ui/tabs";
+} from "@littlehorse-enterprises/ui-library/tabs";
 import { usePathname, useRouter } from "next/navigation";
 import GroupsManagement from "./groups";
 import UserTaskDefs from "./userTaskDefs";

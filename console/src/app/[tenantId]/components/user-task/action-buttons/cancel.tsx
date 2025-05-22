@@ -12,9 +12,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@littlehorse-enterprises/ui/alert-dialog";
-import { Button, buttonVariants } from "@littlehorse-enterprises/ui/button";
-import { toast } from "@littlehorse-enterprises/ui/sonner";
+} from "@littlehorse-enterprises/ui-library/alert-dialog";
+import {
+  Button,
+  buttonVariants,
+} from "@littlehorse-enterprises/ui-library/button";
+import { toast } from "@littlehorse-enterprises/ui-library/sonner";
 import { SimpleUserTaskRunDTO } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
 import { useParams } from "next/navigation";
 import { useState } from "react";

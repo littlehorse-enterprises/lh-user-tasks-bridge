@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { Textarea } from "@littlehorse-enterprises/ui/textarea";
+import { Textarea } from "@littlehorse-enterprises/ui-library/textarea";
 
 export default function NotesTextArea({ notes }: { notes?: string }) {
   return (

@@ -8,7 +8,10 @@ import {
   getUserTaskDetail,
 } from "@/app/[tenantId]/actions/user";
 import { ErrorResponse } from "@/lib/error-handling";
-import { Button, buttonVariants } from "@littlehorse-enterprises/ui/button";
+import {
+  Button,
+  buttonVariants,
+} from "@littlehorse-enterprises/ui-library/button";
 import {
   Dialog,
   DialogClose,
@@ -17,17 +20,17 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@littlehorse-enterprises/ui/dialog";
-import { Input } from "@littlehorse-enterprises/ui/input";
-import { Label } from "@littlehorse-enterprises/ui/label";
+} from "@littlehorse-enterprises/ui-library/dialog";
+import { Input } from "@littlehorse-enterprises/ui-library/input";
+import { Label } from "@littlehorse-enterprises/ui-library/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@littlehorse-enterprises/ui/select";
-import { toast } from "@littlehorse-enterprises/ui/sonner";
+} from "@littlehorse-enterprises/ui-library/select";
+import { toast } from "@littlehorse-enterprises/ui-library/sonner";
 import {
   DetailedUserTaskRunDTO,
   SimpleUserTaskRunDTO,

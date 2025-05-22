@@ -1,9 +1,9 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Badge } from "@littlehorse-enterprises/ui/badge";
-import { Button } from "@littlehorse-enterprises/ui/button";
-import { Checkbox } from "@littlehorse-enterprises/ui/checkbox";
+import { Badge } from "@littlehorse-enterprises/ui-library/badge";
+import { Button } from "@littlehorse-enterprises/ui-library/button";
+import { Checkbox } from "@littlehorse-enterprises/ui-library/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -11,13 +11,13 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@littlehorse-enterprises/ui/dialog";
+} from "@littlehorse-enterprises/ui-library/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@littlehorse-enterprises/ui/dropdown-menu";
+} from "@littlehorse-enterprises/ui-library/dropdown-menu";
 import {
   Form,
   FormControl,
@@ -25,10 +25,10 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@littlehorse-enterprises/ui/form";
-import { Input } from "@littlehorse-enterprises/ui/input";
-import { toast } from "@littlehorse-enterprises/ui/sonner";
-import { Switch } from "@littlehorse-enterprises/ui/switch";
+} from "@littlehorse-enterprises/ui-library/form";
+import { Input } from "@littlehorse-enterprises/ui-library/input";
+import { toast } from "@littlehorse-enterprises/ui-library/sonner";
+import { Switch } from "@littlehorse-enterprises/ui-library/switch";
 import {
   Table,
   TableBody,
@@ -36,7 +36,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@littlehorse-enterprises/ui/table";
+} from "@littlehorse-enterprises/ui-library/table";
 import { IDPUserDTO } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
 import {
   ChevronDown,
