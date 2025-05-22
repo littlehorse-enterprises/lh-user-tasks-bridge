@@ -33,7 +33,7 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
 
       - name: Install Dependencies
-        run: npm install
+        run: npm ci
 
       - name: Update version in api-client/package.json
         run: |
