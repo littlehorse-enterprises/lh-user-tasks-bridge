@@ -4,8 +4,12 @@ import {
   adminGetAllTasks,
   adminGetAllUserTasksDef,
 } from "@/app/[tenantId]/actions/admin";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@littlehorse-enterprises/ui/alert";
+import { Button } from "@littlehorse-enterprises/ui/button";
 import { UserTaskStatus } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
 import {
   InfiniteData,
@@ -20,7 +24,6 @@ import {
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-
 interface UserTaskDefCount {
   name: string;
   unassignedCount: number;

@@ -1,7 +1,8 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { Button } from "@littlehorse-enterprises/ui/button";
+import { Checkbox } from "@littlehorse-enterprises/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -9,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog";
+} from "@littlehorse-enterprises/ui/dialog";
 import {
   Form,
   FormControl,
@@ -17,8 +18,9 @@ import {
   FormItem,
   FormLabel,
   FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
+} from "@littlehorse-enterprises/ui/form";
+import { Input } from "@littlehorse-enterprises/ui/input";
+import { toast } from "@littlehorse-enterprises/ui/sonner";
 import {
   Table,
   TableBody,
@@ -26,8 +28,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table";
-import { zodResolver } from "@hookform/resolvers/zod";
+} from "@littlehorse-enterprises/ui/table";
 import {
   IDPGroupDTO,
   IDPUserDTO,
@@ -36,7 +37,6 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
-import { toast } from "sonner";
 import useSWR from "swr";
 import * as z from "zod";
 import {

@@ -1,6 +1,7 @@
 "use client";
 import { adminCancelUserTask } from "@/app/[tenantId]/actions/admin";
 import { cancelUserTask } from "@/app/[tenantId]/actions/user";
+import { ErrorType } from "@/lib/error-handling";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -11,13 +12,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { ErrorType } from "@/lib/error-handling";
+} from "@littlehorse-enterprises/ui/alert-dialog";
+import { Button, buttonVariants } from "@littlehorse-enterprises/ui/button";
+import { toast } from "@littlehorse-enterprises/ui/sonner";
 import { SimpleUserTaskRunDTO } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
 import { useParams } from "next/navigation";
 import { useState } from "react";
-import { toast } from "sonner";
 
 export default function CancelUserTaskButton({
   userTask,

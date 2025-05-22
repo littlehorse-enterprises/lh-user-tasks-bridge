@@ -5,14 +5,14 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
+} from "@littlehorse-enterprises/ui/card";
+import { Label } from "@littlehorse-enterprises/ui/label";
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@littlehorse-enterprises/ui/tooltip";
 import type { SimpleUserTaskRunDTO } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
 import { Check, ClipboardCopy } from "lucide-react";
 import { useSession } from "next-auth/react";

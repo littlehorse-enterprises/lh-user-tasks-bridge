@@ -1,6 +1,11 @@
 "use client";
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@littlehorse-enterprises/ui/tabs";
 import { usePathname, useRouter } from "next/navigation";
 import GroupsManagement from "./groups";
 import UserTaskDefs from "./userTaskDefs";

@@ -2,7 +2,7 @@
 import logoWhite from "@/../public/images/logo-white.svg";
 import logoBlack from "@/../public/images/logo.svg";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@littlehorse-enterprises/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,8 +10,8 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Skeleton } from "@/components/ui/skeleton";
+} from "@littlehorse-enterprises/ui/dropdown-menu";
+import { Skeleton } from "@littlehorse-enterprises/ui/skeleton";
 import { LogOut } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { useTheme } from "next-themes";
