@@ -100,7 +100,7 @@ lhctl run user-tasks-bridge-demo group $(http --ignore-stdin -b -A bearer -a "${
 - [pre-commit](https://pre-commit.com/)
 - [Git](https://git-scm.com/)
 
-If you want to develop the UI locally:
+If you want to develop the console locally:
 
 ### Setup
 
@@ -141,7 +141,7 @@ npm install
 ```
 
 ```shell
-npm run dev -w ui
+npm run dev -w console
 ```
 
 In another terminal, start the API Client:
@@ -152,7 +152,7 @@ npm run dev -w api-client
 
 The API Client will start listening to any live changes in the `api-client` folder and recompile it.
 
-The UI will start with watch mode on <http://localhost:3000>
+The console will start with watch mode on <http://localhost:3000>
 
 ### Useful Links
 
@@ -162,7 +162,7 @@ The UI will start with watch mode on <http://localhost:3000>
 
 ## Running with SSL
 
-To run the UI with SSL enabled, you'll need to:
+To run the console with SSL enabled, you'll need to:
 
 1. Generate SSL certificates using the provided script:
 
@@ -195,7 +195,7 @@ docker run --rm \
     ghcr.io/littlehorse-enterprises/lh-user-tasks-bridge/lh-user-tasks-bridge-console:latest
 ```
 
-When SSL is enabled, the UI will be available on:
+When SSL is enabled, the console will be available on:
 
 - HTTP: <http://localhost:3000>
 - HTTPS: <https://localhost:3443>
