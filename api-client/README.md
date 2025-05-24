@@ -1,6 +1,6 @@
-# LittleHorse User Tasks Bridge API Client
+# LittleHorse UserTasks Bridge API Client
 
-A lightweight client for interacting with LittleHorse [User Tasks Bridge Backend](https://littlehorse.io/docs/user-tasks-bridge/backend).
+A lightweight client for interacting with LittleHorse [UserTasks Bridge Backend](https://littlehorse.io/docs/user-tasks-bridge/backend).
 
 ## Installation
 

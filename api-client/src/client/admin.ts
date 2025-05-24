@@ -5,7 +5,7 @@ import {
   AdminTaskActionParams,
   AssignmentRequest,
   GetAllTasksParams,
-  GetAllUserTasksDefParams,
+  GetAllUserTaskDefsParams,
   GetUserFromIdentityProviderParams,
   GetUsersFromIdentityProviderParams,
   UserListDTO,
@@ -40,8 +40,8 @@ export class AdminController {
   /**
    * Gets all UserTaskDef from a specific tenant.
    */
-  async getAllUserTasksDef(
-    params: GetAllUserTasksDefParams,
+  async getAllUserTaskDefs(
+    params: GetAllUserTaskDefsParams,
   ): Promise<UserTaskDefListDTO> {
     const queryParams = objectToURLSearchParams(params);
     return this.client.fetch<UserTaskDefListDTO>(

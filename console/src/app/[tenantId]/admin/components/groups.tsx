@@ -33,8 +33,7 @@ import {
   IDPGroupDTO,
   IDPUserDTO,
 } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
-import { ChevronDown, ChevronUp } from "lucide-react";
-import { useParams } from "next/navigation";
+import { ChevronDown, ChevronUp, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import useSWR from "swr";
@@ -57,9 +56,17 @@ const formSchema = z.object({
   }),
 });
 
-export default function GroupsManagement() {
-  const tenantId = useParams().tenantId as string;
+interface GroupsManagementProps {
+  tenantId: string;
+  initialGroups: IDPGroupDTO[];
+  hasError: boolean;
+}
 
+export default function GroupsManagement({
+  tenantId,
+  initialGroups,
+  hasError,
+}: GroupsManagementProps) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isMembersDialogOpen, setIsMembersDialogOpen] = useState(false);
@@ -73,17 +80,28 @@ export default function GroupsManagement() {
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 25;
 
+  // Use SWR with fallback data for groups - this allows real-time updates while using initial data
   const {
     data: groupsData,
     error: groupsError,
     mutate: mutateGroups,
-  } = useSWR([`groups-${tenantId}`, currentPage], async () => {
-    const response = await getGroups(tenantId, {
-      first_result: (currentPage - 1) * pageSize,
-      max_results: pageSize + 1,
-    });
-    return response.data;
-  });
+  } = useSWR(
+    [`groups-${tenantId}`, currentPage],
+    async () => {
+      // Only fetch if we don't have initial data or need pagination
+      if (hasError) throw new Error("Failed to load groups");
+
+      const response = await getGroups(tenantId, {
+        first_result: (currentPage - 1) * pageSize,
+        max_results: pageSize + 1,
+      });
+      return response.data;
+    },
+    {
+      fallbackData: { groups: initialGroups },
+      revalidateOnMount: false, // Don't refetch immediately if we have initial data
+    },
+  );
 
   const {
     data: usersData,
@@ -94,7 +112,7 @@ export default function GroupsManagement() {
     return response.data;
   });
 
-  const allGroups = groupsData?.groups || [];
+  const allGroups = groupsData?.groups || initialGroups;
   const hasMoreGroups = allGroups.length > pageSize;
   const pagedGroups = allGroups.slice(0, pageSize);
   pagedGroups.sort((a: any, b: any) => {
@@ -377,21 +395,8 @@ export default function GroupsManagement() {
             onOpenChange={setIsCreateDialogOpen}
           >
             <DialogTrigger asChild>
-              <Button className="bg-yellow-400 hover:bg-yellow-500 text-black">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="mr-2"
-                >
-                  <path d="M12 5v14M5 12h14" />
-                </svg>
+              <Button>
+                <Plus className="mr-2" size={16} />
                 Add Group
               </Button>
             </DialogTrigger>
@@ -425,12 +430,7 @@ export default function GroupsManagement() {
                     >
                       Cancel
                     </Button>
-                    <Button
-                      type="submit"
-                      className="bg-yellow-400 hover:bg-yellow-500 text-black"
-                    >
-                      Create Group
-                    </Button>
+                    <Button type="submit">Create Group</Button>
                   </DialogFooter>
                 </form>
               </Form>

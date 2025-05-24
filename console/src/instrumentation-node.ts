@@ -31,7 +31,7 @@ const detectedResources = detectResourcesSync({
 });
 
 const customResources = new Resource({
-  [ATTR_SERVICE_NAME]: "User Tasks Bridge Console",
+  [ATTR_SERVICE_NAME]: "UserTasks Bridge Console",
   [ATTR_SERVICE_VERSION]: "0.1.0",
 });
 

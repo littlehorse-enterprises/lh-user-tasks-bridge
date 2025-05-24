@@ -22,7 +22,7 @@ export interface GetAllTasksParams {
   bookmark?: string;
 }
 
-export interface GetAllUserTasksDefParams {
+export interface GetAllUserTaskDefsParams {
   limit: number;
   bookmark?: string;
 }
