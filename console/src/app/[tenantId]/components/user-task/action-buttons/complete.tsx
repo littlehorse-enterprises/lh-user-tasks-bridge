@@ -240,13 +240,13 @@ export default function CompleteUserTaskButton({
           error={error}
           onRetry={fetchTaskDetails}
           allowReturn={false}
-          title="Error Loading Task Details"
+          title="Error Loading UserTask Details"
         />
       );
     }
 
     if (!userTaskDetails) {
-      return <div>No task details available</div>;
+      return <div>No UserTask details available</div>;
     }
 
     return (

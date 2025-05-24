@@ -1,9 +1,6 @@
 "use client";
 
-import {
-  adminGetAllTasks,
-  adminGetAllUserTasksDef,
-} from "@/app/[tenantId]/actions/admin";
+import { adminGetAllTasks } from "@/app/[tenantId]/actions/admin";
 import {
   Alert,
   AlertDescription,
@@ -11,116 +8,77 @@ import {
 } from "@littlehorse-enterprises/ui-library/alert";
 import { Button } from "@littlehorse-enterprises/ui-library/button";
 import { UserTaskStatus } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
-import {
-  InfiniteData,
-  useInfiniteQuery,
-  useQuery,
-} from "@tanstack/react-query";
-import {
-  AlertCircle,
-  ChevronDown,
-  ClipboardList,
-  RefreshCw,
-} from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { AlertCircle, ClipboardList, RefreshCw } from "lucide-react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+
 interface UserTaskDefCount {
   name: string;
+  totalCount: number;
   unassignedCount: number;
   assignedToMeCount: number;
 }
 
 interface UserTaskDefsProps {
   tenantId: string;
+  userTaskDefs: string[];
+  hasError: boolean;
 }
 
-// Define the type for UserTaskDefListDTO
-interface UserTaskDefListDTO {
-  userTaskDefNames: string[];
-  bookmark: string | null;
-}
-
-export default function UserTaskDefs({ tenantId }: UserTaskDefsProps) {
+export default function UserTaskDefs({
+  tenantId,
+  userTaskDefs,
+  hasError,
+}: UserTaskDefsProps) {
   const { data: session } = useSession();
   const userId = session?.user?.id;
-
-  // Fetch user task definitions with useInfiniteQuery
-  const {
-    data: userTaskDefData,
-    error: userTaskDefError,
-    isFetching: isUserTaskDefFetching,
-    hasNextPage,
-    fetchNextPage,
-    refetch: refreshUserTaskDefs,
-  } = useInfiniteQuery<
-    UserTaskDefListDTO,
-    Error,
-    InfiniteData<UserTaskDefListDTO, string | undefined>,
-    string[],
-    string | undefined
-  >({
-    queryKey: ["userTaskDefs", tenantId],
-    queryFn: async ({ pageParam }) => {
-      const result = await adminGetAllUserTasksDef(tenantId, {
-        limit: 100,
-        bookmark: pageParam,
-      });
-
-      if (result.error) {
-        throw result.error;
-      }
-
-      return result.data!;
-    },
-    initialPageParam: undefined as string | undefined,
-    getNextPageParam: (lastPage) => lastPage?.bookmark || undefined,
-    refetchInterval: 5000,
-    refetchOnWindowFocus: true,
-  });
-
-  // Get all task definition names from all pages
-  const allUserTaskDefNames =
-    userTaskDefData?.pages.flatMap(
-      (page: UserTaskDefListDTO) => page.userTaskDefNames || [],
-    ) || [];
 
   // Fetch task counts for each definition
   const {
     data: taskCounts,
     error: taskCountsError,
     refetch: refreshTaskCounts,
+    isLoading: isTaskCountsLoading,
   } = useQuery<UserTaskDefCount[]>({
-    queryKey: ["taskCounts", tenantId, allUserTaskDefNames, userId],
+    queryKey: ["taskCounts", tenantId, userTaskDefs, userId],
     queryFn: async () => {
-      if (!allUserTaskDefNames || allUserTaskDefNames.length === 0) {
+      if (!userTaskDefs || userTaskDefs.length === 0) {
         return [];
       }
 
-      const countPromises = allUserTaskDefNames.map(async (name: string) => {
-        // Get unassigned tasks count - limit to 99
+      const countPromises = userTaskDefs.map(async (name: string) => {
+        // Get unassigned tasks count
         const unassignedResult = await adminGetAllTasks(tenantId, {
           type: name,
           status: UserTaskStatus.UNASSIGNED,
-          limit: 99,
+          limit: 100,
         });
 
-        // Get tasks assigned to current user - limit to 99
+        // Get tasks assigned to current user
         const assignedToMeResult = userId
           ? await adminGetAllTasks(tenantId, {
               type: name,
               status: UserTaskStatus.ASSIGNED,
               user_id: userId,
-              limit: 99,
+              limit: 100,
             })
           : { data: { userTasks: [] } };
 
+        const totalCountResult = await adminGetAllTasks(tenantId, {
+          type: name,
+          limit: 100,
+        });
+
         // Handle error responses
+        const totalCount = totalCountResult.data?.userTasks?.length || 0;
         const unassignedCount = unassignedResult.data?.userTasks?.length || 0;
         const assignedToMeCount =
           assignedToMeResult.data?.userTasks?.length || 0;
 
         return {
           name,
+          totalCount,
           unassignedCount,
           assignedToMeCount,
         };
@@ -128,34 +86,21 @@ export default function UserTaskDefs({ tenantId }: UserTaskDefsProps) {
 
       return Promise.all(countPromises);
     },
-    enabled: allUserTaskDefNames.length > 0,
+    enabled: userTaskDefs.length > 0 && !hasError,
     refetchInterval: 5000,
     refetchOnWindowFocus: true,
   });
 
-  // Handle refresh
-  const handleRefresh = () => {
-    refreshUserTaskDefs();
-    refreshTaskCounts();
-  };
-
   // Handle errors
-  if (userTaskDefError) {
+  if (hasError) {
     return (
       <Alert variant="destructive">
         <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Error loading task definitions</AlertTitle>
+        <AlertTitle>Error loading UserTaskDefs</AlertTitle>
         <AlertDescription>
-          {(userTaskDefError as Error).message}
+          Failed to load UserTaskDefs. Please check your permissions and try
+          again.
         </AlertDescription>
-        <Button
-          onClick={handleRefresh}
-          variant="outline"
-          size="sm"
-          className="mt-2"
-        >
-          <RefreshCw className="mr-2 h-4 w-4" /> Retry
-        </Button>
       </Alert>
     );
   }
@@ -169,7 +114,7 @@ export default function UserTaskDefs({ tenantId }: UserTaskDefsProps) {
           {(taskCountsError as Error).message}
         </AlertDescription>
         <Button
-          onClick={handleRefresh}
+          onClick={() => refreshTaskCounts()}
           variant="outline"
           size="sm"
           className="mt-2"
@@ -181,28 +126,86 @@ export default function UserTaskDefs({ tenantId }: UserTaskDefsProps) {
   }
 
   // Loading state
-  if (!userTaskDefData?.pages || typeof taskCounts === "undefined") {
+  if (isTaskCountsLoading || typeof taskCounts === "undefined") {
     return (
-      <div className="flex justify-center items-center p-8">
-        <div className="animate-pulse space-y-4">
-          <div className="h-4 w-32 bg-gray-200 rounded"></div>
-          <div className="grid grid-cols-3 gap-4">
-            <div className="h-20 bg-gray-200 rounded"></div>
-            <div className="h-20 bg-gray-200 rounded"></div>
-            <div className="h-20 bg-gray-200 rounded"></div>
-          </div>
+      <div className="flex flex-col gap-6">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {userTaskDefs.map((name) => (
+            <div
+              key={name}
+              className="relative rounded-xl border border-border bg-gradient-to-br from-card to-card/50 p-6 shadow-sm animate-pulse"
+            >
+              {/* Status indicator skeleton */}
+              <div className="absolute top-4 right-4">
+                <div className="w-3 h-3 rounded-full bg-gray-200" />
+              </div>
+
+              {/* Header skeleton */}
+              <div className="flex items-start gap-4 mb-4">
+                <div className="p-3 bg-gray-100 rounded-xl">
+                  <div className="h-6 w-6 bg-gray-200 rounded" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="h-5 bg-gray-200 rounded w-3/4 mb-2" />
+                  <div className="h-4 bg-gray-100 rounded w-1/2" />
+                </div>
+              </div>
+
+              {/* Statistics skeleton */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="h-4 bg-gray-200 rounded w-20" />
+                  <div className="h-4 bg-gray-200 rounded w-8" />
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-gray-200" />
+                      <div className="h-3 bg-gray-200 rounded w-16" />
+                    </div>
+                    <div className="h-3 bg-gray-200 rounded w-6" />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-gray-200" />
+                      <div className="h-3 bg-gray-200 rounded w-20" />
+                    </div>
+                    <div className="h-3 bg-gray-200 rounded w-6" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Progress bar skeleton */}
+              <div className="mt-4 pt-4 border-t border-border/50">
+                <div className="flex justify-between mb-2">
+                  <div className="h-3 bg-gray-200 rounded w-12" />
+                  <div className="h-3 bg-gray-200 rounded w-8" />
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2" />
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );
   }
 
   // Empty state
-  if (userTaskDefData.pages.length === 0) {
+  if (userTaskDefs.length === 0) {
     return (
-      <div className="flex justify-center items-center p-8">
-        <span className="text-muted-foreground text-lg">
-          You do not have any user task defs registered.
-        </span>
+      <div className="flex flex-col items-center justify-center p-12 text-center space-y-4">
+        <div className="p-4 bg-muted/50 rounded-full">
+          <ClipboardList className="h-8 w-8 text-muted-foreground" />
+        </div>
+        <div className="space-y-2">
+          <h3 className="text-lg font-semibold text-foreground">
+            No UserTaskDefs found
+          </h3>
+          <p className="text-muted-foreground max-w-md">
+            You don't have any UserTaskDefs registered yet. UserTaskDefs are
+            created when you deploy workflows that contain UserTasks.
+          </p>
+        </div>
       </div>
     );
   }
@@ -210,66 +213,110 @@ export default function UserTaskDefs({ tenantId }: UserTaskDefsProps) {
   return (
     <div className="flex flex-col gap-6">
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {allUserTaskDefNames.map((name: string) => {
+        {userTaskDefs.map((name: string) => {
           const counts = taskCounts.find(
             (count: UserTaskDefCount) => count.name === name,
           ) || {
+            totalCount: 0,
             unassignedCount: 0,
             assignedToMeCount: 0,
           };
 
+          const hasActiveUserTasks = counts.totalCount > 0;
+
           return (
             <Link key={name} href={`/${tenantId}/admin/${name}`}>
-              <div className="rounded-lg border bg-card p-5 hover:bg-accent/50 transition-colors cursor-pointer h-full">
-                <div className="flex items-center gap-4">
-                  <ClipboardList className="size-10 text-primary bg-primary/25 p-2 rounded-full" />
-                  <h3 className="text-lg font-medium text-card-foreground">
-                    {name}
-                  </h3>
+              <div className="group relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-card to-card/50 p-6 shadow-sm transition-all duration-300 hover:shadow-lg hover:shadow-primary/5 hover:border-primary/20 hover:-translate-y-1 cursor-pointer h-full">
+                {/* Background Pattern */}
+                <div className="absolute inset-0 bg-grid-pattern opacity-5 group-hover:opacity-10 transition-opacity duration-300" />
+
+                {/* Status Indicator */}
+                <div className="absolute top-4 right-4">
+                  <div
+                    className={`w-3 h-3 rounded-full ${hasActiveUserTasks ? "bg-green-500" : "bg-gray-300"} shadow-sm`}
+                  >
+                    {hasActiveUserTasks && (
+                      <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
+                    )}
+                  </div>
                 </div>
 
-                <div className="mt-4 flex gap-3 text-sm">
-                  {counts.unassignedCount > 0 ? (
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-accent text-accent-foreground">
-                      {counts.unassignedCount >= 99
-                        ? "99+"
-                        : counts.unassignedCount}{" "}
-                      unassigned
-                    </span>
-                  ) : null}
+                {/* Header */}
+                <div className="flex items-start gap-4 mb-4">
+                  <div className="relative">
+                    <div className="p-3 bg-gradient-to-br from-primary/20 to-primary/10 rounded-xl border border-primary/20 group-hover:shadow-md transition-all duration-300">
+                      <ClipboardList className="h-6 w-6 text-primary" />
+                    </div>
+                    {hasActiveUserTasks && (
+                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white flex items-center justify-center">
+                        <div className="w-1 h-1 bg-white rounded-full" />
+                      </div>
+                    )}
+                  </div>
 
-                  {counts.assignedToMeCount > 0 ? (
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primary text-primary-foreground">
-                      {counts.assignedToMeCount >= 99
-                        ? "99+"
-                        : counts.assignedToMeCount}{" "}
-                      assigned to me
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors duration-300 truncate">
+                      {name}
+                    </h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      UserTaskDef
+                    </p>
+                  </div>
+                </div>
+
+                {/* Statistics */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      Total UserTasks
                     </span>
-                  ) : null}
+                    <span className="font-medium text-foreground">
+                      {counts.totalCount > 99 ? "99+" : counts.totalCount}
+                    </span>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-orange-500" />
+                        <span className="text-sm text-muted-foreground">
+                          Unassigned
+                        </span>
+                      </div>
+                      <span className="text-sm font-medium text-orange-600">
+                        {counts.unassignedCount > 99
+                          ? "99+"
+                          : counts.unassignedCount}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-blue-500" />
+                        <span className="text-sm text-muted-foreground">
+                          Assigned to me
+                        </span>
+                      </div>
+                      <span className="text-sm font-medium text-blue-600">
+                        {counts.assignedToMeCount > 99
+                          ? "99+"
+                          : counts.assignedToMeCount}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quick Action Badge */}
+                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <div className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-md shadow-sm">
+                    View Details →
+                  </div>
                 </div>
               </div>
             </Link>
           );
         })}
       </div>
-
-      {hasNextPage && (
-        <div className="flex justify-center mt-4">
-          <Button
-            onClick={() => fetchNextPage()}
-            variant="outline"
-            disabled={isUserTaskDefFetching}
-            className="flex items-center gap-2"
-          >
-            {isUserTaskDefFetching ? (
-              <RefreshCw className="h-4 w-4 animate-spin" />
-            ) : (
-              <ChevronDown className="h-4 w-4" />
-            )}
-            Load More
-          </Button>
-        </div>
-      )}
     </div>
   );
 }

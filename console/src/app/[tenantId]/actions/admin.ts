@@ -6,7 +6,7 @@ import {
   AdminTaskActionParams,
   AssignmentRequest,
   GetAllTasksParams,
-  GetAllUserTasksDefParams,
+  GetAllUserTaskDefsParams,
   GetUserFromIdentityProviderParams,
   GetUsersFromIdentityProviderParams,
   UserTaskVariableValue,
@@ -22,13 +22,13 @@ export async function adminGetAllTasks(
   });
 }
 
-export async function adminGetAllUserTasksDef(
+export async function adminGetAllUserTaskDefs(
   tenantId: string,
-  params: GetAllUserTasksDefParams,
+  params: GetAllUserTaskDefsParams,
 ) {
   return withErrorHandling(async () => {
     const client = await getClient(tenantId);
-    return client.admin.getAllUserTasksDef(params);
+    return client.admin.getAllUserTaskDefs(params);
   });
 }
 

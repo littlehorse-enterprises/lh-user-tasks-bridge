@@ -3,7 +3,6 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Badge } from "@littlehorse-enterprises/ui-library/badge";
 import { Button } from "@littlehorse-enterprises/ui-library/button";
-import { Checkbox } from "@littlehorse-enterprises/ui-library/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -46,11 +45,11 @@ import {
   Lock,
   MoreHorizontal,
   Pencil,
+  Plus,
   Trash,
   Users,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
-import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import useSWR from "swr";
@@ -68,6 +67,7 @@ import {
   updateUser,
   upsertPassword,
 } from "../../actions/user-management";
+
 const createFormSchema = z.object({
   username: z.string().min(2, {
     message: "Username must be at least 2 characters.",
@@ -105,38 +105,55 @@ const passwordResetSchema = z.object({
   }),
 });
 
-export default function UsersManagement() {
-  const tenantId = useParams().tenantId as string;
+interface UsersManagementProps {
+  tenantId: string;
+  initialUsers: IDPUserDTO[];
+  hasError: boolean;
+}
+
+export default function UsersManagement({
+  tenantId,
+  initialUsers,
+  hasError,
+}: UsersManagementProps) {
   const { data: session } = useSession();
   const currentUserId = session?.user?.id;
 
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isGroupsDialogOpen, setIsGroupsDialogOpen] = useState(false);
-  const [isBulkGroupsDialogOpen, setIsBulkGroupsDialogOpen] = useState(false);
   const [isPasswordResetDialogOpen, setIsPasswordResetDialogOpen] =
     useState(false);
   const [selectedUser, setSelectedUser] = useState<IDPUserDTO | null>(null);
   const [selectedGroups, setSelectedGroups] = useState<string[]>([]);
   const [showPassword, setShowPassword] = useState(false);
-  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
-  const [selectAll, setSelectAll] = useState(false);
   const [sortColumn, setSortColumn] = useState<string>("name");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 25;
 
+  // Use SWR with fallback data for users - this allows real-time updates while using initial data
   const {
     data: usersData,
     error: usersError,
     mutate: mutateUsers,
-  } = useSWR([`users-${tenantId}`, currentPage], async () => {
-    const response = await getUsersFromIdP(tenantId, {
-      first_result: (currentPage - 1) * pageSize,
-      max_results: pageSize + 1,
-    });
-    return response.data;
-  });
+  } = useSWR(
+    [`users-${tenantId}`, currentPage],
+    async () => {
+      // Only fetch if we don't have initial data or need pagination
+      if (hasError) throw new Error("Failed to load users");
+
+      const response = await getUsersFromIdP(tenantId, {
+        first_result: (currentPage - 1) * pageSize,
+        max_results: pageSize + 1,
+      });
+      return response.data;
+    },
+    {
+      fallbackData: { users: initialUsers },
+      revalidateOnMount: false, // Don't refetch immediately if we have initial data
+    },
+  );
 
   const { data: groupsData, error: groupsError } = useSWR(
     `groups-${tenantId}`,
@@ -148,7 +165,7 @@ export default function UsersManagement() {
     },
   );
 
-  const allUsers = usersData?.users || [];
+  const allUsers = usersData?.users || initialUsers;
   const hasMoreUsers = allUsers.length > pageSize;
   const pagedUsers = allUsers.slice(0, pageSize);
   pagedUsers.sort((a: any, b: any) => {
@@ -457,137 +474,6 @@ export default function UsersManagement() {
     }
   }
 
-  async function handleBulkDelete() {
-    if (selectedUsers.length === 0) {
-      toast.error("No users selected");
-      return;
-    }
-
-    if (
-      !confirm(
-        `Are you sure you want to delete ${selectedUsers.length} selected users?`,
-      )
-    ) {
-      return;
-    }
-
-    try {
-      let successCount = 0;
-      let errorCount = 0;
-      let failedUserId: string | null = null;
-
-      // Map userId to username for error reporting
-      const userIdToUsername: Record<string, string> = {};
-      allUsers.forEach((user: any) => {
-        userIdToUsername[user.id] = user.username;
-      });
-
-      // Delete each selected user
-      for (const userId of selectedUsers) {
-        const response = await deleteUser(tenantId, { user_id: userId });
-        if (response.error) {
-          errorCount++;
-          if (!failedUserId) failedUserId = userId;
-          console.error(`Error deleting user ${userId}:`, response.error);
-        } else {
-          successCount++;
-        }
-      }
-
-      if (errorCount > 0 && failedUserId) {
-        const failedUsername = userIdToUsername[failedUserId] || failedUserId;
-        toast.error(
-          `Delete the user "${failedUsername}" individually to find out more details!`,
-        );
-      }
-
-      if (successCount > 0) {
-        toast.success(`Successfully deleted ${successCount} users.`);
-        setSelectedUsers([]);
-        mutateUsers();
-      }
-    } catch (error) {
-      toast.error("Failed to delete users.");
-      console.error("Error deleting users:", error);
-    }
-  }
-
-  async function handleBulkManageGroups() {
-    if (selectedUsers.length === 0) {
-      toast.error("No users selected");
-      return;
-    }
-
-    // Reset selected groups when opening dialog
-    setSelectedGroups([]);
-    setIsBulkGroupsDialogOpen(true);
-  }
-
-  async function handleBulkAddToGroups() {
-    if (selectedUsers.length === 0 || selectedGroups.length === 0) {
-      toast.error("No users or groups selected");
-      return;
-    }
-
-    try {
-      let successCount = 0;
-      let errorCount = 0;
-
-      // For each selected user, add to each selected group
-      for (const userId of selectedUsers) {
-        for (const groupId of selectedGroups) {
-          try {
-            const response = await addUserToGroup(tenantId, {
-              user_id: userId,
-              group_id: groupId,
-            });
-
-            if (response.error) {
-              errorCount++;
-              console.error(
-                `Error adding user ${userId} to group ${groupId}:`,
-                response.error,
-              );
-            } else {
-              successCount++;
-            }
-          } catch (error) {
-            errorCount++;
-            console.error(
-              `Error adding user ${userId} to group ${groupId}:`,
-              error,
-            );
-          }
-        }
-      }
-
-      if (successCount > 0) {
-        toast.success(
-          `Added ${successCount} user-group associations successfully.`,
-        );
-      }
-
-      if (errorCount > 0) {
-        toast.error(`Failed to add ${errorCount} user-group associations.`);
-      }
-
-      setIsBulkGroupsDialogOpen(false);
-      setSelectedGroups([]);
-      mutateUsers();
-    } catch (error) {
-      toast.error("Failed to add users to groups.");
-      console.error("Error adding users to groups:", error);
-    }
-  }
-
-  useEffect(() => {
-    if (selectAll) {
-      setSelectedUsers(pagedUsers.map((user: any) => user.id));
-    } else if (selectedUsers.length === pagedUsers.length) {
-      setSelectedUsers([]);
-    }
-  }, [selectAll, pagedUsers, selectedUsers.length]);
-
   async function toggleUserEnabled(user: IDPUserDTO) {
     try {
       const updateData = {
@@ -631,64 +517,17 @@ export default function UsersManagement() {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold">Users Management</h2>
+        <h2 className="text-xl font-semibold">Users</h2>
         <div className="flex space-x-2">
-          {selectedUsers.length > 0 && (
-            <>
-              <Button
-                variant="outline"
-                onClick={handleBulkManageGroups}
-                className="space-x-1"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                  <circle cx="9" cy="7" r="4"></circle>
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-                </svg>
-                <span>Add to Groups</span>
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={handleBulkDelete}
-                className="space-x-1"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M3 6h18" />
-                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                </svg>
-                <span>Delete Selected ({selectedUsers.length})</span>
-              </Button>
-            </>
-          )}
-
           <Dialog
             open={isCreateDialogOpen}
             onOpenChange={setIsCreateDialogOpen}
           >
             <DialogTrigger asChild>
-              <Button>Add User</Button>
+              <Button>
+                <Plus className="mr-2" size={16} />
+                Add User
+              </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
@@ -788,18 +627,6 @@ export default function UsersManagement() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-12">
-                  <Checkbox
-                    checked={
-                      selectAll ||
-                      (selectedUsers.length > 0 &&
-                        selectedUsers.length === pagedUsers.length)
-                    }
-                    onCheckedChange={(checked) => {
-                      setSelectAll(checked === true);
-                    }}
-                  />
-                </TableHead>
                 <TableHead
                   onClick={() => handleSort("username")}
                   className="cursor-pointer select-none"
@@ -865,36 +692,7 @@ export default function UsersManagement() {
             </TableHeader>
             <TableBody>
               {pagedUsers.map((user: any) => (
-                <TableRow
-                  key={user.username}
-                  className={
-                    selectedUsers.includes(user.id) ? "bg-muted/50" : ""
-                  }
-                >
-                  <TableCell>
-                    <Checkbox
-                      checked={selectedUsers.includes(user.id)}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setSelectedUsers([...selectedUsers, user.id]);
-                        } else {
-                          setSelectedUsers(
-                            selectedUsers.filter((id) => id !== user.id),
-                          );
-                        }
-
-                        // Update select all state
-                        if (
-                          checked &&
-                          selectedUsers.length + 1 === pagedUsers.length
-                        ) {
-                          setSelectAll(true);
-                        } else if (!checked && selectAll) {
-                          setSelectAll(false);
-                        }
-                      }}
-                    />
-                  </TableCell>
+                <TableRow key={user.username}>
                   <TableCell>{user.username}</TableCell>
                   <TableCell>{user.email}</TableCell>
                   <TableCell>{`${user.firstName || ""} ${user.lastName || ""}`}</TableCell>
@@ -1183,88 +981,6 @@ export default function UsersManagement() {
                   onClick={() => setIsGroupsDialogOpen(false)}
                 >
                   Close
-                </Button>
-              </DialogFooter>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={isBulkGroupsDialogOpen}
-        onOpenChange={setIsBulkGroupsDialogOpen}
-      >
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>
-              Add {selectedUsers.length} Users to Groups
-            </DialogTitle>
-          </DialogHeader>
-          {groupsError ? (
-            <div className="py-4 text-center text-red-500">
-              Failed to load groups
-            </div>
-          ) : !groupsData ? (
-            <div className="py-4 text-center">Loading groups...</div>
-          ) : groups.length === 0 ? (
-            <div className="py-4 text-center">
-              <p className="text-muted-foreground">No groups available.</p>
-            </div>
-          ) : (
-            <div className="py-4">
-              <div className="py-2">
-                <p className="text-sm text-muted-foreground mb-4">
-                  Select groups to add the selected users to:
-                </p>
-              </div>
-              <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
-                {groups
-                  .slice()
-                  .sort((a, b) => {
-                    const nameA = (a.name || "").toLowerCase();
-                    const nameB = (b.name || "").toLowerCase();
-                    return nameA.localeCompare(nameB);
-                  })
-                  .map((group) => (
-                    <div
-                      key={group.id}
-                      className="flex items-center justify-between border p-3 rounded-md"
-                    >
-                      <label
-                        htmlFor={`bulkgroup-${group.id}`}
-                        className="font-medium cursor-pointer flex-1"
-                      >
-                        {group.name}
-                      </label>
-                      <Checkbox
-                        id={`bulkgroup-${group.id}`}
-                        checked={selectedGroups.includes(group.id)}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setSelectedGroups([...selectedGroups, group.id]);
-                          } else {
-                            setSelectedGroups(
-                              selectedGroups.filter((id) => id !== group.id),
-                            );
-                          }
-                        }}
-                      />
-                    </div>
-                  ))}
-              </div>
-              <DialogFooter className="mt-6 gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setIsBulkGroupsDialogOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleBulkAddToGroups}
-                  className="bg-yellow-400 hover:bg-yellow-500 text-black"
-                  disabled={selectedGroups.length === 0}
-                >
-                  Add to Selected Groups
                 </Button>
               </DialogFooter>
             </div>

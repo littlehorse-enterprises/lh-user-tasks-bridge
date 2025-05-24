@@ -1,17 +1,17 @@
-# LittleHorse User Tasks Bridge
+# LittleHorse UserTasks Bridge
 
 This repository contains the code for:
 
-- `User Tasks Bridge Console` (Next.js)
+- `UserTasks Bridge Console` (Next.js)
 - `@littlehorse-enterprises/user-tasks-bridge-api-client` (Node Package)
 
-This repository will help you interact with LittleHorse's User Tasks Bridge Backend.
+This repository will help you interact with LittleHorse's UserTasks Bridge Backend.
 
 ## Overview
 
 The console provides a complete solution for managing human tasks within LittleHorse workflows. It consists of:
 
-1. A modern web interface built with Next.js for managing and interacting with user tasks
+1. A modern web interface built with Next.js for managing and interacting with UserTasks
 2. A TypeScript API client that simplifies integration with the UserTasks API
 3. Integration with Keycloak or any OIDC provider for secure authentication and authorization
 
@@ -44,8 +44,8 @@ This will start:
 - LittleHorse Server (gRPC: 2023)
 - LittleHorse Dashboard (<http://localhost:8080>)
 - Keycloak (<http://localhost:8888>)
-- User Tasks Bridge Backend (<http://localhost:8089>)
-- User Tasks Bridge Console (<http://localhost:3000>)
+- UserTasks Bridge Backend (<http://localhost:8089>)
+- UserTasks Bridge Console (<http://localhost:3000>)
 
 ## Available Users
 
@@ -56,18 +56,18 @@ To access the Keycloak admin console at <http://localhost:8888>, use:
 - Username: **admin**
 - Password: **admin**
 
-### User Tasks Bridge Console
+### UserTasks Bridge Console
 
-You can log in to the User Tasks Bridge Console at <http://localhost:3000> with these pre-configured users:
+You can log in to the UserTasks Bridge Console at <http://localhost:3000> with these pre-configured users:
 
 | User          | Password | Role  |
 | ------------- | -------- | ----- |
 | my-admin-user | 1234     | Admin |
 | my-user       | 1234     | User  |
 
-## Testing User Tasks
+## Testing UserTasks
 
-You can test the user tasks functionality using these commands:
+You can test the UserTasks functionality using these commands:
 
 1. Export admin token:
 
@@ -156,7 +156,7 @@ The UI will start with watch mode on <http://localhost:3000>
 
 ### Useful Links
 
-- User Tasks Bridge Console: <http://localhost:3000>
+- UserTasks Bridge Console: <http://localhost:3000>
 - LittleHorse Dashboard: <http://localhost:8080>
 - Keycloak Admin Console: <http://localhost:8888>
 
@@ -210,7 +210,7 @@ When SSL is enabled, the UI will be available on:
 | `AUTH_KEYCLOAK_ID`        | Client ID from Keycloak                                    | Yes      |
 | `AUTH_KEYCLOAK_SECRET`    | Client secret from Keycloak                                | Yes      |
 | `AUTH_KEYCLOAK_ISSUER`    | Keycloak server URL                                        | Yes      |
-| `LHUT_API_URL`            | URL of the User Tasks API                                  | Yes      |
+| `LHUT_API_URL`            | URL of the UserTasks API                                  | Yes      |
 | `LHUT_AUTHORITIES`        | Paths to extract roles from the token                      | Yes      |
 
 ### Notes

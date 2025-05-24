@@ -8,7 +8,7 @@ import {
 } from "./client/index";
 
 /**
- * Configuration options for the LittleHorse User Tasks Bridge API client
+ * Configuration options for the LittleHorse UserTasks Bridge API client
  * @property {string} baseUrl - Base URL of the API endpoint (e.g., "http://localhost:8089")
  * @property {string} tenantId - Tenant identifier for multi-tenant environments
  * @property {string} accessToken - OAuth access token for authentication (Bearer token)
@@ -20,9 +20,9 @@ export interface ClientConfig {
 }
 
 /**
- * Client for interacting with the LittleHorse User Tasks Bridge API.
+ * Client for interacting with the LittleHorse UserTasks Bridge API.
  *
- * This client provides methods for managing user tasks in LittleHorse, including:
+ * This client provides methods for managing UserTasks in LittleHorse, including:
  * - Task operations (claim, complete, cancel)
  * - Task listing and filtering
  * - Administrative functions (assign, force complete)
@@ -50,7 +50,7 @@ export class LHUTBApiClient {
   public public: PublicController;
 
   /**
-   * Creates a new instance of the LittleHorse User Tasks Bridge API client
+   * Creates a new instance of the LittleHorse UserTasks Bridge API client
    * @param config - Configuration object containing connection details
    * @throws {ValidationError} If required configuration parameters are missing or invalid
    * @throws {UnauthorizedError} If initial connection test fails

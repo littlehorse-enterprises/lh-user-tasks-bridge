@@ -9,10 +9,10 @@ export default function Layout({
   params: { tenantId: string };
 }) {
   return (
-    <>
+    <div className="min-h-screen flex flex-col bg-background">
       <Header />
-      <main className="px-4 md:px-8 lg:px-16 py-4">{children}</main>
+      <main className="flex-1 px-4 md:px-8 lg:px-16 py-8">{children}</main>
       <Footer />
-    </>
+    </div>
   );
 }
