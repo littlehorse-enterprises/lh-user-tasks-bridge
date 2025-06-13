@@ -52,7 +52,7 @@ public class PublicController {
                             schema = @Schema(implementation = ProblemDetail.class))}
             )
     })
-    @GetMapping("/{tenant_id}/config")
+    @GetMapping("/config/{tenant_id}")
     public ResponseEntity<IdentityProviderListDTO> getIdentityProviderConfig(@PathVariable(name = "tenant_id") String tenantId) {
         log.atInfo()
                 .setMessage("Fetching IdP configurations for tenant: {}")

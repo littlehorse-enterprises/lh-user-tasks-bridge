@@ -79,10 +79,6 @@ public class WebSecurityConfiguration {
     public Map<String, LittleHorseGrpc.LittleHorseBlockingStub> lhClient(IdentityProviderConfigProperties identityProviderConfigProperties) {
         Set<String> configuredTenants = getConfiguredTenants(identityProviderConfigProperties);
 
-        if (CollectionUtils.isEmpty(configuredTenants)) {
-            throw new SecurityException("No Tenants found in configuration properties.");
-        }
-
         return getPerTenantLHClients(configuredTenants);
     }
 
