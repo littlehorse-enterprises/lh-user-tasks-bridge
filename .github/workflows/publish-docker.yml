@@ -31,6 +31,17 @@ jobs:
       - name: Lint
         run: npm run lint -ws
 
+      - name: Update Console Version
+        working-directory: ./console
+        run: |
+          if [ "${{ inputs.tag }}" != "" ]; then
+            VERSION="${{ inputs.tag }}"
+          else
+            SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+            VERSION="${{ github.ref_name }}-$SHORT_SHA"
+          fi
+          sed -i "s|NEXT_PUBLIC_API_CLIENT_VERSION: \".*\"|NEXT_PUBLIC_API_CLIENT_VERSION: \"$VERSION\"|g" next.config.mjs
+
       - name: Build
         run: npm run build -ws
 
