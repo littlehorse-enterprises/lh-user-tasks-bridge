@@ -47,6 +47,17 @@ jobs:
         with:
           node-version: 22
 
+      - name: Update Console Version
+        working-directory: lh-user-tasks-bridge/console
+        run: |
+          if [ "${{ inputs.version }}" != "" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+            VERSION="${{ github.ref_name }}-$SHORT_SHA"
+          fi
+          sed -i "s|NEXT_PUBLIC_VERSION: \".*\"|NEXT_PUBLIC_VERSION: \"$VERSION\"|g" next.config.ts
+
       - name: Build Console
         working-directory: lh-user-tasks-bridge
         run: |
