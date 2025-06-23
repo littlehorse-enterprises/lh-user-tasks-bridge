@@ -13,7 +13,7 @@ export default function Footer() {
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <span className="flex items-center gap-2">
               <div className="h-2 w-2 rounded-full bg-primary" />
-              Version: {process.env.API_CLIENT_VERSION || "unknown"}
+              Version: {process.env.NEXT_PUBLIC_API_CLIENT_VERSION}
             </span>
           </div>
         </div>
