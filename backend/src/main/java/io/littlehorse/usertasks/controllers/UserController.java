@@ -13,6 +13,11 @@ import io.littlehorse.usertasks.models.common.UserGroupDTO;
 import io.littlehorse.usertasks.models.common.UserTaskVariableValue;
 import io.littlehorse.usertasks.models.requests.CompleteUserTaskRequest;
 import io.littlehorse.usertasks.models.requests.UserTaskRequestFilter;
+import io.littlehorse.usertasks.models.requests.comment_requests.CommentContentRequest;
+import io.littlehorse.usertasks.models.requests.comment_requests.DeleteCommentRequest;
+import io.littlehorse.usertasks.models.requests.comment_requests.EditCommentRequest;
+import io.littlehorse.usertasks.models.requests.comment_requests.PutCommentRequest;
+import io.littlehorse.usertasks.models.responses.AuditEventDTO;
 import io.littlehorse.usertasks.models.responses.DetailedUserTaskRunDTO;
 import io.littlehorse.usertasks.models.responses.UserGroupListDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskRunListDTO;
@@ -21,6 +26,7 @@ import io.littlehorse.usertasks.services.UserTaskService;
 import io.littlehorse.usertasks.util.TokenUtil;
 import io.littlehorse.usertasks.util.enums.UserTaskStatus;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -37,9 +43,11 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -48,6 +56,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -322,7 +331,7 @@ public class UserController {
                             mediaType = "application/json",
                             schema = @Schema(implementation = ProblemDetail.class))}
             )
-    })
+    }) 
     @PostMapping("/{tenant_id}/tasks/{wf_run_id}/{user_task_guid}/cancel")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void cancelUserTask(@RequestHeader("Authorization") String accessToken,
@@ -340,6 +349,306 @@ public class UserController {
 
         userTaskService.cancelUserTaskForNonAdmin(wfRunId, userTaskRunGuid, tenantId, userIdFromToken);
     }
+    @Operation(
+        summary = "Comment on a userTask",
+        description = "Places a comment on a userTask and returns the comment Event that was added to the userTaskRun"
+)
+        @ApiResponses(value = {
+                @ApiResponse(
+                responseCode = "200",
+                description = "A comment was successfully added to the userTask.",
+                content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = AuditEventDTO.class)
+        )
+    ),
+        @ApiResponse(
+                responseCode = "400",
+                description = "The input provided was invalid.",
+                content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ProblemDetail.class)
+                )
+        ),
+        @ApiResponse(
+                responseCode = "401",
+                description = "Unauthorized - the tenant ID or access token is invalid.",
+                content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ProblemDetail.class)
+                )
+        ),
+        @ApiResponse(
+                responseCode = "404",
+                description = "No userTask data was be found.",
+                content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ProblemDetail.class)
+                )
+        ),
+        @ApiResponse(
+                responseCode = "500",
+                description = "Internal server error occurred while trying to add a comment.",
+                content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ProblemDetail.class)
+                )
+        )
+        })
+    @PostMapping("/{tenant_id}/tasks/{wf_run_id}/{user_task_guid}/comment")
+    @ResponseStatus(HttpStatus.OK)
+    public AuditEventDTO putComment(@RequestHeader("Authorization") String accessToken,
+                               @PathVariable(name = "tenant_id") String tenantId,
+                               @PathVariable(name = "wf_run_id") String wf_run_id,
+                               @PathVariable(name = "user_task_guid") String user_task_guid,
+                               @RequestBody CommentContentRequest commentContentRequest) throws JsonProcessingException{
+
+        
+        if (!tenantService.isValidTenant(tenantId, accessToken)) {
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        }
+
+        Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
+        CustomIdentityProviderProperties actualIdPProperties = getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
+
+        var userIdFromToken = (String) tokenClaims.get(actualIdPProperties.getUserIdClaim().toString());
+        PutCommentRequest request  = PutCommentRequest.builder()
+                .comment(commentContentRequest.getComment())
+                .wfRunId(wf_run_id)
+                .userTaskRunGuid(user_task_guid).build();
+        return userTaskService.comment(request, userIdFromToken , tenantId, false);
+        }
+  
+        @Operation(
+                summary = "Edit a comment on a userTask",
+                description = "Edits an existing comment on a userTask. Returns the updated AuditEventDTO representing the edit event."
+        )
+        @ApiResponses(value = {
+        @ApiResponse(
+                responseCode = "200",
+                description = "The comment was successfully edited.",
+                content = @Content(
+                        mediaType = "application/json",
+                        schema = @Schema(implementation = AuditEventDTO.class)
+                )
+        ),
+        @ApiResponse(
+                responseCode = "400",
+                description = "Invalid input for editing a comment",
+                content = @Content(
+                        mediaType = "application/json",
+                        schema = @Schema(implementation = ProblemDetail.class)
+                )
+        ),
+        @ApiResponse(
+                responseCode = "401",
+                description = "Unauthorized. The tenant ID or access token is invalid.",
+                content = @Content(
+                        mediaType = "application/json",
+                        schema = @Schema(implementation = ProblemDetail.class)
+                )
+        ),
+        @ApiResponse(
+                responseCode = "404",
+                description = "The userTask or comment to be edited was not found.",
+                content = @Content(
+                        mediaType = "application/json",
+                        schema = @Schema(implementation = ProblemDetail.class)
+                )
+        ),
+        @ApiResponse(
+                responseCode = "409",
+                description = "The comment could not be edited to failed pre-condition",
+                content = @Content(
+                        mediaType = "application/json",
+                        schema = @Schema(implementation = ProblemDetail.class)
+                )
+        ),
+        @ApiResponse(
+                responseCode = "500",
+                description = "An internal server error occurred while editing the comment.",
+                content = @Content(
+                        mediaType = "application/json",
+                        schema = @Schema(implementation = ProblemDetail.class)
+                )
+        )
+        })
+        @PutMapping("/{tenant_id}/tasks/{wf_run_id}/{user_task_guid}/comment/{comment_id}")
+        @ResponseStatus(HttpStatus.OK)
+        public AuditEventDTO editComment(@RequestHeader("Authorization") String accessToken,
+                                @PathVariable(name = "tenant_id") String tenantId,
+                                @PathVariable(name = "wf_run_id") String wfRunId,
+                                @PathVariable(name = "user_task_guid") String userTaskGuid,
+                                @PathVariable(name = "comment_id") int commentId,
+                                @RequestBody CommentContentRequest commentContentRequest) throws JsonProcessingException{
+
+                if (!tenantService.isValidTenant(tenantId, accessToken)) {
+                        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+                }
+
+                Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
+                CustomIdentityProviderProperties actualIdPProperties = getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
+
+                var userIdFromToken = (String) tokenClaims.get(actualIdPProperties.getUserIdClaim().toString());
+                EditCommentRequest request = EditCommentRequest.builder()
+                .comment(commentContentRequest.getComment())
+                .commentId(commentId)
+                .wfRunId(wfRunId)
+                .userTaskRunGuid(userTaskGuid).build();
+                
+                return userTaskService.editComment(request, userIdFromToken , tenantId, false);
+                
+        }
+        @Operation(
+    summary = "Delete a comment on a userTask",
+    description = "Deletes a comment from a userTask and returns the corresponding deletion event as an AuditEventDTO."
+)
+        @ApiResponses(value = {
+        @ApiResponse(
+                responseCode = "200",
+                description = "The comment was successfully deleted.",
+                content = @Content(
+                        mediaType = "application/json",
+                        schema = @Schema(implementation = AuditEventDTO.class)
+                )
+        ),
+        @ApiResponse(
+                responseCode = "400",
+                description = "Invalid input provided. The delete request is malformed.",
+                content = @Content(
+                        mediaType = "application/json",
+                        schema = @Schema(implementation = ProblemDetail.class)
+                )
+        ),
+        @ApiResponse(
+                responseCode = "401",
+                description = "Unauthorized. The tenant ID or access token is invalid.",
+                content = @Content(
+                        mediaType = "application/json",
+                        schema = @Schema(implementation = ProblemDetail.class)
+                )
+        ),
+        @ApiResponse(
+                responseCode = "404",
+                description = "The comment or userTaskRun to delete was not found.",
+                content = @Content(
+                        mediaType = "application/json",
+                        schema = @Schema(implementation = ProblemDetail.class)
+                )
+        ),
+        @ApiResponse(
+                responseCode = "409",
+                description = "The comment could not be deleted due to the current state of the userTask.",
+                content = @Content(
+                        mediaType = "application/json",
+                        schema = @Schema(implementation = ProblemDetail.class)
+                )
+        ),
+        @ApiResponse(
+                responseCode = "500",
+                description = "An internal server error occurred while deleting the comment.",
+                content = @Content(
+                        mediaType = "application/json",
+                        schema = @Schema(implementation = ProblemDetail.class)
+                )
+        )
+        })
+        @DeleteMapping("/{tenant_id}/tasks/{wf_run_id}/{user_task_guid}/comment/{comment_id}")
+        public AuditEventDTO deleteComment(@RequestHeader("Authorization") String accessToken,
+                                @PathVariable(name = "tenant_id") String tenantId,
+                                @PathVariable(name = "wf_run_id") String wfRunId,
+                                @PathVariable(name = "user_task_guid") String userTaskGuid,
+                                @PathVariable(name = "comment_id") int commentId
+                                ) throws JsonProcessingException{
+
+                if (!tenantService.isValidTenant(tenantId, accessToken)) {
+                        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+                }
+
+                Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
+                CustomIdentityProviderProperties actualIdPProperties = getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
+
+                var userIdFromToken = (String) tokenClaims.get(actualIdPProperties.getUserIdClaim().toString());
+
+                DeleteCommentRequest reqeust = DeleteCommentRequest.builder()
+                .wfRunId(wfRunId)
+                .userTaskRunGuid(userTaskGuid)
+                .commentId(commentId).build();
+
+                var response = userTaskService.deleteComment(reqeust, userIdFromToken , tenantId, false);
+
+                return response;
+                
+        }
+        @Operation(
+                summary = "Get comments on a userTask",
+                description = "Retrieves all audit events related to comments (added, edited, deleted) on a specific userTaskRun."
+        )
+        @ApiResponses(value = {
+        @ApiResponse(
+                responseCode = "200",
+                description = "Comments successfully retrieved.",
+                content = @Content(
+                        mediaType = "application/json",
+                        array = @ArraySchema(schema = @Schema(implementation = AuditEventDTO.class))
+                )
+        ),
+        @ApiResponse(
+                responseCode = "204",
+                description = "UserTaskRun does not have any commens"
+        ),
+        @ApiResponse(
+                responseCode = "400",
+                description = "Invalid input provided (e.g., malformed request or missing path variables).",
+                content = @Content(
+                        mediaType = "application/json",
+                        schema = @Schema(implementation = ProblemDetail.class)
+                )
+        ),
+        @ApiResponse(
+                responseCode = "401",
+                description = "Unauthorized. The tenant ID or access token is invalid.",
+                content = @Content(
+                        mediaType = "application/json",
+                        schema = @Schema(implementation = ProblemDetail.class)
+                )
+        ),
+        @ApiResponse(
+                responseCode = "404",
+                description = "The userTaskRun was not found.",
+                content = @Content(
+                        mediaType = "application/json",
+                        schema = @Schema(implementation = ProblemDetail.class)
+                )
+        ),
+        @ApiResponse(
+                responseCode = "500",
+                description = "Internal server error occurred while retrieving comments.",
+                content = @Content(
+                        mediaType = "application/json",
+                        schema = @Schema(implementation = ProblemDetail.class)
+                )
+        )
+        })
+        @GetMapping("/{tenant_id}/tasks/{wfRunId}/{userTaskRunGuid}/comments")
+        public ResponseEntity<List<AuditEventDTO>> getComments(@RequestHeader("Authorization") String accessToken,
+                               @PathVariable(name = "tenant_id") String tenantId,
+                               @PathVariable(name = "wfRunId") String wfRunId,
+                               @PathVariable(name = "userTaskRunGuid") String userTaskRunGuid
+                                 ) throws JsonProcessingException{
+                                        
+                Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
+                CustomIdentityProviderProperties actualIdPProperties = getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
+                String userIdFromToken = (String) tokenClaims.get(actualIdPProperties.getUserIdClaim().toString());
+
+                var result = userTaskService.getComment(wfRunId ,userTaskRunGuid, tenantId, userIdFromToken);
+                
+                if(result.isEmpty()){
+                        return ResponseEntity.noContent().build();
+                }
+
+                return ResponseEntity.ok(result);
+        }
 
     @Operation(
             summary = "Claim UserTask",

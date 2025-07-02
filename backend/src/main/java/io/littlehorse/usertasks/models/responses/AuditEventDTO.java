@@ -3,6 +3,8 @@ package io.littlehorse.usertasks.models.responses;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.littlehorse.sdk.common.proto.TaskRunId;
 import io.littlehorse.sdk.common.proto.UserTaskEvent;
+import io.littlehorse.sdk.common.proto.UserTaskRun;
+import io.littlehorse.sdk.common.proto.UserTaskRunId;
 import io.littlehorse.usertasks.util.DateUtil;
 import io.littlehorse.usertasks.util.enums.UserTaskEventType;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -47,7 +49,17 @@ public class AuditEventDTO {
         } else if (serverEvent.hasCancelled()) {
             parsedEvent = UserTaskCancelledEvent.parseFromServer(serverEvent.getCancelled());
             eventType = UserTaskEventType.TASK_CANCELLED;
-        } else {
+        } else if (serverEvent.hasCommentAdded()){
+            parsedEvent = UserTaskRunCommentEvent.parserFromserver(serverEvent.getCommentAdded());
+            eventType = UserTaskEventType.COMMENTED;
+        } else if (serverEvent.hasCommentEdited()){
+            parsedEvent = UserTaskRunCommentEvent.parserFromserver(serverEvent.getCommentEdited());
+            eventType = UserTaskEventType.COMMENT_EDITED;
+        } else if (serverEvent.hasCommentDeleted()){
+            parsedEvent = DeleteUserTaskRunCommentEvent.parserFromserver(serverEvent.getCommentDeleted());
+            eventType = UserTaskEventType.COMMENT_DELETED;
+        }
+        else {
             throw new IllegalArgumentException("Unknown audit event.");
         }
 
@@ -69,7 +81,6 @@ public class AuditEventDTO {
 
         static UserTaskExecutedEvent parseFromServer(@NonNull UserTaskEvent.UTETaskExecuted serverObject) {
             TaskRunId taskRun = serverObject.getTaskRun();
-
             return UserTaskExecutedEvent.builder()
                     .wfRunId(taskRun.getWfRunId().getId())
                     .userTaskGuid(taskRun.getTaskGuid())
@@ -107,6 +118,42 @@ public class AuditEventDTO {
             return UserTaskCancelledEvent.builder()
                     .message(serverObject.getMessage())
                     .build();
+        }
+    }
+    
+    @Data
+    @Builder
+    @AllArgsConstructor
+    static class UserTaskRunCommentEvent implements IUserTaskEvent{
+
+        private String comment;
+        private String userId;
+        private int commentId;
+
+        static UserTaskRunCommentEvent parserFromserver(@NonNull UserTaskEvent.UTECommented  serverObject){
+
+            return UserTaskRunCommentEvent.builder()
+            .comment(serverObject.getComment())
+            .commentId(serverObject.getUserCommentId())
+            .userId(serverObject.getUserId())
+            .build();
+        }
+    }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
+    static class DeleteUserTaskRunCommentEvent implements IUserTaskEvent{
+
+        private String userId;
+        private int commentId;
+
+        static DeleteUserTaskRunCommentEvent parserFromserver(@NonNull UserTaskEvent.UTECommentDeleted  serverObject){
+
+            return DeleteUserTaskRunCommentEvent.builder()
+            .commentId(serverObject.getUserCommentId())
+            .userId(serverObject.getUserId())
+            .build();
         }
     }
 }

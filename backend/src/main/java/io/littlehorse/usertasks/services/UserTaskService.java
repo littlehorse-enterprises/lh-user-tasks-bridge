@@ -11,6 +11,9 @@ import io.littlehorse.usertasks.models.requests.AssignmentRequest;
 import io.littlehorse.usertasks.models.requests.CompleteUserTaskRequest;
 import io.littlehorse.usertasks.models.requests.StandardPagination;
 import io.littlehorse.usertasks.models.requests.UserTaskRequestFilter;
+import io.littlehorse.usertasks.models.requests.comment_requests.DeleteCommentRequest;
+import io.littlehorse.usertasks.models.requests.comment_requests.EditCommentRequest;
+import io.littlehorse.usertasks.models.requests.comment_requests.PutCommentRequest;
 import io.littlehorse.usertasks.models.responses.AuditEventDTO;
 import io.littlehorse.usertasks.models.responses.DetailedUserTaskRunDTO;
 import io.littlehorse.usertasks.models.responses.SimpleUserTaskRunDTO;
@@ -169,6 +172,148 @@ public class UserTaskService {
             throw e;
         }
     }
+    public AuditEventDTO comment(PutCommentRequest request, String userId, String tenantId, boolean isAdminRequest){
+
+        PutUserTaskRunCommentRequest serverRequest =  request.toServer(userId);
+        try {
+            LittleHorseGrpc.LittleHorseBlockingStub tenantClient = getTenantLHClient(tenantId);
+
+            UserTaskRun userTaskRun = tenantClient.putUserTaskRunComment(serverRequest);
+                List<UserTaskEvent> serverEvents = userTaskRun.getEventsList().stream()
+            .filter(event -> event.hasCommentAdded())
+        .filter(event -> userId.equals(event.getCommentAdded().getUserId()))
+        .toList();
+
+            AuditEventDTO eventDTO = AuditEventDTO.fromUserTaskEvent(serverEvents.getLast());
+        
+            return eventDTO;
+        }
+        catch(StatusRuntimeException e){
+
+            if(e.getStatus().getCode() == Status.Code.NOT_FOUND)
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
+
+            if(e.getStatus().getCode() == Status.Code.INVALID_ARGUMENT)
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+
+            throw e;
+        }
+        catch(Exception e){
+            log.error("Unexpected error during comment creation", e);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error", e);
+        }
+        
+    }
+
+    public AuditEventDTO editComment(EditCommentRequest request, String userId, String tenantId, boolean isAdminRequest){
+
+        EditUserTaskRunCommentRequest serverRequest =  request.toServer(userId);
+        try {
+            LittleHorseGrpc.LittleHorseBlockingStub tenantClient = getTenantLHClient(tenantId);
+
+            UserTaskRun userTaskRun = tenantClient.editUserTaskRunComment(serverRequest);
+            UserTaskEvent serverEvent = userTaskRun.getEventsList().getLast();
+            AuditEventDTO eventDTO = AuditEventDTO.fromUserTaskEvent(serverEvent);
+
+            return eventDTO;
+        } catch (StatusRuntimeException e) {
+
+            if (e.getStatus().getCode() == Status.Code.FAILED_PRECONDITION)
+                throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage(), e);
+
+            if (e.getStatus().getCode() == Status.Code.INVALID_ARGUMENT)
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+
+            if (e.getStatus().getCode() == Status.Code.NOT_FOUND){
+                String message = e.getMessage();
+                if(message.contains("comment"))
+                   throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Comment does not exits");
+                else 
+                    throw new ResponseStatusException(HttpStatus.NOT_FOUND, "UserTask does not exist");
+        }
+            throw e;
+            }catch (Exception e) {
+            log.error("Unexpected while editing comment", e);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error", e);
+        }
+    }
+
+    public AuditEventDTO deleteComment(DeleteCommentRequest request, String userId, String tenantId,
+            boolean isAdminRequest) {
+
+        DeleteUserTaskRunCommentRequest serverRequest = request.toServer(userId);
+        try {
+            LittleHorseGrpc.LittleHorseBlockingStub tenantClient = getTenantLHClient(tenantId);
+                            
+            UserTaskRun userTaskRun = tenantClient.deleteUserTaskRunComment(serverRequest);
+            UserTaskEvent serverEvent = userTaskRun.getEventsList().getLast();
+            AuditEventDTO eventDTO = AuditEventDTO.fromUserTaskEvent(serverEvent);
+
+            return eventDTO;
+        } catch (StatusRuntimeException e) {
+
+            if (e.getStatus().getCode() == Status.Code.FAILED_PRECONDITION)
+                throw new ResponseStatusException(HttpStatus.CONFLICT, e.getMessage(), e);
+
+            if (e.getStatus().getCode() == Status.Code.INVALID_ARGUMENT)
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
+
+            if (e.getStatus().getCode() == Status.Code.NOT_FOUND){
+                String message = e.getMessage();
+                if(message.contains("comment"))
+                   throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Comment does not exist");
+                else
+                    throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find userTask");
+                }
+
+            throw e;
+        } catch (Exception e) {
+            log.error("Unexpected error deleting comment", e);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error", e);
+        }
+    }
+
+    public List<AuditEventDTO> getComment(String wfRunId, String userTaskRunGuid, String tenantId,
+            String userIdFromToken) {
+
+        UserTaskRunId getUserTaskRunRequest = buildUserTaskRunId(wfRunId, userTaskRunGuid);
+
+        LittleHorseGrpc.LittleHorseBlockingStub tenantClient = getTenantLHClient(tenantId);
+        try{
+            UserTaskRun userTaskRun = tenantClient.getUserTaskRun(getUserTaskRunRequest);
+
+            HashMap<Integer, AuditEventDTO> commentIdToLatestEvent = new HashMap<>();
+            userTaskRun.getEventsList().forEach(event -> {
+                if (event.hasCommentAdded())
+                    commentIdToLatestEvent.put(event.getCommentAdded().getUserCommentId(),
+                            AuditEventDTO.fromUserTaskEvent(event));
+                if (event.hasCommentEdited())
+                    commentIdToLatestEvent.put(event.getCommentEdited().getUserCommentId(),
+                            AuditEventDTO.fromUserTaskEvent(event));
+                if (event.hasCommentDeleted())
+                    commentIdToLatestEvent.put(event.getCommentDeleted().getUserCommentId(),
+                            AuditEventDTO.fromUserTaskEvent(event));
+        });
+            return new ArrayList<>(commentIdToLatestEvent.values());
+        }
+        catch(StatusRuntimeException sre){
+
+            if (sre.getStatus().getCode() == Status.Code.FAILED_PRECONDITION)
+                throw new ResponseStatusException(HttpStatus.CONFLICT, sre.getMessage(), sre);
+
+            if (sre.getStatus().getCode() == Status.Code.INVALID_ARGUMENT)
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, sre.getMessage(), sre);
+
+            if (sre.getStatus().getCode() == Status.Code.NOT_FOUND)
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
+
+            throw sre;
+        } catch (Exception e) {
+            log.error("Unexpected error fetching comments", e);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error", e);
+        }
+    }
+
 
     public UserTaskDefListDTO getAllUserTasksDef(@NonNull String tenantId, int limit, byte[] bookmark) {
         LittleHorseGrpc.LittleHorseBlockingStub tenantClient = getTenantLHClient(tenantId);
@@ -649,4 +794,6 @@ public class UserTaskService {
                 .filter(entry -> mandatoryStringFieldsNames.contains(entry.getKey()))
                 .allMatch(entry -> StringUtils.hasText((String) entry.getValue().getValue()));
     }
+
+ 
 }
