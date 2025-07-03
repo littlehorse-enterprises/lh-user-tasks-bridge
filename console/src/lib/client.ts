@@ -1,6 +1,6 @@
 import { LHUTBApiClient } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
 import { redirect } from "next/navigation";
-import { auth } from "../app/api/auth/[...nextauth]/authOptions";
+import { auth } from "../auth";
 
 export class LHUTBApiClientSingleton {
   private static instance: LHUTBApiClient | null = null;
@@ -20,7 +20,7 @@ export class LHUTBApiClientSingleton {
     const config = {
       baseUrl: process.env.LHUT_API_URL!,
       tenantId,
-      accessToken: session.access_token,
+      accessToken: session.accessToken,
     };
 
     // Create new instance if config changes or doesn't exist
