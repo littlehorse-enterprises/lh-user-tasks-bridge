@@ -1,5 +1,9 @@
 package io.littlehorse.usertasks.idp_adapters.keycloak;
 
+import static io.littlehorse.usertasks.util.constants.AuthoritiesConstants.LH_USER_TASKS_ADMIN_ROLE;
+import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.ISSUER_URL_CLAIM;
+import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.USER_ID_CLAIM;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.littlehorse.usertasks.exceptions.AdapterException;
 import io.littlehorse.usertasks.idp_adapters.IStandardIdentityProviderAdapter;
@@ -11,6 +15,10 @@ import io.littlehorse.usertasks.models.responses.*;
 import io.littlehorse.usertasks.util.TokenUtil;
 import jakarta.ws.rs.NotFoundException;
 import jakarta.ws.rs.core.Response;
+import java.util.*;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -21,15 +29,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.server.ResponseStatusException;
-
-import java.util.*;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-
-import static io.littlehorse.usertasks.util.constants.AuthoritiesConstants.LH_USER_TASKS_ADMIN_ROLE;
-import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.ISSUER_URL_CLAIM;
-import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.USER_ID_CLAIM;
 
 @Service
 @Slf4j
@@ -109,7 +108,7 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
         var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
         var realm = getRealmFromToken(accessToken);
 
-        try (Keycloak keycloak = getKeycloakInstance(realm, accessToken)){
+        try (Keycloak keycloak = getKeycloakInstance(realm, accessToken)) {
             var email = (String) params.get("email");
             var firstName = (String) params.get("firstName");
             var lastName = (String) params.get("lastName");
@@ -120,12 +119,11 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
 
             RealmResource realmResource = keycloak.realm(realm);
 
-            Set<UserRepresentation> foundUsers = filterUsers(realmResource, email, firstName, lastName, username, userGroupId,
-                    firstResult, maxResults);
+            Set<UserRepresentation> foundUsers = filterUsers(
+                    realmResource, email, firstName, lastName, username, userGroupId, firstResult, maxResults);
 
-            Set<UserDTO> setOfUsers = foundUsers.stream()
-                    .map(UserDTO.transform())
-                    .collect(Collectors.toSet());
+            Set<UserDTO> setOfUsers =
+                    foundUsers.stream().map(UserDTO.transform()).collect(Collectors.toSet());
 
             return new UserListDTO(setOfUsers);
         } catch (AdapterException e) {
@@ -154,8 +152,8 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
 
             RealmResource realmResource = keycloak.realm(realm);
 
-            Set<UserRepresentation> foundUsers = filterUsers(realmResource, email, firstName, lastName, username, userGroupId,
-                    firstResult, maxResults);
+            Set<UserRepresentation> foundUsers = filterUsers(
+                    realmResource, email, firstName, lastName, username, userGroupId, firstResult, maxResults);
 
             Set<IDPUserDTO> setOfUsers = foundUsers.stream()
                     .filter(Objects::nonNull)
@@ -182,7 +180,8 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
             var userId = (String) params.get(USER_ID_MAP_KEY);
 
             RealmResource realmResource = keycloak.realm(realm);
-            UserRepresentation userRepresentation = realmResource.users().get(userId).toRepresentation();
+            UserRepresentation userRepresentation =
+                    realmResource.users().get(userId).toRepresentation();
 
             return Optional.ofNullable(userRepresentation)
                     .map(buildUserDTO(realmResource))
@@ -276,13 +275,15 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
             UserRepresentation userRepresentation = null;
 
             if (StringUtils.isNotBlank(email)) {
-                List<UserRepresentation> userRepresentations = keycloak.realm(realm).users().searchByEmail(email, true);
+                List<UserRepresentation> userRepresentations =
+                        keycloak.realm(realm).users().searchByEmail(email, true);
 
                 if (!CollectionUtils.isEmpty(userRepresentations)) {
                     userRepresentation = userRepresentations.getFirst();
                 }
             } else if (StringUtils.isNotBlank(username)) {
-                List<UserRepresentation> userRepresentations = keycloak.realm(realm).users().searchByUsername(username, true);
+                List<UserRepresentation> userRepresentations =
+                        keycloak.realm(realm).users().searchByUsername(username, true);
 
                 if (!CollectionUtils.isEmpty(userRepresentations)) {
                     userRepresentation = userRepresentations.getFirst();
@@ -319,7 +320,8 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
             GroupRepresentation groupRepresentation = null;
 
             if (StringUtils.isNotBlank(userGroupName)) {
-                List<GroupRepresentation> groupRepresentations = keycloak.realm(realm).groups().query(userGroupName);
+                List<GroupRepresentation> groupRepresentations =
+                        keycloak.realm(realm).groups().query(userGroupName);
 
                 if (!CollectionUtils.isEmpty(groupRepresentations)) {
                     Set<GroupRepresentation> actualGroups = groupRepresentations.stream()
@@ -330,8 +332,9 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
                             ? actualGroups.iterator().next()
                             : null;
                 }
-            } else if (StringUtils.isNotBlank(userGroupId)){
-                groupRepresentation = keycloak.realm(realm).groups().group(userGroupId).toRepresentation();
+            } else if (StringUtils.isNotBlank(userGroupId)) {
+                groupRepresentation =
+                        keycloak.realm(realm).groups().group(userGroupId).toRepresentation();
             }
 
             return Objects.nonNull(groupRepresentation)
@@ -359,7 +362,8 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
         var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
 
         if (CollectionUtils.isEmpty(params) || (StringUtils.isBlank(userId) && StringUtils.isBlank(userGroupId))) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No valid arguments were received to complete reassignment.");
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "No valid arguments were received to complete reassignment.");
         }
 
         if (StringUtils.isNotBlank(userId) && StringUtils.isNotBlank(userGroupId)) {
@@ -387,8 +391,9 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
 
             try (Response response = usersResource.create(userRepresentation)) {
                 if (response.getStatusInfo().getStatusCode() != 201) {
-                    String exceptionMessage = String.format("User creation failed within realm %s with status: %s!", realm,
-                            response.getStatusInfo().getStatusCode());
+                    String exceptionMessage = String.format(
+                            "User creation failed within realm %s with status: %s!",
+                            realm, response.getStatusInfo().getStatusCode());
 
                     throw new AdapterException(exceptionMessage);
                 }
@@ -457,7 +462,8 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
         try (Keycloak keycloak = getKeycloakInstance(realm, accessToken)) {
             RealmResource realmResource = keycloak.realm(realm);
 
-            RoleRepresentation adminRoleRepresentation = realmResource.roles().get(LH_USER_TASKS_ADMIN_ROLE).toRepresentation();
+            RoleRepresentation adminRoleRepresentation =
+                    realmResource.roles().get(LH_USER_TASKS_ADMIN_ROLE).toRepresentation();
             UserResource userResource = realmResource.users().get(userId);
 
             userResource.roles().realmLevel().add(Collections.singletonList(adminRoleRepresentation));
@@ -486,7 +492,8 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
         try (Keycloak keycloak = getKeycloakInstance(realm, accessToken)) {
             RealmResource realmResource = keycloak.realm(realm);
 
-            RoleRepresentation adminRoleRepresentation = realmResource.roles().get(LH_USER_TASKS_ADMIN_ROLE).toRepresentation();
+            RoleRepresentation adminRoleRepresentation =
+                    realmResource.roles().get(LH_USER_TASKS_ADMIN_ROLE).toRepresentation();
             UserResource userResource = realmResource.users().get(userId);
 
             userResource.roles().realmLevel().remove(Collections.singletonList(adminRoleRepresentation));
@@ -570,8 +577,9 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
 
             try (Response response = keycloak.realm(realm).groups().add(groupRepresentation)) {
                 if (response.getStatusInfo().getStatusCode() != 201) {
-                    String exceptionMessage = String.format("User creation failed within realm %s with status: %s!", realm,
-                            response.getStatusInfo().getStatusCode());
+                    String exceptionMessage = String.format(
+                            "User creation failed within realm %s with status: %s!",
+                            realm, response.getStatusInfo().getStatusCode());
 
                     throw new AdapterException(exceptionMessage);
                 }
@@ -609,9 +617,7 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
             }
 
             if (!CollectionUtils.isEmpty(foundGroups)) {
-                return foundGroups.stream()
-                        .map(IDPGroupDTO::transform)
-                        .collect(Collectors.toUnmodifiableSet());
+                return foundGroups.stream().map(IDPGroupDTO::transform).collect(Collectors.toUnmodifiableSet());
             } else {
                 return Collections.emptySet();
             }
@@ -674,8 +680,8 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
         }
     }
 
-    public static Map<String, Object> buildParamsForUsersSearch(String accessToken, IDPUserSearchRequestFilter requestFilter,
-                                                                int firstResult, int maxResults) {
+    public static Map<String, Object> buildParamsForUsersSearch(
+            String accessToken, IDPUserSearchRequestFilter requestFilter, int firstResult, int maxResults) {
         Map<String, Object> params = new HashMap<>();
 
         if (StringUtils.isNotBlank(requestFilter.getEmail())) {
@@ -706,11 +712,17 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
     }
 
     @NonNull
-    public static Map<String, Object> buildParamsForUserCreation(@NonNull String accessToken, @NonNull CreateManagedUserRequest request) {
+    public static Map<String, Object> buildParamsForUserCreation(
+            @NonNull String accessToken, @NonNull CreateManagedUserRequest request) {
         Map<String, Object> params = new HashMap<>();
-        String firstName = StringUtils.isNotBlank(request.getFirstName()) ? request.getFirstName().trim() : null;
-        String lastName = StringUtils.isNotBlank(request.getLastName()) ? request.getLastName().trim() : null;
-        String email = StringUtils.isNotBlank(request.getEmail()) ? request.getEmail().trim() : null;
+        String firstName = StringUtils.isNotBlank(request.getFirstName())
+                ? request.getFirstName().trim()
+                : null;
+        String lastName = StringUtils.isNotBlank(request.getLastName())
+                ? request.getLastName().trim()
+                : null;
+        String email =
+                StringUtils.isNotBlank(request.getEmail()) ? request.getEmail().trim() : null;
         String username;
 
         if (StringUtils.isNotBlank(request.getUsername())) {
@@ -719,15 +731,14 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
             throw new AdapterException("Cannot create User without username!");
         }
 
-        //Done like this and not with Map.of() because some values could be null
+        // Done like this and not with Map.of() because some values could be null
         params.put(ACCESS_TOKEN_MAP_KEY, accessToken);
         params.put(FIRST_NAME_MAP_KEY, firstName);
         params.put(LAST_NAME_MAP_KEY, lastName);
         params.put(USERNAME_MAP_KEY, username);
         params.put(EMAIL_MAP_KEY, email);
 
-        params.entrySet()
-                .removeIf(entry -> Objects.isNull(entry.getValue()));
+        params.entrySet().removeIf(entry -> Objects.isNull(entry.getValue()));
 
         return params;
     }
@@ -782,36 +793,47 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
         paramsWithRealm.put(REALM_MAP_KEY, realm);
         paramsWithRealm.putAll(params);
 
-        UserGroupListDTO userGroups = StringUtils.isNotBlank(userId)
-                ? getMyUserGroups(paramsWithRealm)
-                : getUserGroups(paramsWithRealm);
+        UserGroupListDTO userGroups =
+                StringUtils.isNotBlank(userId) ? getMyUserGroups(paramsWithRealm) : getUserGroups(paramsWithRealm);
 
         if (CollectionUtils.isEmpty(userGroups.getGroups())
                 || userGroups.getGroups().stream().noneMatch(equalUserGroupIdPredicate(userGroupId))) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot assign Task to non-existent group, " +
-                    "nor can the Task be assigned to an existing group that the requested user is not a member of.");
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Cannot assign Task to non-existent group, "
+                            + "nor can the Task be assigned to an existing group that the requested user is not a member of.");
         }
     }
 
-    private Set<UserRepresentation> filterUsers(RealmResource realmResource, String email, String firstName, String lastName,
-                                                String username, String userGroupId, int firstResult, int maxResults) {
-        boolean shouldSearchInUsersResource = StringUtils.isNotBlank(username) || StringUtils.isNotBlank(firstName)
-                || StringUtils.isNotBlank(lastName) || StringUtils.isNotBlank(email);
+    private Set<UserRepresentation> filterUsers(
+            RealmResource realmResource,
+            String email,
+            String firstName,
+            String lastName,
+            String username,
+            String userGroupId,
+            int firstResult,
+            int maxResults) {
+        boolean shouldSearchInUsersResource = StringUtils.isNotBlank(username)
+                || StringUtils.isNotBlank(firstName)
+                || StringUtils.isNotBlank(lastName)
+                || StringUtils.isNotBlank(email);
 
         if (shouldSearchInUsersResource && StringUtils.isNotBlank(userGroupId)) {
-            throw new AdapterException("Combination of userGroup + other filters (username/email/firstName/lastName) is not supported");
+            throw new AdapterException(
+                    "Combination of userGroup + other filters (username/email/firstName/lastName) is not supported");
         }
 
         Set<UserRepresentation> filteredUsers;
         UsersResource usersResource = realmResource.users();
 
-
         if (shouldSearchInUsersResource) {
-            List<UserRepresentation> searchResult = usersResource.search(username, firstName, lastName, email, firstResult,
-                    maxResults, true, false, false);
+            List<UserRepresentation> searchResult = usersResource.search(
+                    username, firstName, lastName, email, firstResult, maxResults, true, false, false);
             filteredUsers = new HashSet<>(searchResult);
         } else if (StringUtils.isNotBlank(userGroupId)) {
-            filteredUsers = new HashSet<>(realmResource.groups().group(userGroupId).members(firstResult, maxResults));
+            filteredUsers =
+                    new HashSet<>(realmResource.groups().group(userGroupId).members(firstResult, maxResults));
         } else {
             filteredUsers = new HashSet<>(usersResource.list(firstResult, maxResults));
         }
@@ -826,7 +848,8 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
     private Function<UserRepresentation, IDPUserDTO> buildUserDTO(@NonNull RealmResource realmResource) {
         return foundUser -> {
             UsersResource usersResource = realmResource.users();
-            List<GroupRepresentation> foundGroups = usersResource.get(foundUser.getId()).groups();
+            List<GroupRepresentation> foundGroups =
+                    usersResource.get(foundUser.getId()).groups();
 
             IDPUserDTO actualUserDTO = IDPUserDTO.transform(foundUser, foundGroups);
 
@@ -853,9 +876,8 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
 
     private void addRealmRolesToUser(List<RoleRepresentation> realmRoles, IDPUserDTO actualUserDTO) {
         if (!CollectionUtils.isEmpty(realmRoles)) {
-            Set<String> roleNames = realmRoles.stream()
-                    .map(RoleRepresentation::getName)
-                    .collect(Collectors.toSet());
+            Set<String> roleNames =
+                    realmRoles.stream().map(RoleRepresentation::getName).collect(Collectors.toSet());
             actualUserDTO.setRealmRoles(roleNames);
         } else {
             actualUserDTO.setRealmRoles(Collections.emptySet());
@@ -863,7 +885,8 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
     }
 
     private List<RoleRepresentation> getRealmRolesByUser(UserRepresentation foundUser, UsersResource usersResource) {
-        RoleMappingResource roleMappingResource = usersResource.get(foundUser.getId()).roles();
+        RoleMappingResource roleMappingResource =
+                usersResource.get(foundUser.getId()).roles();
 
         return Optional.ofNullable(roleMappingResource)
                 .map(roleResource -> {
@@ -876,9 +899,10 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
                 .orElse(Collections.emptyList());
     }
 
-    private Map<String, ClientMappingsRepresentation> getClientRoleMappingsByUser(UserRepresentation foundUser,
-                                                                                  UsersResource usersResource) {
-        RoleMappingResource roleMappingResource = usersResource.get(foundUser.getId()).roles();
+    private Map<String, ClientMappingsRepresentation> getClientRoleMappingsByUser(
+            UserRepresentation foundUser, UsersResource usersResource) {
+        RoleMappingResource roleMappingResource =
+                usersResource.get(foundUser.getId()).roles();
 
         return Optional.ofNullable(roleMappingResource)
                 .map(roleResource -> {
@@ -897,10 +921,12 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
                     Set<String> roleNames = getRoleNamesFromClientMappingsRepresentation(entry);
 
                     return Map.entry(entry.getKey(), roleNames);
-                }).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+                })
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
-    private Set<String> getRoleNamesFromClientMappingsRepresentation(Map.Entry<String, ClientMappingsRepresentation> entry) {
+    private Set<String> getRoleNamesFromClientMappingsRepresentation(
+            Map.Entry<String, ClientMappingsRepresentation> entry) {
         return entry.getValue().getMappings().stream()
                 .map(RoleRepresentation::getName)
                 .collect(Collectors.toSet());
@@ -970,41 +996,62 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
 
     private void addViewUsersRole(RealmResource realmResource, UsersResource usersResource, String username) {
         ClientsResource clientsResource = realmResource.clients();
-        ClientRepresentation clientRepresentation = clientsResource.findByClientId(REALM_MANAGEMENT_CLIENT_ID).getFirst();
-        RoleRepresentation roleRepresentation = clientsResource.get(clientRepresentation.getId()).roles().get(VIEW_USERS_ROLE_NAME).toRepresentation();
+        ClientRepresentation clientRepresentation =
+                clientsResource.findByClientId(REALM_MANAGEMENT_CLIENT_ID).getFirst();
+        RoleRepresentation roleRepresentation = clientsResource
+                .get(clientRepresentation.getId())
+                .roles()
+                .get(VIEW_USERS_ROLE_NAME)
+                .toRepresentation();
 
         List<RoleRepresentation> rolesToAdd = Collections.singletonList(roleRepresentation);
         List<UserRepresentation> userRepresentations = usersResource.searchByUsername(username, true);
 
         String userId = userRepresentations.getFirst().getId();
 
-        usersResource.get(userId).roles().clientLevel(clientRepresentation.getId()).add(rolesToAdd);
+        usersResource
+                .get(userId)
+                .roles()
+                .clientLevel(clientRepresentation.getId())
+                .add(rolesToAdd);
     }
 
     private void addAdditionalAdminRoles(RealmResource realmResource, UserResource userResource) {
         ClientsResource clientsResource = realmResource.clients();
-        ClientRepresentation clientRepresentation = clientsResource.findByClientId(REALM_MANAGEMENT_CLIENT_ID).getFirst();
-        RolesResource rolesResource = clientsResource.get(clientRepresentation.getId()).roles();
+        ClientRepresentation clientRepresentation =
+                clientsResource.findByClientId(REALM_MANAGEMENT_CLIENT_ID).getFirst();
+        RolesResource rolesResource =
+                clientsResource.get(clientRepresentation.getId()).roles();
 
-        RoleRepresentation viewRealmRoleRepresentation = rolesResource.get(VIEW_REALM_ROLE_NAME).toRepresentation();
-        RoleRepresentation viewClientsRoleRepresentation = rolesResource.get(VIEW_CLIENTS_ROLE_NAME).toRepresentation();
-        RoleRepresentation manageUsersRoleRepresentation = rolesResource.get(MANAGE_USERS_ROLE_NAME).toRepresentation();
+        RoleRepresentation viewRealmRoleRepresentation =
+                rolesResource.get(VIEW_REALM_ROLE_NAME).toRepresentation();
+        RoleRepresentation viewClientsRoleRepresentation =
+                rolesResource.get(VIEW_CLIENTS_ROLE_NAME).toRepresentation();
+        RoleRepresentation manageUsersRoleRepresentation =
+                rolesResource.get(MANAGE_USERS_ROLE_NAME).toRepresentation();
 
-        List<RoleRepresentation> rolesToAdd = List.of(viewRealmRoleRepresentation, viewClientsRoleRepresentation, manageUsersRoleRepresentation);
+        List<RoleRepresentation> rolesToAdd =
+                List.of(viewRealmRoleRepresentation, viewClientsRoleRepresentation, manageUsersRoleRepresentation);
 
         userResource.roles().clientLevel(clientRepresentation.getId()).add(rolesToAdd);
     }
 
     private void removeAdditionalAdminRoles(RealmResource realmResource, UserResource userResource) {
         ClientsResource clientsResource = realmResource.clients();
-        ClientRepresentation clientRepresentation = clientsResource.findByClientId(REALM_MANAGEMENT_CLIENT_ID).getFirst();
-        RolesResource rolesResource = clientsResource.get(clientRepresentation.getId()).roles();
+        ClientRepresentation clientRepresentation =
+                clientsResource.findByClientId(REALM_MANAGEMENT_CLIENT_ID).getFirst();
+        RolesResource rolesResource =
+                clientsResource.get(clientRepresentation.getId()).roles();
 
-        RoleRepresentation viewRealmRoleRepresentation = rolesResource.get(VIEW_REALM_ROLE_NAME).toRepresentation();
-        RoleRepresentation viewClientsRoleRepresentation = rolesResource.get(VIEW_CLIENTS_ROLE_NAME).toRepresentation();
-        RoleRepresentation manageUsersRoleRepresentation = rolesResource.get(MANAGE_USERS_ROLE_NAME).toRepresentation();
+        RoleRepresentation viewRealmRoleRepresentation =
+                rolesResource.get(VIEW_REALM_ROLE_NAME).toRepresentation();
+        RoleRepresentation viewClientsRoleRepresentation =
+                rolesResource.get(VIEW_CLIENTS_ROLE_NAME).toRepresentation();
+        RoleRepresentation manageUsersRoleRepresentation =
+                rolesResource.get(MANAGE_USERS_ROLE_NAME).toRepresentation();
 
-        List<RoleRepresentation> rolesToRemove = List.of(viewRealmRoleRepresentation, viewClientsRoleRepresentation, manageUsersRoleRepresentation);
+        List<RoleRepresentation> rolesToRemove =
+                List.of(viewRealmRoleRepresentation, viewClientsRoleRepresentation, manageUsersRoleRepresentation);
 
         userResource.roles().clientLevel(clientRepresentation.getId()).remove(rolesToRemove);
     }

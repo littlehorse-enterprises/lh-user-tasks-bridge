@@ -2,7 +2,6 @@ package io.littlehorse.usertasks.models.common;
 
 import io.littlehorse.sdk.common.proto.VariableType;
 import io.littlehorse.sdk.common.proto.VariableValue;
-import io.littlehorse.usertasks.models.responses.AuditEventDTO;
 import io.littlehorse.usertasks.util.enums.UserTaskFieldType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
@@ -20,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 public class UserTaskVariableValue {
     @NotNull
     private UserTaskFieldType type;
+
     @NotNull
     @Schema(oneOf = {Double.class, String.class, Boolean.class, Integer.class})
     private Object value;
@@ -33,14 +33,10 @@ public class UserTaskVariableValue {
                         .build();
             }
             case STRING -> {
-                return VariableValue.newBuilder()
-                        .setStr((String) this.value)
-                        .build();
+                return VariableValue.newBuilder().setStr((String) this.value).build();
             }
             case BOOLEAN -> {
-                return VariableValue.newBuilder()
-                        .setBool((Boolean) this.value)
-                        .build();
+                return VariableValue.newBuilder().setBool((Boolean) this.value).build();
             }
             case INTEGER -> {
                 return VariableValue.newBuilder()

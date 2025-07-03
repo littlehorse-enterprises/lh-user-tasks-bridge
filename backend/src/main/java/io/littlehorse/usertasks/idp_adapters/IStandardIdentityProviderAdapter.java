@@ -3,7 +3,6 @@ package io.littlehorse.usertasks.idp_adapters;
 import io.littlehorse.usertasks.models.common.UserDTO;
 import io.littlehorse.usertasks.models.common.UserGroupDTO;
 import io.littlehorse.usertasks.models.responses.*;
-
 import java.util.Map;
 import java.util.Set;
 

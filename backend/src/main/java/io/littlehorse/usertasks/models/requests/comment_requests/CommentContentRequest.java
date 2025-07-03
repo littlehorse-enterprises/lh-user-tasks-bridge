@@ -4,5 +4,5 @@ import lombok.Data;
 
 @Data
 public class CommentContentRequest {
-   private String comment;
+    private String comment;
 }

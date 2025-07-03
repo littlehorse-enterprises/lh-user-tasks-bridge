@@ -1,5 +1,9 @@
 package io.littlehorse.usertasks.services;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.Mockito.*;
+
 import io.littlehorse.usertasks.idp_adapters.IStandardIdentityProviderAdapter;
 import io.littlehorse.usertasks.idp_adapters.keycloak.KeycloakAdapter;
 import io.littlehorse.usertasks.models.common.UserGroupDTO;
@@ -7,19 +11,14 @@ import io.littlehorse.usertasks.models.requests.CreateGroupRequest;
 import io.littlehorse.usertasks.models.requests.UpdateGroupRequest;
 import io.littlehorse.usertasks.models.responses.IDPGroupDTO;
 import jakarta.validation.ValidationException;
-import org.apache.commons.lang3.StringUtils;
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import org.springframework.util.CollectionUtils;
-
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyMap;
-import static org.mockito.Mockito.*;
+import org.apache.commons.lang3.StringUtils;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.springframework.util.CollectionUtils;
 
 @SuppressWarnings("unchecked")
 class GroupManagementServiceTest {
@@ -35,22 +34,25 @@ class GroupManagementServiceTest {
     void createGroupInIdentityProvider_shouldThrowNullPointerExceptionWhenNullAccessTokenIsReceived() {
         CreateGroupRequest request = new CreateGroupRequest("some-group");
 
-        assertThrows(NullPointerException.class,
-                ()-> groupManagementService.createGroupInIdentityProvider(null, request, keycloakAdapter));
+        assertThrows(
+                NullPointerException.class,
+                () -> groupManagementService.createGroupInIdentityProvider(null, request, keycloakAdapter));
     }
 
     @Test
     void createGroupInIdentityProvider_shouldThrowNullPointerExceptionWhenNullRequestIsReceived() {
-        assertThrows(NullPointerException.class,
-                ()-> groupManagementService.createGroupInIdentityProvider(fakeAccessToken, null, keycloakAdapter));
+        assertThrows(
+                NullPointerException.class,
+                () -> groupManagementService.createGroupInIdentityProvider(fakeAccessToken, null, keycloakAdapter));
     }
 
     @Test
     void createGroupInIdentityProvider_shouldThrowNullPointerExceptionWhenNullIdentityProviderAdapterIsReceived() {
         CreateGroupRequest request = new CreateGroupRequest("some-group");
 
-        assertThrows(NullPointerException.class,
-                ()-> groupManagementService.createGroupInIdentityProvider(fakeAccessToken, request, null));
+        assertThrows(
+                NullPointerException.class,
+                () -> groupManagementService.createGroupInIdentityProvider(fakeAccessToken, request, null));
     }
 
     @Test
@@ -58,14 +60,13 @@ class GroupManagementServiceTest {
         var groupName = "some-group";
         CreateGroupRequest request = new CreateGroupRequest(groupName);
 
-        UserGroupDTO foundGroup = UserGroupDTO.builder()
-                .id("some-id")
-                .name(groupName)
-                .build();
+        UserGroupDTO foundGroup =
+                UserGroupDTO.builder().id("some-id").name(groupName).build();
 
         when(keycloakAdapter.getUserGroup(anyMap())).thenReturn(foundGroup);
 
-        ValidationException thrownException = assertThrows(ValidationException.class,
+        ValidationException thrownException = assertThrows(
+                ValidationException.class,
                 () -> groupManagementService.createGroupInIdentityProvider(fakeAccessToken, request, keycloakAdapter));
 
         var expectedErrorMessage = "Group already exists with the requested name!";
@@ -98,21 +99,26 @@ class GroupManagementServiceTest {
 
     @Test
     void getGroups_shouldThrowNullPointerExceptionWhenNullAccessTokenIsReceived() {
-        assertThrows(NullPointerException.class,
-                ()-> groupManagementService.getGroups(null, null, FIRST_RESULT_DEFAULT, MAX_RESULTS_DEFAULT, keycloakAdapter));
+        assertThrows(
+                NullPointerException.class,
+                () -> groupManagementService.getGroups(
+                        null, null, FIRST_RESULT_DEFAULT, MAX_RESULTS_DEFAULT, keycloakAdapter));
     }
 
     @Test
     void getGroups_shouldThrowNullPointerExceptionWhenNullIdentityProviderAdapterIsReceived() {
-        assertThrows(NullPointerException.class,
-                ()-> groupManagementService.getGroups(fakeAccessToken, null, FIRST_RESULT_DEFAULT, MAX_RESULTS_DEFAULT, null));
+        assertThrows(
+                NullPointerException.class,
+                () -> groupManagementService.getGroups(
+                        fakeAccessToken, null, FIRST_RESULT_DEFAULT, MAX_RESULTS_DEFAULT, null));
     }
 
     @Test
     void getGroups_shouldSucceedWhenNoExceptionsAreThrownAndNoNameIsReceivedAndNoGroupsAreFound() {
         when(keycloakAdapter.getGroups(anyMap())).thenReturn(Collections.emptySet());
 
-        Set<IDPGroupDTO> foundGroups = groupManagementService.getGroups(fakeAccessToken, null, FIRST_RESULT_DEFAULT, MAX_RESULTS_DEFAULT, keycloakAdapter);
+        Set<IDPGroupDTO> foundGroups = groupManagementService.getGroups(
+                fakeAccessToken, null, FIRST_RESULT_DEFAULT, MAX_RESULTS_DEFAULT, keycloakAdapter);
 
         assertTrue(CollectionUtils.isEmpty(foundGroups));
 
@@ -147,7 +153,8 @@ class GroupManagementServiceTest {
 
         when(keycloakAdapter.getGroups(anyMap())).thenReturn(mappedGroups);
 
-        Set<IDPGroupDTO> foundGroups = groupManagementService.getGroups(fakeAccessToken, null, FIRST_RESULT_DEFAULT, MAX_RESULTS_DEFAULT, keycloakAdapter);
+        Set<IDPGroupDTO> foundGroups = groupManagementService.getGroups(
+                fakeAccessToken, null, FIRST_RESULT_DEFAULT, MAX_RESULTS_DEFAULT, keycloakAdapter);
 
         int expectedGroupsCount = 2;
 
@@ -191,7 +198,8 @@ class GroupManagementServiceTest {
 
         when(keycloakAdapter.getGroups(anyMap())).thenReturn(mappedGroups);
 
-        Set<IDPGroupDTO> foundGroups = groupManagementService.getGroups(fakeAccessToken, searchingName, FIRST_RESULT_DEFAULT, MAX_RESULTS_DEFAULT, keycloakAdapter);
+        Set<IDPGroupDTO> foundGroups = groupManagementService.getGroups(
+                fakeAccessToken, searchingName, FIRST_RESULT_DEFAULT, MAX_RESULTS_DEFAULT, keycloakAdapter);
 
         int expectedGroupsCount = 3;
 
@@ -216,30 +224,36 @@ class GroupManagementServiceTest {
     void updateGroup_shouldThrowNullPointerExceptionWhenNullAccessTokenIsReceived() {
         UpdateGroupRequest request = new UpdateGroupRequest("some-group");
 
-        assertThrows(NullPointerException.class,
-                ()-> groupManagementService.updateGroup(null, UUID.randomUUID().toString(), request, keycloakAdapter));
+        assertThrows(
+                NullPointerException.class,
+                () -> groupManagementService.updateGroup(null, UUID.randomUUID().toString(), request, keycloakAdapter));
     }
 
     @Test
     void updateGroup_shouldThrowNullPointerExceptionWhenNullGroupIdIsReceived() {
         UpdateGroupRequest request = new UpdateGroupRequest("some-group");
 
-        assertThrows(NullPointerException.class,
-                ()-> groupManagementService.updateGroup(fakeAccessToken, null, request, keycloakAdapter));
+        assertThrows(
+                NullPointerException.class,
+                () -> groupManagementService.updateGroup(fakeAccessToken, null, request, keycloakAdapter));
     }
 
     @Test
     void updateGroup_shouldThrowNullPointerExceptionWhenNullRequestIsReceived() {
-        assertThrows(NullPointerException.class,
-                ()-> groupManagementService.updateGroup(fakeAccessToken, UUID.randomUUID().toString(), null, keycloakAdapter));
+        assertThrows(
+                NullPointerException.class,
+                () -> groupManagementService.updateGroup(
+                        fakeAccessToken, UUID.randomUUID().toString(), null, keycloakAdapter));
     }
 
     @Test
     void updateGroup_shouldThrowNullPointerExceptionWhenNullIdentityProviderAdapterIsReceived() {
         UpdateGroupRequest request = new UpdateGroupRequest("some-group");
 
-        assertThrows(NullPointerException.class,
-                ()-> groupManagementService.updateGroup(fakeAccessToken, UUID.randomUUID().toString(), request, null));
+        assertThrows(
+                NullPointerException.class,
+                () -> groupManagementService.updateGroup(
+                        fakeAccessToken, UUID.randomUUID().toString(), request, null));
     }
 
     @Test
@@ -253,10 +267,13 @@ class GroupManagementServiceTest {
 
         when(keycloakAdapter.getUserGroup(anyMap())).thenReturn(foundGroup);
 
-        ValidationException thrownException = assertThrows(ValidationException.class,
-                () -> groupManagementService.updateGroup(fakeAccessToken, groupIdBeingUpdated, request, keycloakAdapter));
+        ValidationException thrownException = assertThrows(
+                ValidationException.class,
+                () -> groupManagementService.updateGroup(
+                        fakeAccessToken, groupIdBeingUpdated, request, keycloakAdapter));
 
-        assertTrue(StringUtils.equalsIgnoreCase("Group already exists with the requested name!", thrownException.getMessage()));
+        assertTrue(StringUtils.equalsIgnoreCase(
+                "Group already exists with the requested name!", thrownException.getMessage()));
 
         verify(keycloakAdapter).getUserGroup(anyMap());
         verify(keycloakAdapter, never()).updateGroup(anyMap());
@@ -288,20 +305,24 @@ class GroupManagementServiceTest {
 
     @Test
     void deleteGroup_shouldThrowNullPointerExceptionWhenNullAccessTokenIsReceived() {
-        assertThrows(NullPointerException.class,
-                ()-> groupManagementService.deleteGroup(null, UUID.randomUUID().toString(), keycloakAdapter));
+        assertThrows(
+                NullPointerException.class,
+                () -> groupManagementService.deleteGroup(null, UUID.randomUUID().toString(), keycloakAdapter));
     }
 
     @Test
     void deleteGroup_shouldThrowNullPointerExceptionWhenNullGroupIdIsReceived() {
-        assertThrows(NullPointerException.class,
-                ()-> groupManagementService.deleteGroup(fakeAccessToken, null, keycloakAdapter));
+        assertThrows(
+                NullPointerException.class,
+                () -> groupManagementService.deleteGroup(fakeAccessToken, null, keycloakAdapter));
     }
 
     @Test
     void deleteGroup_shouldThrowNullPointerExceptionWhenNullIdentityProviderAdapterIsReceived() {
-        assertThrows(NullPointerException.class,
-                ()-> groupManagementService.deleteGroup(fakeAccessToken, UUID.randomUUID().toString(), null));
+        assertThrows(
+                NullPointerException.class,
+                () -> groupManagementService.deleteGroup(
+                        fakeAccessToken, UUID.randomUUID().toString(), null));
     }
 
     @Test

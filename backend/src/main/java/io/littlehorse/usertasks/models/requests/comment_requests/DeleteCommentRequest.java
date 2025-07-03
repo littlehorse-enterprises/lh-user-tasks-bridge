@@ -1,9 +1,8 @@
 package io.littlehorse.usertasks.models.requests.comment_requests;
 
+import io.littlehorse.sdk.common.LHLibUtil;
 import io.littlehorse.sdk.common.proto.DeleteUserTaskRunCommentRequest;
-import io.littlehorse.sdk.common.proto.EditUserTaskRunCommentRequest;
 import io.littlehorse.sdk.common.proto.UserTaskRunId;
-import io.littlehorse.sdk.common.proto.WfRunId;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,18 +20,16 @@ public class DeleteCommentRequest {
 
     private int commentId;
 
-    public DeleteUserTaskRunCommentRequest toServer(String userId){
+    public DeleteUserTaskRunCommentRequest toServerRequest(String userId) {
         DeleteUserTaskRunCommentRequest req = DeleteUserTaskRunCommentRequest.newBuilder()
-        .setUserId(userId)
-        .setUserCommentId(getCommentId())
-        .setUserTaskRunId(
-        UserTaskRunId.newBuilder()
-            .setWfRunId(WfRunId.newBuilder().setId(getWfRunId()).build())
-            .setUserTaskGuid(getUserTaskRunGuid())
-            .build()
-        )
-        .build();
+                .setUserId(userId)
+                .setUserCommentId(getCommentId())
+                .setUserTaskRunId(UserTaskRunId.newBuilder()
+                        .setWfRunId(LHLibUtil.wfRunIdFromString(getWfRunId()))
+                        .setUserTaskGuid(getUserTaskRunGuid())
+                        .build())
+                .build();
 
         return req;
-        }
+    }
 }

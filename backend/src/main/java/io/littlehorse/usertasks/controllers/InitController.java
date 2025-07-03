@@ -18,8 +18,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 @Tag(
         name = "Init Controller",
-        description = "This is a controller that exposes an endpoint in charge of verifying the Tenant-OIDC configuration"
-)
+        description =
+                "This is a controller that exposes an endpoint in charge of verifying the Tenant-OIDC configuration")
 @RestController
 @CrossOrigin
 @PreAuthorize("isAuthenticated()")
@@ -34,28 +34,22 @@ public class InitController {
 
     @Operation(
             summary = "Initialize Tenant-OIDC integration",
-            description = "Checks that the integration between your Identity Provider and LittleHorse Kernel is valid"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "Tenant and Identity Provider are well configured.",
-                    content = @Content
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "Tenant Id is not valid.",
-                    content = @Content
-            )
-    })
+            description = "Checks that the integration between your Identity Provider and LittleHorse Kernel is valid")
+    @ApiResponses(
+            value = {
+                @ApiResponse(
+                        responseCode = "200",
+                        description = "Tenant and Identity Provider are well configured.",
+                        content = @Content),
+                @ApiResponse(responseCode = "401", description = "Tenant Id is not valid.", content = @Content)
+            })
     @GetMapping("/{tenant_id}/init")
-    public void initIntegrationForTenant(@RequestHeader("Authorization") String accessToken,
-                                         @PathVariable(name = "tenant_id") String tenantId) {
+    public void initIntegrationForTenant(
+            @RequestHeader("Authorization") String accessToken, @PathVariable(name = "tenant_id") String tenantId) {
         if (!tenantService.isValidTenant(tenantId, accessToken)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
 
         log.info("Integration successfully initiated!");
     }
-
 }

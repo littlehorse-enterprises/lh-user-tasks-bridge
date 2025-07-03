@@ -10,7 +10,11 @@ import lombok.NonNull;
  * @see io.littlehorse.sdk.common.proto.VariableType
  */
 public enum UserTaskFieldType {
-    DOUBLE, BOOLEAN, STRING, INTEGER, UNRECOGNIZED;
+    DOUBLE,
+    BOOLEAN,
+    STRING,
+    INTEGER,
+    UNRECOGNIZED;
 
     /**
      * Converts a {@code io.littlehorse.sdk.common.proto.VariableType} to a {@code UserTaskFieldType}

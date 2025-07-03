@@ -22,11 +22,15 @@ import lombok.NonNull;
 public class UserTaskFieldDTO {
     @NotBlank
     private String name;
+
     @NotBlank
     private String displayName;
+
     private String description;
+
     @NotNull
     private UserTaskFieldType type;
+
     private boolean required;
 
     public static UserTaskFieldDTO fromServerUserTaskField(@NonNull UserTaskField userTaskField) {

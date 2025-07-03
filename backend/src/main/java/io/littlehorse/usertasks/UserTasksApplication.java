@@ -8,8 +8,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 @EnableConfigurationProperties
 public class UserTasksApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(UserTasksApplication.class, args);
-	}
-
+    public static void main(String[] args) {
+        SpringApplication.run(UserTasksApplication.class, args);
+    }
 }

@@ -1,8 +1,8 @@
 package io.littlehorse.usertasks.models.requests.comment_requests;
 
+import io.littlehorse.sdk.common.LHLibUtil;
 import io.littlehorse.sdk.common.proto.PutUserTaskRunCommentRequest;
 import io.littlehorse.sdk.common.proto.UserTaskRunId;
-import io.littlehorse.sdk.common.proto.WfRunId;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -20,22 +20,16 @@ public class PutCommentRequest {
 
     private String comment;
 
-
-    public PutUserTaskRunCommentRequest toServer(String userId){
+    public PutUserTaskRunCommentRequest toServerRequest(String userId) {
         PutUserTaskRunCommentRequest req = PutUserTaskRunCommentRequest.newBuilder()
-        .setComment(getComment())
-        .setUserId(userId)
-        .setUserTaskRunId(
-        UserTaskRunId.newBuilder()
-            .setWfRunId(WfRunId.newBuilder().setId(getWfRunId()).build())
-            .setUserTaskGuid(getUserTaskRunGuid())
-            .build()
-        )
-        .build();
+                .setComment(getComment())
+                .setUserId(userId)
+                .setUserTaskRunId(UserTaskRunId.newBuilder()
+                        .setWfRunId(LHLibUtil.wfRunIdFromString(getWfRunId()))
+                        .setUserTaskGuid(getUserTaskRunGuid())
+                        .build())
+                .build();
 
         return req;
     }
-
-    
-
 }

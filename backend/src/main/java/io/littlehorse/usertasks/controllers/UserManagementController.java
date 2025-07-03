@@ -1,5 +1,9 @@
 package io.littlehorse.usertasks.controllers;
 
+import static io.littlehorse.usertasks.configurations.CustomIdentityProviderProperties.getCustomIdentityProviderProperties;
+import static io.littlehorse.usertasks.util.constants.AuthoritiesConstants.LH_USER_TASKS_ADMIN_ROLE;
+import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.USER_ID_CLAIM;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.littlehorse.usertasks.configurations.CustomIdentityProviderProperties;
 import io.littlehorse.usertasks.configurations.IdentityProviderConfigProperties;
@@ -27,6 +31,11 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -38,20 +47,10 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import static io.littlehorse.usertasks.configurations.CustomIdentityProviderProperties.getCustomIdentityProviderProperties;
-import static io.littlehorse.usertasks.util.constants.AuthoritiesConstants.LH_USER_TASKS_ADMIN_ROLE;
-import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.USER_ID_CLAIM;
-
 @Tag(
         name = "User Management Controller",
-        description = "This is a controller that exposes endpoints in charge of handling requests related to managing users"
-)
+        description =
+                "This is a controller that exposes endpoints in charge of handling requests related to managing users")
 @RestController
 @CrossOrigin
 @PreAuthorize("isAuthenticated() && hasAuthority('" + LH_USER_TASKS_ADMIN_ROLE + "')")
@@ -62,8 +61,11 @@ public class UserManagementController {
     private final UserTaskService userTaskService;
     private final IdentityProviderConfigProperties identityProviderConfigProperties;
 
-    public UserManagementController(TenantService tenantService, UserManagementService userManagementService, UserTaskService userTaskService,
-                                    IdentityProviderConfigProperties identityProviderConfigProperties) {
+    public UserManagementController(
+            TenantService tenantService,
+            UserManagementService userManagementService,
+            UserTaskService userTaskService,
+            IdentityProviderConfigProperties identityProviderConfigProperties) {
         this.tenantService = tenantService;
         this.userManagementService = userManagementService;
         this.userTaskService = userTaskService;
@@ -72,42 +74,46 @@ public class UserManagementController {
 
     @Operation(
             summary = "Get Users from IdP",
-            description = "Gets all active Users from a specific identity provider of a specific tenant."
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "List of unique Users.",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = IDPUserListDTO.class))}
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "Tenant Id is not valid.",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class))}
-            ),
-            @ApiResponse(
-                    responseCode = "406",
-                    description = "Unknown Identity vendor.",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class))}
-            )
-    })
+            description = "Gets all active Users from a specific identity provider of a specific tenant.")
+    @ApiResponses(
+            value = {
+                @ApiResponse(
+                        responseCode = "200",
+                        description = "List of unique Users.",
+                        content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = IDPUserListDTO.class))
+                        }),
+                @ApiResponse(
+                        responseCode = "401",
+                        description = "Tenant Id is not valid.",
+                        content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ProblemDetail.class))
+                        }),
+                @ApiResponse(
+                        responseCode = "406",
+                        description = "Unknown Identity vendor.",
+                        content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ProblemDetail.class))
+                        })
+            })
     @GetMapping("/{tenant_id}/management/users")
     @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<IDPUserListDTO> getUsersFromIdP(@RequestHeader(name = "Authorization") String accessToken,
-                                                  @PathVariable(name = "tenant_id") String tenantId,
-                                                  @RequestParam(name = "email", required = false) String email,
-                                                  @RequestParam(name = "first_name", required = false) String firstName,
-                                                  @RequestParam(name = "last_name", required = false) String lastName,
-                                                  @RequestParam(name = "username", required = false) String username,
-                                                  @RequestParam(name = "user_group_id", required = false) String userGroupId,
-                                                  @RequestParam(name = "first_result", defaultValue = "0") Integer firstResult,
-                                                  @RequestParam(name = "max_results", defaultValue = "10") Integer maxResults) {
+    public ResponseEntity<IDPUserListDTO> getUsersFromIdP(
+            @RequestHeader(name = "Authorization") String accessToken,
+            @PathVariable(name = "tenant_id") String tenantId,
+            @RequestParam(name = "email", required = false) String email,
+            @RequestParam(name = "first_name", required = false) String firstName,
+            @RequestParam(name = "last_name", required = false) String lastName,
+            @RequestParam(name = "username", required = false) String username,
+            @RequestParam(name = "user_group_id", required = false) String userGroupId,
+            @RequestParam(name = "first_result", defaultValue = "0") Integer firstResult,
+            @RequestParam(name = "max_results", defaultValue = "10") Integer maxResults) {
         if (!tenantService.isValidTenant(tenantId, accessToken)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
@@ -115,7 +121,8 @@ public class UserManagementController {
         try {
             CustomIdentityProviderProperties customIdentityProviderProperties =
                     getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
-            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
+            IStandardIdentityProviderAdapter identityProviderHandler =
+                    getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
 
             var requestFilter = IDPUserSearchRequestFilter.builder()
                     .email(email)
@@ -125,45 +132,44 @@ public class UserManagementController {
                     .userGroupId(userGroupId)
                     .build();
 
-            IDPUserListDTO idpUserListDTO = userManagementService.listUsersFromIdentityProvider(accessToken,
-                    identityProviderHandler, requestFilter, firstResult, maxResults);
+            IDPUserListDTO idpUserListDTO = userManagementService.listUsersFromIdentityProvider(
+                    accessToken, identityProviderHandler, requestFilter, firstResult, maxResults);
 
             return ResponseEntity.ok(idpUserListDTO);
         } catch (JsonProcessingException e) {
-            log.error("Something went wrong when getting claims from token while trying to get users from Identity Provider");
+            log.error(
+                    "Something went wrong when getting claims from token while trying to get users from Identity Provider");
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    @Operation(
-            summary = "Create User",
-            description = "Creates a User within a specific tenant's IdP"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "201",
-                    content = @Content
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "Tenant Id is not valid.",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class))}
-            ),
-            @ApiResponse(
-                    responseCode = "406",
-                    description = "Unknown Identity vendor.",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class))}
-            )
-    })
+    @Operation(summary = "Create User", description = "Creates a User within a specific tenant's IdP")
+    @ApiResponses(
+            value = {
+                @ApiResponse(responseCode = "201", content = @Content),
+                @ApiResponse(
+                        responseCode = "401",
+                        description = "Tenant Id is not valid.",
+                        content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ProblemDetail.class))
+                        }),
+                @ApiResponse(
+                        responseCode = "406",
+                        description = "Unknown Identity vendor.",
+                        content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ProblemDetail.class))
+                        })
+            })
     @PostMapping("/{tenant_id}/management/users")
     @ResponseStatus(HttpStatus.CREATED)
-    public void createUser(@RequestHeader(name = "Authorization") String accessToken,
-                           @PathVariable(name = "tenant_id") String tenantId,
-                           @RequestBody CreateManagedUserRequest requestBody) {
+    public void createUser(
+            @RequestHeader(name = "Authorization") String accessToken,
+            @PathVariable(name = "tenant_id") String tenantId,
+            @RequestBody CreateManagedUserRequest requestBody) {
         if (!tenantService.isValidTenant(tenantId, accessToken)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
@@ -171,10 +177,12 @@ public class UserManagementController {
         try {
             CustomIdentityProviderProperties customIdentityProviderProperties =
                     getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
-            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
+            IStandardIdentityProviderAdapter identityProviderHandler =
+                    getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
 
             if (!requestBody.isValid()) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot create User while missing all properties.");
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST, "Cannot create User while missing all properties.");
             }
 
             userManagementService.createUserInIdentityProvider(accessToken, requestBody, identityProviderHandler);
@@ -184,43 +192,42 @@ public class UserManagementController {
         }
     }
 
-    @Operation(
-            summary = "Set Password",
-            description = "Sets or resets a user's password"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "204",
-                    content = @Content
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "Tenant Id is not valid.",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class))}
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "User could not be found.",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class))}
-            ),
-            @ApiResponse(
-                    responseCode = "406",
-                    description = "Unknown Identity vendor.",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class))}
-            )
-    })
+    @Operation(summary = "Set Password", description = "Sets or resets a user's password")
+    @ApiResponses(
+            value = {
+                @ApiResponse(responseCode = "204", content = @Content),
+                @ApiResponse(
+                        responseCode = "401",
+                        description = "Tenant Id is not valid.",
+                        content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ProblemDetail.class))
+                        }),
+                @ApiResponse(
+                        responseCode = "404",
+                        description = "User could not be found.",
+                        content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ProblemDetail.class))
+                        }),
+                @ApiResponse(
+                        responseCode = "406",
+                        description = "Unknown Identity vendor.",
+                        content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ProblemDetail.class))
+                        })
+            })
     @PutMapping("/{tenant_id}/management/users/{user_id}/password")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void upsertPassword(@RequestHeader(name = "Authorization") String accessToken,
-                               @PathVariable(name = "tenant_id") String tenantId,
-                               @PathVariable(name = "user_id") String userId,
-                               @RequestBody UpsertPasswordRequest requestBody) {
+    public void upsertPassword(
+            @RequestHeader(name = "Authorization") String accessToken,
+            @PathVariable(name = "tenant_id") String tenantId,
+            @PathVariable(name = "user_id") String userId,
+            @RequestBody UpsertPasswordRequest requestBody) {
         if (!tenantService.isValidTenant(tenantId, accessToken)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
@@ -230,7 +237,8 @@ public class UserManagementController {
 
             CustomIdentityProviderProperties customIdentityProviderProperties =
                     getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
-            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
+            IStandardIdentityProviderAdapter identityProviderHandler =
+                    getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
 
             userManagementService.setPassword(accessToken, userId, requestBody, identityProviderHandler);
         } catch (JsonProcessingException e) {
@@ -243,43 +251,48 @@ public class UserManagementController {
 
     @Operation(
             summary = "Get Single User from IdP",
-            description = "Gets a User from a specific identity provider of a specific tenant."
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "User representation",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = IDPUserListDTO.class))}
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "Tenant Id is not valid.",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class))}
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "User data could not be found",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class))}
-            ),
-            @ApiResponse(
-                    responseCode = "406",
-                    description = "Unknown Identity vendor.",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class))}
-            )
-    })
+            description = "Gets a User from a specific identity provider of a specific tenant.")
+    @ApiResponses(
+            value = {
+                @ApiResponse(
+                        responseCode = "200",
+                        description = "User representation",
+                        content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = IDPUserListDTO.class))
+                        }),
+                @ApiResponse(
+                        responseCode = "401",
+                        description = "Tenant Id is not valid.",
+                        content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ProblemDetail.class))
+                        }),
+                @ApiResponse(
+                        responseCode = "404",
+                        description = "User data could not be found",
+                        content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ProblemDetail.class))
+                        }),
+                @ApiResponse(
+                        responseCode = "406",
+                        description = "Unknown Identity vendor.",
+                        content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ProblemDetail.class))
+                        })
+            })
     @GetMapping("/{tenant_id}/management/users/{user_id}")
     @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<IDPUserDTO> getUserFromIdP(@RequestHeader(name = "Authorization") String accessToken,
-                               @PathVariable(name = "tenant_id") String tenantId,
-                               @PathVariable(name = "user_id") String userId) {
+    public ResponseEntity<IDPUserDTO> getUserFromIdP(
+            @RequestHeader(name = "Authorization") String accessToken,
+            @PathVariable(name = "tenant_id") String tenantId,
+            @PathVariable(name = "user_id") String userId) {
         if (!tenantService.isValidTenant(tenantId, accessToken)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
@@ -287,48 +300,48 @@ public class UserManagementController {
         try {
             CustomIdentityProviderProperties customIdentityProviderProperties =
                     getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
-            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
+            IStandardIdentityProviderAdapter identityProviderHandler =
+                    getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
 
-            Optional<IDPUserDTO> optionalUserDTO = userManagementService.getUserFromIdentityProvider(accessToken, userId, identityProviderHandler);
+            Optional<IDPUserDTO> optionalUserDTO =
+                    userManagementService.getUserFromIdentityProvider(accessToken, userId, identityProviderHandler);
 
-            return optionalUserDTO.map(ResponseEntity::ok)
-                    .orElseGet(() -> ResponseEntity.notFound().build());
+            return optionalUserDTO.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound()
+                    .build());
         } catch (JsonProcessingException e) {
             log.error("Something went wrong when getting claims from token while trying to fetch a user's data.");
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    @Operation(
-            summary = "Update Managed User",
-            description = "Updates a user's properties"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "204",
-                    content = @Content
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "Tenant Id is not valid.",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class))}
-            ),
-            @ApiResponse(
-                    responseCode = "406",
-                    description = "Unknown Identity vendor.",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class))}
-            )
-    })
+    @Operation(summary = "Update Managed User", description = "Updates a user's properties")
+    @ApiResponses(
+            value = {
+                @ApiResponse(responseCode = "204", content = @Content),
+                @ApiResponse(
+                        responseCode = "401",
+                        description = "Tenant Id is not valid.",
+                        content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ProblemDetail.class))
+                        }),
+                @ApiResponse(
+                        responseCode = "406",
+                        description = "Unknown Identity vendor.",
+                        content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ProblemDetail.class))
+                        })
+            })
     @PutMapping("/{tenant_id}/management/users/{user_id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void updateUser(@RequestHeader(name = "Authorization") String accessToken,
-                               @PathVariable(name = "tenant_id") String tenantId,
-                               @PathVariable(name = "user_id") String userId,
-                               @RequestBody UpdateManagedUserRequest requestBody) {
+    public void updateUser(
+            @RequestHeader(name = "Authorization") String accessToken,
+            @PathVariable(name = "tenant_id") String tenantId,
+            @PathVariable(name = "user_id") String userId,
+            @RequestBody UpdateManagedUserRequest requestBody) {
         if (!tenantService.isValidTenant(tenantId, accessToken)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
@@ -336,55 +349,57 @@ public class UserManagementController {
         try {
             CustomIdentityProviderProperties customIdentityProviderProperties =
                     getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
-            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
+            IStandardIdentityProviderAdapter identityProviderHandler =
+                    getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
 
             validateUpdateManagedUserRequest(requestBody, customIdentityProviderProperties.getUserIdClaim());
 
             userManagementService.updateUser(accessToken, userId, requestBody, identityProviderHandler);
         } catch (JsonProcessingException e) {
-            log.error("Something went wrong when getting claims from token while trying to update a user's properties.");
+            log.error(
+                    "Something went wrong when getting claims from token while trying to update a user's properties.");
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    @Operation(
-            summary = "Delete Managed User",
-            description = "Deletes a user from the respective Identity Provider"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "204",
-                    content = @Content
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "Tenant Id is not valid.",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class))}
-            ),
-            @ApiResponse(
-                    responseCode = "406",
-                    description = "Unknown Identity vendor.",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class))}
-            ),
-            @ApiResponse(
-                    responseCode = "409",
-                    description = "User cannot be deleted because there are UserTaskRuns already assigned and waiting to be completed by them. " +
-                            "Or, Admin user is forbidden from deleting themselves.",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class))}
-            )
-    })
+    @Operation(summary = "Delete Managed User", description = "Deletes a user from the respective Identity Provider")
+    @ApiResponses(
+            value = {
+                @ApiResponse(responseCode = "204", content = @Content),
+                @ApiResponse(
+                        responseCode = "401",
+                        description = "Tenant Id is not valid.",
+                        content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ProblemDetail.class))
+                        }),
+                @ApiResponse(
+                        responseCode = "406",
+                        description = "Unknown Identity vendor.",
+                        content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ProblemDetail.class))
+                        }),
+                @ApiResponse(
+                        responseCode = "409",
+                        description =
+                                "User cannot be deleted because there are UserTaskRuns already assigned and waiting to be completed by them. "
+                                        + "Or, Admin user is forbidden from deleting themselves.",
+                        content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ProblemDetail.class))
+                        })
+            })
     @DeleteMapping("/{tenant_id}/management/users/{user_id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteUser(@RequestHeader(name = "Authorization") String accessToken,
-                           @PathVariable(name = "tenant_id") String tenantId,
-                           @PathVariable(name = "user_id") String userId,
-                           @RequestParam(name = "ignore_orphan_tasks", required = false) boolean ignoreOrphanTasks) {
+    public void deleteUser(
+            @RequestHeader(name = "Authorization") String accessToken,
+            @PathVariable(name = "tenant_id") String tenantId,
+            @PathVariable(name = "user_id") String userId,
+            @RequestParam(name = "ignore_orphan_tasks", required = false) boolean ignoreOrphanTasks) {
         if (!tenantService.isValidTenant(tenantId, accessToken)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
@@ -399,7 +414,8 @@ public class UserManagementController {
 
             CustomIdentityProviderProperties customIdentityProviderProperties =
                     getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
-            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
+            IStandardIdentityProviderAdapter identityProviderHandler =
+                    getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
 
             Map<String, Object> params = Map.of("accessToken", accessToken, "userId", userId);
             IDPUserDTO managedUserDTO = identityProviderHandler.getManagedUser(params);
@@ -419,35 +435,33 @@ public class UserManagementController {
         }
     }
 
-    @Operation(
-            summary = "Assign Admin Role",
-            description = "Assigns the Admin role to a specific user."
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "204",
-                    content = @Content
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "Tenant Id is not valid.",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class))}
-            ),
-            @ApiResponse(
-                    responseCode = "406",
-                    description = "Unknown Identity vendor.",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class))}
-            )
-    })
+    @Operation(summary = "Assign Admin Role", description = "Assigns the Admin role to a specific user.")
+    @ApiResponses(
+            value = {
+                @ApiResponse(responseCode = "204", content = @Content),
+                @ApiResponse(
+                        responseCode = "401",
+                        description = "Tenant Id is not valid.",
+                        content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ProblemDetail.class))
+                        }),
+                @ApiResponse(
+                        responseCode = "406",
+                        description = "Unknown Identity vendor.",
+                        content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ProblemDetail.class))
+                        })
+            })
     @PostMapping("/{tenant_id}/management/users/{user_id}/roles/admin")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void assignAdminRole(@RequestHeader(name = "Authorization") String accessToken,
-                                @PathVariable(name = "tenant_id") String tenantId,
-                                @PathVariable(name = "user_id") String userId) {
+    public void assignAdminRole(
+            @RequestHeader(name = "Authorization") String accessToken,
+            @PathVariable(name = "tenant_id") String tenantId,
+            @PathVariable(name = "user_id") String userId) {
         if (!tenantService.isValidTenant(tenantId, accessToken)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
@@ -455,7 +469,8 @@ public class UserManagementController {
         try {
             CustomIdentityProviderProperties customIdentityProviderProperties =
                     getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
-            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
+            IStandardIdentityProviderAdapter identityProviderHandler =
+                    getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
 
             userManagementService.assignAdminRole(accessToken, userId, identityProviderHandler);
         } catch (JsonProcessingException e) {
@@ -464,42 +479,41 @@ public class UserManagementController {
         }
     }
 
-    @Operation(
-            summary = "Remove Admin Role",
-            description = "Removes the Admin role from a specific user."
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "204",
-                    content = @Content
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "Tenant Id is not valid.",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class))}
-            ),
-            @ApiResponse(
-                    responseCode = "406",
-                    description = "Unknown Identity vendor.",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class))}
-            ),
-            @ApiResponse(
-                    responseCode = "409",
-                    description = "Admin user is forbidden from self removing as admin.",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class))}
-            )
-    })
+    @Operation(summary = "Remove Admin Role", description = "Removes the Admin role from a specific user.")
+    @ApiResponses(
+            value = {
+                @ApiResponse(responseCode = "204", content = @Content),
+                @ApiResponse(
+                        responseCode = "401",
+                        description = "Tenant Id is not valid.",
+                        content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ProblemDetail.class))
+                        }),
+                @ApiResponse(
+                        responseCode = "406",
+                        description = "Unknown Identity vendor.",
+                        content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ProblemDetail.class))
+                        }),
+                @ApiResponse(
+                        responseCode = "409",
+                        description = "Admin user is forbidden from self removing as admin.",
+                        content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ProblemDetail.class))
+                        })
+            })
     @DeleteMapping("/{tenant_id}/management/users/{user_id}/roles/admin")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void removeAdminRole(@RequestHeader(name = "Authorization") String accessToken,
-                                @PathVariable(name = "tenant_id") String tenantId,
-                                @PathVariable(name = "user_id") String userId) {
+    public void removeAdminRole(
+            @RequestHeader(name = "Authorization") String accessToken,
+            @PathVariable(name = "tenant_id") String tenantId,
+            @PathVariable(name = "user_id") String userId) {
         if (!tenantService.isValidTenant(tenantId, accessToken)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
@@ -514,7 +528,8 @@ public class UserManagementController {
 
             CustomIdentityProviderProperties customIdentityProviderProperties =
                     getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
-            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
+            IStandardIdentityProviderAdapter identityProviderHandler =
+                    getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
 
             userManagementService.removeAdminRole(accessToken, userId, identityProviderHandler);
         } catch (JsonProcessingException e) {
@@ -523,43 +538,42 @@ public class UserManagementController {
         }
     }
 
-    @Operation(
-            summary = "Join Group",
-            description = "Allows a user to join a group."
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "204",
-                    content = @Content
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "Tenant Id is not valid.",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class))}
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "User or Group could not be found.",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class))}
-            ),
-            @ApiResponse(
-                    responseCode = "406",
-                    description = "Unknown Identity vendor.",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class))}
-            )
-    })
+    @Operation(summary = "Join Group", description = "Allows a user to join a group.")
+    @ApiResponses(
+            value = {
+                @ApiResponse(responseCode = "204", content = @Content),
+                @ApiResponse(
+                        responseCode = "401",
+                        description = "Tenant Id is not valid.",
+                        content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ProblemDetail.class))
+                        }),
+                @ApiResponse(
+                        responseCode = "404",
+                        description = "User or Group could not be found.",
+                        content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ProblemDetail.class))
+                        }),
+                @ApiResponse(
+                        responseCode = "406",
+                        description = "Unknown Identity vendor.",
+                        content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ProblemDetail.class))
+                        })
+            })
     @PostMapping("/{tenant_id}/management/users/{user_id}/groups/{group_id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void joinGroup(@RequestHeader(name = "Authorization") String accessToken,
-                          @PathVariable(name = "tenant_id") String tenantId,
-                          @PathVariable(name = "user_id") String userId,
-                          @PathVariable(name = "group_id") String groupId) {
+    public void joinGroup(
+            @RequestHeader(name = "Authorization") String accessToken,
+            @PathVariable(name = "tenant_id") String tenantId,
+            @PathVariable(name = "user_id") String userId,
+            @PathVariable(name = "group_id") String groupId) {
         if (!tenantService.isValidTenant(tenantId, accessToken)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
@@ -567,7 +581,8 @@ public class UserManagementController {
         try {
             CustomIdentityProviderProperties customIdentityProviderProperties =
                     getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
-            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
+            IStandardIdentityProviderAdapter identityProviderHandler =
+                    getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
 
             userManagementService.joinGroup(accessToken, userId, groupId, identityProviderHandler);
         } catch (JsonProcessingException e) {
@@ -578,43 +593,42 @@ public class UserManagementController {
         }
     }
 
-    @Operation(
-            summary = "Remove User from Group",
-            description = "Removes a user as member of a group."
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "204",
-                    content = @Content
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "Tenant Id is not valid.",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class))}
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "User or Group could not be found.",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class))}
-            ),
-            @ApiResponse(
-                    responseCode = "406",
-                    description = "Unknown Identity vendor.",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class))}
-            ),
-    })
+    @Operation(summary = "Remove User from Group", description = "Removes a user as member of a group.")
+    @ApiResponses(
+            value = {
+                @ApiResponse(responseCode = "204", content = @Content),
+                @ApiResponse(
+                        responseCode = "401",
+                        description = "Tenant Id is not valid.",
+                        content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ProblemDetail.class))
+                        }),
+                @ApiResponse(
+                        responseCode = "404",
+                        description = "User or Group could not be found.",
+                        content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ProblemDetail.class))
+                        }),
+                @ApiResponse(
+                        responseCode = "406",
+                        description = "Unknown Identity vendor.",
+                        content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ProblemDetail.class))
+                        }),
+            })
     @DeleteMapping("/{tenant_id}/management/users/{user_id}/groups/{group_id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void removeUserFromGroup(@RequestHeader(name = "Authorization") String accessToken,
-                                    @PathVariable(name = "tenant_id") String tenantId,
-                                    @PathVariable(name = "user_id") String userId,
-                                    @PathVariable(name = "group_id") String groupId) {
+    public void removeUserFromGroup(
+            @RequestHeader(name = "Authorization") String accessToken,
+            @PathVariable(name = "tenant_id") String tenantId,
+            @PathVariable(name = "user_id") String userId,
+            @PathVariable(name = "group_id") String groupId) {
         if (!tenantService.isValidTenant(tenantId, accessToken)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
@@ -622,11 +636,13 @@ public class UserManagementController {
         try {
             CustomIdentityProviderProperties customIdentityProviderProperties =
                     getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
-            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
+            IStandardIdentityProviderAdapter identityProviderHandler =
+                    getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
 
             userManagementService.removeUserFromGroup(accessToken, userId, groupId, identityProviderHandler);
         } catch (JsonProcessingException e) {
-            log.error("Something went wrong when getting claims from token while trying to remove user as member of a group.");
+            log.error(
+                    "Something went wrong when getting claims from token while trying to remove user as member of a group.");
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR);
         } catch (NotFoundException e) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, e.getMessage());
@@ -671,12 +687,15 @@ public class UserManagementController {
         }
 
         if (userIdClaim == CustomUserIdClaim.EMAIL && StringUtils.isBlank(requestBody.getEmail())) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot set email to NULL, empty nor whitespace-only value.");
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST, "Cannot set email to NULL, empty nor whitespace-only value.");
         }
     }
 
-    private void validateCurrentlyAssignedUserTaskRuns(IDPUserDTO managedUserDTO, String tenantId,
-                                                       CustomIdentityProviderProperties customIdentityProviderProperties) {
+    private void validateCurrentlyAssignedUserTaskRuns(
+            IDPUserDTO managedUserDTO,
+            String tenantId,
+            CustomIdentityProviderProperties customIdentityProviderProperties) {
         String lookupUserId = null;
 
         switch (customIdentityProviderProperties.getUserIdClaim()) {
@@ -685,16 +704,15 @@ public class UserManagementController {
             case EMAIL -> lookupUserId = managedUserDTO.getEmail();
         }
 
-        UserTaskRequestFilter requestFilter = UserTaskRequestFilter.builder()
-                .status(UserTaskStatus.ASSIGNED)
-                .build();
+        UserTaskRequestFilter requestFilter =
+                UserTaskRequestFilter.builder().status(UserTaskStatus.ASSIGNED).build();
 
-        UserTaskRunListDTO pendingTasks = userTaskService.getTasks(tenantId, lookupUserId, null,
-                requestFilter, 1, null, false);
+        UserTaskRunListDTO pendingTasks =
+                userTaskService.getTasks(tenantId, lookupUserId, null, requestFilter, 1, null, false);
 
         if (!CollectionUtils.isEmpty(pendingTasks.getUserTasks())) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT,
-                    "Cannot delete Users with Task(s) assigned that are pending to be completed!");
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT, "Cannot delete Users with Task(s) assigned that are pending to be completed!");
         }
     }
 }

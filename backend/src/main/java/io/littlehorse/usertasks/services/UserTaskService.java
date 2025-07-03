@@ -1,5 +1,7 @@
 package io.littlehorse.usertasks.services;
 
+import static io.littlehorse.usertasks.util.DateUtil.isDateRangeValid;
+
 import com.google.protobuf.ByteString;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -21,6 +23,8 @@ import io.littlehorse.usertasks.models.responses.UserTaskDefListDTO;
 import io.littlehorse.usertasks.models.responses.UserTaskRunListDTO;
 import io.littlehorse.usertasks.util.enums.UserTaskFieldType;
 import jakarta.annotation.Nullable;
+import java.util.*;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.util.codec.binary.Base64;
@@ -30,43 +34,42 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static io.littlehorse.usertasks.util.DateUtil.isDateRangeValid;
-
 @Service
 @Slf4j
 public class UserTaskService {
     private final Map<String, LittleHorseGrpc.LittleHorseBlockingStub> lhClients;
-    private final Set<UserTaskRunStatus> TERMINAL_STATUSES = Set.of(UserTaskRunStatus.CANCELLED, UserTaskRunStatus.DONE);
+    private final Set<UserTaskRunStatus> TERMINAL_STATUSES =
+            Set.of(UserTaskRunStatus.CANCELLED, UserTaskRunStatus.DONE);
 
     UserTaskService(Map<String, LittleHorseGrpc.LittleHorseBlockingStub> lhClients) {
         this.lhClients = lhClients;
     }
 
     @NonNull
-    public UserTaskRunListDTO getTasks(@NonNull String tenantId, String userId, String userGroup, UserTaskRequestFilter additionalFilters,
-                                                 int limit, byte[] bookmark, boolean isAdminRequest) {
+    public UserTaskRunListDTO getTasks(
+            @NonNull String tenantId,
+            String userId,
+            String userGroup,
+            UserTaskRequestFilter additionalFilters,
+            int limit,
+            byte[] bookmark,
+            boolean isAdminRequest) {
         if (!isAdminRequest && !StringUtils.hasText(userId)) {
             throw new IllegalArgumentException("Cannot search UserTask without specifying a proper UserId");
         }
 
-        var pagination = StandardPagination.builder()
-                .bookmark(bookmark)
-                .limit(limit)
-                .build();
+        var pagination =
+                StandardPagination.builder().bookmark(bookmark).limit(limit).build();
 
-        SearchUserTaskRunRequest searchRequest = buildSearchUserTaskRunRequest(userId, userGroup, additionalFilters, pagination);
+        SearchUserTaskRunRequest searchRequest =
+                buildSearchUserTaskRunRequest(userId, userGroup, additionalFilters, pagination);
 
         LittleHorseGrpc.LittleHorseBlockingStub tenantClient = getTenantLHClient(tenantId);
 
         UserTaskRunIdList searchResults = tenantClient.searchUserTaskRun(searchRequest);
         List<UserTaskRunId> resultsIdList = searchResults.getResultsList();
         var setOfUserTasks = new HashSet<SimpleUserTaskRunDTO>();
-        var response = UserTaskRunListDTO.builder()
-                .userTasks(setOfUserTasks)
-                .build();
+        var response = UserTaskRunListDTO.builder().userTasks(setOfUserTasks).build();
 
         if (!resultsIdList.isEmpty()) {
             resultsIdList.forEach(userTaskRunId -> {
@@ -75,17 +78,23 @@ public class UserTaskService {
             });
 
             response.setUserTasks(setOfUserTasks);
-            response.setBookmark(searchResults.hasBookmark()
-                    ? Base64.encodeBase64String(searchResults.getBookmark().toByteArray())
-                    : null);
+            response.setBookmark(
+                    searchResults.hasBookmark()
+                            ? Base64.encodeBase64String(
+                                    searchResults.getBookmark().toByteArray())
+                            : null);
         }
 
         return response;
     }
 
-    public Optional<DetailedUserTaskRunDTO> getUserTaskDetails(@NonNull String wfRunId, @NonNull String userTaskRunGuid,
-                                                               @NonNull String tenantId, String userId, String userGroup,
-                                                               boolean isAdminRequest) {
+    public Optional<DetailedUserTaskRunDTO> getUserTaskDetails(
+            @NonNull String wfRunId,
+            @NonNull String userTaskRunGuid,
+            @NonNull String tenantId,
+            String userId,
+            String userGroup,
+            boolean isAdminRequest) {
         UserTaskRunId getUserTaskRunRequest = buildUserTaskRunId(wfRunId, userTaskRunGuid);
 
         LittleHorseGrpc.LittleHorseBlockingStub tenantClient = getTenantLHClient(tenantId);
@@ -122,17 +131,26 @@ public class UserTaskService {
         return Optional.of(resultDto);
     }
 
-    public void completeUserTask(@NonNull String userId, @NonNull CompleteUserTaskRequest request, @NonNull String tenantId,
-                                 boolean isAdminRequest) {
+    public void completeUserTask(
+            @NonNull String userId,
+            @NonNull CompleteUserTaskRequest request,
+            @NonNull String tenantId,
+            boolean isAdminRequest) {
         try {
             log.info("Completing UserTaskRun");
 
-            Optional<DetailedUserTaskRunDTO> userTaskDetails = getUserTaskDetails(request.getWfRunId(),
-                    request.getUserTaskRunGuid(), tenantId, userId, null, isAdminRequest);//TODO: UserGroup param must be added here later on
+            Optional<DetailedUserTaskRunDTO> userTaskDetails = getUserTaskDetails(
+                    request.getWfRunId(),
+                    request.getUserTaskRunGuid(),
+                    tenantId,
+                    userId,
+                    null,
+                    isAdminRequest); // TODO: UserGroup param must be added here later on
 
             if (userTaskDetails.isPresent()) {
                 if (isUserTaskTerminated(userTaskDetails.get().getStatus().toServerStatus())) {
-                    throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    throw new ResponseStatusException(
+                            HttpStatus.FORBIDDEN,
                             "The UserTask you are trying to complete is already DONE or CANCELLED");
                 }
 
@@ -152,8 +170,8 @@ public class UserTaskService {
             }
         } catch (StatusRuntimeException e) {
             log.atError()
-                    .setMessage("Something went wrong in LH Kernel with completion process for UserTaskRun with " +
-                            "wfRunId: {} and guid: {} ")
+                    .setMessage("Something went wrong in LH Kernel with completion process for UserTaskRun with "
+                            + "wfRunId: {} and guid: {} ")
                     .addArgument(request.getWfRunId())
                     .addArgument(request.getUserTaskRunGuid())
                     .log();
@@ -172,42 +190,43 @@ public class UserTaskService {
             throw e;
         }
     }
-    public AuditEventDTO comment(PutCommentRequest request, String userId, String tenantId, boolean isAdminRequest){
 
-        PutUserTaskRunCommentRequest serverRequest =  request.toServer(userId);
+    public AuditEventDTO comment(PutCommentRequest request, String userId, String tenantId, boolean isAdminRequest) {
+
+        PutUserTaskRunCommentRequest serverRequest = request.toServerRequest(userId);
         try {
             LittleHorseGrpc.LittleHorseBlockingStub tenantClient = getTenantLHClient(tenantId);
 
             UserTaskRun userTaskRun = tenantClient.putUserTaskRunComment(serverRequest);
-                List<UserTaskEvent> serverEvents = userTaskRun.getEventsList().stream()
-            .filter(event -> event.hasCommentAdded())
-        .filter(event -> userId.equals(event.getCommentAdded().getUserId()))
-        .toList();
+            List<UserTaskEvent> serverEvents = userTaskRun.getEventsList().stream()
+                    .filter(event -> event.hasCommentAdded())
+                    .filter(event -> userId.equals(event.getCommentAdded().getUserId()))
+                    .toList();
 
             AuditEventDTO eventDTO = AuditEventDTO.fromUserTaskEvent(serverEvents.getLast());
-        
+
             return eventDTO;
-        }
-        catch(StatusRuntimeException e){
+        } catch (StatusRuntimeException sre) {
+            if (sre.getStatus().getCode() == Status.Code.NOT_FOUND) {
+                String message = sre.getMessage();
+                if (message.contains("comment"))
+                    throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Comment does not exist");
+                else throw new ResponseStatusException(HttpStatus.NOT_FOUND, "UserTask does not exist");
+            }
+            if (sre.getStatus().getCode() == Status.Code.INVALID_ARGUMENT)
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, sre.getMessage(), sre);
 
-            if(e.getStatus().getCode() == Status.Code.NOT_FOUND)
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
-
-            if(e.getStatus().getCode() == Status.Code.INVALID_ARGUMENT)
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
-
-            throw e;
-        }
-        catch(Exception e){
+            throw sre;
+        } catch (Exception e) {
             log.error("Unexpected error during comment creation", e);
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error", e);
         }
-        
     }
 
-    public AuditEventDTO editComment(EditCommentRequest request, String userId, String tenantId, boolean isAdminRequest){
+    public AuditEventDTO editComment(
+            EditCommentRequest request, String userId, String tenantId, boolean isAdminRequest) {
 
-        EditUserTaskRunCommentRequest serverRequest =  request.toServer(userId);
+        EditUserTaskRunCommentRequest serverRequest = request.toServerRequest(userId);
         try {
             LittleHorseGrpc.LittleHorseBlockingStub tenantClient = getTenantLHClient(tenantId);
 
@@ -224,27 +243,26 @@ public class UserTaskService {
             if (e.getStatus().getCode() == Status.Code.INVALID_ARGUMENT)
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
 
-            if (e.getStatus().getCode() == Status.Code.NOT_FOUND){
+            if (e.getStatus().getCode() == Status.Code.NOT_FOUND) {
                 String message = e.getMessage();
-                if(message.contains("comment"))
-                   throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Comment does not exits");
-                else 
-                    throw new ResponseStatusException(HttpStatus.NOT_FOUND, "UserTask does not exist");
-        }
+                if (message.contains("comment"))
+                    throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Comment does not exist");
+                else throw new ResponseStatusException(HttpStatus.NOT_FOUND, "UserTask does not exist");
+            }
             throw e;
-            }catch (Exception e) {
+        } catch (Exception e) {
             log.error("Unexpected while editing comment", e);
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error", e);
         }
     }
 
-    public AuditEventDTO deleteComment(DeleteCommentRequest request, String userId, String tenantId,
-            boolean isAdminRequest) {
+    public AuditEventDTO deleteComment(
+            DeleteCommentRequest request, String userId, String tenantId, boolean isAdminRequest) {
 
-        DeleteUserTaskRunCommentRequest serverRequest = request.toServer(userId);
+        DeleteUserTaskRunCommentRequest serverRequest = request.toServerRequest(userId);
         try {
             LittleHorseGrpc.LittleHorseBlockingStub tenantClient = getTenantLHClient(tenantId);
-                            
+
             UserTaskRun userTaskRun = tenantClient.deleteUserTaskRunComment(serverRequest);
             UserTaskEvent serverEvent = userTaskRun.getEventsList().getLast();
             AuditEventDTO eventDTO = AuditEventDTO.fromUserTaskEvent(serverEvent);
@@ -258,13 +276,12 @@ public class UserTaskService {
             if (e.getStatus().getCode() == Status.Code.INVALID_ARGUMENT)
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage(), e);
 
-            if (e.getStatus().getCode() == Status.Code.NOT_FOUND){
+            if (e.getStatus().getCode() == Status.Code.NOT_FOUND) {
                 String message = e.getMessage();
-                if(message.contains("comment"))
-                   throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Comment does not exist");
-                else
-                    throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find userTask");
-                }
+                if (message.contains("comment"))
+                    throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Comment does not exist");
+                else throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Could not find userTask");
+            }
 
             throw e;
         } catch (Exception e) {
@@ -273,30 +290,18 @@ public class UserTaskService {
         }
     }
 
-    public List<AuditEventDTO> getComment(String wfRunId, String userTaskRunGuid, String tenantId,
-            String userIdFromToken) {
+    public List<AuditEventDTO> getComment(
+            String wfRunId, String userTaskRunGuid, String tenantId, String userIdFromToken) {
 
         UserTaskRunId getUserTaskRunRequest = buildUserTaskRunId(wfRunId, userTaskRunGuid);
 
         LittleHorseGrpc.LittleHorseBlockingStub tenantClient = getTenantLHClient(tenantId);
-        try{
+        try {
             UserTaskRun userTaskRun = tenantClient.getUserTaskRun(getUserTaskRunRequest);
+            HashMap<Integer, AuditEventDTO> latestComment = getMostRecentComments(userTaskRun);
 
-            HashMap<Integer, AuditEventDTO> commentIdToLatestEvent = new HashMap<>();
-            userTaskRun.getEventsList().forEach(event -> {
-                if (event.hasCommentAdded())
-                    commentIdToLatestEvent.put(event.getCommentAdded().getUserCommentId(),
-                            AuditEventDTO.fromUserTaskEvent(event));
-                if (event.hasCommentEdited())
-                    commentIdToLatestEvent.put(event.getCommentEdited().getUserCommentId(),
-                            AuditEventDTO.fromUserTaskEvent(event));
-                if (event.hasCommentDeleted())
-                    commentIdToLatestEvent.put(event.getCommentDeleted().getUserCommentId(),
-                            AuditEventDTO.fromUserTaskEvent(event));
-        });
-            return new ArrayList<>(commentIdToLatestEvent.values());
-        }
-        catch(StatusRuntimeException sre){
+            return new ArrayList<>(latestComment.values());
+        } catch (StatusRuntimeException sre) {
 
             if (sre.getStatus().getCode() == Status.Code.FAILED_PRECONDITION)
                 throw new ResponseStatusException(HttpStatus.CONFLICT, sre.getMessage(), sre);
@@ -314,12 +319,11 @@ public class UserTaskService {
         }
     }
 
-
     public UserTaskDefListDTO getAllUserTasksDef(@NonNull String tenantId, int limit, byte[] bookmark) {
         LittleHorseGrpc.LittleHorseBlockingStub tenantClient = getTenantLHClient(tenantId);
 
-        SearchUserTaskDefRequest.Builder searchRequest = SearchUserTaskDefRequest.newBuilder()
-                .setLimit(limit);
+        SearchUserTaskDefRequest.Builder searchRequest =
+                SearchUserTaskDefRequest.newBuilder().setLimit(limit);
 
         if (Objects.nonNull(bookmark)) {
             searchRequest.setBookmark(ByteString.copyFrom(bookmark));
@@ -337,14 +341,19 @@ public class UserTaskService {
 
         return UserTaskDefListDTO.builder()
                 .userTaskDefNames(setOfUserTaskDefNames)
-                .bookmark(searchResults.hasBookmark()
-                        ? Base64.encodeBase64String(searchResults.getBookmark().toByteArray())
-                        : null)
+                .bookmark(
+                        searchResults.hasBookmark()
+                                ? Base64.encodeBase64String(
+                                        searchResults.getBookmark().toByteArray())
+                                : null)
                 .build();
     }
 
-    public void assignUserTask(@NonNull AssignmentRequest requestBody, @NonNull String wfRunId,
-                               @NonNull String userTaskRunGuid, @NonNull String tenantId) {
+    public void assignUserTask(
+            @NonNull AssignmentRequest requestBody,
+            @NonNull String wfRunId,
+            @NonNull String userTaskRunGuid,
+            @NonNull String tenantId) {
         try {
             log.atInfo()
                     .setMessage("Assigning UserTaskRun with wfRunId: {} and userTaskGuid: {}")
@@ -353,7 +362,8 @@ public class UserTaskService {
                     .log();
 
             if (!StringUtils.hasText(requestBody.getUserId()) && !StringUtils.hasText(requestBody.getUserGroup())) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No valid arguments were received to complete reassignment.");
+                throw new ResponseStatusException(
+                        HttpStatus.BAD_REQUEST, "No valid arguments were received to complete reassignment.");
             }
 
             LittleHorseGrpc.LittleHorseBlockingStub tenantClient = getTenantLHClient(tenantId);
@@ -378,14 +388,15 @@ public class UserTaskService {
                     .setMessage("UserTaskRun with wfRunId: {} and guid: {} was successfully assigned to {}")
                     .addArgument(wfRunId)
                     .addArgument(userTaskRunGuid)
-                    .addArgument(StringUtils.hasText(requestBody.getUserId())
-                            ? requestBody.getUserId()
-                            : requestBody.getUserGroup())
+                    .addArgument(
+                            StringUtils.hasText(requestBody.getUserId())
+                                    ? requestBody.getUserId()
+                                    : requestBody.getUserGroup())
                     .log();
         } catch (StatusRuntimeException e) {
             log.atError()
-                    .setMessage("Something went wrong in LH Kernel with assignment process for UserTaskRun with " +
-                            "wfRunId: {} and guid: {} ")
+                    .setMessage("Something went wrong in LH Kernel with assignment process for UserTaskRun with "
+                            + "wfRunId: {} and guid: {} ")
                     .addArgument(wfRunId)
                     .addArgument(userTaskRunGuid)
                     .log();
@@ -421,9 +432,7 @@ public class UserTaskService {
 
             UserTaskRunId userTaskRunId = UserTaskRunId.newBuilder()
                     .setUserTaskGuid(userTaskRunGuid)
-                    .setWfRunId(WfRunId.newBuilder()
-                            .setId(wfRunId)
-                            .build())
+                    .setWfRunId(WfRunId.newBuilder().setId(wfRunId).build())
                     .build();
 
             UserTaskRun userTaskRun = tenantClient.getUserTaskRun(userTaskRunId);
@@ -437,15 +446,13 @@ public class UserTaskService {
             }
 
             if (isAlreadyTerminated) {
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                        "The UserTask you are trying to cancel is already DONE or CANCELLED");
+                throw new ResponseStatusException(
+                        HttpStatus.FORBIDDEN, "The UserTask you are trying to cancel is already DONE or CANCELLED");
             }
 
             CancelUserTaskRunRequest requestBuilder = CancelUserTaskRunRequest.newBuilder()
                     .setUserTaskRunId(UserTaskRunId.newBuilder()
-                            .setWfRunId(WfRunId.newBuilder()
-                                    .setId(wfRunId)
-                                    .build())
+                            .setWfRunId(WfRunId.newBuilder().setId(wfRunId).build())
                             .setUserTaskGuid(userTaskRunGuid)
                             .build())
                     .build();
@@ -459,8 +466,8 @@ public class UserTaskService {
                     .log();
         } catch (StatusRuntimeException e) {
             log.atError()
-                    .setMessage("Something went wrong in LH Kernel with cancellation process for UserTaskRun with " +
-                            "wfRunId: {} and guid: {} as Admin.")
+                    .setMessage("Something went wrong in LH Kernel with cancellation process for UserTaskRun with "
+                            + "wfRunId: {} and guid: {} as Admin.")
                     .addArgument(wfRunId)
                     .addArgument(userTaskRunGuid)
                     .log();
@@ -484,8 +491,11 @@ public class UserTaskService {
         }
     }
 
-    public void cancelUserTaskForNonAdmin(@NonNull String wfRunId, @NonNull String userTaskRunGuid, @NonNull String tenantId,
-                                          @NonNull String userId) {
+    public void cancelUserTaskForNonAdmin(
+            @NonNull String wfRunId,
+            @NonNull String userTaskRunGuid,
+            @NonNull String tenantId,
+            @NonNull String userId) {
         try {
             log.atInfo()
                     .setMessage("Cancelling UserTaskRun with wfRunId: {} and userTaskGuid: {}")
@@ -497,9 +507,7 @@ public class UserTaskService {
 
             UserTaskRunId userTaskRunId = UserTaskRunId.newBuilder()
                     .setUserTaskGuid(userTaskRunGuid)
-                    .setWfRunId(WfRunId.newBuilder()
-                            .setId(wfRunId)
-                            .build())
+                    .setWfRunId(WfRunId.newBuilder().setId(wfRunId).build())
                     .build();
 
             UserTaskRun userTaskRun = tenantClient.getUserTaskRun(userTaskRunId);
@@ -513,17 +521,15 @@ public class UserTaskService {
             }
 
             if (isAlreadyTerminated) {
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                        "The UserTask you are trying to cancel is already DONE or CANCELLED");
+                throw new ResponseStatusException(
+                        HttpStatus.FORBIDDEN, "The UserTask you are trying to cancel is already DONE or CANCELLED");
             }
 
             validateIfUserIsAllowedToSeeUserTask(userId, null, userTaskRun);
 
             CancelUserTaskRunRequest requestBuilder = CancelUserTaskRunRequest.newBuilder()
                     .setUserTaskRunId(UserTaskRunId.newBuilder()
-                            .setWfRunId(WfRunId.newBuilder()
-                                    .setId(wfRunId)
-                                    .build())
+                            .setWfRunId(WfRunId.newBuilder().setId(wfRunId).build())
                             .setUserTaskGuid(userTaskRunGuid)
                             .build())
                     .build();
@@ -537,8 +543,8 @@ public class UserTaskService {
                     .log();
         } catch (StatusRuntimeException e) {
             log.atError()
-                    .setMessage("Something went wrong in LH Kernel with cancellation process for UserTaskRun with " +
-                            "wfRunId: {} and guid: {} ")
+                    .setMessage("Something went wrong in LH Kernel with cancellation process for UserTaskRun with "
+                            + "wfRunId: {} and guid: {} ")
                     .addArgument(wfRunId)
                     .addArgument(userTaskRunGuid)
                     .log();
@@ -564,8 +570,13 @@ public class UserTaskService {
         }
     }
 
-    public void claimUserTask(@NonNull String userId, @Nullable Set<String> userGroups, @NonNull String wfRunId, @NonNull String userTaskRunGuid,
-                              @NonNull String tenantId, boolean isAdminClaim) {
+    public void claimUserTask(
+            @NonNull String userId,
+            @Nullable Set<String> userGroups,
+            @NonNull String wfRunId,
+            @NonNull String userTaskRunGuid,
+            @NonNull String tenantId,
+            boolean isAdminClaim) {
         try {
             log.atInfo()
                     .setMessage("Claiming UserTaskRun with wfRunId: {} and userTaskGuid: {}")
@@ -594,9 +605,8 @@ public class UserTaskService {
                 }
 
                 if (isAdminClaim) {
-                    requestBuilder = requestBuilder.toBuilder()
-                            .setOverrideClaim(true)
-                            .build();
+                    requestBuilder =
+                            requestBuilder.toBuilder().setOverrideClaim(true).build();
                 }
 
                 tenantClient.assignUserTaskRun(requestBuilder);
@@ -611,8 +621,8 @@ public class UserTaskService {
             }
         } catch (StatusRuntimeException e) {
             log.atError()
-                    .setMessage("Something went wrong in LH Kernel with claiming process for UserTaskRun with " +
-                            "wfRunId: {} and guid: {} ")
+                    .setMessage("Something went wrong in LH Kernel with claiming process for UserTaskRun with "
+                            + "wfRunId: {} and guid: {} ")
                     .addArgument(wfRunId)
                     .addArgument(userTaskRunGuid)
                     .log();
@@ -641,14 +651,18 @@ public class UserTaskService {
     }
 
     private LittleHorseGrpc.LittleHorseBlockingStub getTenantLHClient(String tenantId) {
-        Optional<LittleHorseGrpc.LittleHorseBlockingStub> optionalTenantClient = Optional.ofNullable(lhClients.get(tenantId));
+        Optional<LittleHorseGrpc.LittleHorseBlockingStub> optionalTenantClient =
+                Optional.ofNullable(lhClients.get(tenantId));
 
-        return optionalTenantClient.orElseThrow(() -> new SecurityException("Could not find a matching configured tenant"));
+        return optionalTenantClient.orElseThrow(
+                () -> new SecurityException("Could not find a matching configured tenant"));
     }
 
-    private SearchUserTaskRunRequest buildSearchUserTaskRunRequest(String userId, String userGroup,
-                                                                   UserTaskRequestFilter additionalFilters,
-                                                                   @NonNull StandardPagination pagination) {
+    private SearchUserTaskRunRequest buildSearchUserTaskRunRequest(
+            String userId,
+            String userGroup,
+            UserTaskRequestFilter additionalFilters,
+            @NonNull StandardPagination pagination) {
         var builder = SearchUserTaskRunRequest.newBuilder();
 
         if (StringUtils.hasText(userId)) {
@@ -669,7 +683,8 @@ public class UserTaskService {
         return builder.build();
     }
 
-    private void addAdditionalFilters(UserTaskRequestFilter additionalFilters, SearchUserTaskRunRequest.Builder builder) {
+    private void addAdditionalFilters(
+            UserTaskRequestFilter additionalFilters, SearchUserTaskRunRequest.Builder builder) {
         if (Objects.nonNull(additionalFilters)) {
             if (Objects.nonNull(additionalFilters.getEarliestStartDate())) {
                 builder.setEarliestStart(additionalFilters.getEarliestStartDate());
@@ -687,31 +702,36 @@ public class UserTaskService {
                 builder.setUserTaskDefName(additionalFilters.getType());
             }
 
-            if (Objects.nonNull(additionalFilters.getEarliestStartDate()) && Objects.nonNull(additionalFilters.getLatestStartDate())
+            if (Objects.nonNull(additionalFilters.getEarliestStartDate())
+                    && Objects.nonNull(additionalFilters.getLatestStartDate())
                     && !isDateRangeValid(builder.getEarliestStart(), builder.getLatestStart())) {
-                //TODO: Map this to produce a BadRequest error response
+                // TODO: Map this to produce a BadRequest error response
                 throw new IllegalArgumentException("Wrong date range received");
             }
 
-            //This enforces that given the UNASSIGNED status and a userGroup, no userId is required
-            if (builder.getStatus() == UserTaskRunStatus.UNASSIGNED && Objects.nonNull(additionalFilters.getStatus())
+            // This enforces that given the UNASSIGNED status and a userGroup, no userId is required
+            if (builder.getStatus() == UserTaskRunStatus.UNASSIGNED
+                    && Objects.nonNull(additionalFilters.getStatus())
                     && builder.hasUserGroup()) {
                 builder.clearUserId();
             }
         }
     }
 
-    private void validateIfUserIsAllowedToSeeUserTask(String userId, String userGroup, @NonNull UserTaskRun userTaskRun) {
+    private void validateIfUserIsAllowedToSeeUserTask(
+            String userId, String userGroup, @NonNull UserTaskRun userTaskRun) {
         if (!StringUtils.hasText(userId)) {
             throw new CustomUnauthorizedException("Unable to read provided user information");
         }
 
         if (userTaskRun.hasUserGroup()) {
             var hasNoMatchingUserGroup = !userTaskRun.getUserGroup().equalsIgnoreCase(userGroup);
-            var hasNoMatchingUserId = userTaskRun.hasUserId() && !userTaskRun.getUserId().equalsIgnoreCase(userId);
+            var hasNoMatchingUserId =
+                    userTaskRun.hasUserId() && !userTaskRun.getUserId().equalsIgnoreCase(userId);
 
             if (hasNoMatchingUserGroup && hasNoMatchingUserId) {
-                throw new CustomUnauthorizedException("Current user/userGroup is forbidden from accessing this UserTask information");
+                throw new CustomUnauthorizedException(
+                        "Current user/userGroup is forbidden from accessing this UserTask information");
             }
         }
 
@@ -719,15 +739,18 @@ public class UserTaskService {
             var hasNoMatchingUserId = !userTaskRun.getUserId().equalsIgnoreCase(userId);
 
             if (hasNoMatchingUserId) {
-                throw new CustomUnauthorizedException("Current user is forbidden from accessing this UserTask information");
+                throw new CustomUnauthorizedException(
+                        "Current user is forbidden from accessing this UserTask information");
             }
         }
     }
 
-    private void validateMandatoryStringFields(CompleteUserTaskRequest request, String userTaskDefName, LittleHorseGrpc.LittleHorseBlockingStub tenantClient) {
-        UserTaskDefId userTaskDefId = UserTaskDefId.newBuilder()
-                .setName(userTaskDefName)
-                .build();
+    private void validateMandatoryStringFields(
+            CompleteUserTaskRequest request,
+            String userTaskDefName,
+            LittleHorseGrpc.LittleHorseBlockingStub tenantClient) {
+        UserTaskDefId userTaskDefId =
+                UserTaskDefId.newBuilder().setName(userTaskDefName).build();
 
         UserTaskDef userTaskDef = tenantClient.getUserTaskDef(userTaskDefId);
         List<String> mandatoryStringFieldsNames = getMandatoryStringFieldsNames(userTaskDef);
@@ -736,11 +759,14 @@ public class UserTaskService {
             Map<String, UserTaskVariableValue> onlyStringVariableValues = getStringVariableValues(request);
 
             if (!CollectionUtils.isEmpty(onlyStringVariableValues)) {
-                boolean stringFieldsHaveValidInputs = haveStringFieldsValidInputs(onlyStringVariableValues, mandatoryStringFieldsNames);
+                boolean stringFieldsHaveValidInputs =
+                        haveStringFieldsValidInputs(onlyStringVariableValues, mandatoryStringFieldsNames);
 
                 if (!stringFieldsHaveValidInputs) {
                     String joinedFieldNames = String.join(", ", mandatoryStringFieldsNames);
-                    String errorMessage = String.format("Mandatory Field(s): %s contain invalid inputs (null or whitespace-only values)", joinedFieldNames);
+                    String errorMessage = String.format(
+                            "Mandatory Field(s): %s contain invalid inputs (null or whitespace-only values)",
+                            joinedFieldNames);
 
                     throw new ResponseStatusException(HttpStatus.BAD_REQUEST, errorMessage);
                 }
@@ -755,9 +781,7 @@ public class UserTaskService {
     private UserTaskRunId buildUserTaskRunId(String wfRunId, String userTaskRunGuid) {
         return UserTaskRunId.newBuilder()
                 .setUserTaskGuid(userTaskRunGuid)
-                .setWfRunId(WfRunId.newBuilder()
-                        .setId(wfRunId)
-                        .build())
+                .setWfRunId(WfRunId.newBuilder().setId(wfRunId).build())
                 .build();
     }
 
@@ -777,7 +801,8 @@ public class UserTaskService {
 
     private List<String> getMandatoryStringFieldsNames(UserTaskDef userTaskDef) {
         return userTaskDef.getFieldsList().stream()
-                .filter(userTaskField -> userTaskField.getType().equals(VariableType.STR) && userTaskField.getRequired())
+                .filter(userTaskField ->
+                        userTaskField.getType().equals(VariableType.STR) && userTaskField.getRequired())
                 .map(UserTaskField::getName)
                 .toList();
     }
@@ -788,12 +813,27 @@ public class UserTaskService {
                 .collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
     }
 
-    private boolean haveStringFieldsValidInputs(Map<String, UserTaskVariableValue> stringVariableValues,
-                                                List<String> mandatoryStringFieldsNames) {
+    private boolean haveStringFieldsValidInputs(
+            Map<String, UserTaskVariableValue> stringVariableValues, List<String> mandatoryStringFieldsNames) {
         return stringVariableValues.entrySet().stream()
                 .filter(entry -> mandatoryStringFieldsNames.contains(entry.getKey()))
                 .allMatch(entry -> StringUtils.hasText((String) entry.getValue().getValue()));
     }
 
- 
+    private HashMap<Integer, AuditEventDTO> getMostRecentComments(UserTaskRun utr) {
+        HashMap<Integer, AuditEventDTO> commentIdToLatestEvent = new HashMap<>();
+        utr.getEventsList().forEach(event -> {
+            if (event.hasCommentAdded())
+                commentIdToLatestEvent.put(
+                        event.getCommentAdded().getUserCommentId(), AuditEventDTO.fromUserTaskEvent(event));
+            if (event.hasCommentEdited())
+                commentIdToLatestEvent.put(
+                        event.getCommentEdited().getUserCommentId(), AuditEventDTO.fromUserTaskEvent(event));
+            if (event.hasCommentDeleted())
+                commentIdToLatestEvent.put(
+                        event.getCommentDeleted().getUserCommentId(), AuditEventDTO.fromUserTaskEvent(event));
+        });
+
+        return commentIdToLatestEvent;
+    }
 }

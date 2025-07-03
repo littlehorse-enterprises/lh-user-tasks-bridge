@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '3.3.9'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'com.diffplug.spotless' version '6.25.0'
 }
 
 group = 'io.littlehorse'
@@ -46,4 +47,11 @@ tasks.named('test') {
 
 bootJar {
     archiveFileName = "lh-user-tasks-bridge-backend.${archiveExtension.get()}"
+}
+
+spotless {
+    java {
+        target('**/*.java')
+        palantirJavaFormat()
+    }
 }

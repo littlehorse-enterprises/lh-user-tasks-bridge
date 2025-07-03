@@ -20,8 +20,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 @Tag(
         name = "Public Controller",
-        description = "This is a controller that exposes an endpoint that does not require any authentication nor authorization"
-)
+        description =
+                "This is a controller that exposes an endpoint that does not require any authentication nor authorization")
 @RestController
 @CrossOrigin
 @Slf4j
@@ -34,26 +34,29 @@ public class PublicController {
 
     @Operation(
             summary = "Get Configured IdP(s)",
-            description = "Gets the public configuration of the IdP(s) used by a specific tenant"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "List of unique Identity Provider Configurations",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = IdentityProviderListDTO.class))}
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "No configuration data was found for the given tenant.",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class))}
-            )
-    })
+            description = "Gets the public configuration of the IdP(s) used by a specific tenant")
+    @ApiResponses(
+            value = {
+                @ApiResponse(
+                        responseCode = "200",
+                        description = "List of unique Identity Provider Configurations",
+                        content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = IdentityProviderListDTO.class))
+                        }),
+                @ApiResponse(
+                        responseCode = "404",
+                        description = "No configuration data was found for the given tenant.",
+                        content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ProblemDetail.class))
+                        })
+            })
     @GetMapping("/config/{tenant_id}")
-    public ResponseEntity<IdentityProviderListDTO> getIdentityProviderConfig(@PathVariable(name = "tenant_id") String tenantId) {
+    public ResponseEntity<IdentityProviderListDTO> getIdentityProviderConfig(
+            @PathVariable(name = "tenant_id") String tenantId) {
         log.atInfo()
                 .setMessage("Fetching IdP configurations for tenant: {}")
                 .addArgument(tenantId)
@@ -63,6 +66,7 @@ public class PublicController {
 
         return !CollectionUtils.isEmpty(idpConfigs.getProviders())
                 ? ResponseEntity.ok(idpConfigs)
-                : ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.NOT_FOUND.value())).build();
+                : ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.NOT_FOUND.value()))
+                        .build();
     }
 }

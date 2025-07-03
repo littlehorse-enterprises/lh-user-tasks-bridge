@@ -2,13 +2,12 @@ package io.littlehorse.usertasks.models.requests;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
 
 @Data
 @Builder
@@ -17,8 +16,10 @@ public class UpdateManagedUserRequest {
     private String firstName;
     private String lastName;
     private String username;
+
     @Email
     private String email;
+
     private boolean enabled;
 
     @NotNull
@@ -30,9 +31,7 @@ public class UpdateManagedUserRequest {
         mappedProperties.put("email", getEmail());
         mappedProperties.put("enabled", isEnabled());
 
-
-        mappedProperties.entrySet()
-                .removeIf(entry -> Objects.isNull(entry.getValue()));
+        mappedProperties.entrySet().removeIf(entry -> Objects.isNull(entry.getValue()));
 
         return mappedProperties;
     }
