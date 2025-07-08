@@ -386,6 +386,11 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
             UsersResource usersResource = realmResource.users();
 
             try (Response response = usersResource.create(userRepresentation)) {
+                if (response.getStatus() == HttpStatus.CONFLICT.value()) {
+                    throw new ResponseStatusException(HttpStatus.CONFLICT,
+                            "A user with the same username or email already exists.");
+                }
+
                 if (response.getStatusInfo().getStatusCode() != 201) {
                     String exceptionMessage = String.format("User creation failed within realm %s with status: %s!", realm,
                             response.getStatusInfo().getStatusCode());
