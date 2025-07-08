@@ -45,7 +45,7 @@ export default function AdminTabs({
 
   return (
     <Tabs
-      defaultValue={currentTab}
+      value={currentTab}
       onValueChange={handleTabChange}
       className="w-full"
     >
