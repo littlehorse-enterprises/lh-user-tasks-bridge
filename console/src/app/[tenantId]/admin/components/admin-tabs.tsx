@@ -44,11 +44,7 @@ export default function AdminTabs({
   };
 
   return (
-    <Tabs
-      defaultValue={currentTab}
-      onValueChange={handleTabChange}
-      className="w-full"
-    >
+    <Tabs value={currentTab} onValueChange={handleTabChange} className="w-full">
       <div className="border-b border-border px-6 py-4">
         <TabsList className="bg-muted">
           <TabsTrigger
