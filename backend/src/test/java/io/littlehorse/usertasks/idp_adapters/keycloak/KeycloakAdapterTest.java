@@ -2109,6 +2109,35 @@ class KeycloakAdapterTest {
         }
 
         @Test
+        void createManagedUser_shouldThrowExceptionWhenResponseIsConflict() {
+                var fakeUsername = "existingUsername";
+                Map<String, Object> params = Map.of(USERNAME_MAP_KEY, fakeUsername, ACCESS_TOKEN_MAP_KEY,
+                        STUBBED_ACCESS_TOKEN);
+                RealmResource fakeRealmResource = mock(RealmResource.class);
+                UsersResource fakeUsersResource = mock(UsersResource.class);
+                Response fakeResponse = Response.created(URI.create("www.some-fake-uri.com"))
+                        .status(HttpStatus.CONFLICT.value())
+                        .build();
+
+                try (MockedStatic<Keycloak> mockStaticKeycloak = mockStatic(Keycloak.class)) {
+                        Keycloak mockKeycloakInstance = mock(Keycloak.class);
+                        mockStaticKeycloak.when(
+                                        () -> Keycloak.getInstance(anyString(), anyString(), anyString(), anyString()))
+                                .thenReturn(mockKeycloakInstance);
+                        when(mockKeycloakInstance.realm(anyString())).thenReturn(fakeRealmResource);
+                        when(fakeRealmResource.users()).thenReturn(fakeUsersResource);
+                        when(fakeUsersResource.create(any(UserRepresentation.class))).thenReturn(fakeResponse);
+
+                        ResponseStatusException thrownException = assertThrows(ResponseStatusException.class,
+                                () -> keycloakAdapter.createManagedUser(params));
+
+                        var expectedErrorMessage = "A user with the same username and/or email already exists.";
+
+                        assertEquals(expectedErrorMessage, thrownException.getReason());
+                }
+        }
+
+        @Test
         void createManagedUser_shouldSucceedWhenCreatingManagedUserOnlyWithUsernameNoExceptionsAreThrownAndResponseIsCreated() {
                 var fakeUsername = "someUsername";
                 var fakeClientRepresentationId = UUID.randomUUID().toString();

@@ -109,7 +109,7 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
         var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
         var realm = getRealmFromToken(accessToken);
 
-        try (Keycloak keycloak = getKeycloakInstance(realm, accessToken)){
+        try (Keycloak keycloak = getKeycloakInstance(realm, accessToken)) {
             var email = (String) params.get("email");
             var firstName = (String) params.get("firstName");
             var lastName = (String) params.get("lastName");
@@ -330,7 +330,7 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
                             ? actualGroups.iterator().next()
                             : null;
                 }
-            } else if (StringUtils.isNotBlank(userGroupId)){
+            } else if (StringUtils.isNotBlank(userGroupId)) {
                 groupRepresentation = keycloak.realm(realm).groups().group(userGroupId).toRepresentation();
             }
 
@@ -388,10 +388,10 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
             try (Response response = usersResource.create(userRepresentation)) {
                 if (response.getStatus() == HttpStatus.CONFLICT.value()) {
                     throw new ResponseStatusException(HttpStatus.CONFLICT,
-                            "A user with the same username or email already exists.");
+                            "A user with the same username and/or email already exists.");
                 }
 
-                if (response.getStatusInfo().getStatusCode() != 201) {
+                if (response.getStatus() != HttpStatus.CREATED.value()) {
                     String exceptionMessage = String.format("User creation failed within realm %s with status: %s!", realm,
                             response.getStatusInfo().getStatusCode());
 
@@ -405,6 +405,8 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
         } catch (AdapterException e) {
             log.error(e.getMessage());
             throw new AdapterException(e.getMessage());
+        } catch (ResponseStatusException e) {
+            throw e;
         } catch (Exception e) {
             var errorMessage = "Something went wrong while creating a User in Keycloak realm.";
             log.error(errorMessage, e);

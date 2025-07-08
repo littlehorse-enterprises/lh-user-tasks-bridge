@@ -157,6 +157,13 @@ public class UserManagementController {
                     content = {@Content(
                             mediaType = "application/json",
                             schema = @Schema(implementation = ProblemDetail.class))}
+            ),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "User already exists with requested username and/or email.",
+                    content = {@Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ProblemDetail.class))}
             )
     })
     @PostMapping("/{tenant_id}/management/users")
