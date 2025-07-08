@@ -27,7 +27,7 @@ export default async function AdminPage({
   const taskDefsCount = userTaskDefsResult.data?.userTaskDefNames?.length || 0;
   const userGroupsCount = userGroupsResult.data?.groups?.length || 0;
   const activeUsersCount =
-    usersResult.data?.users?.filter((user) => user.enabled)?.length || 0;
+    usersResult.data?.users?.filter((user: any) => user.enabled)?.length || 0;
 
   return (
     <div className="max-w-7xl mx-auto space-y-8">
@@ -113,13 +113,13 @@ export default async function AdminPage({
         {(userTaskDefsResult.error ||
           userGroupsResult.error ||
           usersResult.error) && (
-            <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
-              <p className="text-sm text-destructive">
-                Some statistics could not be loaded. Please check your permissions
-                and try again.
-              </p>
-            </div>
-          )}
+          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4">
+            <p className="text-sm text-destructive">
+              Some statistics could not be loaded. Please check your permissions
+              and try again.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Admin Tabs */}
