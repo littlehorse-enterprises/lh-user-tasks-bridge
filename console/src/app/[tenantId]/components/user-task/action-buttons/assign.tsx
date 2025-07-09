@@ -93,9 +93,14 @@ export default function AssignUserTaskButton({
         }
 
         if (userTask.userGroup) {
-          setSelectedGroupId(userTask.userGroup.id);
-          if (!userTask.user) {
-            setFirstSelection("group");
+          if (!userTask.userGroup.valid) {
+            setSelectedGroupId(undefined);
+            setFirstSelection("user");
+          } else {
+            setSelectedGroupId(userTask.userGroup.id);
+            if (!userTask.user) {
+              setFirstSelection("group");
+            }
           }
         }
       } catch (error) {
