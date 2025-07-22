@@ -38,3 +38,27 @@ export interface GetClaimableTasksParams {
   limit: number;
   bookmark?: string;
 }
+
+export interface PostUserTaskCommentParams {
+  wf_run_id: string;
+  user_task_guid: string;
+  comment: string;
+}
+
+export interface EditUserTaskCommentParams {
+  wf_run_id: string;
+  user_task_guid: string;
+  comment: string;
+  comment_id: number;
+}
+
+export interface DeleteUserTaskCommentParams {
+  wf_run_id: string;
+  user_task_guid: string;
+  comment_id: number;
+}
+
+export interface GetUserTaskCommentsParams {
+  wf_run_id: string;
+  user_task_guid: string;
+}

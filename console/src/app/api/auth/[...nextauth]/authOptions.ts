@@ -40,7 +40,11 @@ export const authOptions: NextAuthOptions = {
       session.id_token = token.id_token;
       session.roles = getRoles(token.decoded);
       session.error = token.error;
-      session.user = { ...session.user, id: token.decoded.sub };
+      session.user = {
+        ...session.user,
+        id: token.decoded.sub,
+        preferredName: token.decoded.preferred_username,
+      };
       return session;
     },
   },
