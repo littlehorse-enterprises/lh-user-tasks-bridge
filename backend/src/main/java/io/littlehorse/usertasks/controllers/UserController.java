@@ -425,7 +425,7 @@ public class UserController {
             })
     @PostMapping("/{tenant_id}/tasks/{wf_run_id}/{user_task_guid}/comment")
     @ResponseStatus(HttpStatus.OK)
-    public AuditEventDTO putComment(
+    public AuditEventDTO postComment(
             @RequestHeader("Authorization") String accessToken,
             @PathVariable(name = "tenant_id") String tenantId,
             @PathVariable(name = "wf_run_id") String wf_run_id,
@@ -441,8 +441,7 @@ public class UserController {
         CustomIdentityProviderProperties actualIdPProperties =
                 getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
 
-        var userIdFromToken =
-                (String) tokenClaims.get(actualIdPProperties.getUserIdClaim().toString());
+        var userIdFromToken = (String) tokenClaims.get(actualIdPProperties.getUsernameClaim());
         PutCommentRequest request = PutCommentRequest.builder()
                 .comment(commentContentRequest.getComment())
                 .wfRunId(wf_run_id)
@@ -519,8 +518,7 @@ public class UserController {
         CustomIdentityProviderProperties actualIdPProperties =
                 getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
 
-        var userIdFromToken =
-                (String) tokenClaims.get(actualIdPProperties.getUserIdClaim().toString());
+        var userIdFromToken = (String) tokenClaims.get(actualIdPProperties.getUsernameClaim());
         EditCommentRequest request = EditCommentRequest.builder()
                 .comment(commentContentRequest.getComment())
                 .commentId(commentId)
@@ -597,8 +595,7 @@ public class UserController {
         CustomIdentityProviderProperties actualIdPProperties =
                 getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
 
-        var userIdFromToken =
-                (String) tokenClaims.get(actualIdPProperties.getUserIdClaim().toString());
+        var userIdFromToken = (String) tokenClaims.get(actualIdPProperties.getUsernameClaim());
 
         DeleteCommentRequest request = DeleteCommentRequest.builder()
                 .wfRunId(wfRunId)
@@ -661,13 +658,7 @@ public class UserController {
             @PathVariable(name = "userTaskRunGuid") String userTaskRunGuid)
             throws JsonProcessingException {
 
-        Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
-        CustomIdentityProviderProperties actualIdPProperties =
-                getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
-        String userIdFromToken =
-                (String) tokenClaims.get(actualIdPProperties.getUserIdClaim().toString());
-
-        var result = userTaskService.getComment(wfRunId, userTaskRunGuid, tenantId, userIdFromToken);
+        var result = userTaskService.getComment(wfRunId, userTaskRunGuid, tenantId);
 
         if (result.isEmpty()) {
             return ResponseEntity.noContent().build();

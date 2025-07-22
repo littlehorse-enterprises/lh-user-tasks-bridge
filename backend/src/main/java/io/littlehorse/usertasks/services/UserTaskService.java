@@ -231,6 +231,10 @@ public class UserTaskService {
             LittleHorseGrpc.LittleHorseBlockingStub tenantClient = getTenantLHClient(tenantId);
 
             UserTaskRun userTaskRun = tenantClient.editUserTaskRunComment(serverRequest);
+
+            if (!validateUserIdentityForComment(userTaskRun, request.getCommentId(), userId))
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not the owner of this comment.");
+
             UserTaskEvent serverEvent = userTaskRun.getEventsList().getLast();
             AuditEventDTO eventDTO = AuditEventDTO.fromUserTaskEvent(serverEvent);
 
@@ -250,8 +254,10 @@ public class UserTaskService {
                 else throw new ResponseStatusException(HttpStatus.NOT_FOUND, "UserTask does not exist");
             }
             throw e;
+        } catch (NotFoundException nfe) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "The Comment you tried to edit could not be found");
         } catch (Exception e) {
-            log.error("Unexpected while editing comment", e);
+            log.error("Unexpected error while editing comment", e);
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error", e);
         }
     }
@@ -264,6 +270,9 @@ public class UserTaskService {
             LittleHorseGrpc.LittleHorseBlockingStub tenantClient = getTenantLHClient(tenantId);
 
             UserTaskRun userTaskRun = tenantClient.deleteUserTaskRunComment(serverRequest);
+            if (!validateUserIdentityForComment(userTaskRun, request.getCommentId(), userId))
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not the owner of this comment.");
+
             UserTaskEvent serverEvent = userTaskRun.getEventsList().getLast();
             AuditEventDTO eventDTO = AuditEventDTO.fromUserTaskEvent(serverEvent);
 
@@ -284,14 +293,16 @@ public class UserTaskService {
             }
 
             throw e;
+        } catch (NotFoundException nfe) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND, "The Comment you tried to delete could not be found");
         } catch (Exception e) {
             log.error("Unexpected error deleting comment", e);
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error", e);
         }
     }
 
-    public List<AuditEventDTO> getComment(
-            String wfRunId, String userTaskRunGuid, String tenantId, String userIdFromToken) {
+    public List<AuditEventDTO> getComment(String wfRunId, String userTaskRunGuid, String tenantId) {
 
         UserTaskRunId getUserTaskRunRequest = buildUserTaskRunId(wfRunId, userTaskRunGuid);
 
@@ -835,5 +846,28 @@ public class UserTaskService {
         });
 
         return commentIdToLatestEvent;
+    }
+
+    private boolean validateUserIdentityForComment(UserTaskRun utr, int commentId, String userId) {
+        HashMap<Integer, String> latestCommentToAuthor = new HashMap<>();
+
+        utr.getEventsList().forEach(event -> {
+            if (event.hasCommentAdded())
+                latestCommentToAuthor.put(
+                        event.getCommentAdded().getUserCommentId(),
+                        event.getCommentAdded().getUserId());
+            if (event.hasCommentEdited())
+                latestCommentToAuthor.put(
+                        event.getCommentEdited().getUserCommentId(),
+                        event.getCommentEdited().getUserId());
+            if (event.hasCommentDeleted())
+                latestCommentToAuthor.put(
+                        event.getCommentDeleted().getUserCommentId(),
+                        event.getCommentDeleted().getUserId());
+        });
+
+        if (!latestCommentToAuthor.containsKey(commentId)) throw new NotFoundException("The comment was not found");
+
+        return latestCommentToAuthor.get(commentId).equals(userId);
     }
 }
