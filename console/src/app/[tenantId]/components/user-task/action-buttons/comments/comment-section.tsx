@@ -1,52 +1,43 @@
 import {
   AuditEventDTO,
   SimpleUserTaskRunDTO,
+  UserTaskEventType,
 } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
 import Comment from "./comment";
 
 export default function CommentList({
   eventList,
   userTask,
-  tenantId,
   fetchComments,
 }: {
   eventList: AuditEventDTO[];
   userTask: SimpleUserTaskRunDTO;
-  tenantId: string;
   fetchComments: () => Promise<void>;
 }) {
-  return (
-    <>
-      <ul>
-        {eventList.map((ev, key) => {
-          switch (ev.type) {
-            // Does not show COMMENT_DELETED Events
-            case "COMMENTED":
-              return (
-                <li key={key}>
-                  <Comment
-                    commentEvent={ev}
-                    userTask={userTask}
-                    tenantId={tenantId}
-                    fetchComments={fetchComments}
-                  />
-                </li>
-              );
+  const filteredEvents = eventList.filter(
+    (ev) =>
+      ev.type === UserTaskEventType.COMMENT_ADDED ||
+      ev.type === UserTaskEventType.COMMENT_EDITED,
+  );
 
-            case "COMMENT_EDITED":
-              return (
-                <li key={key}>
-                  <Comment
-                    commentEvent={ev}
-                    userTask={userTask}
-                    tenantId={tenantId}
-                    fetchComments={fetchComments}
-                  />
-                </li>
-              );
-          }
-        })}
-      </ul>
-    </>
+  if (filteredEvents.length === 0) {
+    return (
+      <div className="flex h-full items-center justify-center text-muted-foreground">
+        <p>No comments yet.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      {filteredEvents.map((ev) => (
+        <Comment
+          key={ev.time}
+          commentEvent={ev}
+          userTask={userTask}
+          fetchComments={fetchComments}
+        />
+      ))}
+    </div>
   );
 }

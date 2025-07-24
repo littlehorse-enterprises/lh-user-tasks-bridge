@@ -28,17 +28,16 @@ import {
   Workflow,
   XCircle,
 } from "lucide-react";
-import { getUserTaskComments } from "@/app/[tenantId]/actions/user";
 
 import { useSession } from "next-auth/react";
-import { ReactNode, use, useEffect, useRef, useState } from "react";
+import { ReactNode, useEffect, useRef, useState } from "react";
 import AssignUserTaskButton from "./action-buttons/assign";
 import CancelUserTaskButton from "./action-buttons/cancel";
 import ClaimUserTaskButton from "./action-buttons/claim";
 import CompleteUserTaskButton from "./action-buttons/complete";
 
-import NotesTextArea from "./notes";
 import UserTaskComments from "./action-buttons/comments/comment-input";
+import NotesTextArea from "./notes";
 
 const getStatusConfig = (status: string) => {
   switch (status) {

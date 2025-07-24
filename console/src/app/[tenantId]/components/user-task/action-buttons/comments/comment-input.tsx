@@ -1,17 +1,11 @@
+"use client";
 import {
   getUserTaskComments,
   postUserTaskComment,
 } from "@/app/[tenantId]/actions/user";
 import { ErrorResponse } from "@/lib/error-handling";
-import {
-  AuditEventDTO,
-  SimpleUserTaskRunDTO,
-} from "@littlehorse-enterprises/user-tasks-bridge-api-client";
-import { useParams } from "next/navigation";
-import { useState } from "react";
-import Loading from "../../../loading";
-import { ErrorHandler } from "../../../error-handler";
-import CommentList from "./comment-section";
+import { Badge } from "@littlehorse-enterprises/ui-library/badge";
+import { Button } from "@littlehorse-enterprises/ui-library/button";
 import {
   Dialog,
   DialogClose,
@@ -21,10 +15,17 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@littlehorse-enterprises/ui-library/dialog";
+import { toast } from "@littlehorse-enterprises/ui-library/sonner";
+import { Textarea } from "@littlehorse-enterprises/ui-library/textarea";
 import {
-  Button,
-  buttonVariants,
-} from "@littlehorse-enterprises/ui-library/button";
+  AuditEventDTO,
+  SimpleUserTaskRunDTO,
+} from "@littlehorse-enterprises/user-tasks-bridge-api-client";
+import { useParams } from "next/navigation";
+import { useState } from "react";
+import { ErrorHandler } from "../../../error-handler";
+import Loading from "../../../loading";
+import CommentList from "./comment-section";
 
 export default function UserTaskComments({
   userTask,
@@ -69,7 +70,9 @@ export default function UserTaskComments({
     );
 
     if (result.error) {
-      setError(result.error);
+      toast.error(
+        `Failed to create comment: ${result.error.message || "Unknown error"}`,
+      );
       return;
     }
 
@@ -97,7 +100,6 @@ export default function UserTaskComments({
       <CommentList
         eventList={commentEventList}
         userTask={userTask}
-        tenantId={tenantId}
         fetchComments={fetchComments}
       />
     );
@@ -112,41 +114,36 @@ export default function UserTaskComments({
           </Button>
         </DialogTrigger>
 
-        <DialogContent className="w-[60vw] h-[75vh] max-w-none">
+        <DialogContent className="w-[60vw] h-[75vh] max-w-none flex flex-col">
           <DialogHeader>
             <DialogTitle>
-              <p>View comments</p>
-              <span className="font-mono">{userTask.userTaskDefName}</span>
+              View comments for{" "}
+              <Badge variant="outline" className="ml-2 font-mono">
+                {userTask.userTaskDefName}
+              </Badge>
             </DialogTitle>
           </DialogHeader>
-          <div className="flex flex-col-reverse overflow-y-auto overflow-x-hidden relative ">
+          <div className="flex-grow overflow-y-auto my-4 -mx-6 px-6">
             {renderComments()}
           </div>
-          <DialogFooter>
-            <div className="relative w-full border border-white-300 p-2 rounded-lg">
-              <textarea
-                className="w-full resize-none border-none outline-none"
-                placeholder="Add a comment..."
-                value={inputText}
-                onChange={(e) => {
-                  setInputText(e.target.value);
-                }}
-                rows={4}
-              />
-              <div className="flex justify-end m-2 mt-auto absolute bottom-2 right-2">
-                <button
-                  className="bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium py-2 px-4 rounded-lg transition "
-                  onClick={createComment}
-                >
-                  Comment
-                </button>
-              </div>
-            </div>
-            <div className="mt-auto">
-              <DialogClose className={buttonVariants({ variant: "outline" })}>
-                Close
-              </DialogClose>
-            </div>
+          <DialogFooter className="flex items-center gap-2">
+            <Textarea
+              placeholder="Add a comment..."
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              rows={2}
+              className="flex-grow resize-none rounded-md border border-input focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            />
+            <Button
+              onClick={createComment}
+              disabled={!inputText.trim() || isLoading}
+              className="bg-amber-500 hover:bg-amber-600 text-primary-foreground"
+            >
+              Comment
+            </Button>
+            <DialogClose asChild>
+              <Button variant="outline">Close</Button>
+            </DialogClose>
           </DialogFooter>
         </DialogContent>
       </Dialog>

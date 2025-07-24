@@ -103,7 +103,7 @@ export async function postUserTaskComment(
 ) {
   return withErrorHandling(async () => {
     const client = await getClient(tenantId);
-    return client.user.PostUserTaskComment(params);
+    return client.user.postUserTaskComment(params);
   });
 }
 
@@ -113,7 +113,7 @@ export async function editUserTaskComment(
 ) {
   return withErrorHandling(async () => {
     const client = await getClient(tenantId);
-    return client.user.EditUserTaskComment(params);
+    return client.user.editUserTaskComment(params);
   });
 }
 
@@ -123,6 +123,6 @@ export async function deleteUserTaskComment(
 ) {
   return withErrorHandling(async () => {
     const client = await getClient(tenantId);
-    return client.user.DeleteUserTaskComment(params);
+    return client.user.deleteUserTaskComment(params);
   });
 }

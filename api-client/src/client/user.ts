@@ -128,7 +128,7 @@ export class UserController {
   /**
    * Adds a comment to a userTask
    */
-  async PostUserTaskComment(
+  async postUserTaskComment(
     params: PostUserTaskCommentParams,
   ): Promise<AuditEventDTO> {
     return this.client.fetch<AuditEventDTO>(
@@ -143,7 +143,7 @@ export class UserController {
   /**
    * Edits an existing comment on a userTask
    */
-  async EditUserTaskComment(params: EditUserTaskCommentParams) {
+  async editUserTaskComment(params: EditUserTaskCommentParams) {
     return this.client.fetch<AuditEventDTO>(
       `/tasks/${params.wf_run_id}/${params.user_task_guid}/comment/${params.comment_id}`,
       {
@@ -156,7 +156,7 @@ export class UserController {
   /**
    * Deletes a comment on a userTask
    */
-  async DeleteUserTaskComment(params: DeleteUserTaskCommentParams) {
+  async deleteUserTaskComment(params: DeleteUserTaskCommentParams) {
     return this.client.fetch<AuditEventDTO>(
       `/tasks/${params.wf_run_id}/${params.user_task_guid}/comment/${params.comment_id}`,
       {
