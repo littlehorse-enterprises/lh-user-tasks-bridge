@@ -28,12 +28,15 @@ import {
   Workflow,
   XCircle,
 } from "lucide-react";
+
 import { useSession } from "next-auth/react";
 import { ReactNode, useEffect, useRef, useState } from "react";
 import AssignUserTaskButton from "./action-buttons/assign";
 import CancelUserTaskButton from "./action-buttons/cancel";
 import ClaimUserTaskButton from "./action-buttons/claim";
 import CompleteUserTaskButton from "./action-buttons/complete";
+
+import UserTaskComments from "./action-buttons/comments/comment-input";
 import NotesTextArea from "./notes";
 
 const getStatusConfig = (status: string) => {
@@ -85,8 +88,8 @@ export default function UserTask({
   if (!user) return null;
 
   const statusConfig = getStatusConfig(userTask.status);
-  const StatusIcon = statusConfig.icon;
 
+  const StatusIcon = statusConfig.icon;
   return (
     <Card className="group relative overflow-hidden bg-card border border-border/50 hover:border-border hover:shadow-lg transition-all duration-300 ease-out">
       {/* Status indicator bar */}
@@ -233,7 +236,7 @@ export default function UserTask({
         )}
 
         {!claimable && (
-          <div className="flex gap-2 w-full">
+          <div className="flex flex-wrap gap-2 w-full">
             {userTask.status === "UNASSIGNED" && (
               <>
                 {admin && (
@@ -255,9 +258,14 @@ export default function UserTask({
             )}
             {userTask.status === "ASSIGNED" &&
               (admin || (userTask.user && userTask.user.id === user.id)) && (
-                <div className="flex-1">
-                  <CompleteUserTaskButton userTask={userTask} admin={admin} />
-                </div>
+                <>
+                  <div className="flex-1">
+                    <CompleteUserTaskButton userTask={userTask} admin={admin} />
+                  </div>
+                  <div className="flex-1">
+                    <UserTaskComments userTask={userTask} admin={admin} />
+                  </div>
+                </>
               )}
             {userTask.status === "DONE" && (
               <div className="flex-1">

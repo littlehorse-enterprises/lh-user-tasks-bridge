@@ -5,9 +5,13 @@ import {
   CancelUserTaskParams,
   ClaimUserTaskParams,
   CompleteUserTaskParams,
+  DeleteUserTaskCommentParams,
   GetClaimableTasksParams,
   GetMyTasksParams,
+  GetUserTaskCommentsParams,
   GetUserTaskDetailParams,
+  PostUserTaskCommentParams,
+  EditUserTaskCommentParams,
   UserTaskVariableValue,
 } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
 
@@ -80,5 +84,45 @@ export async function getClaimableTasks(
   return withErrorHandling(async () => {
     const client = await getClient(tenantId);
     return client.user.getClaimableTasks(params);
+  });
+}
+
+export async function getUserTaskComments(
+  tenantId: string,
+  params: GetUserTaskCommentsParams,
+) {
+  return withErrorHandling(async () => {
+    const client = await getClient(tenantId);
+    return client.user.getUserTaskComments(params);
+  });
+}
+
+export async function postUserTaskComment(
+  tenantId: string,
+  params: PostUserTaskCommentParams,
+) {
+  return withErrorHandling(async () => {
+    const client = await getClient(tenantId);
+    return client.user.postUserTaskComment(params);
+  });
+}
+
+export async function editUserTaskComment(
+  tenantId: string,
+  params: EditUserTaskCommentParams,
+) {
+  return withErrorHandling(async () => {
+    const client = await getClient(tenantId);
+    return client.user.editUserTaskComment(params);
+  });
+}
+
+export async function deleteUserTaskComment(
+  tenantId: string,
+  params: DeleteUserTaskCommentParams,
+) {
+  return withErrorHandling(async () => {
+    const client = await getClient(tenantId);
+    return client.user.deleteUserTaskComment(params);
   });
 }
