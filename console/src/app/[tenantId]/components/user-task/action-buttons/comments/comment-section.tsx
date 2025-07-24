@@ -22,8 +22,6 @@ export default function CommentList({
       ev.type === UserTaskEventType.COMMENT_EDITED,
   );
 
-
-
   if (filteredEvents.length === 0) {
     return (
       <div className="flex h-full items-center justify-center text-muted-foreground">

@@ -263,7 +263,7 @@ export default function UserTask({
                     <CompleteUserTaskButton userTask={userTask} admin={admin} />
                   </div>
                   <div className="flex-1">
-                    <UserTaskComments userTask={userTask} admin={admin}/>
+                    <UserTaskComments userTask={userTask} admin={admin} />
                   </div>
                 </>
               )}

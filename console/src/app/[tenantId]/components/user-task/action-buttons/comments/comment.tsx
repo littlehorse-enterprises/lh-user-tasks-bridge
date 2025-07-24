@@ -39,7 +39,6 @@ export default function Comment({
   const ev = commentEvent.event as UserTaskCommentEvent;
   const { data: session } = useSession();
 
-
   const isCurrentUser =
     session?.user?.id === ev.userId ||
     session?.user?.email === ev.userId ||
@@ -157,7 +156,7 @@ export default function Comment({
         )}
       </div>
 
-      { (isCurrentUser || admin) && !isEditing && (
+      {(isCurrentUser || admin) && !isEditing && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -169,12 +168,12 @@ export default function Comment({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align={isCurrentUser ? "end" : "start"}>
-            {isCurrentUser &&( 
-            <DropdownMenuItem onClick={() => setIsEditing(true)}>
-              Edit
-            </DropdownMenuItem>
-          )}
-          <DropdownMenuItem onClick={handleDelete} className="text-red-500">
+            {isCurrentUser && (
+              <DropdownMenuItem onClick={() => setIsEditing(true)}>
+                Edit
+              </DropdownMenuItem>
+            )}
+            <DropdownMenuItem onClick={handleDelete} className="text-red-500">
               Delete
             </DropdownMenuItem>
           </DropdownMenuContent>
