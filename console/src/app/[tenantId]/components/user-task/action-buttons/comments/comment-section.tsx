@@ -16,9 +16,10 @@ export default function CommentList({
 }) {
   const filteredEvents = eventList.filter(
     (ev) =>
-      ev.type === UserTaskEventType.COMMENT_ADDED ||
+      ev.type === UserTaskEventType.COMMENTED ||
       ev.type === UserTaskEventType.COMMENT_EDITED,
   );
+
 
   if (filteredEvents.length === 0) {
     return (
