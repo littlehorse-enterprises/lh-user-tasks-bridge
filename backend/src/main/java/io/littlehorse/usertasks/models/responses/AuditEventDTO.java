@@ -50,7 +50,7 @@ public class AuditEventDTO {
             eventType = UserTaskEventType.TASK_CANCELLED;
         } else if (serverEvent.hasCommentAdded()) {
             parsedEvent = UserTaskRunCommentEvent.parserFromserver(serverEvent.getCommentAdded());
-            eventType = UserTaskEventType.COMMENTED;
+            eventType = UserTaskEventType.COMMENT_ADDED;
         } else if (serverEvent.hasCommentEdited()) {
             parsedEvent = UserTaskRunCommentEvent.parserFromserver(serverEvent.getCommentEdited());
             eventType = UserTaskEventType.COMMENT_EDITED;

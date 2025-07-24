@@ -441,7 +441,8 @@ public class UserController {
         CustomIdentityProviderProperties actualIdPProperties =
                 getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
 
-        var userIdFromToken = (String) tokenClaims.get(actualIdPProperties.getUsernameClaim());
+        var userIdFromToken =
+                (String) tokenClaims.get(actualIdPProperties.getUserIdClaim().toString());
         PutCommentRequest request = PutCommentRequest.builder()
                 .comment(commentContentRequest.getComment())
                 .wfRunId(wf_run_id)
@@ -518,7 +519,8 @@ public class UserController {
         CustomIdentityProviderProperties actualIdPProperties =
                 getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
 
-        var userIdFromToken = (String) tokenClaims.get(actualIdPProperties.getUsernameClaim());
+        var userIdFromToken =
+                (String) tokenClaims.get(actualIdPProperties.getUserIdClaim().toString());
         EditCommentRequest request = EditCommentRequest.builder()
                 .comment(commentContentRequest.getComment())
                 .commentId(commentId)
@@ -595,7 +597,8 @@ public class UserController {
         CustomIdentityProviderProperties actualIdPProperties =
                 getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
 
-        var userIdFromToken = (String) tokenClaims.get(actualIdPProperties.getUsernameClaim());
+        var userIdFromToken =
+                (String) tokenClaims.get(actualIdPProperties.getUserIdClaim().toString());
 
         DeleteCommentRequest request = DeleteCommentRequest.builder()
                 .wfRunId(wfRunId)
