@@ -9,16 +9,19 @@ export default function CommentList({
   eventList,
   userTask,
   fetchComments,
+  admin,
 }: {
   eventList: AuditEventDTO[];
   userTask: SimpleUserTaskRunDTO;
   fetchComments: () => Promise<void>;
+  admin?: boolean;
 }) {
   const filteredEvents = eventList.filter(
     (ev) =>
-      ev.type === UserTaskEventType.COMMENTED ||
+      ev.type === UserTaskEventType.COMMENT_ADDED ||
       ev.type === UserTaskEventType.COMMENT_EDITED,
   );
+
 
 
   if (filteredEvents.length === 0) {
@@ -35,6 +38,7 @@ export default function CommentList({
         <Comment
           key={ev.time}
           commentEvent={ev}
+          admin={admin}
           userTask={userTask}
           fetchComments={fetchComments}
         />

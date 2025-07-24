@@ -29,8 +29,10 @@ import CommentList from "./comment-section";
 
 export default function UserTaskComments({
   userTask,
+  admin,
 }: {
   userTask: SimpleUserTaskRunDTO;
+  admin?: boolean;
 }) {
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -100,6 +102,7 @@ export default function UserTaskComments({
       <CommentList
         eventList={commentEventList}
         userTask={userTask}
+        admin={admin}
         fetchComments={fetchComments}
       />
     );

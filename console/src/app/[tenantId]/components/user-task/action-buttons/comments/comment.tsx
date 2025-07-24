@@ -28,14 +28,17 @@ export default function Comment({
   commentEvent,
   userTask,
   fetchComments,
+  admin,
 }: {
   commentEvent: AuditEventDTO;
   userTask: SimpleUserTaskRunDTO;
   fetchComments: () => Promise<void>;
+  admin?: boolean;
 }) {
   const tenantId = useParams().tenantId as string;
   const ev = commentEvent.event as UserTaskCommentEvent;
   const { data: session } = useSession();
+
 
   const isCurrentUser =
     session?.user?.id === ev.userId ||
@@ -154,7 +157,7 @@ export default function Comment({
         )}
       </div>
 
-      {isCurrentUser && !isEditing && (
+      { (isCurrentUser || admin) && !isEditing && (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
@@ -166,10 +169,12 @@ export default function Comment({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align={isCurrentUser ? "end" : "start"}>
+            {isCurrentUser &&( 
             <DropdownMenuItem onClick={() => setIsEditing(true)}>
               Edit
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={handleDelete} className="text-red-500">
+          )}
+          <DropdownMenuItem onClick={handleDelete} className="text-red-500">
               Delete
             </DropdownMenuItem>
           </DropdownMenuContent>
