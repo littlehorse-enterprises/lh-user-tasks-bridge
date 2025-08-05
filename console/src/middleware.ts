@@ -19,7 +19,7 @@ export default auth(async (req) => {
       `${process.env.AUTH_KEYCLOAK_ISSUER}/protocol/openid-connect/userinfo`,
       {
         headers: {
-          Authorization: `Bearer ${token?.access_token}`,
+          Authorization: `Bearer ${token.accessToken}`,
         },
       },
     );
