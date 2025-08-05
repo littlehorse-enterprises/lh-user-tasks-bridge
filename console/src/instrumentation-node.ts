@@ -24,7 +24,9 @@ import { IncomingMessage } from "http";
 context.setGlobalContextManager(new AsyncLocalStorageContextManager());
 
 const exporter = new PrometheusExporter({
-  port: 9464,
+  port: process.env.LHUT_METRICS_PORT
+    ? parseInt(process.env.LHUT_METRICS_PORT)
+    : 9464,
 });
 const detectedResources = detectResourcesSync({
   detectors: [envDetector, processDetector, hostDetector],

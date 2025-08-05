@@ -119,19 +119,21 @@ pre-commit install
 
 3. Create environment configuration:
 
-   Copy `ui/.env.sample` as `ui/.env.local` and configure with:
+   Copy `console/.env.sample` as `console/.env.local` and configure with:
 
 ```bash
-NEXTAUTH_URL='http://localhost:3000'
-AUTH_URL='http://localhost:3000'
-AUTH_SECRET='<any secret here>'
+# Auth Configuration
+AUTH_SECRET=any-secret-here # Run `npx auth secret` to generate a secret. Read more: https://cli.authjs.dev
+AUTH_KEYCLOAK_ID=user-tasks-bridge-client
+AUTH_KEYCLOAK_SECRET=
+AUTH_KEYCLOAK_ISSUER=http://localhost:8888/realms/default
 
-AUTH_KEYCLOAK_ID='user-tasks-client'
-AUTH_KEYCLOAK_SECRET=' '
-AUTH_KEYCLOAK_ISSUER='http://localhost:8888/realms/default'
+# User Tasks Bridge Configuration
+LHUT_API_URL=http://localhost:8089
+LHUT_AUTHORITIES=$.realm_access.roles,$.resource_access.*.roles
+# LHUT_METRICS_PORT=9464
+# LHUT_METRICS_DISABLED=false
 
-LHUT_API_URL='http://localhost:8089'
-LHUT_AUTHORITIES='$.realm_access.roles,$.resource_access.*.roles'
 ```
 
 1. Install dependencies and start development server:
@@ -141,7 +143,7 @@ npm install
 ```
 
 ```shell
-npm run dev -w ui
+npm run dev -w console
 ```
 
 In another terminal, start the API Client:
@@ -183,12 +185,10 @@ This script will:
 docker run --rm \
     -e SSL=enabled \
     -v ./local-dev/ssl:/ssl \
-    -e NEXTAUTH_URL='https://localhost:3443' \
-    -e AUTH_URL='https://localhost:3443' \
-    -e AUTH_SECRET='your-secret-here' \
-    -e AUTH_KEYCLOAK_ID='user-tasks-client' \
-    -e AUTH_KEYCLOAK_SECRET=' ' \
-    -e AUTH_KEYCLOAK_ISSUER='http://localhost:8888/realms/default' \
+    -e LHUT_OAUTH_ENCRYPT_SECRET='your-secret-here' \
+    -e LHUT_OAUTH_CLIENT_ID='user-tasks-client' \
+    -e LHUT_OAUTH_CLIENT_SECRET=' ' \
+    -e LHUT_OAUTH_ISSUER_URI='http://localhost:8888/realms/default' \
     -e LHUT_API_URL='http://localhost:8089' \
     -e LHUT_AUTHORITIES='$.realm_access.roles,$.resource_access.*.roles' \
     -p 3000:3000 -p 3443:3443 \

@@ -1,4 +1,3 @@
-// New type files
 export * from "./admin";
 export * from "./common";
 export * from "./group-management";

@@ -6,13 +6,7 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function getRoles(obj: any) {
-  const splitPaths = process.env.LHUT_AUTHORITIES;
-  if (!splitPaths) {
-    console.warn(
-      "LHUT_AUTHORITIES is not set, so no roles will be extracted from the token",
-    );
-    return [];
-  }
+  const splitPaths = process.env.LHUT_AUTHORITIES || "";
   const paths = splitPaths.split(",").map((path) => path.split(".").slice(1));
 
   const roles = paths.flatMap((pathArray) => {
