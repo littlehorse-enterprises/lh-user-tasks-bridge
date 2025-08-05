@@ -1,13 +1,13 @@
 import { getToken } from "next-auth/jwt";
-import nextAuth from "next-auth/middleware";
 import { NextResponse } from "next/server";
 import { getRoles } from "./lib/utils";
+import { auth } from "./auth";
 
-const withAuth = nextAuth(async (req) => {
+export default auth(async (req) => {
   const token = await getToken({ req, secret: process.env.AUTH_SECRET });
   const baseUrl = req.nextUrl.origin;
   const currentPath = req.nextUrl.pathname;
-  if (!token || token.expires_at < Date.now() / 1000) {
+  if (!token || token.expiresAt < Math.floor(Date.now() / 1000)) {
     return NextResponse.redirect(
       `${baseUrl}/api/auth/signin?callbackUrl=${currentPath}`,
     );
@@ -19,7 +19,7 @@ const withAuth = nextAuth(async (req) => {
       `${process.env.AUTH_KEYCLOAK_ISSUER}/protocol/openid-connect/userinfo`,
       {
         headers: {
-          Authorization: `Bearer ${token?.access_token}`,
+          Authorization: `Bearer ${token.accessToken}`,
         },
       },
     );
@@ -60,8 +60,6 @@ const withAuth = nextAuth(async (req) => {
 
   return NextResponse.next();
 });
-
-export default withAuth;
 
 export const config = {
   matcher: ["/((?!api|_next/static|_next/image|images|favicon.ico).*)"],
