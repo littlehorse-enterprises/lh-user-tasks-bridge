@@ -92,11 +92,11 @@ export default function Header() {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-3 p-2 rounded-lg hover:bg-accent/50 transition-colors">
-                    {status === "authenticated" && session.user ? (
+                    {status === "authenticated" ? (
                       <>
                         <div className="flex flex-col items-end text-right">
                           <span className="text-sm font-medium text-foreground">
-                            {session.user.name || "User"}
+                            {session.user?.name || "User"}
                           </span>
                           <div className="flex items-center gap-2">
                             <span className="text-xs text-muted-foreground">
@@ -114,7 +114,7 @@ export default function Header() {
                         </div>
                         <Avatar className="h-9 w-9 border-2 border-border">
                           <AvatarFallback className="bg-primary text-primary-foreground font-semibold">
-                            {(session.user.name || "User")[0].toUpperCase()}
+                            {(session.user?.name || "User")[0].toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                       </>
@@ -133,7 +133,7 @@ export default function Header() {
                   <DropdownMenuLabel className="flex flex-col">
                     <span className="font-medium">
                       {status === "authenticated"
-                        ? session.user.name || "User"
+                        ? session.user?.name || "User"
                         : "Loading..."}
                     </span>
                     <span className="text-xs text-muted-foreground font-normal">
