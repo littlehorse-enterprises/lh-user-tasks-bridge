@@ -28,4 +28,8 @@ export AUTH_KEYCLOAK_ID=${LHUT_OAUTH_CLIENT_ID}
 export AUTH_KEYCLOAK_SECRET=${LHUT_OAUTH_CLIENT_SECRET}
 export AUTH_KEYCLOAK_ISSUER=${LHUT_OAUTH_ISSUER_URI}
 
+if [ -n "${LHUT_OAUTH_CALLBACK_URL}" ]; then
+    export AUTH_URL=${LHUT_OAUTH_CALLBACK_URL} # https://authjs.dev/getting-started/deployment#auth_url
+fi
+
 /entrypoint.sh
