@@ -4,7 +4,12 @@ import { getRoles } from "./lib/utils";
 import { auth } from "./auth";
 
 export default auth(async (req) => {
-  const token = await getToken({ req, secret: process.env.AUTH_SECRET });
+  const secureCookie = req.nextUrl.protocol === "https:";
+  const token = await getToken({
+    req,
+    secret: process.env.AUTH_SECRET,
+    secureCookie,
+  });
   const baseUrl = req.nextUrl.origin;
   const currentPath = req.nextUrl.pathname;
   if (!token || token.expiresAt < Math.floor(Date.now() / 1000)) {
