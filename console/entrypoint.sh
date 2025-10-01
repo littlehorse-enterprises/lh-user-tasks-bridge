@@ -32,4 +32,8 @@ if [ -n "${LHUT_OAUTH_CALLBACK_URL}" ]; then
     export AUTH_URL=${LHUT_OAUTH_CALLBACK_URL} # https://authjs.dev/getting-started/deployment#auth_url
 fi
 
+if [ -n "${LHUT_API_CA_CERT}" ]; then
+    export NODE_EXTRA_CA_CERTS=${LHUT_API_CA_CERT}
+fi
+
 /entrypoint.sh
