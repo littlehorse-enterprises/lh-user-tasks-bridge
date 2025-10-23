@@ -390,7 +390,12 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
             UsersResource usersResource = realmResource.users();
 
             try (Response response = usersResource.create(userRepresentation)) {
-                if (response.getStatusInfo().getStatusCode() != 201) {
+                if (response.getStatus() == HttpStatus.CONFLICT.value()) {
+                    throw new ResponseStatusException(
+                            HttpStatus.CONFLICT, "A user with the same username and/or email already exists.");
+                }
+
+                if (response.getStatus() != HttpStatus.CREATED.value()) {
                     String exceptionMessage = String.format(
                             "User creation failed within realm %s with status: %s!",
                             realm, response.getStatusInfo().getStatusCode());
@@ -405,6 +410,8 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
         } catch (AdapterException e) {
             log.error(e.getMessage());
             throw new AdapterException(e.getMessage());
+        } catch (ResponseStatusException e) {
+            throw e;
         } catch (Exception e) {
             var errorMessage = "Something went wrong while creating a User in Keycloak realm.";
             log.error(errorMessage, e);
