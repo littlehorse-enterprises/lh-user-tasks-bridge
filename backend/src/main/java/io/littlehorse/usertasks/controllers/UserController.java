@@ -76,6 +76,7 @@ public class UserController {
     private final TenantService tenantService;
     private final UserTaskService userTaskService;
     private final IdentityProviderConfigProperties identityProviderConfigProperties;
+    private final String DELIMITER = "::";
 
     public UserController(
             TenantService tenantService,
@@ -441,14 +442,15 @@ public class UserController {
         CustomIdentityProviderProperties actualIdPProperties =
                 getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
 
-        var userIdFromToken =
-                (String) tokenClaims.get(actualIdPProperties.getUserIdClaim().toString());
+        var userNameFromToken = (String) tokenClaims.get(actualIdPProperties.getUsernameClaim());
+        var subFromToken = (String) tokenClaims.get("sub");
+        String userIdForComment = subFromToken + DELIMITER + userNameFromToken;
         PutCommentRequest request = PutCommentRequest.builder()
                 .comment(commentContentRequest.getComment())
                 .wfRunId(wf_run_id)
                 .userTaskRunGuid(user_task_guid)
                 .build();
-        return userTaskService.comment(request, userIdFromToken, tenantId, false);
+        return userTaskService.comment(request, userIdForComment, tenantId, false);
     }
 
     @Operation(
@@ -519,8 +521,10 @@ public class UserController {
         CustomIdentityProviderProperties actualIdPProperties =
                 getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
 
-        var userIdFromToken =
-                (String) tokenClaims.get(actualIdPProperties.getUserIdClaim().toString());
+        var userNameFromToken = (String) tokenClaims.get(actualIdPProperties.getUsernameClaim());
+        var subFromToken = (String) tokenClaims.get("sub");
+        String userIdForComment = subFromToken + DELIMITER + userNameFromToken;
+
         EditCommentRequest request = EditCommentRequest.builder()
                 .comment(commentContentRequest.getComment())
                 .commentId(commentId)
@@ -528,7 +532,7 @@ public class UserController {
                 .userTaskRunGuid(userTaskGuid)
                 .build();
 
-        return userTaskService.editComment(request, userIdFromToken, tenantId, false);
+        return userTaskService.editComment(request, userIdForComment, tenantId, false);
     }
 
     @Operation(
@@ -597,8 +601,9 @@ public class UserController {
         CustomIdentityProviderProperties actualIdPProperties =
                 getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
 
-        var userIdFromToken =
-                (String) tokenClaims.get(actualIdPProperties.getUserIdClaim().toString());
+        var userNameFromToken = (String) tokenClaims.get(actualIdPProperties.getUsernameClaim());
+        var subFromToken = (String) tokenClaims.get("sub");
+        String userIdForComment = subFromToken + DELIMITER + userNameFromToken;
 
         DeleteCommentRequest request = DeleteCommentRequest.builder()
                 .wfRunId(wfRunId)
@@ -606,7 +611,7 @@ public class UserController {
                 .commentId(commentId)
                 .build();
 
-        var response = userTaskService.deleteComment(request, userIdFromToken, tenantId, false);
+        var response = userTaskService.deleteComment(request, userIdForComment, tenantId, false);
 
         return response;
     }
