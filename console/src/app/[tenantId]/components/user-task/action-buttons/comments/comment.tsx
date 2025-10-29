@@ -24,6 +24,16 @@ import { useSession } from "next-auth/react";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 
+const DELIM = "::";
+function parseCommentUserId(commentUserId: string) {
+  const i = commentUserId.indexOf(DELIM);
+  if (i === -1) return { sub: commentUserId, displayName: undefined as string | undefined };
+  return {
+    sub: commentUserId.slice(0, i),
+    displayName: commentUserId.slice(i + DELIM.length) || undefined,
+  };
+}
+
 export default function Comment({
   commentEvent,
   userTask,
@@ -38,11 +48,13 @@ export default function Comment({
   const tenantId = useParams().tenantId as string;
   const ev = commentEvent.event as UserTaskCommentEvent;
   const { data: session } = useSession();
+  const userId = ev.userId || "";
+  const { sub, displayName: packedName } = parseCommentUserId(userId);
+  const isCurrentUser = (session?.user?.id || "") === sub;
 
-  const isCurrentUser =
-    session?.user?.id === ev.userId ||
-    session?.user?.email === ev.userId ||
-    session?.user?.preferredName === ev.userId;
+  const displayName = isCurrentUser
+    ? session?.user?.name || session?.user?.email || session?.user?.id || ""
+    : packedName || sub;
 
   const [isEditing, setIsEditing] = useState(false);
   const [editedComment, setEditedComment] = useState(ev.comment);
@@ -104,7 +116,7 @@ export default function Comment({
         )}
       >
         <div className="flex items-center justify-between">
-          <p className="font-semibold">{ev.userId}</p>
+          <p className="font-semibold">{displayName}</p>
           <span className="text-xs opacity-75 ml-2">
             {new Date(commentEvent.time).toLocaleString(undefined, {
               year: "numeric",
