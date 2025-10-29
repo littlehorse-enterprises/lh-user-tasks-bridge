@@ -27,7 +27,8 @@ import { useState } from "react";
 const DELIM = "::";
 function parseCommentUserId(commentUserId: string) {
   const i = commentUserId.indexOf(DELIM);
-  if (i === -1) return { sub: commentUserId, displayName: undefined as string | undefined };
+  if (i === -1)
+    return { sub: commentUserId, displayName: undefined as string | undefined };
   return {
     sub: commentUserId.slice(0, i),
     displayName: commentUserId.slice(i + DELIM.length) || undefined,
