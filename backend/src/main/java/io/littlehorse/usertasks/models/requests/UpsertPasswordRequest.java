@@ -11,5 +11,6 @@ import lombok.Data;
 public class UpsertPasswordRequest {
     @NotBlank(message = "Password must not be NULL, empty nor a whitespace-only value")
     private String password;
+
     private boolean temporary;
 }

@@ -12,6 +12,7 @@ import org.springframework.lang.Nullable;
 @AllArgsConstructor
 public class StandardPagination {
     private int limit;
+
     @Nullable
     private byte[] bookmark;
 }

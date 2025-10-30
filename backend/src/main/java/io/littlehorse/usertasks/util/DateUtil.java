@@ -1,10 +1,9 @@
 package io.littlehorse.usertasks.util;
 
 import com.google.protobuf.Timestamp;
-import lombok.NonNull;
-
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import lombok.NonNull;
 
 public class DateUtil {
     private static final ZoneOffset UTC_ZONE = ZoneOffset.UTC;

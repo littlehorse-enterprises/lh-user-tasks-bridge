@@ -1,5 +1,10 @@
 package io.littlehorse.usertasks.controllers;
 
+import static io.littlehorse.usertasks.configurations.CustomIdentityProviderProperties.getCustomIdentityProviderProperties;
+import static io.littlehorse.usertasks.idp_adapters.keycloak.KeycloakAdapter.ACCESS_TOKEN_MAP_KEY;
+import static io.littlehorse.usertasks.idp_adapters.keycloak.KeycloakAdapter.USER_GROUP_ID_MAP_KEY;
+import static io.littlehorse.usertasks.util.constants.AuthoritiesConstants.LH_USER_TASKS_ADMIN_ROLE;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.littlehorse.usertasks.configurations.CustomIdentityProviderProperties;
 import io.littlehorse.usertasks.configurations.IdentityProviderConfigProperties;
@@ -24,6 +29,9 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.*;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -34,19 +42,10 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import static io.littlehorse.usertasks.configurations.CustomIdentityProviderProperties.getCustomIdentityProviderProperties;
-import static io.littlehorse.usertasks.idp_adapters.keycloak.KeycloakAdapter.ACCESS_TOKEN_MAP_KEY;
-import static io.littlehorse.usertasks.idp_adapters.keycloak.KeycloakAdapter.USER_GROUP_ID_MAP_KEY;
-import static io.littlehorse.usertasks.util.constants.AuthoritiesConstants.LH_USER_TASKS_ADMIN_ROLE;
-
 @Tag(
         name = "Group Management Controller",
-        description = "This is a controller that exposes endpoints in charge of handling requests related to managing groups"
-)
+        description =
+                "This is a controller that exposes endpoints in charge of handling requests related to managing groups")
 @RestController
 @CrossOrigin
 @PreAuthorize("isAuthenticated() && hasAuthority('" + LH_USER_TASKS_ADMIN_ROLE + "')")
@@ -57,50 +56,52 @@ public class GroupManagementController {
     private final UserTaskService userTaskService;
     private final IdentityProviderConfigProperties identityProviderConfigProperties;
 
-    public GroupManagementController(TenantService tenantService, GroupManagementService groupManagementService, UserTaskService userTaskService,
-                                     IdentityProviderConfigProperties identityProviderConfigProperties) {
+    public GroupManagementController(
+            TenantService tenantService,
+            GroupManagementService groupManagementService,
+            UserTaskService userTaskService,
+            IdentityProviderConfigProperties identityProviderConfigProperties) {
         this.tenantService = tenantService;
         this.groupManagementService = groupManagementService;
         this.userTaskService = userTaskService;
         this.identityProviderConfigProperties = identityProviderConfigProperties;
     }
 
-    @Operation(
-            summary = "Create Group",
-            description = "Creates a Group within a specific tenant's IdP"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "201",
-                    content = @Content
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "Tenant Id is not valid.",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class))}
-            ),
-            @ApiResponse(
-                    responseCode = "406",
-                    description = "Unknown Identity vendor.",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class))}
-            ),
-            @ApiResponse(
-                    responseCode = "409",
-                    description = "Name is already used by an existing group.",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class))}
-            )
-    })
+    @Operation(summary = "Create Group", description = "Creates a Group within a specific tenant's IdP")
+    @ApiResponses(
+            value = {
+                @ApiResponse(responseCode = "201", content = @Content),
+                @ApiResponse(
+                        responseCode = "401",
+                        description = "Tenant Id is not valid.",
+                        content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ProblemDetail.class))
+                        }),
+                @ApiResponse(
+                        responseCode = "406",
+                        description = "Unknown Identity vendor.",
+                        content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ProblemDetail.class))
+                        }),
+                @ApiResponse(
+                        responseCode = "409",
+                        description = "Name is already used by an existing group.",
+                        content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ProblemDetail.class))
+                        })
+            })
     @PostMapping("/{tenant_id}/management/groups")
     @ResponseStatus(HttpStatus.CREATED)
-    public void createGroup(@RequestHeader(name = "Authorization") String accessToken,
-                            @PathVariable(name = "tenant_id") String tenantId,
-                            @RequestBody CreateGroupRequest requestBody) {
+    public void createGroup(
+            @RequestHeader(name = "Authorization") String accessToken,
+            @PathVariable(name = "tenant_id") String tenantId,
+            @RequestBody CreateGroupRequest requestBody) {
         if (!tenantService.isValidTenant(tenantId, accessToken)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
@@ -108,7 +109,8 @@ public class GroupManagementController {
         try {
             CustomIdentityProviderProperties customIdentityProviderProperties =
                     getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
-            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
+            IStandardIdentityProviderAdapter identityProviderHandler =
+                    getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
 
             validateRequestBody(requestBody);
 
@@ -121,40 +123,42 @@ public class GroupManagementController {
         }
     }
 
-    @Operation(
-            summary = "Get Groups",
-            description = "Gets a collection of Groups within a specific tenant's IdP"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "List of unique Groups",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = IDPGroupListDTO.class))}
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "Tenant Id is not valid.",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class))}
-            ),
-            @ApiResponse(
-                    responseCode = "406",
-                    description = "Unknown Identity vendor.",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class))}
-            )
-    })
+    @Operation(summary = "Get Groups", description = "Gets a collection of Groups within a specific tenant's IdP")
+    @ApiResponses(
+            value = {
+                @ApiResponse(
+                        responseCode = "200",
+                        description = "List of unique Groups",
+                        content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = IDPGroupListDTO.class))
+                        }),
+                @ApiResponse(
+                        responseCode = "401",
+                        description = "Tenant Id is not valid.",
+                        content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ProblemDetail.class))
+                        }),
+                @ApiResponse(
+                        responseCode = "406",
+                        description = "Unknown Identity vendor.",
+                        content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ProblemDetail.class))
+                        })
+            })
     @GetMapping("/{tenant_id}/management/groups")
     @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<IDPGroupListDTO> getGroups(@RequestHeader(name = "Authorization") String accessToken,
-                                                      @PathVariable(name = "tenant_id") String tenantId,
-                                                      @RequestParam(required = false) String name,
-                                                      @RequestParam(name = "first_result", defaultValue = "0") Integer firstResult,
-                                                      @RequestParam(name = "max_results", defaultValue = "10") Integer maxResults) {
+    public ResponseEntity<IDPGroupListDTO> getGroups(
+            @RequestHeader(name = "Authorization") String accessToken,
+            @PathVariable(name = "tenant_id") String tenantId,
+            @RequestParam(required = false) String name,
+            @RequestParam(name = "first_result", defaultValue = "0") Integer firstResult,
+            @RequestParam(name = "max_results", defaultValue = "10") Integer maxResults) {
         if (!tenantService.isValidTenant(tenantId, accessToken)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
@@ -162,9 +166,11 @@ public class GroupManagementController {
         try {
             CustomIdentityProviderProperties customIdentityProviderProperties =
                     getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
-            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
+            IStandardIdentityProviderAdapter identityProviderHandler =
+                    getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
 
-            Set<IDPGroupDTO> groups = groupManagementService.getGroups(accessToken, name, firstResult, maxResults, identityProviderHandler);
+            Set<IDPGroupDTO> groups = groupManagementService.getGroups(
+                    accessToken, name, firstResult, maxResults, identityProviderHandler);
 
             IDPGroupListDTO response = new IDPGroupListDTO(groups);
 
@@ -177,45 +183,45 @@ public class GroupManagementController {
         }
     }
 
-    @Operation(
-            summary = "Update Group",
-            description = "Updates a Group within a specific tenant's IdP"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "204",
-                    content = @Content
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "Tenant Id is not valid.",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class))}
-            ),
-            @ApiResponse(
-                    responseCode = "406",
-                    description = "Unknown Identity vendor.",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class))}
-            ),
-            @ApiResponse(
-                    responseCode = "409",
-                    description = "Group cannot be updated because there are UserTaskRuns already assigned to it and waiting to be claimed." +
-                            "Or, name is already being used by an existing group.",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class))}
-            )
-    })
+    @Operation(summary = "Update Group", description = "Updates a Group within a specific tenant's IdP")
+    @ApiResponses(
+            value = {
+                @ApiResponse(responseCode = "204", content = @Content),
+                @ApiResponse(
+                        responseCode = "401",
+                        description = "Tenant Id is not valid.",
+                        content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ProblemDetail.class))
+                        }),
+                @ApiResponse(
+                        responseCode = "406",
+                        description = "Unknown Identity vendor.",
+                        content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ProblemDetail.class))
+                        }),
+                @ApiResponse(
+                        responseCode = "409",
+                        description =
+                                "Group cannot be updated because there are UserTaskRuns already assigned to it and waiting to be claimed."
+                                        + "Or, name is already being used by an existing group.",
+                        content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ProblemDetail.class))
+                        })
+            })
     @PutMapping("/{tenant_id}/management/groups/{group_id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void updateGroup(@RequestHeader(name = "Authorization") String accessToken,
-                       @PathVariable(name = "tenant_id") String tenantId,
-                       @PathVariable(name = "group_id") String groupId,
-                       @RequestParam(name = "ignore_orphan_tasks", required = false) boolean ignoreOrphanTasks,
-                       @RequestBody UpdateGroupRequest request) {
+    public void updateGroup(
+            @RequestHeader(name = "Authorization") String accessToken,
+            @PathVariable(name = "tenant_id") String tenantId,
+            @PathVariable(name = "group_id") String groupId,
+            @RequestParam(name = "ignore_orphan_tasks", required = false) boolean ignoreOrphanTasks,
+            @RequestBody UpdateGroupRequest request) {
         if (!tenantService.isValidTenant(tenantId, accessToken)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
@@ -223,11 +229,13 @@ public class GroupManagementController {
         try {
             CustomIdentityProviderProperties customIdentityProviderProperties =
                     getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
-            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
+            IStandardIdentityProviderAdapter identityProviderHandler =
+                    getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
 
             validateRequestBody(request);
 
-            Map<String, Object> lookupParams = Map.of(ACCESS_TOKEN_MAP_KEY, accessToken, USER_GROUP_ID_MAP_KEY, groupId);
+            Map<String, Object> lookupParams =
+                    Map.of(ACCESS_TOKEN_MAP_KEY, accessToken, USER_GROUP_ID_MAP_KEY, groupId);
 
             UserGroupDTO userGroup = identityProviderHandler.getUserGroup(lookupParams);
 
@@ -244,43 +252,43 @@ public class GroupManagementController {
         }
     }
 
-    @Operation(
-            summary = "Delete Group",
-            description = "Deletes a Group within a specific tenant's IdP"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "204",
-                    content = @Content
-            ),
-            @ApiResponse(
-                    responseCode = "401",
-                    description = "Tenant Id is not valid.",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class))}
-            ),
-            @ApiResponse(
-                    responseCode = "406",
-                    description = "Unknown Identity vendor.",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class))}
-            ),
-            @ApiResponse(
-                    responseCode = "409",
-                    description = "Group cannot be deleted because there are UserTaskRuns already assigned to it and waiting to be claimed.",
-                    content = {@Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ProblemDetail.class))}
-            )
-    })
+    @Operation(summary = "Delete Group", description = "Deletes a Group within a specific tenant's IdP")
+    @ApiResponses(
+            value = {
+                @ApiResponse(responseCode = "204", content = @Content),
+                @ApiResponse(
+                        responseCode = "401",
+                        description = "Tenant Id is not valid.",
+                        content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ProblemDetail.class))
+                        }),
+                @ApiResponse(
+                        responseCode = "406",
+                        description = "Unknown Identity vendor.",
+                        content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ProblemDetail.class))
+                        }),
+                @ApiResponse(
+                        responseCode = "409",
+                        description =
+                                "Group cannot be deleted because there are UserTaskRuns already assigned to it and waiting to be claimed.",
+                        content = {
+                            @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ProblemDetail.class))
+                        })
+            })
     @DeleteMapping("/{tenant_id}/management/groups/{group_id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void deleteGroup(@RequestHeader(name = "Authorization") String accessToken,
-                       @PathVariable(name = "tenant_id") String tenantId,
-                       @PathVariable(name = "group_id") String groupId,
-                       @RequestParam(name = "ignore_orphan_tasks", required = false) boolean ignoreOrphanTasks) {
+    public void deleteGroup(
+            @RequestHeader(name = "Authorization") String accessToken,
+            @PathVariable(name = "tenant_id") String tenantId,
+            @PathVariable(name = "group_id") String groupId,
+            @RequestParam(name = "ignore_orphan_tasks", required = false) boolean ignoreOrphanTasks) {
         if (!tenantService.isValidTenant(tenantId, accessToken)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
@@ -288,9 +296,11 @@ public class GroupManagementController {
         try {
             CustomIdentityProviderProperties customIdentityProviderProperties =
                     getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
-            IStandardIdentityProviderAdapter identityProviderHandler = getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
+            IStandardIdentityProviderAdapter identityProviderHandler =
+                    getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
 
-            Map<String, Object> lookupParams = Map.of(ACCESS_TOKEN_MAP_KEY, accessToken, USER_GROUP_ID_MAP_KEY, groupId);
+            Map<String, Object> lookupParams =
+                    Map.of(ACCESS_TOKEN_MAP_KEY, accessToken, USER_GROUP_ID_MAP_KEY, groupId);
 
             UserGroupDTO userGroup = identityProviderHandler.getUserGroup(lookupParams);
 
@@ -335,11 +345,12 @@ public class GroupManagementController {
                 .status(UserTaskStatus.UNASSIGNED)
                 .build();
 
-        UserTaskRunListDTO pendingTasks = userTaskService.getTasks(tenantId, null, groupName,
-                requestFilter, 1, null, true);
+        UserTaskRunListDTO pendingTasks =
+                userTaskService.getTasks(tenantId, null, groupName, requestFilter, 1, null, true);
 
         if (!CollectionUtils.isEmpty(pendingTasks.getUserTasks())) {
-            throw new ValidationException("Cannot rename/delete Group with Task(s) assigned that are pending to be claimed!");
+            throw new ValidationException(
+                    "Cannot rename/delete Group with Task(s) assigned that are pending to be claimed!");
         }
     }
 }

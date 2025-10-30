@@ -1,5 +1,8 @@
 package io.littlehorse.usertasks.services;
 
+import static io.littlehorse.usertasks.configurations.CustomIdentityProviderProperties.getCustomIdentityProviderProperties;
+import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.ALLOWED_TOKEN_CUSTOM_CLAIM;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -10,6 +13,11 @@ import io.littlehorse.usertasks.configurations.IdentityProviderConfigProperties;
 import io.littlehorse.usertasks.models.responses.IdentityProviderDTO;
 import io.littlehorse.usertasks.models.responses.IdentityProviderListDTO;
 import io.littlehorse.usertasks.util.TokenUtil;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -17,22 +25,15 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.stream.Collectors;
-
-import static io.littlehorse.usertasks.configurations.CustomIdentityProviderProperties.getCustomIdentityProviderProperties;
-import static io.littlehorse.usertasks.util.constants.TokenClaimConstants.ALLOWED_TOKEN_CUSTOM_CLAIM;
-
 @Service
 @Slf4j
 public class TenantService {
     private final Map<String, LittleHorseGrpc.LittleHorseBlockingStub> lhClients;
     private final IdentityProviderConfigProperties identityProviderConfigProperties;
 
-    TenantService(Map<String, LittleHorseGrpc.LittleHorseBlockingStub> lhClients, IdentityProviderConfigProperties identityProviderConfigProperties) {
+    TenantService(
+            Map<String, LittleHorseGrpc.LittleHorseBlockingStub> lhClients,
+            IdentityProviderConfigProperties identityProviderConfigProperties) {
         this.lhClients = lhClients;
         this.identityProviderConfigProperties = identityProviderConfigProperties;
     }
@@ -40,9 +41,8 @@ public class TenantService {
     public boolean isValidTenant(@NonNull String requestTenantId, @NonNull String accessToken) {
         try {
             LittleHorseGrpc.LittleHorseBlockingStub tenantBoundLHClient = getTenantLHClient(requestTenantId);
-            Tenant tenant = tenantBoundLHClient.getTenant(TenantId.newBuilder()
-                    .setId(requestTenantId)
-                    .build());
+            Tenant tenant = tenantBoundLHClient.getTenant(
+                    TenantId.newBuilder().setId(requestTenantId).build());
 
             return Objects.nonNull(tenant) && isMatchingPropertiesConfiguration(requestTenantId, accessToken);
         } catch (StatusRuntimeException e) {
@@ -68,29 +68,28 @@ public class TenantService {
     @NonNull
     public IdentityProviderListDTO getTenantIdentityProviderConfig(@NonNull String tenantId) {
         Set<IdentityProviderDTO> tenantConfig = identityProviderConfigProperties.getOps().stream()
-                .filter(config ->
-                        StringUtils.equalsIgnoreCase(tenantId, config.getTenantId())
-                )
+                .filter(config -> StringUtils.equalsIgnoreCase(tenantId, config.getTenantId()))
                 .map(IdentityProviderDTO::fromConfigProperties)
                 .flatMap(providerSet -> providerSet.stream().distinct())
                 .collect(Collectors.toSet());
 
-        return IdentityProviderListDTO.builder()
-                .providers(tenantConfig)
-                .build();
+        return IdentityProviderListDTO.builder().providers(tenantConfig).build();
     }
 
     private LittleHorseGrpc.LittleHorseBlockingStub getTenantLHClient(String tenantId) {
-        Optional<LittleHorseGrpc.LittleHorseBlockingStub> optionalTenantClient = Optional.ofNullable(lhClients.get(tenantId));
+        Optional<LittleHorseGrpc.LittleHorseBlockingStub> optionalTenantClient =
+                Optional.ofNullable(lhClients.get(tenantId));
 
-        return optionalTenantClient.orElseThrow(() -> new SecurityException("Could not find a matching configured tenant"));
+        return optionalTenantClient.orElseThrow(
+                () -> new SecurityException("Could not find a matching configured tenant"));
     }
 
-    private boolean isMatchingPropertiesConfiguration(String requestTenantId, String accessToken) throws JsonProcessingException {
+    private boolean isMatchingPropertiesConfiguration(String requestTenantId, String accessToken)
+            throws JsonProcessingException {
         Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
         var tokenTenantId = (String) tokenClaims.get(ALLOWED_TOKEN_CUSTOM_CLAIM);
 
-        //Here we make sure that valid configuration properties actually exist
+        // Here we make sure that valid configuration properties actually exist
         getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
 
         return StringUtils.equalsIgnoreCase(requestTenantId, tokenTenantId);

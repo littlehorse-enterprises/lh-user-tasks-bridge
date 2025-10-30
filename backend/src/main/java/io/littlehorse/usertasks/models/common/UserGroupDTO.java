@@ -2,13 +2,12 @@ package io.littlehorse.usertasks.models.common;
 
 import io.littlehorse.sdk.common.proto.UserTaskRun;
 import jakarta.validation.constraints.NotBlank;
+import java.util.function.Function;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NonNull;
 import org.keycloak.representations.idm.GroupRepresentation;
-
-import java.util.function.Function;
 
 /**
  * {@code UserGroupDTO} is a Data Transfer Object that contains information about a specific UserGroup from an Identity Provider
@@ -19,8 +18,10 @@ import java.util.function.Function;
 public class UserGroupDTO {
     @NotBlank
     private String id;
+
     @NotBlank
     private String name;
+
     private boolean valid;
 
     /**
@@ -49,6 +50,5 @@ public class UserGroupDTO {
         return userTaskRun.hasUserGroup()
                 ? UserGroupDTO.builder().id(userTaskRun.getUserGroup()).build()
                 : null;
-
     }
 }

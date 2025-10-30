@@ -3,11 +3,10 @@ package io.littlehorse.usertasks.util;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.NonNull;
-
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
+import lombok.NonNull;
 
 /**
  * Helper class able to handle token-related functions
@@ -28,8 +27,7 @@ public class TokenUtil {
         // headers are not taken into consideration here, that is why we skip position 0 of the chunk array
         String payload = new String(decoder.decode(chunks[1]));
 
-        TypeReference<HashMap<String, Object>> typeRef = new TypeReference<>() {
-        };
+        TypeReference<HashMap<String, Object>> typeRef = new TypeReference<>() {};
 
         return new ObjectMapper().readValue(payload, typeRef);
     }

@@ -1,5 +1,9 @@
 package io.littlehorse.usertasks.services;
 
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.Mockito.*;
+
 import io.littlehorse.usertasks.exceptions.AdapterException;
 import io.littlehorse.usertasks.idp_adapters.IStandardIdentityProviderAdapter;
 import io.littlehorse.usertasks.idp_adapters.keycloak.KeycloakAdapter;
@@ -10,20 +14,15 @@ import io.littlehorse.usertasks.models.requests.UpsertPasswordRequest;
 import io.littlehorse.usertasks.models.responses.IDPGroupDTO;
 import io.littlehorse.usertasks.models.responses.IDPUserDTO;
 import io.littlehorse.usertasks.models.responses.IDPUserListDTO;
-import org.apache.commons.lang3.StringUtils;
-import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import org.springframework.util.CollectionUtils;
-
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyMap;
-import static org.mockito.Mockito.*;
+import org.apache.commons.lang3.StringUtils;
+import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.springframework.util.CollectionUtils;
 
 @SuppressWarnings("unchecked")
 class UserManagementServiceTest {
@@ -37,29 +36,36 @@ class UserManagementServiceTest {
 
     @Test
     void listUsersFromIdentityProvider_shouldThrowNullPointerExceptionWhenNullAccessTokenIsReceived() {
-        IDPUserSearchRequestFilter requestFilter = IDPUserSearchRequestFilter.builder().build();
+        IDPUserSearchRequestFilter requestFilter =
+                IDPUserSearchRequestFilter.builder().build();
 
-        assertThrows(NullPointerException.class,
-                () -> userManagementService.listUsersFromIdentityProvider(null, keycloakAdapter, requestFilter, firstResult, maxResult));
+        assertThrows(
+                NullPointerException.class,
+                () -> userManagementService.listUsersFromIdentityProvider(
+                        null, keycloakAdapter, requestFilter, firstResult, maxResult));
 
         verify(keycloakAdapter, never()).getManagedUsers(anyMap());
     }
 
     @Test
     void listUsersFromIdentityProvider_shouldThrowNullPointerExceptionWhenNullRequestFilterIsReceived() {
-        assertThrows(NullPointerException.class,
-                () -> userManagementService.listUsersFromIdentityProvider(fakeAccessToken, keycloakAdapter, null, firstResult, maxResult));
+        assertThrows(
+                NullPointerException.class,
+                () -> userManagementService.listUsersFromIdentityProvider(
+                        fakeAccessToken, keycloakAdapter, null, firstResult, maxResult));
 
         verify(keycloakAdapter, never()).getManagedUsers(anyMap());
     }
 
     @Test
     void listUsersFromIdentityProvider_shouldReturnEmptyListWhenNoUsersAreFoundWithNoFiltersUsingKeycloak() {
-        IDPUserSearchRequestFilter requestFilter = IDPUserSearchRequestFilter.builder().build();
+        IDPUserSearchRequestFilter requestFilter =
+                IDPUserSearchRequestFilter.builder().build();
 
         when(keycloakAdapter.getManagedUsers(anyMap())).thenReturn(new IDPUserListDTO());
 
-        IDPUserListDTO listOfUsers = userManagementService.listUsersFromIdentityProvider(fakeAccessToken, keycloakAdapter, requestFilter, firstResult, maxResult);
+        IDPUserListDTO listOfUsers = userManagementService.listUsersFromIdentityProvider(
+                fakeAccessToken, keycloakAdapter, requestFilter, firstResult, maxResult);
 
         assertNotNull(listOfUsers);
         assertTrue(CollectionUtils.isEmpty(listOfUsers.getUsers()));
@@ -76,13 +82,18 @@ class UserManagementServiceTest {
 
     @Test
     void listUsersFromIdentityProvider_shouldReturnListOfUsersWhenUsersAreFoundWithNoFiltersUsingKeycloak() {
-        IDPUserSearchRequestFilter requestFilter = IDPUserSearchRequestFilter.builder().build();
+        IDPUserSearchRequestFilter requestFilter =
+                IDPUserSearchRequestFilter.builder().build();
 
-        IDPUserListDTO foundUsersList = new IDPUserListDTO(Set.of(fakeUserSupplier().get(), fakeUserSupplier().get(), fakeUserSupplier().get()));
+        IDPUserListDTO foundUsersList = new IDPUserListDTO(Set.of(
+                fakeUserSupplier().get(),
+                fakeUserSupplier().get(),
+                fakeUserSupplier().get()));
 
         when(keycloakAdapter.getManagedUsers(anyMap())).thenReturn(foundUsersList);
 
-        IDPUserListDTO listOfUsers = userManagementService.listUsersFromIdentityProvider(fakeAccessToken, keycloakAdapter, requestFilter, firstResult, maxResult);
+        IDPUserListDTO listOfUsers = userManagementService.listUsersFromIdentityProvider(
+                fakeAccessToken, keycloakAdapter, requestFilter, firstResult, maxResult);
 
         int expectedUsersCount = 3;
 
@@ -102,9 +113,8 @@ class UserManagementServiceTest {
 
     @Test
     void listUsersFromIdentityProvider_shouldReturnListOfUsersWhenUsersAreFoundFilteredByEmailUsingKeycloak() {
-        IDPUserSearchRequestFilter requestFilter = IDPUserSearchRequestFilter.builder()
-                .email("somedomain.com")
-                .build();
+        IDPUserSearchRequestFilter requestFilter =
+                IDPUserSearchRequestFilter.builder().email("somedomain.com").build();
 
         IDPUserDTO user1 = fakeUserSupplier().get();
         IDPUserDTO user2 = fakeUserSupplier().get();
@@ -116,7 +126,8 @@ class UserManagementServiceTest {
 
         when(keycloakAdapter.getManagedUsers(anyMap())).thenReturn(foundUsersList);
 
-        IDPUserListDTO listOfUsers = userManagementService.listUsersFromIdentityProvider(fakeAccessToken, keycloakAdapter, requestFilter, firstResult, maxResult);
+        IDPUserListDTO listOfUsers = userManagementService.listUsersFromIdentityProvider(
+                fakeAccessToken, keycloakAdapter, requestFilter, firstResult, maxResult);
 
         int expectedUsersCount = 2;
 
@@ -138,9 +149,8 @@ class UserManagementServiceTest {
 
     @Test
     void listUsersFromIdentityProvider_shouldReturnListOfUsersWhenUsersAreFoundFilteredByFirstNameUsingKeycloak() {
-        IDPUserSearchRequestFilter requestFilter = IDPUserSearchRequestFilter.builder()
-                .firstName("Mar")
-                .build();
+        IDPUserSearchRequestFilter requestFilter =
+                IDPUserSearchRequestFilter.builder().firstName("Mar").build();
 
         IDPUserDTO user1 = fakeUserSupplier().get();
         IDPUserDTO user2 = fakeUserSupplier().get();
@@ -154,7 +164,8 @@ class UserManagementServiceTest {
 
         when(keycloakAdapter.getManagedUsers(anyMap())).thenReturn(foundUsersList);
 
-        IDPUserListDTO listOfUsers = userManagementService.listUsersFromIdentityProvider(fakeAccessToken, keycloakAdapter, requestFilter, firstResult, maxResult);
+        IDPUserListDTO listOfUsers = userManagementService.listUsersFromIdentityProvider(
+                fakeAccessToken, keycloakAdapter, requestFilter, firstResult, maxResult);
 
         int expectedUsersCount = 3;
 
@@ -175,9 +186,8 @@ class UserManagementServiceTest {
 
     @Test
     void listUsersFromIdentityProvider_shouldReturnListOfUsersWhenUsersAreFoundFilteredByLastNameUsingKeycloak() {
-        IDPUserSearchRequestFilter requestFilter = IDPUserSearchRequestFilter.builder()
-                .lastName("th")
-                .build();
+        IDPUserSearchRequestFilter requestFilter =
+                IDPUserSearchRequestFilter.builder().lastName("th").build();
 
         IDPUserDTO user1 = fakeUserSupplier().get();
         IDPUserDTO user2 = fakeUserSupplier().get();
@@ -191,7 +201,8 @@ class UserManagementServiceTest {
 
         when(keycloakAdapter.getManagedUsers(anyMap())).thenReturn(foundUsersList);
 
-        IDPUserListDTO listOfUsers = userManagementService.listUsersFromIdentityProvider(fakeAccessToken, keycloakAdapter, requestFilter, firstResult, maxResult);
+        IDPUserListDTO listOfUsers = userManagementService.listUsersFromIdentityProvider(
+                fakeAccessToken, keycloakAdapter, requestFilter, firstResult, maxResult);
 
         int expectedUsersCount = 3;
 
@@ -212,9 +223,8 @@ class UserManagementServiceTest {
 
     @Test
     void listUsersFromIdentityProvider_shouldReturnListOfUsersWhenUsersAreFoundFilteredByUsernameUsingKeycloak() {
-        IDPUserSearchRequestFilter requestFilter = IDPUserSearchRequestFilter.builder()
-                .username("any")
-                .build();
+        IDPUserSearchRequestFilter requestFilter =
+                IDPUserSearchRequestFilter.builder().username("any").build();
 
         IDPUserDTO user1 = fakeUserSupplier().get();
         IDPUserDTO user2 = fakeUserSupplier().get();
@@ -226,7 +236,8 @@ class UserManagementServiceTest {
 
         when(keycloakAdapter.getManagedUsers(anyMap())).thenReturn(foundUsersList);
 
-        IDPUserListDTO listOfUsers = userManagementService.listUsersFromIdentityProvider(fakeAccessToken, keycloakAdapter, requestFilter, firstResult, maxResult);
+        IDPUserListDTO listOfUsers = userManagementService.listUsersFromIdentityProvider(
+                fakeAccessToken, keycloakAdapter, requestFilter, firstResult, maxResult);
 
         int expectedUsersCount = 2;
 
@@ -248,9 +259,8 @@ class UserManagementServiceTest {
     @Test
     void listUsersFromIdentityProvider_shouldReturnListOfUsersWhenUsersAreFoundFilteredByUserGroupIdUsingKeycloak() {
         String userGroupId = UUID.randomUUID().toString();
-        IDPUserSearchRequestFilter requestFilter = IDPUserSearchRequestFilter.builder()
-                .userGroupId(userGroupId)
-                .build();
+        IDPUserSearchRequestFilter requestFilter =
+                IDPUserSearchRequestFilter.builder().userGroupId(userGroupId).build();
 
         IDPUserDTO user1 = fakeUserSupplier().get();
         IDPUserDTO user2 = fakeUserSupplier().get();
@@ -264,7 +274,8 @@ class UserManagementServiceTest {
 
         when(keycloakAdapter.getManagedUsers(anyMap())).thenReturn(foundUsersList);
 
-        IDPUserListDTO listOfUsers = userManagementService.listUsersFromIdentityProvider(fakeAccessToken, keycloakAdapter, requestFilter, firstResult, maxResult);
+        IDPUserListDTO listOfUsers = userManagementService.listUsersFromIdentityProvider(
+                fakeAccessToken, keycloakAdapter, requestFilter, firstResult, maxResult);
 
         int expectedUsersCount = 3;
 
@@ -286,21 +297,24 @@ class UserManagementServiceTest {
     @Test
     void createUserInIdentityProvider_shouldThrowNullPointerExceptionWhenNullAccessTokenIsReceived() {
         CreateManagedUserRequest request = CreateManagedUserRequest.builder().build();
-        assertThrows(NullPointerException.class,
-                ()-> userManagementService.createUserInIdentityProvider(null, request, keycloakAdapter));
+        assertThrows(
+                NullPointerException.class,
+                () -> userManagementService.createUserInIdentityProvider(null, request, keycloakAdapter));
     }
 
     @Test
     void createUserInIdentityProvider_shouldThrowNullPointerExceptionWhenNullRequestObjectIsReceived() {
-        assertThrows(NullPointerException.class,
-                ()-> userManagementService.createUserInIdentityProvider(fakeAccessToken, null, keycloakAdapter));
+        assertThrows(
+                NullPointerException.class,
+                () -> userManagementService.createUserInIdentityProvider(fakeAccessToken, null, keycloakAdapter));
     }
 
     @Test
     void createUserInIdentityProvider_shouldThrowNullPointerExceptionWhenNullIdentityProviderAdapterIsReceived() {
         CreateManagedUserRequest request = CreateManagedUserRequest.builder().build();
-        assertThrows(NullPointerException.class,
-                ()-> userManagementService.createUserInIdentityProvider(fakeAccessToken, request, null));
+        assertThrows(
+                NullPointerException.class,
+                () -> userManagementService.createUserInIdentityProvider(fakeAccessToken, request, null));
     }
 
     @Test
@@ -336,30 +350,34 @@ class UserManagementServiceTest {
     }
 
     @Test
-    void setPassword_shouldThrowNullPointerExceptionWhenNullAccessTokenIsReceived(){
+    void setPassword_shouldThrowNullPointerExceptionWhenNullAccessTokenIsReceived() {
         UpsertPasswordRequest request = UpsertPasswordRequest.builder().build();
-        assertThrows(NullPointerException.class,
-                ()-> userManagementService.setPassword(null, "someUserId", request, keycloakAdapter));
+        assertThrows(
+                NullPointerException.class,
+                () -> userManagementService.setPassword(null, "someUserId", request, keycloakAdapter));
     }
 
     @Test
-    void setPassword_shouldThrowNullPointerExceptionWhenNullUserIdIsReceived(){
+    void setPassword_shouldThrowNullPointerExceptionWhenNullUserIdIsReceived() {
         UpsertPasswordRequest request = UpsertPasswordRequest.builder().build();
-        assertThrows(NullPointerException.class,
-                ()-> userManagementService.setPassword(fakeAccessToken, null, request, keycloakAdapter));
+        assertThrows(
+                NullPointerException.class,
+                () -> userManagementService.setPassword(fakeAccessToken, null, request, keycloakAdapter));
     }
 
     @Test
-    void setPassword_shouldThrowNullPointerExceptionWhenNullRequestIsReceived(){
-        assertThrows(NullPointerException.class,
-                ()-> userManagementService.setPassword(fakeAccessToken, "someUserId", null, keycloakAdapter));
+    void setPassword_shouldThrowNullPointerExceptionWhenNullRequestIsReceived() {
+        assertThrows(
+                NullPointerException.class,
+                () -> userManagementService.setPassword(fakeAccessToken, "someUserId", null, keycloakAdapter));
     }
 
     @Test
-    void setPassword_shouldThrowNullPointerExceptionWhenNullIdentityProviderAdapterIsReceived(){
+    void setPassword_shouldThrowNullPointerExceptionWhenNullIdentityProviderAdapterIsReceived() {
         UpsertPasswordRequest request = UpsertPasswordRequest.builder().build();
-        assertThrows(NullPointerException.class,
-                ()-> userManagementService.setPassword(fakeAccessToken, "someUserId", request, null));
+        assertThrows(
+                NullPointerException.class,
+                () -> userManagementService.setPassword(fakeAccessToken, "someUserId", request, null));
     }
 
     @Test
@@ -383,25 +401,30 @@ class UserManagementServiceTest {
 
         assertEquals(expectedParamsCount, paramsSent.size());
         assertEquals(fakePassword, paramsSent.get("password"));
-        assertFalse((boolean)paramsSent.get("isTemporary"));
+        assertFalse((boolean) paramsSent.get("isTemporary"));
     }
 
     @Test
     void getUserFromIdentityProvider_shouldThrowNullPointerExceptionWhenNullAccessTokenIsReceived() {
-        assertThrows(NullPointerException.class,
-                () -> userManagementService.getUserFromIdentityProvider(null, UUID.randomUUID().toString(), keycloakAdapter));
+        assertThrows(
+                NullPointerException.class,
+                () -> userManagementService.getUserFromIdentityProvider(
+                        null, UUID.randomUUID().toString(), keycloakAdapter));
     }
 
     @Test
     void getUserFromIdentityProvider_shouldThrowNullPointerExceptionWhenNullUserIdIsReceived() {
-        assertThrows(NullPointerException.class,
+        assertThrows(
+                NullPointerException.class,
                 () -> userManagementService.getUserFromIdentityProvider(fakeAccessToken, null, keycloakAdapter));
     }
 
     @Test
     void getUserFromIdentityProvider_shouldThrowNullPointerExceptionWhenNullIdentityProviderAdapterIsReceived() {
-        assertThrows(NullPointerException.class,
-                () -> userManagementService.getUserFromIdentityProvider(fakeAccessToken, UUID.randomUUID().toString(), null));
+        assertThrows(
+                NullPointerException.class,
+                () -> userManagementService.getUserFromIdentityProvider(
+                        fakeAccessToken, UUID.randomUUID().toString(), null));
     }
 
     @Test
@@ -416,7 +439,8 @@ class UserManagementServiceTest {
 
         when(keycloakAdapter.getManagedUser(anyMap())).thenReturn(userDTO);
 
-        Optional<IDPUserDTO> optionalUserDTO = userManagementService.getUserFromIdentityProvider(fakeAccessToken, userId, keycloakAdapter);
+        Optional<IDPUserDTO> optionalUserDTO =
+                userManagementService.getUserFromIdentityProvider(fakeAccessToken, userId, keycloakAdapter);
 
         assertTrue(optionalUserDTO.isPresent());
         assertTrue(StringUtils.equalsIgnoreCase(userId, optionalUserDTO.get().getId()));
@@ -439,7 +463,8 @@ class UserManagementServiceTest {
 
         when(keycloakAdapter.getManagedUser(anyMap())).thenReturn(null);
 
-        Optional<IDPUserDTO> optionalUserDTO = userManagementService.getUserFromIdentityProvider(fakeAccessToken, userId, keycloakAdapter);
+        Optional<IDPUserDTO> optionalUserDTO =
+                userManagementService.getUserFromIdentityProvider(fakeAccessToken, userId, keycloakAdapter);
 
         assertFalse(optionalUserDTO.isPresent());
 
@@ -460,24 +485,27 @@ class UserManagementServiceTest {
         var userId = UUID.randomUUID().toString();
         UpdateManagedUserRequest request = UpdateManagedUserRequest.builder().build();
 
-        assertThrows(NullPointerException.class,
-                ()-> userManagementService.updateUser(null, userId, request, keycloakAdapter));
+        assertThrows(
+                NullPointerException.class,
+                () -> userManagementService.updateUser(null, userId, request, keycloakAdapter));
     }
 
     @Test
     void updateUser_shouldThrowNullPointerExceptionWhenNullUserIdIsReceived() {
         UpdateManagedUserRequest request = UpdateManagedUserRequest.builder().build();
 
-        assertThrows(NullPointerException.class,
-                ()-> userManagementService.updateUser(fakeAccessToken, null, request, keycloakAdapter));
+        assertThrows(
+                NullPointerException.class,
+                () -> userManagementService.updateUser(fakeAccessToken, null, request, keycloakAdapter));
     }
 
     @Test
     void updateUser_shouldThrowNullPointerExceptionWhenNullRequestIsReceived() {
         var userId = UUID.randomUUID().toString();
 
-        assertThrows(NullPointerException.class,
-                ()-> userManagementService.updateUser(fakeAccessToken, userId, null, keycloakAdapter));
+        assertThrows(
+                NullPointerException.class,
+                () -> userManagementService.updateUser(fakeAccessToken, userId, null, keycloakAdapter));
     }
 
     @Test
@@ -485,8 +513,9 @@ class UserManagementServiceTest {
         var userId = UUID.randomUUID().toString();
         UpdateManagedUserRequest request = UpdateManagedUserRequest.builder().build();
 
-        assertThrows(NullPointerException.class,
-                ()-> userManagementService.updateUser(fakeAccessToken, userId, request, null));
+        assertThrows(
+                NullPointerException.class,
+                () -> userManagementService.updateUser(fakeAccessToken, userId, request, null));
     }
 
     @Test
@@ -543,7 +572,8 @@ class UserManagementServiceTest {
 
         doThrow(new AdapterException(exceptionMessage)).when(keycloakAdapter).updateManagedUser(anyMap());
 
-        AdapterException expectedException = assertThrows(AdapterException.class,
+        AdapterException expectedException = assertThrows(
+                AdapterException.class,
                 () -> userManagementService.updateUser(fakeAccessToken, userId, request, keycloakAdapter));
 
         assertTrue(StringUtils.equalsIgnoreCase(exceptionMessage, expectedException.getMessage()));
@@ -560,18 +590,22 @@ class UserManagementServiceTest {
     @Test
     void deleteUser_shouldThrowNullPointerExceptionWhenNullAccessTokenIsReceived() {
         String fakeUserId = UUID.randomUUID().toString();
-        assertThrows(NullPointerException.class, ()-> userManagementService.deleteUser(null, fakeUserId, keycloakAdapter));
+        assertThrows(
+                NullPointerException.class, () -> userManagementService.deleteUser(null, fakeUserId, keycloakAdapter));
     }
 
     @Test
     void deleteUser_shouldThrowNullPointerExceptionWhenNullUserIdIsReceived() {
-        assertThrows(NullPointerException.class, ()-> userManagementService.deleteUser(fakeAccessToken, null, keycloakAdapter));
+        assertThrows(
+                NullPointerException.class,
+                () -> userManagementService.deleteUser(fakeAccessToken, null, keycloakAdapter));
     }
 
     @Test
     void deleteUser_shouldThrowNullPointerExceptionWhenNullIdentityProviderAdapterIsReceived() {
         String fakeUserId = UUID.randomUUID().toString();
-        assertThrows(NullPointerException.class, ()-> userManagementService.deleteUser(fakeAccessToken, fakeUserId, null));
+        assertThrows(
+                NullPointerException.class, () -> userManagementService.deleteUser(fakeAccessToken, fakeUserId, null));
     }
 
     @Test
@@ -594,20 +628,23 @@ class UserManagementServiceTest {
 
     @Test
     void assignAdminRole_shouldThrowNullPointerExceptionWhenNullAccessTokenIsReceived() {
-        assertThrows(NullPointerException.class,
-                ()-> userManagementService.assignAdminRole(null, "some-user-id", keycloakAdapter));
+        assertThrows(
+                NullPointerException.class,
+                () -> userManagementService.assignAdminRole(null, "some-user-id", keycloakAdapter));
     }
 
     @Test
     void assignAdminRole_shouldThrowNullPointerExceptionWhenNullUserIdIsReceived() {
-        assertThrows(NullPointerException.class,
-                ()-> userManagementService.assignAdminRole(fakeAccessToken, null, keycloakAdapter));
+        assertThrows(
+                NullPointerException.class,
+                () -> userManagementService.assignAdminRole(fakeAccessToken, null, keycloakAdapter));
     }
 
     @Test
     void assignAdminRole_shouldThrowNullPointerExceptionWhenNullIdentityProviderAdapterIsReceived() {
-        assertThrows(NullPointerException.class,
-                ()-> userManagementService.assignAdminRole(fakeAccessToken, "some-user-id", null));
+        assertThrows(
+                NullPointerException.class,
+                () -> userManagementService.assignAdminRole(fakeAccessToken, "some-user-id", null));
     }
 
     @Test
@@ -629,17 +666,23 @@ class UserManagementServiceTest {
 
     @Test
     void removeAdminRole_shouldThrowNullPointerExceptionWhenNullAccessTokenIsReceived() {
-        assertThrows(NullPointerException.class, ()-> userManagementService.removeAdminRole(null, "someUserId", keycloakAdapter));
+        assertThrows(
+                NullPointerException.class,
+                () -> userManagementService.removeAdminRole(null, "someUserId", keycloakAdapter));
     }
 
     @Test
     void removeAdminRole_shouldThrowNullPointerExceptionWhenNullUserIdIsReceived() {
-        assertThrows(NullPointerException.class, ()-> userManagementService.removeAdminRole(fakeAccessToken, null, keycloakAdapter));
+        assertThrows(
+                NullPointerException.class,
+                () -> userManagementService.removeAdminRole(fakeAccessToken, null, keycloakAdapter));
     }
 
     @Test
     void removeAdminRole_shouldThrowNullPointerExceptionWhenNullIdentityProviderAdapterIsReceived() {
-        assertThrows(NullPointerException.class, ()-> userManagementService.removeAdminRole(fakeAccessToken, "aUserId", null));
+        assertThrows(
+                NullPointerException.class,
+                () -> userManagementService.removeAdminRole(fakeAccessToken, "aUserId", null));
     }
 
     @Test
@@ -662,26 +705,30 @@ class UserManagementServiceTest {
 
     @Test
     void joinGroup_shouldThrowNullPointerExceptionWhenNullAccessTokenIsReceived() {
-        assertThrows(NullPointerException.class, ()-> userManagementService.joinGroup(null, "userId",
-                "groupId", keycloakAdapter));
+        assertThrows(
+                NullPointerException.class,
+                () -> userManagementService.joinGroup(null, "userId", "groupId", keycloakAdapter));
     }
 
     @Test
     void joinGroup_shouldThrowNullPointerExceptionWhenNullUserIdIsReceived() {
-        assertThrows(NullPointerException.class, ()-> userManagementService.joinGroup(fakeAccessToken, null,
-                "groupId", keycloakAdapter));
+        assertThrows(
+                NullPointerException.class,
+                () -> userManagementService.joinGroup(fakeAccessToken, null, "groupId", keycloakAdapter));
     }
 
     @Test
     void joinGroup_shouldThrowNullPointerExceptionWhenNullGroupIdIsReceived() {
-        assertThrows(NullPointerException.class, ()-> userManagementService.joinGroup(fakeAccessToken, "userId",
-                null, keycloakAdapter));
+        assertThrows(
+                NullPointerException.class,
+                () -> userManagementService.joinGroup(fakeAccessToken, "userId", null, keycloakAdapter));
     }
 
     @Test
     void joinGroup_shouldThrowNullPointerExceptionWhenNullIdentityProviderAdapterIsReceived() {
-        assertThrows(NullPointerException.class, ()-> userManagementService.joinGroup(fakeAccessToken, "userId",
-                "groupId", null));
+        assertThrows(
+                NullPointerException.class,
+                () -> userManagementService.joinGroup(fakeAccessToken, "userId", "groupId", null));
     }
 
     @Test
@@ -706,26 +753,30 @@ class UserManagementServiceTest {
 
     @Test
     void removeUserFromGroup_shouldThrowNullPointerExceptionWhenNullAccessTokenIsReceived() {
-        assertThrows(NullPointerException.class,
-                ()-> userManagementService.removeUserFromGroup(null, "someUserId", "someGroupId", keycloakAdapter));
+        assertThrows(
+                NullPointerException.class,
+                () -> userManagementService.removeUserFromGroup(null, "someUserId", "someGroupId", keycloakAdapter));
     }
 
     @Test
     void removeUserFromGroup_shouldThrowNullPointerExceptionWhenNullUserIdIsReceived() {
-        assertThrows(NullPointerException.class,
-                ()-> userManagementService.removeUserFromGroup(fakeAccessToken, null, "someGroupId", keycloakAdapter));
+        assertThrows(
+                NullPointerException.class,
+                () -> userManagementService.removeUserFromGroup(fakeAccessToken, null, "someGroupId", keycloakAdapter));
     }
 
     @Test
     void removeUserFromGroup_shouldThrowNullPointerExceptionWhenNullGroupIdIsReceived() {
-        assertThrows(NullPointerException.class,
-                ()-> userManagementService.removeUserFromGroup(fakeAccessToken, "someUserId", null, keycloakAdapter));
+        assertThrows(
+                NullPointerException.class,
+                () -> userManagementService.removeUserFromGroup(fakeAccessToken, "someUserId", null, keycloakAdapter));
     }
 
     @Test
     void removeUserFromGroup_shouldThrowNullPointerExceptionWhenNullIdentityProviderAdapterIsReceived() {
-        assertThrows(NullPointerException.class,
-                ()-> userManagementService.removeUserFromGroup(fakeAccessToken, "someUserId", "someUserId", null));
+        assertThrows(
+                NullPointerException.class,
+                () -> userManagementService.removeUserFromGroup(fakeAccessToken, "someUserId", "someUserId", null));
     }
 
     @Test
@@ -748,7 +799,8 @@ class UserManagementServiceTest {
         assertTrue(StringUtils.equalsIgnoreCase(groupId, (String) paramsSent.get("userGroupId")));
     }
 
-    private void assertMandatoryParamsForKeycloakSearch(Map<String, Object> paramsUsedToSearchUsers, int expectedParamsCount) {
+    private void assertMandatoryParamsForKeycloakSearch(
+            Map<String, Object> paramsUsedToSearchUsers, int expectedParamsCount) {
         assertTrue(paramsUsedToSearchUsers.containsKey("firstResult"));
         assertTrue(paramsUsedToSearchUsers.containsKey("maxResults"));
         assertTrue(paramsUsedToSearchUsers.containsKey("accessToken"));
@@ -776,7 +828,7 @@ class UserManagementServiceTest {
     }
 
     private Supplier<IDPGroupDTO> fakeGroupSupplier() {
-        return ()-> IDPGroupDTO.builder()
+        return () -> IDPGroupDTO.builder()
                 .id(UUID.randomUUID().toString())
                 .name("my-group")
                 .build();

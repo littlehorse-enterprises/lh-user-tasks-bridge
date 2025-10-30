@@ -14,6 +14,7 @@ import org.keycloak.representations.idm.GroupRepresentation;
 public class IDPGroupDTO {
     @NotBlank
     private String id;
+
     @NotBlank
     private String name;
 

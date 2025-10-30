@@ -2,13 +2,12 @@ package io.littlehorse.usertasks.models.common;
 
 import io.littlehorse.sdk.common.proto.UserTaskRun;
 import jakarta.validation.constraints.NotBlank;
+import java.util.function.Function;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NonNull;
 import org.keycloak.representations.idm.UserRepresentation;
-
-import java.util.function.Function;
 
 /**
  * {@code UserDTO} is a Data Transfer Object that contains information about a specific User from an Identity Provider
@@ -20,6 +19,7 @@ import java.util.function.Function;
 public class UserDTO {
     @NotBlank
     private String id;
+
     private String email;
     private String username;
     private String firstName;

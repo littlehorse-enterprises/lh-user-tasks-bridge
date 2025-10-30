@@ -7,14 +7,13 @@ import io.littlehorse.sdk.common.proto.WfRunId;
 import io.littlehorse.usertasks.models.common.UserTaskVariableValue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import java.util.Map;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.NonNull;
-
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Data
 @Builder
@@ -23,8 +22,10 @@ import java.util.stream.Collectors;
 public class CompleteUserTaskRequest {
     @NotBlank
     private String wfRunId;
+
     @NotBlank
     private String userTaskRunGuid;
+
     @NotEmpty
     private Map<String, UserTaskVariableValue> results;
 
@@ -34,9 +35,7 @@ public class CompleteUserTaskRequest {
         return CompleteUserTaskRunRequest.newBuilder()
                 .setUserId(userId)
                 .setUserTaskRunId(UserTaskRunId.newBuilder()
-                        .setWfRunId(WfRunId.newBuilder()
-                                .setId(getWfRunId())
-                                .build())
+                        .setWfRunId(WfRunId.newBuilder().setId(getWfRunId()).build())
                         .setUserTaskGuid(getUserTaskRunGuid())
                         .build())
                 .putAllResults(parsedResults)
@@ -44,7 +43,7 @@ public class CompleteUserTaskRequest {
     }
 
     private Map<String, VariableValue> parseResultsToServerType() {
-        return this.results.entrySet().stream()
-                .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().toServerType()));
+        return this.results.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue()
+                .toServerType()));
     }
 }

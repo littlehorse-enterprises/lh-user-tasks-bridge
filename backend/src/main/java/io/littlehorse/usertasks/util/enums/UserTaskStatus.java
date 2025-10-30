@@ -10,7 +10,10 @@ import lombok.NonNull;
  * @see io.littlehorse.sdk.common.proto.UserTaskRunStatus
  */
 public enum UserTaskStatus {
-    UNASSIGNED, ASSIGNED, DONE, CANCELLED;
+    UNASSIGNED,
+    ASSIGNED,
+    DONE,
+    CANCELLED;
 
     /**
      * Converts an {@code io.littlehorse.sdk.common.proto.UserTaskRunStatus} to an {@code UserTaskStatus}

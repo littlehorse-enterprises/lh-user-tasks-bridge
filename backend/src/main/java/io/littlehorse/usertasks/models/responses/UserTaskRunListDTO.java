@@ -5,14 +5,13 @@ import io.littlehorse.usertasks.idp_adapters.IStandardIdentityProviderAdapter;
 import io.littlehorse.usertasks.models.common.UserDTO;
 import io.littlehorse.usertasks.models.common.UserGroupDTO;
 import io.littlehorse.usertasks.util.enums.CustomUserIdClaim;
-import lombok.*;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.util.CollectionUtils;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import lombok.*;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.util.CollectionUtils;
 
 /**
  * {@code UserTaskRunListDTO} is a Data Transfer Object that contains a Set of {@code io.littlehorse.sdk.common.proto.UserTaskRun}
@@ -29,21 +28,27 @@ public class UserTaskRunListDTO {
     private Set<SimpleUserTaskRunDTO> userTasks;
     private String bookmark;
 
-    public void addAssignmentDetails(@NonNull String accessToken, @NonNull IStandardIdentityProviderAdapter identityProviderHandler,
-                                     CustomIdentityProviderProperties customIdentityProviderProperties) {
+    public void addAssignmentDetails(
+            @NonNull String accessToken,
+            @NonNull IStandardIdentityProviderAdapter identityProviderHandler,
+            CustomIdentityProviderProperties customIdentityProviderProperties) {
         if (!CollectionUtils.isEmpty(this.getUserTasks())) {
             for (SimpleUserTaskRunDTO userTaskRunDTO : this.getUserTasks()) {
-                addAssignedUserInfo(accessToken, identityProviderHandler, userTaskRunDTO, customIdentityProviderProperties);
+                addAssignedUserInfo(
+                        accessToken, identityProviderHandler, userTaskRunDTO, customIdentityProviderProperties);
                 addAssignedUserGroupInfo(accessToken, identityProviderHandler, userTaskRunDTO);
             }
         }
     }
 
-    private void addAssignedUserInfo(String accessToken, IStandardIdentityProviderAdapter identityProviderHandler,
-                                     SimpleUserTaskRunDTO userTaskRunDTO,
-                                     CustomIdentityProviderProperties customIdentityProviderProperties) {
+    private void addAssignedUserInfo(
+            String accessToken,
+            IStandardIdentityProviderAdapter identityProviderHandler,
+            SimpleUserTaskRunDTO userTaskRunDTO,
+            CustomIdentityProviderProperties customIdentityProviderProperties) {
         if (Objects.nonNull(userTaskRunDTO.getUser())) {
-            Map<String, Object> params = getIdentityProviderSearchUserParams(accessToken, userTaskRunDTO, customIdentityProviderProperties);
+            Map<String, Object> params =
+                    getIdentityProviderSearchUserParams(accessToken, userTaskRunDTO, customIdentityProviderProperties);
 
             UserDTO userDTO = identityProviderHandler.getUserInfo(params);
 
@@ -58,10 +63,17 @@ public class UserTaskRunListDTO {
         }
     }
 
-    private void addAssignedUserGroupInfo(String accessToken, IStandardIdentityProviderAdapter identityProviderHandler,
-                                          SimpleUserTaskRunDTO userTaskRunDTO) {
-        if (Objects.nonNull(userTaskRunDTO.getUserGroup()) && StringUtils.isNotBlank(userTaskRunDTO.getUserGroup().getId())) {
-            Map<String, Object> params = Map.of("accessToken", accessToken, "userGroupName", userTaskRunDTO.getUserGroup().getId());
+    private void addAssignedUserGroupInfo(
+            String accessToken,
+            IStandardIdentityProviderAdapter identityProviderHandler,
+            SimpleUserTaskRunDTO userTaskRunDTO) {
+        if (Objects.nonNull(userTaskRunDTO.getUserGroup())
+                && StringUtils.isNotBlank(userTaskRunDTO.getUserGroup().getId())) {
+            Map<String, Object> params = Map.of(
+                    "accessToken",
+                    accessToken,
+                    "userGroupName",
+                    userTaskRunDTO.getUserGroup().getId());
 
             UserGroupDTO userGroupDTO = identityProviderHandler.getUserGroup(params);
 
@@ -76,8 +88,12 @@ public class UserTaskRunListDTO {
         }
     }
 
-    private Map<String, Object> getIdentityProviderSearchUserParams(String accessToken, SimpleUserTaskRunDTO userTaskRunDTO, CustomIdentityProviderProperties customIdentityProviderProperties) {
-        Map<String, Object> standardParams = Map.of("accessToken", accessToken, "userId", userTaskRunDTO.getUser().getId());
+    private Map<String, Object> getIdentityProviderSearchUserParams(
+            String accessToken,
+            SimpleUserTaskRunDTO userTaskRunDTO,
+            CustomIdentityProviderProperties customIdentityProviderProperties) {
+        Map<String, Object> standardParams = Map.of(
+                "accessToken", accessToken, "userId", userTaskRunDTO.getUser().getId());
 
         Map<String, Object> params = new HashMap<>(standardParams);
 

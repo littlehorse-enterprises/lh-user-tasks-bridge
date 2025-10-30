@@ -1,15 +1,14 @@
 package io.littlehorse.usertasks.models.responses;
 
+import static io.littlehorse.usertasks.util.constants.AuthoritiesConstants.LH_USER_TASKS_ADMIN_ROLE;
+
+import java.util.*;
+import java.util.stream.Collectors;
 import lombok.Builder;
 import lombok.Data;
 import org.keycloak.representations.idm.GroupRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
 import org.springframework.util.CollectionUtils;
-
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static io.littlehorse.usertasks.util.constants.AuthoritiesConstants.LH_USER_TASKS_ADMIN_ROLE;
 
 /**
  * {@code IDPUserDTO} is a Data Transfer Object that contains information about a specific User from an Identity Provider.
@@ -34,8 +33,8 @@ public class IDPUserDTO {
      * @see org.keycloak.representations.idm.UserRepresentation
      * @see org.keycloak.representations.idm.GroupRepresentation
      */
-    public static IDPUserDTO transform(UserRepresentation userRepresentation,
-                                       Collection<GroupRepresentation> groupsRepresentation) {
+    public static IDPUserDTO transform(
+            UserRepresentation userRepresentation, Collection<GroupRepresentation> groupsRepresentation) {
         Set<IDPGroupDTO> foundGroups = getGroupsFromKeycloakGroupsRepresentation(groupsRepresentation);
 
         return IDPUserDTO.builder()
@@ -62,9 +61,8 @@ public class IDPUserDTO {
         }
 
         if (!CollectionUtils.isEmpty(getClientRoles())) {
-            Set<String> allClientRoles = getClientRoles().values().stream()
-                    .flatMap(Set::stream)
-                    .collect(Collectors.toUnmodifiableSet());
+            Set<String> allClientRoles =
+                    getClientRoles().values().stream().flatMap(Set::stream).collect(Collectors.toUnmodifiableSet());
 
             allRoles.addAll(allClientRoles);
         }
@@ -72,7 +70,8 @@ public class IDPUserDTO {
         return allRoles.contains(LH_USER_TASKS_ADMIN_ROLE);
     }
 
-    private static Set<IDPGroupDTO> getGroupsFromKeycloakGroupsRepresentation(Collection<GroupRepresentation> groupsRepresentation) {
+    private static Set<IDPGroupDTO> getGroupsFromKeycloakGroupsRepresentation(
+            Collection<GroupRepresentation> groupsRepresentation) {
         if (!CollectionUtils.isEmpty(groupsRepresentation)) {
             return groupsRepresentation.stream()
                     .filter(Objects::nonNull)

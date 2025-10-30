@@ -6,6 +6,9 @@ import io.littlehorse.sdk.common.config.LHConfig;
 import io.littlehorse.sdk.common.proto.LittleHorseGrpc;
 import io.littlehorse.sdk.common.proto.TenantId;
 import jakarta.servlet.http.HttpServletRequest;
+import java.net.URI;
+import java.util.*;
+import java.util.stream.Collectors;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -19,32 +22,27 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.jwt.JwtClaimNames;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
-
-import java.net.URI;
-import java.util.*;
-import java.util.stream.Collectors;
 
 @Configuration
 @EnableMethodSecurity
 @EnableWebSecurity
 /*
-  This configuration is using default auto config for the filterChain. No CSRF protection yet. No session.
- */
+ This configuration is using default auto config for the filterChain. No CSRF protection yet. No session.
+*/
 public class WebSecurityConfiguration {
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http, AuthenticationManagerResolver<HttpServletRequest> authenticationManagerResolver)
+    SecurityFilterChain securityFilterChain(
+            HttpSecurity http, AuthenticationManagerResolver<HttpServletRequest> authenticationManagerResolver)
             throws Exception {
-        String[] publicPaths = {"/config/**", "/api-docs/**", "/swagger-ui/**", "/actuator/**"}; //These paths do not require authentication
+        String[] publicPaths = {"/config/**", "/api-docs/**", "/swagger-ui/**", "/actuator/**"
+        }; // These paths do not require authentication
 
-        http.authorizeHttpRequests(
-                        auth -> auth
-                                .requestMatchers(HttpMethod.GET, publicPaths)
-                                .permitAll()
-                                .anyRequest()
-                                .authenticated())
+        http.authorizeHttpRequests(auth -> auth.requestMatchers(HttpMethod.GET, publicPaths)
+                        .permitAll()
+                        .anyRequest()
+                        .authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2.authenticationManagerResolver(authenticationManagerResolver))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .cors(Customizer.withDefaults())
@@ -63,20 +61,26 @@ public class WebSecurityConfiguration {
 
         @Override
         public Optional<SpringAddonsOidcProperties.OpenidProviderProperties> resolve(Map<String, Object> claimSet) {
-            final var tokenIss = Optional.ofNullable(claimSet.get(JwtClaimNames.ISS)).map(Object::toString)
+            final var tokenIss = Optional.ofNullable(claimSet.get(JwtClaimNames.ISS))
+                    .map(Object::toString)
                     .orElseThrow(() -> new RuntimeException("Invalid token: missing issuer"));
-            return properties.getOps().stream().filter(opProps -> {
-                final var opBaseHref = Optional.ofNullable(opProps.getIss()).map(URI::toString).orElse(null);
-                if (!StringUtils.hasText(opBaseHref)) {
-                    return false;
-                }
-                return tokenIss.startsWith(opBaseHref);
-            }).findAny();
+            return properties.getOps().stream()
+                    .filter(opProps -> {
+                        final var opBaseHref = Optional.ofNullable(opProps.getIss())
+                                .map(URI::toString)
+                                .orElse(null);
+                        if (!StringUtils.hasText(opBaseHref)) {
+                            return false;
+                        }
+                        return tokenIss.startsWith(opBaseHref);
+                    })
+                    .findAny();
         }
     }
 
     @Bean
-    public Map<String, LittleHorseGrpc.LittleHorseBlockingStub> lhClient(IdentityProviderConfigProperties identityProviderConfigProperties) {
+    public Map<String, LittleHorseGrpc.LittleHorseBlockingStub> lhClient(
+            IdentityProviderConfigProperties identityProviderConfigProperties) {
         Set<String> configuredTenants = getConfiguredTenants(identityProviderConfigProperties);
 
         return getPerTenantLHClients(configuredTenants);
@@ -101,11 +105,9 @@ public class WebSecurityConfiguration {
         Map<String, LittleHorseGrpc.LittleHorseBlockingStub> perTenantClients = new HashMap<>();
 
         configuredTenants.forEach(tenantIdFromConfig -> {
-            TenantId tenantId = TenantId.newBuilder()
-                    .setId(tenantIdFromConfig)
-                    .build();
-            LittleHorseGrpc.LittleHorseBlockingStub tenantBoundClient = lhConfig.getBlockingStub(lhServerHost,
-                    lhServerPort, tenantId);
+            TenantId tenantId = TenantId.newBuilder().setId(tenantIdFromConfig).build();
+            LittleHorseGrpc.LittleHorseBlockingStub tenantBoundClient =
+                    lhConfig.getBlockingStub(lhServerHost, lhServerPort, tenantId);
 
             perTenantClients.put(tenantIdFromConfig, tenantBoundClient);
         });
