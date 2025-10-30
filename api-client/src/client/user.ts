@@ -1,5 +1,6 @@
 import { LHUTBApiClient } from "../client";
 import {
+  AuditEventDTO,
   DetailedUserTaskRunDTO,
   UserDTO,
   UserGroupListDTO,
@@ -13,6 +14,10 @@ import {
   GetClaimableTasksParams,
   GetMyTasksParams,
   GetUserTaskDetailParams,
+  PostUserTaskCommentParams,
+  EditUserTaskCommentParams,
+  DeleteUserTaskCommentParams,
+  GetUserTaskCommentsParams,
 } from "../types/user";
 
 import { objectToURLSearchParams } from "../utils";
@@ -108,6 +113,55 @@ export class UserController {
     const queryParams = objectToURLSearchParams(params);
     return this.client.fetch<UserTaskRunListDTO>(
       `/tasks/claimable?${queryParams.toString()}`,
+    );
+  }
+  /**
+   * Gets all comments for specific userTask
+   */
+  async getUserTaskComments(
+    params: GetUserTaskCommentsParams,
+  ): Promise<AuditEventDTO[]> {
+    return this.client.fetch<AuditEventDTO[]>(
+      `/tasks/${params.wf_run_id}/${params.user_task_guid}/comments`,
+    );
+  }
+  /**
+   * Adds a comment to a userTask
+   */
+  async postUserTaskComment(
+    params: PostUserTaskCommentParams,
+  ): Promise<AuditEventDTO> {
+    return this.client.fetch<AuditEventDTO>(
+      `/tasks/${params.wf_run_id}/${params.user_task_guid}/comment`,
+      {
+        method: "POST",
+        body: JSON.stringify({ comment: params.comment }),
+      },
+    );
+  }
+
+  /**
+   * Edits an existing comment on a userTask
+   */
+  async editUserTaskComment(params: EditUserTaskCommentParams) {
+    return this.client.fetch<AuditEventDTO>(
+      `/tasks/${params.wf_run_id}/${params.user_task_guid}/comment/${params.comment_id}`,
+      {
+        method: "PUT",
+        body: JSON.stringify({ comment: params.comment }),
+      },
+    );
+  }
+
+  /**
+   * Deletes a comment on a userTask
+   */
+  async deleteUserTaskComment(params: DeleteUserTaskCommentParams) {
+    return this.client.fetch<AuditEventDTO>(
+      `/tasks/${params.wf_run_id}/${params.user_task_guid}/comment/${params.comment_id}`,
+      {
+        method: "DELETE",
+      },
     );
   }
 }

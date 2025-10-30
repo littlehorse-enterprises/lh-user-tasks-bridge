@@ -18,6 +18,9 @@ export enum UserTaskEventType {
   TASK_EXECUTED = "TASK_EXECUTED",
   TASK_ASSIGNED = "TASK_ASSIGNED",
   TASK_CANCELLED = "TASK_CANCELLED",
+  COMMENT_ADDED = "COMMENT_ADDED",
+  COMMENT_EDITED = "COMMENT_EDITED",
+  COMMENT_DELETED = "COMMENT_DELETED",
 }
 
 export enum CustomUserIdClaim {
@@ -80,7 +83,12 @@ export interface UserTaskFieldDTO {
 
 export interface AuditEventDTO {
   time: string; // ISO date string format
-  event: UserTaskExecutedEvent | UserTaskAssignedEvent | UserTaskCancelledEvent;
+  event:
+    | UserTaskExecutedEvent
+    | UserTaskAssignedEvent
+    | UserTaskCancelledEvent
+    | UserTaskCommentEvent
+    | UserTaskCommentDeletedEvent;
   type: UserTaskEventType;
 }
 
@@ -104,4 +112,15 @@ export interface UserTaskAssignedEvent {
 
 export interface UserTaskCancelledEvent {
   message: string;
+}
+
+export interface UserTaskCommentEvent {
+  comment: string;
+  commentId: number;
+  userId: string;
+}
+
+export interface UserTaskCommentDeletedEvent {
+  commentId: number;
+  userId: string;
 }
