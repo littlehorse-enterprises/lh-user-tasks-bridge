@@ -6,7 +6,7 @@ ENV PATH=${PATH}:/keycloak/bin
 
 COPY --from=ghcr.io/littlehorse-enterprises/littlehorse/lhctl:latest /usr/local/bin/lhctl /usr/local/bin/lhctl
 
-RUN yum update && yum install -y jq httpie unzip && yum clean
+RUN apk update && apk add --no-cache jq httpie unzip
 
 WORKDIR /keycloak
 RUN wget -q https://github.com/keycloak/keycloak/releases/download/${KEYCLOAK_VERSION}/keycloak-${KEYCLOAK_VERSION}.tar.gz -O /tmp/keycloak.tar.gz \
