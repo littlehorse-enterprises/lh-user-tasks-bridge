@@ -1,6 +1,6 @@
 FROM ghcr.io/littlehorse-enterprises/littlehorse/lh-standalone:latest
 
-ARG KEYCLOAK_VERSION="26.0.1"
+ARG KEYCLOAK_VERSION="26.2.1"
 ARG GRADLE_VERSION="8.12"
 ENV PATH=${PATH}:/keycloak/bin
 
