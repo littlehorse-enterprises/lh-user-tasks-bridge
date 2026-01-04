@@ -141,3 +141,9 @@ configured Identity Provider.
 they also need to have the `manage-users`, `view-clients` and `view-realm` roles assigned.
 
 **In case that all Admin users were deleted, you will need to create at least 1 by using your Identity Provider's dashboard.**
+
+## License
+
+<a href="https://spdx.org/licenses/SSPL-1.0.html"><img alt="SSPL LICENSE" src="https://img.shields.io/badge/covered%20by-SSPL%201.0-blue"></a>
+
+All code in this repository is covered by the [Server Side Public License, Version 1](https://spdx.org/licenses/SSPL-1.0.html) and is copyright of LittleHorse Enterprises LLC.
