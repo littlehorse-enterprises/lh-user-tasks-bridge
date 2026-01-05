@@ -63,7 +63,7 @@ jobs:
         run: |
           npm install
           npm run build -ws
-      
+
       - name: Build Demo Workflow
         working-directory: lh-user-tasks-bridge/demo-workflow
         run: |
@@ -134,7 +134,8 @@ jobs:
         with:
           image-name: lh-user-tasks-bridge-backend
           dockerfile: Dockerfile
-          registry: ecr
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          ghcr-root: true
 
       - name: Build and Publish Standalone
         id: publish-standalone-image
@@ -146,21 +147,4 @@ jobs:
           tags: |
             type=semver,pattern={{version}}
             type=ref,event=branch
-
-      - name: Login to Quay.io
-        uses: docker/login-action@v3
-        with:
-          registry: quay.io
-          username: littlehorse+github
-          password: ${{ secrets.QUAY_REGISTRY_SECRET }}
-
-      - name: Get image
-        id: get-image
-        run: |
-          image=$(echo "${{ steps.publish-image.outputs.tags }}" | head -n 1)
-          echo "IMAGE=${image}" >> $GITHUB_ENV
-      - name: Push image to Quay
-        run: |
-          docker buildx imagetools create \
-            --tag quay.io/littlehorse/lh-user-tasks-bridge-backend:${{ inputs.version }} \
-            ${IMAGE}
+          ghcr-root: true
