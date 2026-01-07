@@ -12,5 +12,5 @@ permissions:
 
 jobs:
   build-and-publish:
-    uses: ./.github/workflows/shared-publish.yml
+    uses: ./.github/workflows/shared-publish-backend.yml
     secrets: inherit

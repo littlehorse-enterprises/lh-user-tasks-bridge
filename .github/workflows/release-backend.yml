@@ -23,7 +23,7 @@ jobs:
   build-and-publish:
     needs:
       - set-tag
-    uses: ./.github/workflows/shared-publish.yml
+    uses: ./.github/workflows/shared-publish-backend.yml
     with:
       version: ${{ needs.set-tag.outputs.tag }}
     secrets: inherit
