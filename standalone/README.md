@@ -15,7 +15,7 @@ docker run --name lh-user-tasks-bridge-standalone --rm -d --net=host ghcr.io/lit
 Local Build:
 
 ```sh
-./local-dev/build-images.sh
+./local-dev/build-images-backend.sh
 ```
 
 Run:
