@@ -1,0 +1,23 @@
+name: Main
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish-docker:
+    uses: ./.github/workflows/publish-console-docker.yml
+
+  trigger-build:
+    runs-on: ubuntu-latest
+    needs:
+      - publish-docker
+    steps:
+      - name: Trigger Build Standalone
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT_USER_TASKS }}
+        run: gh workflow run main.yml

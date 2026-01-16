@@ -6,7 +6,7 @@ on:
     branches-ignore:
       - "master"
     paths:
-      - .github/workflows/branch-backend.yml
+      - .github/workflows/branch.yml
       - backend/**
       - Dockerfile
       - entrypoint.sh

@@ -55,3 +55,4 @@ jobs:
           tags: |
             type=semver,pattern={{version}}
             type=ref,event=branch
+          ghcr-root: true

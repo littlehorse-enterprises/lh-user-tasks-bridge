@@ -47,7 +47,7 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
 
   publish-docker:
-    uses: ./.github/workflows/publish-docker.yml
+    uses: ./.github/workflows/publish-console-docker.yml
     needs:
       - prepare
     with:
