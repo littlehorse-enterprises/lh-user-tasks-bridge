@@ -2,6 +2,8 @@ name: Build and Test
 
 on:
   pull_request:
+    paths:
+      - api-client/**
   workflow_call:
 
 permissions:
@@ -32,5 +34,3 @@ jobs:
 
       - name: Build
         run: npm run build -ws
-
-
