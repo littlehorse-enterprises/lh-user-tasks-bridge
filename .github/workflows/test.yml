@@ -2,8 +2,6 @@ name: test
 run-name: Running Tests for branch ${{ github.head_ref }}
 on:
   pull_request:
-    paths:
-      - backend/**
 
 jobs:
   test:
