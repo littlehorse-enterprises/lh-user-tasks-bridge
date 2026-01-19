@@ -65,7 +65,7 @@ services:
       - LHC_API_PORT=2023
       - LHC_TENANT_ID=default
   console:
-    build: ../lh-user-tasks-bridge/console
+    build: ./console
     ports:
       - '3000:3000'
     environment:
@@ -74,10 +74,7 @@ services:
       - LHUT_OAUTH_CLIENT_ID=user-tasks-bridge-client
       - LHUT_OAUTH_CLIENT_SECRET=any-secret
       - LHUT_OAUTH_ISSUER_URI=http://keycloak:8888/realms/default
-
       - AUTH_URL=http://localhost:3000
       - NEXTAUTH_URL=http://localhost:3000
-
-
       - LHUT_API_URL=http://backend:8089
       - LHUT_AUTHORITIES=$.realm_access.roles,$.resource_access.*.roles

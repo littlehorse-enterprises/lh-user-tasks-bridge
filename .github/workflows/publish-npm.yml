@@ -1,0 +1,54 @@
+name: Publish API Client
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.set_tag.outputs.tag }}
+    steps:
+      - name: Set Tag
+        id: set_tag
+        run: |
+          echo "tag=$(echo $GITHUB_REF | sed -n 's/refs\/tags\/v//p')" >> $GITHUB_OUTPUT
+
+  publish-npm:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup NodeJS
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Update version in api-client/package.json
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/v}
+          cd api-client
+          npm version $VERSION --no-git-tag-version
+
+      - name: Publish
+        run: npm publish -w api-client --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
+
+  publish-docker:
+    uses: ./.github/workflows/publish-console-docker.yml
+    needs:
+      - prepare
+    with:
+      tag: ${{ needs.prepare.outputs.tag }}

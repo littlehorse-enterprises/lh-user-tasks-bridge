@@ -34,21 +34,13 @@ jobs:
   build-console:
     runs-on: ubuntu-latest
     steps:
-      - name: Clone Console
-        uses: actions/checkout@v4
-        with:
-          repository: littlehorse-enterprises/lh-user-tasks-bridge
-          path: lh-user-tasks-bridge
-          ref: main
-          token: ${{ secrets.PAT_LH_USER_TASKS_UI }}
-
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
 
       - name: Update Console Version
-        working-directory: lh-user-tasks-bridge/console
+        working-directory: ./console
         run: |
           if [ "${{ inputs.version }}" != "" ]; then
             VERSION="${{ inputs.version }}"
@@ -59,13 +51,13 @@ jobs:
           sed -i "s|NEXT_PUBLIC_VERSION: \".*\"|NEXT_PUBLIC_VERSION: \"$VERSION\"|g" next.config.mjs
 
       - name: Build Console
-        working-directory: lh-user-tasks-bridge
+        working-directory: .
         run: |
           npm install
           npm run build -ws
 
       - name: Build Demo Workflow
-        working-directory: lh-user-tasks-bridge/demo-workflow
+        working-directory: ./demo-workflow
         run: |
           ./gradlew build
 
@@ -85,7 +77,7 @@ jobs:
           name: lh-user-tasks-bridge-demo-jar
           include-hidden-files: true
           path: |
-            lh-user-tasks-bridge/demo-workflow/build/libs/lh-user-tasks-bridge-demo-all.jar
+           ./demo-workflow/build/libs/lh-user-tasks-bridge-demo-all.jar
 
       - name: Upload Demo Workflow Sh Artifact
         uses: actions/upload-artifact@v4
@@ -93,7 +85,7 @@ jobs:
           name: lh-user-tasks-bridge-demo-sh
           include-hidden-files: true
           path: |
-            lh-user-tasks-bridge/demo-workflow/configure-littlehorse.sh
+            ./demo-workflow/configure-littlehorse.sh
 
   docker:
     runs-on: ubuntu-latest
