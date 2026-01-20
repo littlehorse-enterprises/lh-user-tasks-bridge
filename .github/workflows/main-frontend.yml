@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
   packages: write
 
 jobs:
@@ -13,4 +14,5 @@ jobs:
     uses: ./.github/workflows/publish-console-docker.yml
 
   trigger-build:
-    uses: ./.github/workflows/main.yml
+    uses: ./.github/workflows/shared-publish.yml
+    secrets: inherit
