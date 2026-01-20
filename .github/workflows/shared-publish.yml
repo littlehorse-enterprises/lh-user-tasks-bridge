@@ -40,7 +40,7 @@ jobs:
           node-version: 22
 
       - name: Update Console Version
-        working-directory: ./console
+        working-directory: /console
         run: |
           if [ "${{ inputs.version }}" != "" ]; then
             VERSION="${{ inputs.version }}"
