@@ -75,9 +75,9 @@ jobs:
           name: lh-user-tasks-bridge-console
           include-hidden-files: true
           path:  |
-            lh-user-tasks-bridge/console/.next/standalone
-            lh-user-tasks-bridge/console/.next/static
-            lh-user-tasks-bridge/node_modules
+            ./console/.next/standalone
+            ./console/.next/static
+            ./node_modules
 
       - name: Upload Demo Workflow Jar Artifact
         uses: actions/upload-artifact@v4
