@@ -14,4 +14,4 @@ Visit our [official documentation](https://littlehorse.io/docs/user-tasks-bridge
 
 ## License
 
-Apache 2.0 - See [LICENSE](LICENSE.md) for details.
+SSPLv1 - See [LICENSE](LICENSE.md) for details.
