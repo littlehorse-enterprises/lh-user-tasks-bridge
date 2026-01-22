@@ -6,6 +6,7 @@ on:
 
 permissions:
   contents: read
+  id-token: write
   packages: write
 
 jobs:
@@ -13,11 +14,5 @@ jobs:
     uses: ./.github/workflows/publish-console-docker.yml
 
   trigger-build:
-    runs-on: ubuntu-latest
-    needs:
-      - publish-docker
-    steps:
-      - name: Trigger Build Standalone
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT_USER_TASKS }}
-        run: gh workflow run main.yml
+    uses: ./.github/workflows/shared-publish.yml
+    secrets: inherit

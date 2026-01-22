@@ -34,10 +34,21 @@ jobs:
   build-console:
     runs-on: ubuntu-latest
     steps:
-      - name: Use Node.js
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
+          cache: npm
+          cache-dependency-path: package-lock.json
           node-version: 22
+
+      - name: Installing Dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint -ws
 
       - name: Update Console Version
         working-directory: ./console
@@ -48,13 +59,10 @@ jobs:
             SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
             VERSION="${{ github.ref_name }}-$SHORT_SHA"
           fi
-          sed -i "s|NEXT_PUBLIC_VERSION: \".*\"|NEXT_PUBLIC_VERSION: \"$VERSION\"|g" next.config.mjs
+          sed -i "s|NEXT_PUBLIC_API_CLIENT_VERSION: \".*\"|NEXT_PUBLIC_API_CLIENT_VERSION: \"$VERSION\"|g" next.config.mjs
 
-      - name: Build Console
-        working-directory: .
-        run: |
-          npm install
-          npm run build -ws
+      - name: Build
+        run: npm run build -ws
 
       - name: Build Demo Workflow
         working-directory: ./demo-workflow
@@ -67,9 +75,9 @@ jobs:
           name: lh-user-tasks-bridge-console
           include-hidden-files: true
           path:  |
-            lh-user-tasks-bridge/console/.next/standalone
-            lh-user-tasks-bridge/console/.next/static
-            lh-user-tasks-bridge/node_modules
+            ./console/.next/standalone
+            ./console/.next/static
+            ./node_modules
 
       - name: Upload Demo Workflow Jar Artifact
         uses: actions/upload-artifact@v4
