@@ -48,14 +48,17 @@ public class AuditEventDTO {
         } else if (serverEvent.hasCancelled()) {
             parsedEvent = UserTaskCancelledEvent.parseFromServer(serverEvent.getCancelled());
             eventType = UserTaskEventType.TASK_CANCELLED;
+        } else if (serverEvent.hasCompleted()) {
+            parsedEvent = UserTaskRunCompletedEvent.parserFromServer(serverEvent.getCompleted());
+            eventType = UserTaskEventType.TASK_COMPLETED;
         } else if (serverEvent.hasCommentAdded()) {
-            parsedEvent = UserTaskRunCommentEvent.parserFromserver(serverEvent.getCommentAdded());
+            parsedEvent = UserTaskRunCommentEvent.parserFromServer(serverEvent.getCommentAdded());
             eventType = UserTaskEventType.COMMENT_ADDED;
         } else if (serverEvent.hasCommentEdited()) {
-            parsedEvent = UserTaskRunCommentEvent.parserFromserver(serverEvent.getCommentEdited());
+            parsedEvent = UserTaskRunCommentEvent.parserFromServer(serverEvent.getCommentEdited());
             eventType = UserTaskEventType.COMMENT_EDITED;
         } else if (serverEvent.hasCommentDeleted()) {
-            parsedEvent = DeleteUserTaskRunCommentEvent.parserFromserver(serverEvent.getCommentDeleted());
+            parsedEvent = DeleteUserTaskRunCommentEvent.parserFromServer(serverEvent.getCommentDeleted());
             eventType = UserTaskEventType.COMMENT_DELETED;
         } else {
             throw new IllegalArgumentException("Unknown audit event.");
@@ -123,13 +126,26 @@ public class AuditEventDTO {
     @Data
     @Builder
     @AllArgsConstructor
+    static class UserTaskRunCompletedEvent implements IUserTaskEvent {
+        @NotBlank
+        private String message;
+
+        static UserTaskRunCompletedEvent parserFromServer(@NonNull UserTaskEvent.UTECompleted serverObject) {
+
+            return new UserTaskRunCompletedEvent("Completed");
+        }
+    }
+
+    @Data
+    @Builder
+    @AllArgsConstructor
     static class UserTaskRunCommentEvent implements IUserTaskEvent {
 
         private String comment;
         private String userId;
         private int commentId;
 
-        static UserTaskRunCommentEvent parserFromserver(@NonNull UserTaskEvent.UTECommented serverObject) {
+        static UserTaskRunCommentEvent parserFromServer(@NonNull UserTaskEvent.UTECommented serverObject) {
 
             return UserTaskRunCommentEvent.builder()
                     .comment(serverObject.getComment())
@@ -147,7 +163,7 @@ public class AuditEventDTO {
         private String userId;
         private int commentId;
 
-        static DeleteUserTaskRunCommentEvent parserFromserver(@NonNull UserTaskEvent.UTECommentDeleted serverObject) {
+        static DeleteUserTaskRunCommentEvent parserFromServer(@NonNull UserTaskEvent.UTECommentDeleted serverObject) {
 
             return DeleteUserTaskRunCommentEvent.builder()
                     .commentId(serverObject.getUserCommentId())
