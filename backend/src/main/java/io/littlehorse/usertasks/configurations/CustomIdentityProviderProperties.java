@@ -37,19 +37,19 @@ public class CustomIdentityProviderProperties {
     public static CustomIdentityProviderProperties getCustomIdentityProviderProperties(
             @NonNull String accessToken, @NonNull IdentityProviderConfigProperties identityProviderConfigProperties)
             throws JsonProcessingException {
-        Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
-        var issuerUrl = (String) tokenClaims.get(ISSUER_URL_CLAIM);
-        var tenantId = (String) tokenClaims.get(ALLOWED_TOKEN_CUSTOM_CLAIM);
+        final Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
+        final var issuerUrl = (String) tokenClaims.get(ISSUER_URL_CLAIM);
+        final var tenantId = (String) tokenClaims.get(ALLOWED_TOKEN_CUSTOM_CLAIM);
 
-        CustomIdentityProviderProperties foundIdPProperties = identityProviderConfigProperties.getOps().stream()
+        final CustomIdentityProviderProperties foundIdPProperties = identityProviderConfigProperties.getOps().stream()
                 .filter(matchesIssuerAndTenantPredicate(issuerUrl, tenantId))
                 .findFirst()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
 
-        String clientIdClaim = foundIdPProperties.getClientIdClaim();
-        var clientId = (String) tokenClaims.get(clientIdClaim);
+        final String clientIdClaim = foundIdPProperties.getClientIdClaim();
+        final var clientId = (String) tokenClaims.get(clientIdClaim);
 
-        boolean hasValidIdPConfiguration = !CollectionUtils.isEmpty(foundIdPProperties.getClients())
+        final boolean hasValidIdPConfiguration = !CollectionUtils.isEmpty(foundIdPProperties.getClients())
                 && foundIdPProperties.getClients().contains(clientId);
 
         if (!hasValidIdPConfiguration) {

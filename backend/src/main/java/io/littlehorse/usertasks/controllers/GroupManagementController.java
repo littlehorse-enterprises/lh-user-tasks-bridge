@@ -1,16 +1,12 @@
 package io.littlehorse.usertasks.controllers;
 
-import static io.littlehorse.usertasks.configurations.CustomIdentityProviderProperties.getCustomIdentityProviderProperties;
 import static io.littlehorse.usertasks.idp_adapters.keycloak.KeycloakAdapter.ACCESS_TOKEN_MAP_KEY;
 import static io.littlehorse.usertasks.idp_adapters.keycloak.KeycloakAdapter.USER_GROUP_ID_MAP_KEY;
 import static io.littlehorse.usertasks.util.constants.AuthoritiesConstants.LH_USER_TASKS_ADMIN_ROLE;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import io.littlehorse.usertasks.configurations.CustomIdentityProviderProperties;
 import io.littlehorse.usertasks.configurations.IdentityProviderConfigProperties;
 import io.littlehorse.usertasks.idp_adapters.IStandardIdentityProviderAdapter;
-import io.littlehorse.usertasks.idp_adapters.IdentityProviderVendor;
-import io.littlehorse.usertasks.idp_adapters.keycloak.KeycloakAdapter;
 import io.littlehorse.usertasks.models.common.UserGroupDTO;
 import io.littlehorse.usertasks.models.requests.CreateGroupRequest;
 import io.littlehorse.usertasks.models.requests.UpdateGroupRequest;
@@ -32,7 +28,6 @@ import jakarta.validation.*;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
@@ -107,10 +102,8 @@ public class GroupManagementController {
         }
 
         try {
-            CustomIdentityProviderProperties customIdentityProviderProperties =
-                    getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
-            IStandardIdentityProviderAdapter identityProviderHandler =
-                    getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
+            final IStandardIdentityProviderAdapter identityProviderHandler =
+                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken);
 
             validateRequestBody(requestBody);
 
@@ -164,15 +157,13 @@ public class GroupManagementController {
         }
 
         try {
-            CustomIdentityProviderProperties customIdentityProviderProperties =
-                    getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
-            IStandardIdentityProviderAdapter identityProviderHandler =
-                    getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
+            final IStandardIdentityProviderAdapter identityProviderHandler =
+                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken);
 
-            Set<IDPGroupDTO> groups = groupManagementService.getGroups(
+            final Set<IDPGroupDTO> groups = groupManagementService.getGroups(
                     accessToken, name, firstResult, maxResults, identityProviderHandler);
 
-            IDPGroupListDTO response = new IDPGroupListDTO(groups);
+            final IDPGroupListDTO response = new IDPGroupListDTO(groups);
 
             return ResponseEntity.ok(response);
         } catch (JsonProcessingException e) {
@@ -227,17 +218,15 @@ public class GroupManagementController {
         }
 
         try {
-            CustomIdentityProviderProperties customIdentityProviderProperties =
-                    getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
-            IStandardIdentityProviderAdapter identityProviderHandler =
-                    getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
+            final IStandardIdentityProviderAdapter identityProviderHandler =
+                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken);
 
             validateRequestBody(request);
 
-            Map<String, Object> lookupParams =
+            final Map<String, Object> lookupParams =
                     Map.of(ACCESS_TOKEN_MAP_KEY, accessToken, USER_GROUP_ID_MAP_KEY, groupId);
 
-            UserGroupDTO userGroup = identityProviderHandler.getUserGroup(lookupParams);
+            final UserGroupDTO userGroup = identityProviderHandler.getUserGroup(lookupParams);
 
             if (!ignoreOrphanTasks) {
                 validateCurrentlyAssignedUserTaskRuns(tenantId, userGroup.getName());
@@ -294,15 +283,13 @@ public class GroupManagementController {
         }
 
         try {
-            CustomIdentityProviderProperties customIdentityProviderProperties =
-                    getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
-            IStandardIdentityProviderAdapter identityProviderHandler =
-                    getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
+            final IStandardIdentityProviderAdapter identityProviderHandler =
+                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken);
 
-            Map<String, Object> lookupParams =
+            final Map<String, Object> lookupParams =
                     Map.of(ACCESS_TOKEN_MAP_KEY, accessToken, USER_GROUP_ID_MAP_KEY, groupId);
 
-            UserGroupDTO userGroup = identityProviderHandler.getUserGroup(lookupParams);
+            final UserGroupDTO userGroup = identityProviderHandler.getUserGroup(lookupParams);
 
             if (!ignoreOrphanTasks) {
                 validateCurrentlyAssignedUserTaskRuns(tenantId, userGroup.getName());
@@ -317,21 +304,13 @@ public class GroupManagementController {
         }
     }
 
-    private IStandardIdentityProviderAdapter getIdentityProviderHandler(@NonNull IdentityProviderVendor vendor) {
-        if (vendor == IdentityProviderVendor.KEYCLOAK) {
-            return new KeycloakAdapter();
-        } else {
-            throw new ResponseStatusException(HttpStatus.NOT_ACCEPTABLE);
-        }
-    }
-
     private <T> void validateRequestBody(T requestBody) {
         try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
-            Validator validator = factory.getValidator();
-            Set<ConstraintViolation<T>> constraintViolations = validator.validate(requestBody);
+            final Validator validator = factory.getValidator();
+            final Set<ConstraintViolation<T>> constraintViolations = validator.validate(requestBody);
 
             if (!CollectionUtils.isEmpty(constraintViolations)) {
-                String validationMessage = constraintViolations.stream()
+                final String validationMessage = constraintViolations.stream()
                         .map(ConstraintViolation::getMessage)
                         .collect(Collectors.joining("; "));
 
@@ -341,11 +320,11 @@ public class GroupManagementController {
     }
 
     private void validateCurrentlyAssignedUserTaskRuns(String tenantId, String groupName) {
-        UserTaskRequestFilter requestFilter = UserTaskRequestFilter.builder()
+        final UserTaskRequestFilter requestFilter = UserTaskRequestFilter.builder()
                 .status(UserTaskStatus.UNASSIGNED)
                 .build();
 
-        UserTaskRunListDTO pendingTasks =
+        final UserTaskRunListDTO pendingTasks =
                 userTaskService.getTasks(tenantId, null, groupName, requestFilter, 1, null, true);
 
         if (!CollectionUtils.isEmpty(pendingTasks.getUserTasks())) {
