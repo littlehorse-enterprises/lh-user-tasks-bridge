@@ -9,8 +9,6 @@ import io.littlehorse.usertasks.configurations.IdentityProviderConfigProperties;
 import io.littlehorse.usertasks.exceptions.CustomUnauthorizedException;
 import io.littlehorse.usertasks.exceptions.NotFoundException;
 import io.littlehorse.usertasks.idp_adapters.IStandardIdentityProviderAdapter;
-import io.littlehorse.usertasks.idp_adapters.IdentityProviderVendor;
-import io.littlehorse.usertasks.idp_adapters.keycloak.KeycloakAdapter;
 import io.littlehorse.usertasks.models.common.UserDTO;
 import io.littlehorse.usertasks.models.common.UserGroupDTO;
 import io.littlehorse.usertasks.models.common.UserTaskVariableValue;
@@ -36,12 +34,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.util.codec.binary.Base64;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -51,17 +45,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 @Tag(
@@ -133,20 +117,20 @@ public class UserController {
                         .build();
             }
 
-            Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
+            final Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
 
-            var additionalFilters =
+            final var additionalFilters =
                     UserTaskRequestFilter.buildUserTaskRequestFilter(earliestStartDate, latestStartDate, status, type);
-            var parsedBookmark = Objects.nonNull(bookmark) ? Base64.decodeBase64(bookmark) : null;
+            final var parsedBookmark = Objects.nonNull(bookmark) ? Base64.decodeBase64(bookmark) : null;
 
-            CustomIdentityProviderProperties actualProperties =
+            final CustomIdentityProviderProperties actualProperties =
                     getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
 
             var userIdFromToken =
                     (String) tokenClaims.get(actualProperties.getUserIdClaim().toString());
 
-            IStandardIdentityProviderAdapter identityProviderHandler =
-                    getIdentityProviderHandler(actualProperties.getVendor(), false);
+            final IStandardIdentityProviderAdapter identityProviderHandler =
+                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken, false);
 
             boolean hasIdPAdapter = Objects.nonNull(identityProviderHandler);
 
@@ -230,14 +214,14 @@ public class UserController {
                         .build();
             }
 
-            CustomIdentityProviderProperties actualIdPProperties =
+            final CustomIdentityProviderProperties actualIdPProperties =
                     getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
-            Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
+            final Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
 
-            var userIdFromToken = (String)
+            final var userIdFromToken = (String)
                     tokenClaims.get(actualIdPProperties.getUserIdClaim().toString());
 
-            var optionalUserTaskDetail = userTaskService.getUserTaskDetails(
+            final Optional<DetailedUserTaskRunDTO> optionalUserTaskDetail = userTaskService.getUserTaskDetails(
                     wfRunId, userTaskRunGuid, tenantId, userIdFromToken, null, false);
 
             if (optionalUserTaskDetail.isEmpty()) {
@@ -298,11 +282,11 @@ public class UserController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
 
-        Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
-        CustomIdentityProviderProperties actualIdPProperties =
+        final Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
+        final CustomIdentityProviderProperties actualIdPProperties =
                 getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
 
-        var userIdFromToken =
+        final var userIdFromToken =
                 (String) tokenClaims.get(actualIdPProperties.getUserIdClaim().toString());
         CompleteUserTaskRequest request = CompleteUserTaskRequest.builder()
                 .wfRunId(wfRunId)
@@ -372,11 +356,11 @@ public class UserController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
 
-        Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
-        CustomIdentityProviderProperties actualIdPProperties =
+        final Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
+        final CustomIdentityProviderProperties actualIdPProperties =
                 getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
 
-        var userIdFromToken =
+        final var userIdFromToken =
                 (String) tokenClaims.get(actualIdPProperties.getUserIdClaim().toString());
 
         userTaskService.cancelUserTaskForNonAdmin(wfRunId, userTaskRunGuid, tenantId, userIdFromToken);
@@ -438,18 +422,20 @@ public class UserController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
 
-        Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
-        CustomIdentityProviderProperties actualIdPProperties =
+        final Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
+        final CustomIdentityProviderProperties actualIdPProperties =
                 getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
 
-        var userNameFromToken = (String) tokenClaims.get(actualIdPProperties.getUsernameClaim());
-        var subFromToken = (String) tokenClaims.get("sub");
-        String userIdForComment = subFromToken + DELIMITER + userNameFromToken;
+        final var userNameFromToken = (String) tokenClaims.get(actualIdPProperties.getUsernameClaim());
+        final var subFromToken = (String) tokenClaims.get("sub");
+        final String userIdForComment = subFromToken + DELIMITER + userNameFromToken;
+
         PutCommentRequest request = PutCommentRequest.builder()
                 .comment(commentContentRequest.getComment())
                 .wfRunId(wf_run_id)
                 .userTaskRunGuid(user_task_guid)
                 .build();
+
         return userTaskService.comment(request, userIdForComment, tenantId, false);
     }
 
@@ -517,13 +503,13 @@ public class UserController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
 
-        Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
-        CustomIdentityProviderProperties actualIdPProperties =
+        final Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
+        final CustomIdentityProviderProperties actualIdPProperties =
                 getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
 
-        var userNameFromToken = (String) tokenClaims.get(actualIdPProperties.getUsernameClaim());
-        var subFromToken = (String) tokenClaims.get("sub");
-        String userIdForComment = subFromToken + DELIMITER + userNameFromToken;
+        final var userNameFromToken = (String) tokenClaims.get(actualIdPProperties.getUsernameClaim());
+        final var subFromToken = (String) tokenClaims.get("sub");
+        final String userIdForComment = subFromToken + DELIMITER + userNameFromToken;
 
         EditCommentRequest request = EditCommentRequest.builder()
                 .comment(commentContentRequest.getComment())
@@ -597,13 +583,13 @@ public class UserController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
 
-        Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
-        CustomIdentityProviderProperties actualIdPProperties =
+        final Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
+        final CustomIdentityProviderProperties actualIdPProperties =
                 getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
 
-        var userNameFromToken = (String) tokenClaims.get(actualIdPProperties.getUsernameClaim());
-        var subFromToken = (String) tokenClaims.get("sub");
-        String userIdForComment = subFromToken + DELIMITER + userNameFromToken;
+        final var userNameFromToken = (String) tokenClaims.get(actualIdPProperties.getUsernameClaim());
+        final var subFromToken = (String) tokenClaims.get("sub");
+        final String userIdForComment = subFromToken + DELIMITER + userNameFromToken;
 
         DeleteCommentRequest request = DeleteCommentRequest.builder()
                 .wfRunId(wfRunId)
@@ -611,9 +597,7 @@ public class UserController {
                 .commentId(commentId)
                 .build();
 
-        var response = userTaskService.deleteComment(request, userIdForComment, tenantId, false);
-
-        return response;
+        return userTaskService.deleteComment(request, userIdForComment, tenantId, false);
     }
 
     @Operation(
@@ -663,12 +647,11 @@ public class UserController {
             @RequestHeader("Authorization") String accessToken,
             @PathVariable(name = "tenant_id") String tenantId,
             @PathVariable(name = "wfRunId") String wfRunId,
-            @PathVariable(name = "userTaskRunGuid") String userTaskRunGuid)
-            throws JsonProcessingException {
+            @PathVariable(name = "userTaskRunGuid") String userTaskRunGuid) {
 
-        var result = userTaskService.getComment(wfRunId, userTaskRunGuid, tenantId);
+        final List<AuditEventDTO> result = userTaskService.getComment(wfRunId, userTaskRunGuid, tenantId);
 
-        if (result.isEmpty()) {
+        if (CollectionUtils.isEmpty(result)) {
             return ResponseEntity.noContent().build();
         }
 
@@ -734,22 +717,22 @@ public class UserController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
 
-        CustomIdentityProviderProperties actualProperties =
+        final CustomIdentityProviderProperties actualProperties =
                 CustomIdentityProviderProperties.getCustomIdentityProviderProperties(
                         accessToken, identityProviderConfigProperties);
 
-        Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
+        final Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
 
-        var userIdFromToken =
+        final var userIdFromToken =
                 (String) tokenClaims.get(actualProperties.getUserIdClaim().toString());
 
-        IStandardIdentityProviderAdapter identityProviderHandler =
-                getIdentityProviderHandler(actualProperties.getVendor(), false);
+        final IStandardIdentityProviderAdapter identityProviderHandler =
+                identityProviderConfigProperties.getIdentityProviderHandler(accessToken, false);
 
         Set<String> userGroups = null;
 
         if (Objects.nonNull(identityProviderHandler)) {
-            Map<String, Object> params = Map.of("accessToken", accessToken);
+            final Map<String, Object> params = Map.of("accessToken", accessToken);
             UserGroupListDTO myUserGroups = identityProviderHandler.getMyUserGroups(params);
 
             userGroups = myUserGroups.getGroups().stream()
@@ -808,15 +791,11 @@ public class UserController {
         }
 
         try {
-            CustomIdentityProviderProperties actualProperties =
-                    CustomIdentityProviderProperties.getCustomIdentityProviderProperties(
-                            accessToken, identityProviderConfigProperties);
+            final Map<String, Object> params = Map.of("accessToken", accessToken);
+            final IStandardIdentityProviderAdapter identityProviderHandler =
+                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken, true);
 
-            Map<String, Object> params = Map.of("accessToken", accessToken);
-            IStandardIdentityProviderAdapter identityProviderHandler =
-                    getIdentityProviderHandler(actualProperties.getVendor(), true);
-
-            var response = identityProviderHandler.getMyUserGroups(params);
+            final UserGroupListDTO response = identityProviderHandler.getMyUserGroups(params);
 
             return ResponseEntity.ok(response);
         } catch (ResponseStatusException e) {
@@ -871,18 +850,14 @@ public class UserController {
         }
 
         try {
-            Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
-            var userId = (String) tokenClaims.get(USER_ID_CLAIM);
+            final Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
+            final var userId = (String) tokenClaims.get(USER_ID_CLAIM);
 
-            CustomIdentityProviderProperties actualProperties =
-                    CustomIdentityProviderProperties.getCustomIdentityProviderProperties(
-                            accessToken, identityProviderConfigProperties);
+            final Map<String, Object> params = Map.of("userId", userId, "accessToken", accessToken);
+            final IStandardIdentityProviderAdapter identityProviderHandler =
+                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken, true);
 
-            Map<String, Object> params = Map.of("userId", userId, "accessToken", accessToken);
-            IStandardIdentityProviderAdapter identityProviderHandler =
-                    getIdentityProviderHandler(actualProperties.getVendor(), true);
-
-            var response = identityProviderHandler.getUserInfo(params);
+            final UserDTO response = identityProviderHandler.getUserInfo(params);
 
             return ResponseEntity.ok(response);
         } catch (JsonProcessingException e) {
@@ -942,7 +917,7 @@ public class UserController {
                         .build();
             }
 
-            Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
+            final Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
 
             // Here we are hardcoding the UNASSIGNED status on purpose since that is the way in which we can fetch
             // claimable tasks from LH Kernel
@@ -952,20 +927,20 @@ public class UserController {
                     earliestStartDate, latestStartDate, claimableStatus, null);
             var parsedBookmark = Objects.nonNull(bookmark) ? Base64.decodeBase64(bookmark) : null;
 
-            CustomIdentityProviderProperties actualProperties =
+            final CustomIdentityProviderProperties actualProperties =
                     getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
 
-            var userIdFromToken =
+            final var userIdFromToken =
                     (String) tokenClaims.get(actualProperties.getUserIdClaim().toString());
 
-            IStandardIdentityProviderAdapter identityProviderHandler =
-                    getIdentityProviderHandler(actualProperties.getVendor(), false);
+            final IStandardIdentityProviderAdapter identityProviderHandler =
+                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken, false);
 
             boolean hasIdPAdapter = Objects.nonNull(identityProviderHandler);
 
             if (hasIdPAdapter) {
                 identityProviderHandler.validateUserGroup(userGroupId, accessToken);
-                UserGroupDTO foundUserGroup = identityProviderHandler.getUserGroup(
+                final UserGroupDTO foundUserGroup = identityProviderHandler.getUserGroup(
                         Map.of("userGroupId", userGroupId, "accessToken", accessToken));
 
                 if (Objects.nonNull(foundUserGroup)) {
@@ -993,19 +968,6 @@ public class UserController {
             log.error(e.getMessage());
             return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR))
                     .build();
-        }
-    }
-
-    private IStandardIdentityProviderAdapter getIdentityProviderHandler(
-            @NonNull IdentityProviderVendor vendor, boolean strict) {
-        if (vendor == IdentityProviderVendor.KEYCLOAK) {
-            return new KeycloakAdapter();
-        } else {
-            if (strict) {
-                throw new ResponseStatusException(HttpStatus.NOT_ACCEPTABLE);
-            } else {
-                return null;
-            }
         }
     }
 }

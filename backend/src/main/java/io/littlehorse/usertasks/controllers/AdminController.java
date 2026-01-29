@@ -10,7 +10,6 @@ import io.littlehorse.usertasks.exceptions.CustomUnauthorizedException;
 import io.littlehorse.usertasks.exceptions.NotFoundException;
 import io.littlehorse.usertasks.idp_adapters.IStandardIdentityProviderAdapter;
 import io.littlehorse.usertasks.idp_adapters.IdentityProviderVendor;
-import io.littlehorse.usertasks.idp_adapters.keycloak.KeycloakAdapter;
 import io.littlehorse.usertasks.models.common.UserDTO;
 import io.littlehorse.usertasks.models.common.UserGroupDTO;
 import io.littlehorse.usertasks.models.common.UserTaskVariableValue;
@@ -32,7 +31,7 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
-import lombok.NonNull;
+import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tomcat.util.codec.binary.Base64;
@@ -120,10 +119,10 @@ public class AdminController {
                     UserTaskRequestFilter.buildUserTaskRequestFilter(earliestStartDate, latestStartDate, status, type);
             byte[] parsedBookmark = Objects.nonNull(bookmark) ? Base64.decodeBase64(bookmark) : null;
 
-            CustomIdentityProviderProperties customIdentityProviderProperties =
+            final CustomIdentityProviderProperties customIdentityProviderProperties =
                     getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
-            IStandardIdentityProviderAdapter identityProviderHandler =
-                    getIdentityProviderHandler(customIdentityProviderProperties.getVendor(), false);
+            final IStandardIdentityProviderAdapter identityProviderHandler =
+                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken, false);
             boolean hasIdpAdapter = Objects.nonNull(identityProviderHandler);
 
             if (hasIdpAdapter) {
@@ -259,14 +258,12 @@ public class AdminController {
                         .build();
             }
 
-            CustomIdentityProviderProperties customIdentityProviderProperties =
-                    getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
+            final IStandardIdentityProviderAdapter identityProviderHandler =
+                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken, false);
 
-            IStandardIdentityProviderAdapter identityProviderHandler =
-                    getIdentityProviderHandler(customIdentityProviderProperties.getVendor(), false);
             boolean hasIdpAdapter = Objects.nonNull(identityProviderHandler);
 
-            var optionalUserTaskDetail =
+            final Optional<DetailedUserTaskRunDTO> optionalUserTaskDetail =
                     userTaskService.getUserTaskDetails(wfRunId, userTaskRunGuid, tenantId, null, null, true);
 
             optionalUserTaskDetail.ifPresent(detailedUserTaskRunDTO -> {
@@ -326,11 +323,12 @@ public class AdminController {
         if (!tenantService.isValidTenant(tenantId, accessToken)) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
+
         var tokenClaims = TokenUtil.getTokenClaims(accessToken);
-        CustomIdentityProviderProperties actualProperties =
+        final CustomIdentityProviderProperties actualProperties =
                 getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
 
-        var userIdFromToken =
+        final var userIdFromToken =
                 (String) tokenClaims.get(actualProperties.getUserIdClaim().toString());
         CompleteUserTaskRequest request = CompleteUserTaskRequest.builder()
                 .wfRunId(wfRunId)
@@ -393,14 +391,14 @@ public class AdminController {
         }
 
         try {
-            CustomIdentityProviderProperties actualProperties =
+            final CustomIdentityProviderProperties actualProperties =
                     getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
-            String userId = requestBody.getUserId();
+            final String userId = requestBody.getUserId();
 
             // TODO: This condition MUST be updated in the event that we add support to more IdP adapters
             if (actualProperties.getVendor() == IdentityProviderVendor.KEYCLOAK) {
-                IStandardIdentityProviderAdapter identityProviderHandler =
-                        getIdentityProviderHandler(actualProperties.getVendor(), true);
+                final IStandardIdentityProviderAdapter identityProviderHandler =
+                        identityProviderConfigProperties.getIdentityProviderHandler(accessToken, true);
 
                 Map<String, Object> params = new HashMap<>();
                 params.put("userId", userId);
@@ -410,13 +408,13 @@ public class AdminController {
                 identityProviderHandler.validateAssignmentProperties(params);
 
                 if (StringUtils.isNotBlank(requestBody.getUserId())) {
-                    String userIdFromCustomClaim =
+                    final String userIdFromCustomClaim =
                             getUserIdFromCustomClaim(identityProviderHandler, params, actualProperties);
                     requestBody.setUserId(userIdFromCustomClaim);
                 }
 
                 if (StringUtils.isNotBlank(requestBody.getUserGroup())) {
-                    UserGroupDTO userGroupDTO = identityProviderHandler.getUserGroup(params);
+                    final UserGroupDTO userGroupDTO = identityProviderHandler.getUserGroup(params);
                     if (Objects.nonNull(userGroupDTO)) {
                         requestBody.setUserGroup(userGroupDTO.getName());
                     }
@@ -554,13 +552,13 @@ public class AdminController {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
         }
 
-        CustomIdentityProviderProperties actualProperties =
+        final CustomIdentityProviderProperties actualProperties =
                 CustomIdentityProviderProperties.getCustomIdentityProviderProperties(
                         accessToken, identityProviderConfigProperties);
 
-        Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
+        final Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
 
-        var userIdFromToken =
+        final var userIdFromToken =
                 (String) tokenClaims.get(actualProperties.getUserIdClaim().toString());
 
         userTaskService.claimUserTask(userIdFromToken, null, wfRunId, userTaskRunGuid, tenantId, true);
@@ -617,14 +615,11 @@ public class AdminController {
         }
 
         try {
-            CustomIdentityProviderProperties actualProperties =
-                    getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
-
             Map<String, Object> params = Map.of("accessToken", accessToken);
-            IStandardIdentityProviderAdapter identityProviderHandler =
-                    getIdentityProviderHandler(actualProperties.getVendor(), true);
+            final IStandardIdentityProviderAdapter identityProviderHandler =
+                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken, true);
 
-            var response = identityProviderHandler.getUserGroups(params);
+            final UserGroupListDTO response = identityProviderHandler.getUserGroups(params);
 
             return ResponseEntity.ok(response);
         } catch (ResponseStatusException e) {
@@ -694,9 +689,6 @@ public class AdminController {
         }
 
         try {
-            CustomIdentityProviderProperties actualProperties =
-                    getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
-
             Map<String, Object> params = new HashMap<>();
             params.put("accessToken", accessToken);
             params.put("email", email);
@@ -707,10 +699,10 @@ public class AdminController {
             params.put("firstResult", firstResult);
             params.put("maxResults", maxResults);
 
-            IStandardIdentityProviderAdapter identityProviderHandler =
-                    getIdentityProviderHandler(actualProperties.getVendor(), true);
+            final IStandardIdentityProviderAdapter identityProviderHandler =
+                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken, true);
 
-            UserListDTO response = identityProviderHandler.getUsers(params);
+            final UserListDTO response = identityProviderHandler.getUsers(params);
 
             return ResponseEntity.ok(response);
         } catch (ResponseStatusException e) {
@@ -774,14 +766,11 @@ public class AdminController {
         }
 
         try {
-            CustomIdentityProviderProperties actualProperties =
-                    getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
+            final Map<String, Object> params = Map.of("userId", userId, "accessToken", accessToken);
+            final IStandardIdentityProviderAdapter identityProviderHandler =
+                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken, true);
 
-            Map<String, Object> params = Map.of("userId", userId, "accessToken", accessToken);
-            IStandardIdentityProviderAdapter identityProviderHandler =
-                    getIdentityProviderHandler(actualProperties.getVendor(), true);
-
-            UserDTO response = identityProviderHandler.getUserInfo(params);
+            final UserDTO response = identityProviderHandler.getUserInfo(params);
 
             return Objects.nonNull(response)
                     ? ResponseEntity.ok(response)
@@ -793,19 +782,6 @@ public class AdminController {
             log.error(e.getMessage());
             return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR))
                     .build();
-        }
-    }
-
-    private IStandardIdentityProviderAdapter getIdentityProviderHandler(
-            @NonNull IdentityProviderVendor vendor, boolean strict) {
-        if (vendor == IdentityProviderVendor.KEYCLOAK) {
-            return new KeycloakAdapter();
-        } else {
-            if (strict) {
-                throw new ResponseStatusException(HttpStatus.NOT_ACCEPTABLE);
-            } else {
-                return null;
-            }
         }
     }
 
