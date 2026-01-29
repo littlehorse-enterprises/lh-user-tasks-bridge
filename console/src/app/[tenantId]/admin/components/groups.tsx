@@ -698,7 +698,7 @@ export default function GroupsManagement({
                       {availableUsers.map((user) => (
                         <div
                           key={user.id}
-                          className="flex items-center justify-between bg-gray-50 p-2 rounded"
+                          className="flex items-center justify-between bg-muted p-2 rounded"
                         >
                           <span>
                             {user.firstName} {user.lastName} ({user.username})
@@ -729,7 +729,7 @@ export default function GroupsManagement({
                       {groupMembers.map((user) => (
                         <div
                           key={user.id}
-                          className="flex items-center justify-between bg-gray-50 p-2 rounded"
+                          className="flex items-center justify-between bg-muted p-2 rounded"
                         >
                           <span>
                             {user.firstName} {user.lastName} ({user.username})
