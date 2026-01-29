@@ -201,7 +201,7 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
 
     @Override
     public void updateManagedUser(Map<String, Object> params) {
-        log.info("Starting User update!");
+        log.debug("Starting User update!");
 
         var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
         var realm = getRealmFromToken(accessToken);
@@ -212,7 +212,7 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
 
             keycloak.realm(realm).users().get(userId).update(userRepresentation);
 
-            log.info("User successfully updated in realm {}!", realm);
+            log.debug("User successfully updated in realm {}!", realm);
         } catch (AdapterException e) {
             log.error(e.getMessage());
             throw new AdapterException(e.getMessage());
@@ -225,7 +225,7 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
 
     @Override
     public void deleteManagedUser(Map<String, Object> params) {
-        log.info("Starting User deletion!");
+        log.debug("Starting User deletion!");
 
         var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
         var realm = getRealmFromToken(accessToken);
@@ -238,7 +238,7 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
                 throw new AdapterException("User deletion failed in Keycloak!");
             }
 
-            log.info("User successfully deleted from realm {}!", realm);
+            log.debug("User successfully deleted from realm {}!", realm);
         } catch (AdapterException e) {
             log.error(e.getMessage());
             throw new AdapterException(e.getMessage());
@@ -355,7 +355,7 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
 
     @Override
     public void validateAssignmentProperties(Map<String, Object> params) {
-        log.info("Validating assignment properties!");
+        log.debug("Validating assignment properties!");
 
         var userId = (String) params.get(USER_ID_MAP_KEY);
         var userGroupId = (String) params.get(USER_GROUP_ID_MAP_KEY);
@@ -421,7 +421,7 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
 
     @Override
     public void setPassword(String userId, Map<String, Object> params) {
-        log.info("Starting to set user's password!");
+        log.debug("Starting to set user's password!");
 
         var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
         var realm = getRealmFromToken(accessToken);
@@ -440,10 +440,10 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
                 representation.setCredentials(Collections.singletonList(credentialRepresentation));
                 userResource.update(representation);
 
-                log.info("Password successfully set!");
+                log.debug("Password successfully set!");
             } else {
                 userResource.resetPassword(credentialRepresentation);
-                log.info("Password successfully reset!");
+                log.debug("Password successfully reset!");
             }
         } catch (AdapterException e) {
             log.error(e.getMessage());
@@ -520,7 +520,7 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
 
     @Override
     public void joinGroup(Map<String, Object> params) {
-        log.info("Starting to join a group!");
+        log.debug("Starting to join a group!");
 
         var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
         var realm = getRealmFromToken(accessToken);
@@ -530,7 +530,7 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
         try (Keycloak keycloak = getKeycloakInstance(realm, accessToken)) {
             keycloak.realm(realm).users().get(userId).joinGroup(groupId);
 
-            log.info("User successfully joined a group!");
+            log.debug("User successfully joined a group!");
         } catch (AdapterException e) {
             log.error(e.getMessage());
             throw new AdapterException(e.getMessage());
@@ -546,7 +546,7 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
 
     @Override
     public void removeUserFromGroup(Map<String, Object> params) {
-        log.info("Starting to remove user as group member!");
+        log.debug("Starting to remove user as group member!");
 
         var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
         var realm = getRealmFromToken(accessToken);
@@ -556,7 +556,7 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
         try (Keycloak keycloak = getKeycloakInstance(realm, accessToken)) {
             keycloak.realm(realm).users().get(userId).leaveGroup(groupId);
 
-            log.info("User successfully removed from group!");
+            log.debug("User successfully removed from group!");
         } catch (AdapterException e) {
             log.error(e.getMessage());
             throw new AdapterException(e.getMessage());
@@ -572,7 +572,7 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
 
     @Override
     public void createGroup(Map<String, Object> params) {
-        log.info("Starting Group creation!");
+        log.debug("Starting Group creation!");
 
         var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
         var groupName = (String) params.get(USER_GROUP_NAME_MAP_KEY);
@@ -591,7 +591,7 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
                     throw new AdapterException(exceptionMessage);
                 }
 
-                log.info("Group successfully created within realm {}!", realm);
+                log.debug("Group successfully created within realm {}!", realm);
             }
         } catch (AdapterException e) {
             log.error(e.getMessage());
@@ -640,7 +640,7 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
 
     @Override
     public void updateGroup(Map<String, Object> params) {
-        log.info("Starting Group's renaming!");
+        log.debug("Starting Group's renaming!");
 
         var accessToken = (String) params.get(ACCESS_TOKEN_MAP_KEY);
         var groupId = (String) params.get(USER_GROUP_ID_MAP_KEY);
@@ -654,7 +654,7 @@ public class KeycloakAdapter implements IStandardIdentityProviderAdapter {
 
             groupResource.update(groupRepresentation);
 
-            log.info("Group successfully renamed within realm {}!", realm);
+            log.debug("Group successfully renamed within realm {}!", realm);
         } catch (AdapterException e) {
             log.error(e.getMessage());
             throw new AdapterException(e.getMessage());
