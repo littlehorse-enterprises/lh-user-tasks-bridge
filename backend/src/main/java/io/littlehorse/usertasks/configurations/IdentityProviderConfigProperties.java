@@ -6,6 +6,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import io.littlehorse.usertasks.idp_adapters.IStandardIdentityProviderAdapter;
 import io.littlehorse.usertasks.idp_adapters.IdentityProviderVendor;
 import io.littlehorse.usertasks.idp_adapters.keycloak.KeycloakAdapter;
+import jakarta.annotation.Nullable;
 import java.util.List;
 import lombok.Data;
 import lombok.NonNull;
@@ -20,15 +21,20 @@ import org.springframework.web.server.ResponseStatusException;
 public class IdentityProviderConfigProperties {
     private List<CustomIdentityProviderProperties> ops = List.of();
 
-    public IStandardIdentityProviderAdapter getIdentityProviderHandler(@NonNull final String accessToken)
-            throws JsonProcessingException {
+    @Nullable
+    public IStandardIdentityProviderAdapter getIdentityProviderHandler(
+            @NonNull final String accessToken, boolean strict) throws JsonProcessingException {
         final CustomIdentityProviderProperties customIdentityProviderProperties =
                 getCustomIdentityProviderProperties(accessToken, this);
 
         if (customIdentityProviderProperties.getVendor() == IdentityProviderVendor.KEYCLOAK) {
             return new KeycloakAdapter();
+        } else {
+            if (strict) {
+                throw new ResponseStatusException(HttpStatus.NOT_ACCEPTABLE);
+            } else {
+                return null;
+            }
         }
-
-        throw new ResponseStatusException(HttpStatus.NOT_ACCEPTABLE);
     }
 }

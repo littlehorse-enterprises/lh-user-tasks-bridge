@@ -103,7 +103,7 @@ public class GroupManagementController {
 
         try {
             final IStandardIdentityProviderAdapter identityProviderHandler =
-                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken);
+                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken, true);
 
             validateRequestBody(requestBody);
 
@@ -158,7 +158,7 @@ public class GroupManagementController {
 
         try {
             final IStandardIdentityProviderAdapter identityProviderHandler =
-                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken);
+                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken, true);
 
             final Set<IDPGroupDTO> groups = groupManagementService.getGroups(
                     accessToken, name, firstResult, maxResults, identityProviderHandler);
@@ -219,7 +219,7 @@ public class GroupManagementController {
 
         try {
             final IStandardIdentityProviderAdapter identityProviderHandler =
-                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken);
+                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken, true);
 
             validateRequestBody(request);
 
@@ -284,7 +284,7 @@ public class GroupManagementController {
 
         try {
             final IStandardIdentityProviderAdapter identityProviderHandler =
-                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken);
+                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken, true);
 
             final Map<String, Object> lookupParams =
                     Map.of(ACCESS_TOKEN_MAP_KEY, accessToken, USER_GROUP_ID_MAP_KEY, groupId);

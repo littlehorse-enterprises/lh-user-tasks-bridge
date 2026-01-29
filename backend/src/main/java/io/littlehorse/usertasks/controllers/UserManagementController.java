@@ -117,7 +117,7 @@ public class UserManagementController {
 
         try {
             final IStandardIdentityProviderAdapter identityProviderHandler =
-                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken);
+                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken, true);
 
             final var requestFilter = IDPUserSearchRequestFilter.builder()
                     .email(email)
@@ -179,7 +179,7 @@ public class UserManagementController {
 
         try {
             final IStandardIdentityProviderAdapter identityProviderHandler =
-                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken);
+                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken, true);
 
             if (!requestBody.isValid()) {
                 throw new ResponseStatusException(
@@ -237,7 +237,7 @@ public class UserManagementController {
             validatePasswordUpsertRequest(requestBody);
 
             final IStandardIdentityProviderAdapter identityProviderHandler =
-                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken);
+                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken, true);
 
             userManagementService.setPassword(accessToken, userId, requestBody, identityProviderHandler);
         } catch (JsonProcessingException e) {
@@ -298,7 +298,7 @@ public class UserManagementController {
 
         try {
             final IStandardIdentityProviderAdapter identityProviderHandler =
-                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken);
+                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken, true);
 
             final Optional<IDPUserDTO> optionalUserDTO =
                     userManagementService.getUserFromIdentityProvider(accessToken, userId, identityProviderHandler);
@@ -347,7 +347,7 @@ public class UserManagementController {
             final CustomIdentityProviderProperties customIdentityProviderProperties =
                     getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
             final IStandardIdentityProviderAdapter identityProviderHandler =
-                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken);
+                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken, true);
 
             validateUpdateManagedUserRequest(requestBody, customIdentityProviderProperties.getUserIdClaim());
 
@@ -412,7 +412,7 @@ public class UserManagementController {
             final CustomIdentityProviderProperties customIdentityProviderProperties =
                     getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
             final IStandardIdentityProviderAdapter identityProviderHandler =
-                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken);
+                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken, true);
 
             final Map<String, Object> params = Map.of("accessToken", accessToken, "userId", userId);
             final IDPUserDTO managedUserDTO = identityProviderHandler.getManagedUser(params);
@@ -465,7 +465,7 @@ public class UserManagementController {
 
         try {
             final IStandardIdentityProviderAdapter identityProviderHandler =
-                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken);
+                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken, true);
 
             userManagementService.assignAdminRole(accessToken, userId, identityProviderHandler);
         } catch (JsonProcessingException e) {
@@ -522,7 +522,7 @@ public class UserManagementController {
             }
 
             final IStandardIdentityProviderAdapter identityProviderHandler =
-                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken);
+                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken, true);
 
             userManagementService.removeAdminRole(accessToken, userId, identityProviderHandler);
         } catch (JsonProcessingException e) {
@@ -573,7 +573,7 @@ public class UserManagementController {
 
         try {
             final IStandardIdentityProviderAdapter identityProviderHandler =
-                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken);
+                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken, true);
 
             userManagementService.joinGroup(accessToken, userId, groupId, identityProviderHandler);
         } catch (JsonProcessingException e) {
@@ -626,7 +626,7 @@ public class UserManagementController {
 
         try {
             final IStandardIdentityProviderAdapter identityProviderHandler =
-                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken);
+                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken, true);
 
             userManagementService.removeUserFromGroup(accessToken, userId, groupId, identityProviderHandler);
         } catch (JsonProcessingException e) {
