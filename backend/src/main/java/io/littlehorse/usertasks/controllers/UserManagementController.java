@@ -9,8 +9,6 @@ import io.littlehorse.usertasks.configurations.CustomIdentityProviderProperties;
 import io.littlehorse.usertasks.configurations.IdentityProviderConfigProperties;
 import io.littlehorse.usertasks.exceptions.NotFoundException;
 import io.littlehorse.usertasks.idp_adapters.IStandardIdentityProviderAdapter;
-import io.littlehorse.usertasks.idp_adapters.IdentityProviderVendor;
-import io.littlehorse.usertasks.idp_adapters.keycloak.KeycloakAdapter;
 import io.littlehorse.usertasks.models.requests.*;
 import io.littlehorse.usertasks.models.responses.IDPUserDTO;
 import io.littlehorse.usertasks.models.responses.IDPUserListDTO;
@@ -36,7 +34,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.HttpStatus;
@@ -119,12 +116,10 @@ public class UserManagementController {
         }
 
         try {
-            CustomIdentityProviderProperties customIdentityProviderProperties =
-                    getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
-            IStandardIdentityProviderAdapter identityProviderHandler =
-                    getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
+            final IStandardIdentityProviderAdapter identityProviderHandler =
+                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken);
 
-            var requestFilter = IDPUserSearchRequestFilter.builder()
+            final var requestFilter = IDPUserSearchRequestFilter.builder()
                     .email(email)
                     .firstName(firstName)
                     .lastName(lastName)
@@ -132,7 +127,7 @@ public class UserManagementController {
                     .userGroupId(userGroupId)
                     .build();
 
-            IDPUserListDTO idpUserListDTO = userManagementService.listUsersFromIdentityProvider(
+            final IDPUserListDTO idpUserListDTO = userManagementService.listUsersFromIdentityProvider(
                     accessToken, identityProviderHandler, requestFilter, firstResult, maxResults);
 
             return ResponseEntity.ok(idpUserListDTO);
@@ -183,10 +178,8 @@ public class UserManagementController {
         }
 
         try {
-            CustomIdentityProviderProperties customIdentityProviderProperties =
-                    getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
-            IStandardIdentityProviderAdapter identityProviderHandler =
-                    getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
+            final IStandardIdentityProviderAdapter identityProviderHandler =
+                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken);
 
             if (!requestBody.isValid()) {
                 throw new ResponseStatusException(
@@ -243,10 +236,8 @@ public class UserManagementController {
         try {
             validatePasswordUpsertRequest(requestBody);
 
-            CustomIdentityProviderProperties customIdentityProviderProperties =
-                    getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
-            IStandardIdentityProviderAdapter identityProviderHandler =
-                    getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
+            final IStandardIdentityProviderAdapter identityProviderHandler =
+                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken);
 
             userManagementService.setPassword(accessToken, userId, requestBody, identityProviderHandler);
         } catch (JsonProcessingException e) {
@@ -306,12 +297,10 @@ public class UserManagementController {
         }
 
         try {
-            CustomIdentityProviderProperties customIdentityProviderProperties =
-                    getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
-            IStandardIdentityProviderAdapter identityProviderHandler =
-                    getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
+            final IStandardIdentityProviderAdapter identityProviderHandler =
+                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken);
 
-            Optional<IDPUserDTO> optionalUserDTO =
+            final Optional<IDPUserDTO> optionalUserDTO =
                     userManagementService.getUserFromIdentityProvider(accessToken, userId, identityProviderHandler);
 
             return optionalUserDTO.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound()
@@ -355,10 +344,10 @@ public class UserManagementController {
         }
 
         try {
-            CustomIdentityProviderProperties customIdentityProviderProperties =
+            final CustomIdentityProviderProperties customIdentityProviderProperties =
                     getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
-            IStandardIdentityProviderAdapter identityProviderHandler =
-                    getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
+            final IStandardIdentityProviderAdapter identityProviderHandler =
+                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken);
 
             validateUpdateManagedUserRequest(requestBody, customIdentityProviderProperties.getUserIdClaim());
 
@@ -413,20 +402,20 @@ public class UserManagementController {
         }
 
         try {
-            Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
-            String adminUserId = (String) tokenClaims.get(USER_ID_CLAIM);
+            final Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
+            final String adminUserId = (String) tokenClaims.get(USER_ID_CLAIM);
 
             if (StringUtils.equalsIgnoreCase(adminUserId, userId.trim())) {
                 throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot remove yourself as user!");
             }
 
-            CustomIdentityProviderProperties customIdentityProviderProperties =
+            final CustomIdentityProviderProperties customIdentityProviderProperties =
                     getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
-            IStandardIdentityProviderAdapter identityProviderHandler =
-                    getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
+            final IStandardIdentityProviderAdapter identityProviderHandler =
+                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken);
 
-            Map<String, Object> params = Map.of("accessToken", accessToken, "userId", userId);
-            IDPUserDTO managedUserDTO = identityProviderHandler.getManagedUser(params);
+            final Map<String, Object> params = Map.of("accessToken", accessToken, "userId", userId);
+            final IDPUserDTO managedUserDTO = identityProviderHandler.getManagedUser(params);
 
             if (Objects.isNull(managedUserDTO)) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "No matching user found!");
@@ -475,10 +464,8 @@ public class UserManagementController {
         }
 
         try {
-            CustomIdentityProviderProperties customIdentityProviderProperties =
-                    getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
-            IStandardIdentityProviderAdapter identityProviderHandler =
-                    getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
+            final IStandardIdentityProviderAdapter identityProviderHandler =
+                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken);
 
             userManagementService.assignAdminRole(accessToken, userId, identityProviderHandler);
         } catch (JsonProcessingException e) {
@@ -527,17 +514,15 @@ public class UserManagementController {
         }
 
         try {
-            Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
-            String adminUserId = (String) tokenClaims.get(USER_ID_CLAIM);
+            final Map<String, Object> tokenClaims = TokenUtil.getTokenClaims(accessToken);
+            final String adminUserId = (String) tokenClaims.get(USER_ID_CLAIM);
 
             if (StringUtils.equalsIgnoreCase(adminUserId, userId.trim())) {
                 throw new ResponseStatusException(HttpStatus.CONFLICT, "Cannot remove yourself as admin!");
             }
 
-            CustomIdentityProviderProperties customIdentityProviderProperties =
-                    getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
-            IStandardIdentityProviderAdapter identityProviderHandler =
-                    getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
+            final IStandardIdentityProviderAdapter identityProviderHandler =
+                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken);
 
             userManagementService.removeAdminRole(accessToken, userId, identityProviderHandler);
         } catch (JsonProcessingException e) {
@@ -587,10 +572,8 @@ public class UserManagementController {
         }
 
         try {
-            CustomIdentityProviderProperties customIdentityProviderProperties =
-                    getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
-            IStandardIdentityProviderAdapter identityProviderHandler =
-                    getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
+            final IStandardIdentityProviderAdapter identityProviderHandler =
+                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken);
 
             userManagementService.joinGroup(accessToken, userId, groupId, identityProviderHandler);
         } catch (JsonProcessingException e) {
@@ -642,10 +625,8 @@ public class UserManagementController {
         }
 
         try {
-            CustomIdentityProviderProperties customIdentityProviderProperties =
-                    getCustomIdentityProviderProperties(accessToken, identityProviderConfigProperties);
-            IStandardIdentityProviderAdapter identityProviderHandler =
-                    getIdentityProviderHandler(customIdentityProviderProperties.getVendor());
+            final IStandardIdentityProviderAdapter identityProviderHandler =
+                    identityProviderConfigProperties.getIdentityProviderHandler(accessToken);
 
             userManagementService.removeUserFromGroup(accessToken, userId, groupId, identityProviderHandler);
         } catch (JsonProcessingException e) {
@@ -657,21 +638,14 @@ public class UserManagementController {
         }
     }
 
-    private IStandardIdentityProviderAdapter getIdentityProviderHandler(@NonNull IdentityProviderVendor vendor) {
-        if (vendor == IdentityProviderVendor.KEYCLOAK) {
-            return new KeycloakAdapter();
-        } else {
-            throw new ResponseStatusException(HttpStatus.NOT_ACCEPTABLE);
-        }
-    }
-
     private void validatePasswordUpsertRequest(UpsertPasswordRequest requestBody) {
-        try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
-            Validator validator = factory.getValidator();
-            Set<ConstraintViolation<UpsertPasswordRequest>> constraintViolations = validator.validate(requestBody);
+        try (final ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
+            final Validator validator = factory.getValidator();
+            final Set<ConstraintViolation<UpsertPasswordRequest>> constraintViolations =
+                    validator.validate(requestBody);
 
             if (!CollectionUtils.isEmpty(constraintViolations)) {
-                String validationMessage = constraintViolations.stream()
+                final String validationMessage = constraintViolations.stream()
                         .map(ConstraintViolation::getMessage)
                         .collect(Collectors.joining("; "));
 
@@ -681,12 +655,13 @@ public class UserManagementController {
     }
 
     private void validateUpdateManagedUserRequest(UpdateManagedUserRequest requestBody, CustomUserIdClaim userIdClaim) {
-        try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
-            Validator validator = factory.getValidator();
-            Set<ConstraintViolation<UpdateManagedUserRequest>> constraintViolations = validator.validate(requestBody);
+        try (final ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
+            final Validator validator = factory.getValidator();
+            final Set<ConstraintViolation<UpdateManagedUserRequest>> constraintViolations =
+                    validator.validate(requestBody);
 
             if (!CollectionUtils.isEmpty(constraintViolations)) {
-                String validationMessage = constraintViolations.stream()
+                final String validationMessage = constraintViolations.stream()
                         .map(ConstraintViolation::getMessage)
                         .collect(Collectors.joining("; "));
 
@@ -712,10 +687,10 @@ public class UserManagementController {
             case EMAIL -> lookupUserId = managedUserDTO.getEmail();
         }
 
-        UserTaskRequestFilter requestFilter =
+        final UserTaskRequestFilter requestFilter =
                 UserTaskRequestFilter.builder().status(UserTaskStatus.ASSIGNED).build();
 
-        UserTaskRunListDTO pendingTasks =
+        final UserTaskRunListDTO pendingTasks =
                 userTaskService.getTasks(tenantId, lookupUserId, null, requestFilter, 1, null, false);
 
         if (!CollectionUtils.isEmpty(pendingTasks.getUserTasks())) {

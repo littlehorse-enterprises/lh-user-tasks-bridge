@@ -305,7 +305,7 @@ public class GroupManagementController {
     }
 
     private <T> void validateRequestBody(T requestBody) {
-        try (ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
+        try (final ValidatorFactory factory = Validation.buildDefaultValidatorFactory()) {
             final Validator validator = factory.getValidator();
             final Set<ConstraintViolation<T>> constraintViolations = validator.validate(requestBody);
 
