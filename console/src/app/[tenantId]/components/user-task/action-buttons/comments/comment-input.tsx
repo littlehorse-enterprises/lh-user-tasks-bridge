@@ -30,9 +30,11 @@ import CommentList from "./comment-section";
 export default function UserTaskComments({
   userTask,
   admin,
+  readOnly = false,
 }: {
   userTask: SimpleUserTaskRunDTO;
   admin?: boolean;
+  readOnly?: boolean;
 }) {
   const [inputText, setInputText] = useState("");
   const [isLoading, setIsLoading] = useState(false);
@@ -130,20 +132,24 @@ export default function UserTaskComments({
             {renderComments()}
           </div>
           <DialogFooter className="flex items-center gap-2">
-            <Textarea
-              placeholder="Add a comment..."
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              rows={2}
-              className="flex-grow resize-none rounded-md border border-input focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-            />
-            <Button
-              onClick={createComment}
-              disabled={!inputText.trim() || isLoading}
-              className="bg-amber-500 hover:bg-amber-600 text-primary-foreground"
-            >
-              Comment
-            </Button>
+            {!readOnly && (
+              <>
+                <Textarea
+                  placeholder="Add a comment..."
+                  value={inputText}
+                  onChange={(e) => setInputText(e.target.value)}
+                  rows={2}
+                  className="flex-grow resize-none rounded-md border border-input focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                />
+                <Button
+                  onClick={createComment}
+                  disabled={!inputText.trim() || isLoading}
+                  className="bg-amber-500 hover:bg-amber-600 text-primary-foreground"
+                >
+                  Comment
+                </Button>
+              </>
+            )}
             <DialogClose asChild>
               <Button variant="outline">Close</Button>
             </DialogClose>

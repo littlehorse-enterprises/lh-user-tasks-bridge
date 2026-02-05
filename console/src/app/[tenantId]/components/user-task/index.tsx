@@ -268,12 +268,26 @@ export default function UserTask({
                 </>
               )}
             {userTask.status === "DONE" && (
+              <>
+                <div className="flex-1">
+                  <CompleteUserTaskButton
+                    userTask={userTask}
+                    admin={admin}
+                    readOnly
+                  />
+                </div>
+                <div className="flex-1">
+                  <UserTaskComments
+                    userTask={userTask}
+                    admin={admin}
+                    readOnly
+                  />
+                </div>
+              </>
+            )}
+            {userTask.status === "CANCELLED" && (
               <div className="flex-1">
-                <CompleteUserTaskButton
-                  userTask={userTask}
-                  admin={admin}
-                  readOnly
-                />
+                <UserTaskComments userTask={userTask} admin={admin} readOnly />
               </div>
             )}
             {["UNASSIGNED", "ASSIGNED"].includes(userTask.status) &&
