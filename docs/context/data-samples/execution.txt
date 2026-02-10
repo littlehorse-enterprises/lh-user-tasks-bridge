@@ -1,0 +1,2641 @@
+cluster1_default_execution: 26ab000bba79445dbb85f4f5ceff7a30 => {
+  "timestamp": "2026-02-10T15:16:29.693Z",
+  "wfRun": {
+    "id": {
+      "id": "26ab000bba79445dbb85f4f5ceff7a30"
+    },
+    "wfSpecId": {
+      "name": "await-wf-event",
+      "majorVersion": 0,
+      "revision": 0
+    },
+    "oldWfSpecVersions": [],
+    "status": "RUNNING",
+    "greatestThreadrunNumber": 0,
+    "startTime": "2026-02-10T15:16:29.693Z",
+    "threadRuns": [{
+      "wfSpecId": {
+        "name": "await-wf-event",
+        "majorVersion": 0,
+        "revision": 0
+      },
+      "number": 0,
+      "status": "RUNNING",
+      "threadSpecName": "entrypoint",
+      "startTime": "2026-02-10T15:16:29.709Z",
+      "childThreadIds": [],
+      "haltReasons": [],
+      "currentNodePosition": 1,
+      "handledFailedChildren": [],
+      "type": "ENTRYPOINT"
+    }],
+    "pendingInterrupts": [],
+    "pendingFailures": []
+  }
+}
+cluster1_default_execution: 26ab000bba79445dbb85f4f5ceff7a30 => {
+  "timestamp": "2026-02-10T15:16:30.715Z",
+  "workflowEvent": {
+    "id": {
+      "wfRunId": {
+        "id": "26ab000bba79445dbb85f4f5ceff7a30"
+      },
+      "workflowEventDefId": {
+        "name": "sleep-done"
+      },
+      "number": 0
+    },
+    "content": {
+      "str": "hello there!"
+    },
+    "createdAt": "2026-02-10T15:16:31.164Z",
+    "nodeRunId": {
+      "wfRunId": {
+        "id": "26ab000bba79445dbb85f4f5ceff7a30"
+      },
+      "threadRunNumber": 0,
+      "position": 2
+    }
+  }
+}
+cluster1_default_execution: 26ab000bba79445dbb85f4f5ceff7a30 => {
+  "timestamp": "2026-02-10T15:16:30.715Z",
+  "wfRun": {
+    "id": {
+      "id": "26ab000bba79445dbb85f4f5ceff7a30"
+    },
+    "wfSpecId": {
+      "name": "await-wf-event",
+      "majorVersion": 0,
+      "revision": 0
+    },
+    "oldWfSpecVersions": [],
+    "status": "COMPLETED",
+    "greatestThreadrunNumber": 0,
+    "startTime": "2026-02-10T15:16:29.693Z",
+    "endTime": "2026-02-10T15:16:30.715Z",
+    "threadRuns": [{
+      "wfSpecId": {
+        "name": "await-wf-event",
+        "majorVersion": 0,
+        "revision": 0
+      },
+      "number": 0,
+      "status": "COMPLETED",
+      "threadSpecName": "entrypoint",
+      "startTime": "2026-02-10T15:16:29.709Z",
+      "endTime": "2026-02-10T15:16:30.715Z",
+      "childThreadIds": [],
+      "haltReasons": [],
+      "currentNodePosition": 3,
+      "handledFailedChildren": [],
+      "type": "ENTRYPOINT"
+    }],
+    "pendingInterrupts": [],
+    "pendingFailures": []
+  }
+}
+cluster1_default_execution: 2f5fa6471cd346258a4da55ef45b93d3 => {
+  "timestamp": "2026-02-10T16:04:33.531Z",
+  "wfRun": {
+    "id": {
+      "id": "2f5fa6471cd346258a4da55ef45b93d3"
+    },
+    "wfSpecId": {
+      "name": "output-topic",
+      "majorVersion": 0,
+      "revision": 0
+    },
+    "oldWfSpecVersions": [],
+    "status": "RUNNING",
+    "greatestThreadrunNumber": 0,
+    "startTime": "2026-02-10T16:04:33.531Z",
+    "threadRuns": [{
+      "wfSpecId": {
+        "name": "output-topic",
+        "majorVersion": 0,
+        "revision": 0
+      },
+      "number": 0,
+      "status": "RUNNING",
+      "threadSpecName": "entrypoint",
+      "startTime": "2026-02-10T16:04:33.545Z",
+      "childThreadIds": [],
+      "haltReasons": [],
+      "currentNodePosition": 1,
+      "handledFailedChildren": [],
+      "type": "ENTRYPOINT"
+    }],
+    "pendingInterrupts": [],
+    "pendingFailures": []
+  }
+}
+cluster1_default_execution: 2f5fa6471cd346258a4da55ef45b93d3 => {
+  "timestamp": "2026-02-10T16:04:33.531Z",
+  "taskRun": {
+    "id": {
+      "wfRunId": {
+        "id": "2f5fa6471cd346258a4da55ef45b93d3"
+      },
+      "taskGuid": "0-1"
+    },
+    "taskDefId": {
+      "name": "greet"
+    },
+    "attempts": [{
+      "scheduleTime": "2026-02-10T16:04:33.569Z",
+      "taskWorkerId": "",
+      "status": "TASK_SCHEDULED",
+      "maskedValue": false
+    }],
+    "totalAttempts": 1,
+    "inputVariables": [{
+      "varName": "arg0",
+      "value": {
+        "str": "Colt"
+      },
+      "masked": false
+    }],
+    "source": {
+      "taskNode": {
+        "nodeRunId": {
+          "wfRunId": {
+            "id": "2f5fa6471cd346258a4da55ef45b93d3"
+          },
+          "threadRunNumber": 0,
+          "position": 1
+        }
+      }
+    },
+    "scheduledAt": "2026-02-10T16:04:33.565Z",
+    "status": "TASK_SCHEDULED",
+    "timeoutSeconds": 60,
+    "totalCheckpoints": 0
+  }
+}
+cluster1_default_execution: 2f5fa6471cd346258a4da55ef45b93d3 => {
+  "timestamp": "2026-02-10T16:04:33.531Z",
+  "variable": {
+    "id": {
+      "wfRunId": {
+        "id": "2f5fa6471cd346258a4da55ef45b93d3"
+      },
+      "threadRunNumber": 0,
+      "name": "input-name"
+    },
+    "value": {
+      "str": "Colt"
+    },
+    "createdAt": "2026-02-10T16:04:33.587Z",
+    "wfSpecId": {
+      "name": "output-topic",
+      "majorVersion": 0,
+      "revision": 0
+    },
+    "masked": false
+  }
+}
+cluster1_default_execution: 2f5fa6471cd346258a4da55ef45b93d3 => {
+  "timestamp": "2026-02-10T16:04:33.531Z",
+  "variable": {
+    "id": {
+      "wfRunId": {
+        "id": "2f5fa6471cd346258a4da55ef45b93d3"
+      },
+      "threadRunNumber": 0,
+      "name": "public-greeting"
+    },
+    "value": {
+    },
+    "createdAt": "2026-02-10T16:04:33.591Z",
+    "wfSpecId": {
+      "name": "output-topic",
+      "majorVersion": 0,
+      "revision": 0
+    },
+    "masked": false
+  }
+}
+cluster1_default_execution: 2f5fa6471cd346258a4da55ef45b93d3 => {
+  "timestamp": "2026-02-10T16:04:33.619Z",
+  "taskRun": {
+    "id": {
+      "wfRunId": {
+        "id": "2f5fa6471cd346258a4da55ef45b93d3"
+      },
+      "taskGuid": "0-1"
+    },
+    "taskDefId": {
+      "name": "greet"
+    },
+    "attempts": [{
+      "scheduleTime": "2026-02-10T16:04:33.569Z",
+      "startTime": "2026-02-10T16:04:33.619Z",
+      "taskWorkerId": "worker-5f246ca0599349758b6e61b9ab3da71e",
+      "taskWorkerVersion": "",
+      "status": "TASK_RUNNING",
+      "maskedValue": false
+    }],
+    "totalAttempts": 1,
+    "inputVariables": [{
+      "varName": "arg0",
+      "value": {
+        "str": "Colt"
+      },
+      "masked": false
+    }],
+    "source": {
+      "taskNode": {
+        "nodeRunId": {
+          "wfRunId": {
+            "id": "2f5fa6471cd346258a4da55ef45b93d3"
+          },
+          "threadRunNumber": 0,
+          "position": 1
+        }
+      }
+    },
+    "scheduledAt": "2026-02-10T16:04:33.565Z",
+    "status": "TASK_RUNNING",
+    "timeoutSeconds": 60,
+    "totalCheckpoints": 0
+  }
+}
+cluster1_default_execution: 6967816bf4f94410944e9131003d3235 => {
+  "timestamp": "2026-02-10T16:04:41.594Z",
+  "wfRun": {
+    "id": {
+      "id": "6967816bf4f94410944e9131003d3235"
+    },
+    "wfSpecId": {
+      "name": "output-topic",
+      "majorVersion": 0,
+      "revision": 0
+    },
+    "oldWfSpecVersions": [],
+    "status": "RUNNING",
+    "greatestThreadrunNumber": 0,
+    "startTime": "2026-02-10T16:04:41.594Z",
+    "threadRuns": [{
+      "wfSpecId": {
+        "name": "output-topic",
+        "majorVersion": 0,
+        "revision": 0
+      },
+      "number": 0,
+      "status": "RUNNING",
+      "threadSpecName": "entrypoint",
+      "startTime": "2026-02-10T16:04:41.597Z",
+      "childThreadIds": [],
+      "haltReasons": [],
+      "currentNodePosition": 1,
+      "handledFailedChildren": [],
+      "type": "ENTRYPOINT"
+    }],
+    "pendingInterrupts": [],
+    "pendingFailures": []
+  }
+}
+cluster1_default_execution: 6967816bf4f94410944e9131003d3235 => {
+  "timestamp": "2026-02-10T16:04:41.594Z",
+  "taskRun": {
+    "id": {
+      "wfRunId": {
+        "id": "6967816bf4f94410944e9131003d3235"
+      },
+      "taskGuid": "0-1"
+    },
+    "taskDefId": {
+      "name": "greet"
+    },
+    "attempts": [{
+      "scheduleTime": "2026-02-10T16:04:41.597Z",
+      "taskWorkerId": "",
+      "status": "TASK_SCHEDULED",
+      "maskedValue": false
+    }],
+    "totalAttempts": 1,
+    "inputVariables": [{
+      "varName": "arg0",
+      "value": {
+        "str": "Hartmut"
+      },
+      "masked": false
+    }],
+    "source": {
+      "taskNode": {
+        "nodeRunId": {
+          "wfRunId": {
+            "id": "6967816bf4f94410944e9131003d3235"
+          },
+          "threadRunNumber": 0,
+          "position": 1
+        }
+      }
+    },
+    "scheduledAt": "2026-02-10T16:04:41.597Z",
+    "status": "TASK_SCHEDULED",
+    "timeoutSeconds": 60,
+    "totalCheckpoints": 0
+  }
+}
+cluster1_default_execution: 6967816bf4f94410944e9131003d3235 => {
+  "timestamp": "2026-02-10T16:04:41.594Z",
+  "variable": {
+    "id": {
+      "wfRunId": {
+        "id": "6967816bf4f94410944e9131003d3235"
+      },
+      "threadRunNumber": 0,
+      "name": "input-name"
+    },
+    "value": {
+      "str": "Hartmut"
+    },
+    "createdAt": "2026-02-10T16:04:41.600Z",
+    "wfSpecId": {
+      "name": "output-topic",
+      "majorVersion": 0,
+      "revision": 0
+    },
+    "masked": false
+  }
+}
+cluster1_default_execution: 6967816bf4f94410944e9131003d3235 => {
+  "timestamp": "2026-02-10T16:04:41.594Z",
+  "variable": {
+    "id": {
+      "wfRunId": {
+        "id": "6967816bf4f94410944e9131003d3235"
+      },
+      "threadRunNumber": 0,
+      "name": "public-greeting"
+    },
+    "value": {
+    },
+    "createdAt": "2026-02-10T16:04:41.600Z",
+    "wfSpecId": {
+      "name": "output-topic",
+      "majorVersion": 0,
+      "revision": 0
+    },
+    "masked": false
+  }
+}
+cluster1_default_execution: 6967816bf4f94410944e9131003d3235 => {
+  "timestamp": "2026-02-10T16:04:41.601Z",
+  "taskRun": {
+    "id": {
+      "wfRunId": {
+        "id": "6967816bf4f94410944e9131003d3235"
+      },
+      "taskGuid": "0-1"
+    },
+    "taskDefId": {
+      "name": "greet"
+    },
+    "attempts": [{
+      "scheduleTime": "2026-02-10T16:04:41.597Z",
+      "startTime": "2026-02-10T16:04:41.601Z",
+      "taskWorkerId": "worker-5f246ca0599349758b6e61b9ab3da71e",
+      "taskWorkerVersion": "",
+      "status": "TASK_RUNNING",
+      "maskedValue": false
+    }],
+    "totalAttempts": 1,
+    "inputVariables": [{
+      "varName": "arg0",
+      "value": {
+        "str": "Hartmut"
+      },
+      "masked": false
+    }],
+    "source": {
+      "taskNode": {
+        "nodeRunId": {
+          "wfRunId": {
+            "id": "6967816bf4f94410944e9131003d3235"
+          },
+          "threadRunNumber": 0,
+          "position": 1
+        }
+      }
+    },
+    "scheduledAt": "2026-02-10T16:04:41.597Z",
+    "status": "TASK_RUNNING",
+    "timeoutSeconds": 60,
+    "totalCheckpoints": 0
+  }
+}
+cluster1_default_execution: f6865602e2ad4609b71451462327452e => {
+  "timestamp": "2026-02-10T16:05:24.214Z",
+  "wfRun": {
+    "id": {
+      "id": "f6865602e2ad4609b71451462327452e"
+    },
+    "wfSpecId": {
+      "name": "example-variables",
+      "majorVersion": 0,
+      "revision": 0
+    },
+    "oldWfSpecVersions": [],
+    "status": "RUNNING",
+    "greatestThreadrunNumber": 0,
+    "startTime": "2026-02-10T16:05:24.214Z",
+    "threadRuns": [{
+      "wfSpecId": {
+        "name": "example-variables",
+        "majorVersion": 0,
+        "revision": 0
+      },
+      "number": 0,
+      "status": "RUNNING",
+      "threadSpecName": "entrypoint",
+      "startTime": "2026-02-10T16:05:24.220Z",
+      "childThreadIds": [],
+      "haltReasons": [],
+      "currentNodePosition": 1,
+      "handledFailedChildren": [],
+      "type": "ENTRYPOINT"
+    }],
+    "pendingInterrupts": [],
+    "pendingFailures": []
+  }
+}
+cluster1_default_execution: f6865602e2ad4609b71451462327452e => {
+  "timestamp": "2026-02-10T16:05:24.214Z",
+  "taskRun": {
+    "id": {
+      "wfRunId": {
+        "id": "f6865602e2ad4609b71451462327452e"
+      },
+      "taskGuid": "0-1"
+    },
+    "taskDefId": {
+      "name": "sentiment-analysis"
+    },
+    "attempts": [{
+      "scheduleTime": "2026-02-10T16:05:24.220Z",
+      "taskWorkerId": "",
+      "status": "TASK_SCHEDULED",
+      "maskedValue": false
+    }],
+    "totalAttempts": 1,
+    "inputVariables": [{
+      "varName": "",
+      "value": {
+        "str": "this is a very long text"
+      },
+      "masked": true
+    }],
+    "source": {
+      "taskNode": {
+        "nodeRunId": {
+          "wfRunId": {
+            "id": "f6865602e2ad4609b71451462327452e"
+          },
+          "threadRunNumber": 0,
+          "position": 1
+        }
+      }
+    },
+    "scheduledAt": "2026-02-10T16:05:24.220Z",
+    "status": "TASK_SCHEDULED",
+    "timeoutSeconds": 60,
+    "totalCheckpoints": 0
+  }
+}
+cluster1_default_execution: f6865602e2ad4609b71451462327452e => {
+  "timestamp": "2026-02-10T16:05:24.227Z",
+  "taskRun": {
+    "id": {
+      "wfRunId": {
+        "id": "f6865602e2ad4609b71451462327452e"
+      },
+      "taskGuid": "0-1"
+    },
+    "taskDefId": {
+      "name": "sentiment-analysis"
+    },
+    "attempts": [{
+      "scheduleTime": "2026-02-10T16:05:24.220Z",
+      "startTime": "2026-02-10T16:05:24.227Z",
+      "taskWorkerId": "worker-99b3fcf9d2354e82b98b7c1bd1d0afaf",
+      "taskWorkerVersion": "",
+      "status": "TASK_RUNNING",
+      "maskedValue": false
+    }],
+    "totalAttempts": 1,
+    "inputVariables": [{
+      "varName": "",
+      "value": {
+        "str": "this is a very long text"
+      },
+      "masked": true
+    }],
+    "source": {
+      "taskNode": {
+        "nodeRunId": {
+          "wfRunId": {
+            "id": "f6865602e2ad4609b71451462327452e"
+          },
+          "threadRunNumber": 0,
+          "position": 1
+        }
+      }
+    },
+    "scheduledAt": "2026-02-10T16:05:24.220Z",
+    "status": "TASK_RUNNING",
+    "timeoutSeconds": 60,
+    "totalCheckpoints": 0
+  }
+}
+cluster1_default_execution: f6865602e2ad4609b71451462327452e => {
+  "timestamp": "2026-02-10T16:05:24.261Z",
+  "taskRun": {
+    "id": {
+      "wfRunId": {
+        "id": "f6865602e2ad4609b71451462327452e"
+      },
+      "taskGuid": "0-1"
+    },
+    "taskDefId": {
+      "name": "sentiment-analysis"
+    },
+    "attempts": [{
+      "output": {
+        "double": 84.68326391807996
+      },
+      "logOutput": {
+        "str": ""
+      },
+      "scheduleTime": "2026-02-10T16:05:24.220Z",
+      "startTime": "2026-02-10T16:05:24.227Z",
+      "endTime": "2026-02-10T16:05:24.258Z",
+      "taskWorkerId": "worker-99b3fcf9d2354e82b98b7c1bd1d0afaf",
+      "taskWorkerVersion": "",
+      "status": "TASK_SUCCESS",
+      "maskedValue": false
+    }],
+    "totalAttempts": 1,
+    "inputVariables": [{
+      "varName": "",
+      "value": {
+        "str": "this is a very long text"
+      },
+      "masked": true
+    }],
+    "source": {
+      "taskNode": {
+        "nodeRunId": {
+          "wfRunId": {
+            "id": "f6865602e2ad4609b71451462327452e"
+          },
+          "threadRunNumber": 0,
+          "position": 1
+        }
+      }
+    },
+    "scheduledAt": "2026-02-10T16:05:24.220Z",
+    "status": "TASK_SUCCESS",
+    "timeoutSeconds": 60,
+    "totalCheckpoints": 0
+  }
+}
+cluster1_default_execution: f6865602e2ad4609b71451462327452e => {
+  "timestamp": "2026-02-10T16:05:24.261Z",
+  "taskRun": {
+    "id": {
+      "wfRunId": {
+        "id": "f6865602e2ad4609b71451462327452e"
+      },
+      "taskGuid": "0-2"
+    },
+    "taskDefId": {
+      "name": "process-text"
+    },
+    "attempts": [{
+      "scheduleTime": "2026-02-10T16:05:24.278Z",
+      "taskWorkerId": "",
+      "status": "TASK_SCHEDULED",
+      "maskedValue": false
+    }],
+    "totalAttempts": 1,
+    "inputVariables": [{
+      "varName": "",
+      "value": {
+        "str": "this is a very long text"
+      },
+      "masked": true
+    }, {
+      "varName": "arg1",
+      "value": {
+        "double": 84.68326391807996
+      },
+      "masked": false
+    }, {
+      "varName": "arg2",
+      "value": {
+        "bool": false
+      },
+      "masked": false
+    }, {
+      "varName": "arg3",
+      "value": {
+        "int": "1234"
+      },
+      "masked": false
+    }],
+    "source": {
+      "taskNode": {
+        "nodeRunId": {
+          "wfRunId": {
+            "id": "f6865602e2ad4609b71451462327452e"
+          },
+          "threadRunNumber": 0,
+          "position": 2
+        }
+      }
+    },
+    "scheduledAt": "2026-02-10T16:05:24.278Z",
+    "status": "TASK_SCHEDULED",
+    "timeoutSeconds": 60,
+    "totalCheckpoints": 0
+  }
+}
+cluster1_default_execution: f6865602e2ad4609b71451462327452e => {
+  "timestamp": "2026-02-10T16:05:24.281Z",
+  "taskRun": {
+    "id": {
+      "wfRunId": {
+        "id": "f6865602e2ad4609b71451462327452e"
+      },
+      "taskGuid": "0-2"
+    },
+    "taskDefId": {
+      "name": "process-text"
+    },
+    "attempts": [{
+      "scheduleTime": "2026-02-10T16:05:24.278Z",
+      "startTime": "2026-02-10T16:05:24.281Z",
+      "taskWorkerId": "worker-99b3fcf9d2354e82b98b7c1bd1d0afaf",
+      "taskWorkerVersion": "",
+      "status": "TASK_RUNNING",
+      "maskedValue": false
+    }],
+    "totalAttempts": 1,
+    "inputVariables": [{
+      "varName": "",
+      "value": {
+        "str": "this is a very long text"
+      },
+      "masked": true
+    }, {
+      "varName": "arg1",
+      "value": {
+        "double": 84.68326391807996
+      },
+      "masked": false
+    }, {
+      "varName": "arg2",
+      "value": {
+        "bool": false
+      },
+      "masked": false
+    }, {
+      "varName": "arg3",
+      "value": {
+        "int": "1234"
+      },
+      "masked": false
+    }],
+    "source": {
+      "taskNode": {
+        "nodeRunId": {
+          "wfRunId": {
+            "id": "f6865602e2ad4609b71451462327452e"
+          },
+          "threadRunNumber": 0,
+          "position": 2
+        }
+      }
+    },
+    "scheduledAt": "2026-02-10T16:05:24.278Z",
+    "status": "TASK_RUNNING",
+    "timeoutSeconds": 60,
+    "totalCheckpoints": 0
+  }
+}
+cluster1_default_execution: f6865602e2ad4609b71451462327452e => {
+  "timestamp": "2026-02-10T16:05:24.310Z",
+  "taskRun": {
+    "id": {
+      "wfRunId": {
+        "id": "f6865602e2ad4609b71451462327452e"
+      },
+      "taskGuid": "0-2"
+    },
+    "taskDefId": {
+      "name": "process-text"
+    },
+    "attempts": [{
+      "output": {
+        "jsonObj": "{\"text\":\"this is a very long text\",\"sentimentScore\":84.68326391807996,\"addLength\":false,\"userId\":1234}"
+      },
+      "logOutput": {
+        "str": ""
+      },
+      "scheduleTime": "2026-02-10T16:05:24.278Z",
+      "startTime": "2026-02-10T16:05:24.281Z",
+      "endTime": "2026-02-10T16:05:24.297Z",
+      "taskWorkerId": "worker-99b3fcf9d2354e82b98b7c1bd1d0afaf",
+      "taskWorkerVersion": "",
+      "status": "TASK_SUCCESS",
+      "maskedValue": true
+    }],
+    "totalAttempts": 1,
+    "inputVariables": [{
+      "varName": "",
+      "value": {
+        "str": "this is a very long text"
+      },
+      "masked": true
+    }, {
+      "varName": "arg1",
+      "value": {
+        "double": 84.68326391807996
+      },
+      "masked": false
+    }, {
+      "varName": "arg2",
+      "value": {
+        "bool": false
+      },
+      "masked": false
+    }, {
+      "varName": "arg3",
+      "value": {
+        "int": "1234"
+      },
+      "masked": false
+    }],
+    "source": {
+      "taskNode": {
+        "nodeRunId": {
+          "wfRunId": {
+            "id": "f6865602e2ad4609b71451462327452e"
+          },
+          "threadRunNumber": 0,
+          "position": 2
+        }
+      }
+    },
+    "scheduledAt": "2026-02-10T16:05:24.278Z",
+    "status": "TASK_SUCCESS",
+    "timeoutSeconds": 60,
+    "totalCheckpoints": 0
+  }
+}
+cluster1_default_execution: f6865602e2ad4609b71451462327452e => {
+  "timestamp": "2026-02-10T16:05:24.310Z",
+  "taskRun": {
+    "id": {
+      "wfRunId": {
+        "id": "f6865602e2ad4609b71451462327452e"
+      },
+      "taskGuid": "0-3"
+    },
+    "taskDefId": {
+      "name": "send"
+    },
+    "attempts": [{
+      "scheduleTime": "2026-02-10T16:05:24.319Z",
+      "taskWorkerId": "",
+      "status": "TASK_SCHEDULED",
+      "maskedValue": false
+    }],
+    "totalAttempts": 1,
+    "inputVariables": [{
+      "varName": "",
+      "value": {
+        "jsonObj": "{\"text\":\"this is a very long text\",\"sentimentScore\":84.68326391807996,\"addLength\":false,\"userId\":1234}"
+      },
+      "masked": true
+    }],
+    "source": {
+      "taskNode": {
+        "nodeRunId": {
+          "wfRunId": {
+            "id": "f6865602e2ad4609b71451462327452e"
+          },
+          "threadRunNumber": 0,
+          "position": 3
+        }
+      }
+    },
+    "scheduledAt": "2026-02-10T16:05:24.319Z",
+    "status": "TASK_SCHEDULED",
+    "timeoutSeconds": 60,
+    "totalCheckpoints": 0
+  }
+}
+cluster1_default_execution: f6865602e2ad4609b71451462327452e => {
+  "timestamp": "2026-02-10T16:05:24.332Z",
+  "taskRun": {
+    "id": {
+      "wfRunId": {
+        "id": "f6865602e2ad4609b71451462327452e"
+      },
+      "taskGuid": "0-3"
+    },
+    "taskDefId": {
+      "name": "send"
+    },
+    "attempts": [{
+      "scheduleTime": "2026-02-10T16:05:24.319Z",
+      "startTime": "2026-02-10T16:05:24.332Z",
+      "taskWorkerId": "worker-99b3fcf9d2354e82b98b7c1bd1d0afaf",
+      "taskWorkerVersion": "",
+      "status": "TASK_RUNNING",
+      "maskedValue": false
+    }],
+    "totalAttempts": 1,
+    "inputVariables": [{
+      "varName": "",
+      "value": {
+        "jsonObj": "{\"text\":\"this is a very long text\",\"sentimentScore\":84.68326391807996,\"addLength\":false,\"userId\":1234}"
+      },
+      "masked": true
+    }],
+    "source": {
+      "taskNode": {
+        "nodeRunId": {
+          "wfRunId": {
+            "id": "f6865602e2ad4609b71451462327452e"
+          },
+          "threadRunNumber": 0,
+          "position": 3
+        }
+      }
+    },
+    "scheduledAt": "2026-02-10T16:05:24.319Z",
+    "status": "TASK_RUNNING",
+    "timeoutSeconds": 60,
+    "totalCheckpoints": 0
+  }
+}
+cluster1_default_execution: f6865602e2ad4609b71451462327452e => {
+  "timestamp": "2026-02-10T16:05:24.344Z",
+  "taskRun": {
+    "id": {
+      "wfRunId": {
+        "id": "f6865602e2ad4609b71451462327452e"
+      },
+      "taskGuid": "0-3"
+    },
+    "taskDefId": {
+      "name": "send"
+    },
+    "attempts": [{
+      "output": {
+        "str": ""
+      },
+      "logOutput": {
+        "str": ""
+      },
+      "scheduleTime": "2026-02-10T16:05:24.319Z",
+      "startTime": "2026-02-10T16:05:24.332Z",
+      "endTime": "2026-02-10T16:05:24.343Z",
+      "taskWorkerId": "worker-99b3fcf9d2354e82b98b7c1bd1d0afaf",
+      "taskWorkerVersion": "",
+      "status": "TASK_SUCCESS",
+      "maskedValue": false
+    }],
+    "totalAttempts": 1,
+    "inputVariables": [{
+      "varName": "",
+      "value": {
+        "jsonObj": "{\"text\":\"this is a very long text\",\"sentimentScore\":84.68326391807996,\"addLength\":false,\"userId\":1234}"
+      },
+      "masked": true
+    }],
+    "source": {
+      "taskNode": {
+        "nodeRunId": {
+          "wfRunId": {
+            "id": "f6865602e2ad4609b71451462327452e"
+          },
+          "threadRunNumber": 0,
+          "position": 3
+        }
+      }
+    },
+    "scheduledAt": "2026-02-10T16:05:24.319Z",
+    "status": "TASK_SUCCESS",
+    "timeoutSeconds": 60,
+    "totalCheckpoints": 0
+  }
+}
+cluster1_default_execution: f6865602e2ad4609b71451462327452e => {
+  "timestamp": "2026-02-10T16:05:24.344Z",
+  "wfRun": {
+    "id": {
+      "id": "f6865602e2ad4609b71451462327452e"
+    },
+    "wfSpecId": {
+      "name": "example-variables",
+      "majorVersion": 0,
+      "revision": 0
+    },
+    "oldWfSpecVersions": [],
+    "status": "COMPLETED",
+    "greatestThreadrunNumber": 0,
+    "startTime": "2026-02-10T16:05:24.214Z",
+    "endTime": "2026-02-10T16:05:24.343Z",
+    "threadRuns": [{
+      "wfSpecId": {
+        "name": "example-variables",
+        "majorVersion": 0,
+        "revision": 0
+      },
+      "number": 0,
+      "status": "COMPLETED",
+      "threadSpecName": "entrypoint",
+      "startTime": "2026-02-10T16:05:24.220Z",
+      "endTime": "2026-02-10T16:05:24.343Z",
+      "childThreadIds": [],
+      "haltReasons": [],
+      "currentNodePosition": 4,
+      "handledFailedChildren": [],
+      "type": "ENTRYPOINT"
+    }],
+    "pendingInterrupts": [],
+    "pendingFailures": []
+  }
+}
+cluster1_default_execution: 2f5fa6471cd346258a4da55ef45b93d3 => {
+  "timestamp": "2026-02-10T16:05:33.642Z",
+  "taskRun": {
+    "id": {
+      "wfRunId": {
+        "id": "2f5fa6471cd346258a4da55ef45b93d3"
+      },
+      "taskGuid": "0-1"
+    },
+    "taskDefId": {
+      "name": "greet"
+    },
+    "attempts": [{
+      "scheduleTime": "2026-02-10T16:04:33.569Z",
+      "startTime": "2026-02-10T16:04:33.619Z",
+      "endTime": "2026-02-10T16:05:33.642Z",
+      "taskWorkerId": "worker-5f246ca0599349758b6e61b9ab3da71e",
+      "taskWorkerVersion": "",
+      "status": "TASK_TIMEOUT",
+      "maskedValue": false
+    }],
+    "totalAttempts": 1,
+    "inputVariables": [{
+      "varName": "arg0",
+      "value": {
+        "str": "Colt"
+      },
+      "masked": false
+    }],
+    "source": {
+      "taskNode": {
+        "nodeRunId": {
+          "wfRunId": {
+            "id": "2f5fa6471cd346258a4da55ef45b93d3"
+          },
+          "threadRunNumber": 0,
+          "position": 1
+        }
+      }
+    },
+    "scheduledAt": "2026-02-10T16:04:33.565Z",
+    "status": "TASK_TIMEOUT",
+    "timeoutSeconds": 60,
+    "totalCheckpoints": 0
+  }
+}
+cluster1_default_execution: 2f5fa6471cd346258a4da55ef45b93d3 => {
+  "timestamp": "2026-02-10T16:05:33.642Z",
+  "wfRun": {
+    "id": {
+      "id": "2f5fa6471cd346258a4da55ef45b93d3"
+    },
+    "wfSpecId": {
+      "name": "output-topic",
+      "majorVersion": 0,
+      "revision": 0
+    },
+    "oldWfSpecVersions": [],
+    "status": "ERROR",
+    "greatestThreadrunNumber": 0,
+    "startTime": "2026-02-10T16:04:33.531Z",
+    "endTime": "2026-02-10T16:05:33.690Z",
+    "threadRuns": [{
+      "wfSpecId": {
+        "name": "output-topic",
+        "majorVersion": 0,
+        "revision": 0
+      },
+      "number": 0,
+      "status": "ERROR",
+      "threadSpecName": "entrypoint",
+      "startTime": "2026-02-10T16:04:33.545Z",
+      "errorMessage": "Task timed out",
+      "childThreadIds": [],
+      "haltReasons": [],
+      "currentNodePosition": 1,
+      "handledFailedChildren": [],
+      "type": "ENTRYPOINT"
+    }],
+    "pendingInterrupts": [],
+    "pendingFailures": []
+  }
+}
+cluster1_default_execution: 6967816bf4f94410944e9131003d3235 => {
+  "timestamp": "2026-02-10T16:05:41.603Z",
+  "taskRun": {
+    "id": {
+      "wfRunId": {
+        "id": "6967816bf4f94410944e9131003d3235"
+      },
+      "taskGuid": "0-1"
+    },
+    "taskDefId": {
+      "name": "greet"
+    },
+    "attempts": [{
+      "scheduleTime": "2026-02-10T16:04:41.597Z",
+      "startTime": "2026-02-10T16:04:41.601Z",
+      "endTime": "2026-02-10T16:05:41.603Z",
+      "taskWorkerId": "worker-5f246ca0599349758b6e61b9ab3da71e",
+      "taskWorkerVersion": "",
+      "status": "TASK_TIMEOUT",
+      "maskedValue": false
+    }],
+    "totalAttempts": 1,
+    "inputVariables": [{
+      "varName": "arg0",
+      "value": {
+        "str": "Hartmut"
+      },
+      "masked": false
+    }],
+    "source": {
+      "taskNode": {
+        "nodeRunId": {
+          "wfRunId": {
+            "id": "6967816bf4f94410944e9131003d3235"
+          },
+          "threadRunNumber": 0,
+          "position": 1
+        }
+      }
+    },
+    "scheduledAt": "2026-02-10T16:04:41.597Z",
+    "status": "TASK_TIMEOUT",
+    "timeoutSeconds": 60,
+    "totalCheckpoints": 0
+  }
+}
+cluster1_default_execution: 6967816bf4f94410944e9131003d3235 => {
+  "timestamp": "2026-02-10T16:05:41.603Z",
+  "wfRun": {
+    "id": {
+      "id": "6967816bf4f94410944e9131003d3235"
+    },
+    "wfSpecId": {
+      "name": "output-topic",
+      "majorVersion": 0,
+      "revision": 0
+    },
+    "oldWfSpecVersions": [],
+    "status": "ERROR",
+    "greatestThreadrunNumber": 0,
+    "startTime": "2026-02-10T16:04:41.594Z",
+    "endTime": "2026-02-10T16:05:41.710Z",
+    "threadRuns": [{
+      "wfSpecId": {
+        "name": "output-topic",
+        "majorVersion": 0,
+        "revision": 0
+      },
+      "number": 0,
+      "status": "ERROR",
+      "threadSpecName": "entrypoint",
+      "startTime": "2026-02-10T16:04:41.597Z",
+      "errorMessage": "Task timed out",
+      "childThreadIds": [],
+      "haltReasons": [],
+      "currentNodePosition": 1,
+      "handledFailedChildren": [],
+      "type": "ENTRYPOINT"
+    }],
+    "pendingInterrupts": [],
+    "pendingFailures": []
+  }
+}
+cluster1_default_execution: c788297c849347609500f553eaf3b335 => {
+  "timestamp": "2026-02-10T16:06:31.328Z",
+  "wfRun": {
+    "id": {
+      "id": "c788297c849347609500f553eaf3b335"
+    },
+    "wfSpecId": {
+      "name": "example-external-event",
+      "majorVersion": 0,
+      "revision": 0
+    },
+    "oldWfSpecVersions": [],
+    "status": "RUNNING",
+    "greatestThreadrunNumber": 0,
+    "startTime": "2026-02-10T16:06:31.328Z",
+    "threadRuns": [{
+      "wfSpecId": {
+        "name": "example-external-event",
+        "majorVersion": 0,
+        "revision": 0
+      },
+      "number": 0,
+      "status": "RUNNING",
+      "threadSpecName": "entrypoint",
+      "startTime": "2026-02-10T16:06:31.333Z",
+      "childThreadIds": [],
+      "haltReasons": [],
+      "currentNodePosition": 1,
+      "handledFailedChildren": [],
+      "type": "ENTRYPOINT"
+    }],
+    "pendingInterrupts": [],
+    "pendingFailures": []
+  }
+}
+cluster1_default_execution: c788297c849347609500f553eaf3b335 => {
+  "timestamp": "2026-02-10T16:06:31.328Z",
+  "taskRun": {
+    "id": {
+      "wfRunId": {
+        "id": "c788297c849347609500f553eaf3b335"
+      },
+      "taskGuid": "0-1"
+    },
+    "taskDefId": {
+      "name": "ask-for-name"
+    },
+    "attempts": [{
+      "scheduleTime": "2026-02-10T16:06:31.334Z",
+      "taskWorkerId": "",
+      "status": "TASK_SCHEDULED",
+      "maskedValue": false
+    }],
+    "totalAttempts": 1,
+    "inputVariables": [],
+    "source": {
+      "taskNode": {
+        "nodeRunId": {
+          "wfRunId": {
+            "id": "c788297c849347609500f553eaf3b335"
+          },
+          "threadRunNumber": 0,
+          "position": 1
+        }
+      }
+    },
+    "scheduledAt": "2026-02-10T16:06:31.334Z",
+    "status": "TASK_SCHEDULED",
+    "timeoutSeconds": 60,
+    "totalCheckpoints": 0
+  }
+}
+cluster1_default_execution: c788297c849347609500f553eaf3b335 => {
+  "timestamp": "2026-02-10T16:06:31.337Z",
+  "taskRun": {
+    "id": {
+      "wfRunId": {
+        "id": "c788297c849347609500f553eaf3b335"
+      },
+      "taskGuid": "0-1"
+    },
+    "taskDefId": {
+      "name": "ask-for-name"
+    },
+    "attempts": [{
+      "scheduleTime": "2026-02-10T16:06:31.334Z",
+      "startTime": "2026-02-10T16:06:31.337Z",
+      "taskWorkerId": "worker-7a9ccc8aa216450d8b77e26c624f71d4",
+      "taskWorkerVersion": "",
+      "status": "TASK_RUNNING",
+      "maskedValue": false
+    }],
+    "totalAttempts": 1,
+    "inputVariables": [],
+    "source": {
+      "taskNode": {
+        "nodeRunId": {
+          "wfRunId": {
+            "id": "c788297c849347609500f553eaf3b335"
+          },
+          "threadRunNumber": 0,
+          "position": 1
+        }
+      }
+    },
+    "scheduledAt": "2026-02-10T16:06:31.334Z",
+    "status": "TASK_RUNNING",
+    "timeoutSeconds": 60,
+    "totalCheckpoints": 0
+  }
+}
+cluster1_default_execution: c788297c849347609500f553eaf3b335 => {
+  "timestamp": "2026-02-10T16:06:31.365Z",
+  "taskRun": {
+    "id": {
+      "wfRunId": {
+        "id": "c788297c849347609500f553eaf3b335"
+      },
+      "taskGuid": "0-1"
+    },
+    "taskDefId": {
+      "name": "ask-for-name"
+    },
+    "attempts": [{
+      "output": {
+        "str": "Hi what\u0027s your name?"
+      },
+      "logOutput": {
+        "str": ""
+      },
+      "scheduleTime": "2026-02-10T16:06:31.334Z",
+      "startTime": "2026-02-10T16:06:31.337Z",
+      "endTime": "2026-02-10T16:06:31.361Z",
+      "taskWorkerId": "worker-7a9ccc8aa216450d8b77e26c624f71d4",
+      "taskWorkerVersion": "",
+      "status": "TASK_SUCCESS",
+      "maskedValue": false
+    }],
+    "totalAttempts": 1,
+    "inputVariables": [],
+    "source": {
+      "taskNode": {
+        "nodeRunId": {
+          "wfRunId": {
+            "id": "c788297c849347609500f553eaf3b335"
+          },
+          "threadRunNumber": 0,
+          "position": 1
+        }
+      }
+    },
+    "scheduledAt": "2026-02-10T16:06:31.334Z",
+    "status": "TASK_SUCCESS",
+    "timeoutSeconds": 60,
+    "totalCheckpoints": 0
+  }
+}
+cluster1_default_execution: c788297c849347609500f553eaf3b335 => {
+  "timestamp": "2026-02-10T16:07:12.745Z",
+  "taskRun": {
+    "id": {
+      "wfRunId": {
+        "id": "c788297c849347609500f553eaf3b335"
+      },
+      "taskGuid": "0-3"
+    },
+    "taskDefId": {
+      "name": "greet"
+    },
+    "attempts": [{
+      "scheduleTime": "2026-02-10T16:07:12.753Z",
+      "taskWorkerId": "",
+      "status": "TASK_SCHEDULED",
+      "maskedValue": false
+    }],
+    "totalAttempts": 1,
+    "inputVariables": [{
+      "varName": "arg0",
+      "value": {
+        "str": "Obi-Wan"
+      },
+      "masked": false
+    }],
+    "source": {
+      "taskNode": {
+        "nodeRunId": {
+          "wfRunId": {
+            "id": "c788297c849347609500f553eaf3b335"
+          },
+          "threadRunNumber": 0,
+          "position": 3
+        }
+      }
+    },
+    "scheduledAt": "2026-02-10T16:07:12.753Z",
+    "status": "TASK_SCHEDULED",
+    "timeoutSeconds": 60,
+    "totalCheckpoints": 0
+  }
+}
+cluster1_default_execution: c788297c849347609500f553eaf3b335 => {
+  "timestamp": "2026-02-10T16:07:12.745Z",
+  "externalEvent": {
+    "id": {
+      "wfRunId": {
+        "id": "c788297c849347609500f553eaf3b335"
+      },
+      "externalEventDefId": {
+        "name": "name-event"
+      },
+      "guid": "09481e551f6f44b2b0acbbd4abbd71a1"
+    },
+    "createdAt": "2026-02-10T16:07:12.745Z",
+    "content": {
+      "str": "Obi-Wan"
+    },
+    "threadRunNumber": 0,
+    "nodeRunPosition": 2,
+    "claimed": true
+  }
+}
+cluster1_default_execution: c788297c849347609500f553eaf3b335 => {
+  "timestamp": "2026-02-10T16:07:12.754Z",
+  "taskRun": {
+    "id": {
+      "wfRunId": {
+        "id": "c788297c849347609500f553eaf3b335"
+      },
+      "taskGuid": "0-3"
+    },
+    "taskDefId": {
+      "name": "greet"
+    },
+    "attempts": [{
+      "scheduleTime": "2026-02-10T16:07:12.753Z",
+      "startTime": "2026-02-10T16:07:12.754Z",
+      "taskWorkerId": "worker-7a9ccc8aa216450d8b77e26c624f71d4",
+      "taskWorkerVersion": "",
+      "status": "TASK_RUNNING",
+      "maskedValue": false
+    }],
+    "totalAttempts": 1,
+    "inputVariables": [{
+      "varName": "arg0",
+      "value": {
+        "str": "Obi-Wan"
+      },
+      "masked": false
+    }],
+    "source": {
+      "taskNode": {
+        "nodeRunId": {
+          "wfRunId": {
+            "id": "c788297c849347609500f553eaf3b335"
+          },
+          "threadRunNumber": 0,
+          "position": 3
+        }
+      }
+    },
+    "scheduledAt": "2026-02-10T16:07:12.753Z",
+    "status": "TASK_RUNNING",
+    "timeoutSeconds": 60,
+    "totalCheckpoints": 0
+  }
+}
+cluster1_default_execution: c788297c849347609500f553eaf3b335 => {
+  "timestamp": "2026-02-10T16:07:12.763Z",
+  "taskRun": {
+    "id": {
+      "wfRunId": {
+        "id": "c788297c849347609500f553eaf3b335"
+      },
+      "taskGuid": "0-3"
+    },
+    "taskDefId": {
+      "name": "greet"
+    },
+    "attempts": [{
+      "output": {
+        "str": "Hello there, Obi-Wan"
+      },
+      "logOutput": {
+        "str": ""
+      },
+      "scheduleTime": "2026-02-10T16:07:12.753Z",
+      "startTime": "2026-02-10T16:07:12.754Z",
+      "endTime": "2026-02-10T16:07:12.762Z",
+      "taskWorkerId": "worker-7a9ccc8aa216450d8b77e26c624f71d4",
+      "taskWorkerVersion": "",
+      "status": "TASK_SUCCESS",
+      "maskedValue": false
+    }],
+    "totalAttempts": 1,
+    "inputVariables": [{
+      "varName": "arg0",
+      "value": {
+        "str": "Obi-Wan"
+      },
+      "masked": false
+    }],
+    "source": {
+      "taskNode": {
+        "nodeRunId": {
+          "wfRunId": {
+            "id": "c788297c849347609500f553eaf3b335"
+          },
+          "threadRunNumber": 0,
+          "position": 3
+        }
+      }
+    },
+    "scheduledAt": "2026-02-10T16:07:12.753Z",
+    "status": "TASK_SUCCESS",
+    "timeoutSeconds": 60,
+    "totalCheckpoints": 0
+  }
+}
+cluster1_default_execution: c788297c849347609500f553eaf3b335 => {
+  "timestamp": "2026-02-10T16:07:12.763Z",
+  "wfRun": {
+    "id": {
+      "id": "c788297c849347609500f553eaf3b335"
+    },
+    "wfSpecId": {
+      "name": "example-external-event",
+      "majorVersion": 0,
+      "revision": 0
+    },
+    "oldWfSpecVersions": [],
+    "status": "COMPLETED",
+    "greatestThreadrunNumber": 0,
+    "startTime": "2026-02-10T16:06:31.328Z",
+    "endTime": "2026-02-10T16:07:12.762Z",
+    "threadRuns": [{
+      "wfSpecId": {
+        "name": "example-external-event",
+        "majorVersion": 0,
+        "revision": 0
+      },
+      "number": 0,
+      "status": "COMPLETED",
+      "threadSpecName": "entrypoint",
+      "startTime": "2026-02-10T16:06:31.333Z",
+      "endTime": "2026-02-10T16:07:12.762Z",
+      "childThreadIds": [],
+      "haltReasons": [],
+      "currentNodePosition": 4,
+      "handledFailedChildren": [],
+      "type": "ENTRYPOINT"
+    }],
+    "pendingInterrupts": [],
+    "pendingFailures": []
+  }
+}
+cluster1_default_execution: 8c9656e9c7ff4ea2a5b9f5dc65815c61 => {
+  "timestamp": "2026-02-10T16:09:06.593Z",
+  "wfRun": {
+    "id": {
+      "id": "8c9656e9c7ff4ea2a5b9f5dc65815c61"
+    },
+    "wfSpecId": {
+      "name": "await-wf-event",
+      "majorVersion": 0,
+      "revision": 0
+    },
+    "oldWfSpecVersions": [],
+    "status": "RUNNING",
+    "greatestThreadrunNumber": 0,
+    "startTime": "2026-02-10T16:09:06.593Z",
+    "threadRuns": [{
+      "wfSpecId": {
+        "name": "await-wf-event",
+        "majorVersion": 0,
+        "revision": 0
+      },
+      "number": 0,
+      "status": "RUNNING",
+      "threadSpecName": "entrypoint",
+      "startTime": "2026-02-10T16:09:06.601Z",
+      "childThreadIds": [],
+      "haltReasons": [],
+      "currentNodePosition": 1,
+      "handledFailedChildren": [],
+      "type": "ENTRYPOINT"
+    }],
+    "pendingInterrupts": [],
+    "pendingFailures": []
+  }
+}
+cluster1_default_execution: 8c9656e9c7ff4ea2a5b9f5dc65815c61 => {
+  "timestamp": "2026-02-10T16:09:07.602Z",
+  "workflowEvent": {
+    "id": {
+      "wfRunId": {
+        "id": "8c9656e9c7ff4ea2a5b9f5dc65815c61"
+      },
+      "workflowEventDefId": {
+        "name": "sleep-done"
+      },
+      "number": 0
+    },
+    "content": {
+      "str": "hello there!"
+    },
+    "createdAt": "2026-02-10T16:09:07.653Z",
+    "nodeRunId": {
+      "wfRunId": {
+        "id": "8c9656e9c7ff4ea2a5b9f5dc65815c61"
+      },
+      "threadRunNumber": 0,
+      "position": 2
+    }
+  }
+}
+cluster1_default_execution: 8c9656e9c7ff4ea2a5b9f5dc65815c61 => {
+  "timestamp": "2026-02-10T16:09:07.602Z",
+  "wfRun": {
+    "id": {
+      "id": "8c9656e9c7ff4ea2a5b9f5dc65815c61"
+    },
+    "wfSpecId": {
+      "name": "await-wf-event",
+      "majorVersion": 0,
+      "revision": 0
+    },
+    "oldWfSpecVersions": [],
+    "status": "COMPLETED",
+    "greatestThreadrunNumber": 0,
+    "startTime": "2026-02-10T16:09:06.593Z",
+    "endTime": "2026-02-10T16:09:07.602Z",
+    "threadRuns": [{
+      "wfSpecId": {
+        "name": "await-wf-event",
+        "majorVersion": 0,
+        "revision": 0
+      },
+      "number": 0,
+      "status": "COMPLETED",
+      "threadSpecName": "entrypoint",
+      "startTime": "2026-02-10T16:09:06.601Z",
+      "endTime": "2026-02-10T16:09:07.602Z",
+      "childThreadIds": [],
+      "haltReasons": [],
+      "currentNodePosition": 3,
+      "handledFailedChildren": [],
+      "type": "ENTRYPOINT"
+    }],
+    "pendingInterrupts": [],
+    "pendingFailures": []
+  }
+}
+cluster1_default_execution: e8c717722a6a49df8f2afcd4a4b226c4 => {
+  "timestamp": "2026-02-10T16:09:29.690Z",
+  "wfRun": {
+    "id": {
+      "id": "e8c717722a6a49df8f2afcd4a4b226c4"
+    },
+    "wfSpecId": {
+      "name": "await-wf-event",
+      "majorVersion": 0,
+      "revision": 0
+    },
+    "oldWfSpecVersions": [],
+    "status": "RUNNING",
+    "greatestThreadrunNumber": 0,
+    "startTime": "2026-02-10T16:09:29.690Z",
+    "threadRuns": [{
+      "wfSpecId": {
+        "name": "await-wf-event",
+        "majorVersion": 0,
+        "revision": 0
+      },
+      "number": 0,
+      "status": "RUNNING",
+      "threadSpecName": "entrypoint",
+      "startTime": "2026-02-10T16:09:29.695Z",
+      "childThreadIds": [],
+      "haltReasons": [],
+      "currentNodePosition": 1,
+      "handledFailedChildren": [],
+      "type": "ENTRYPOINT"
+    }],
+    "pendingInterrupts": [],
+    "pendingFailures": []
+  }
+}
+cluster1_default_execution: e8c717722a6a49df8f2afcd4a4b226c4 => {
+  "timestamp": "2026-02-10T16:09:31.695Z",
+  "workflowEvent": {
+    "id": {
+      "wfRunId": {
+        "id": "e8c717722a6a49df8f2afcd4a4b226c4"
+      },
+      "workflowEventDefId": {
+        "name": "sleep-done"
+      },
+      "number": 0
+    },
+    "content": {
+      "str": "hello there!"
+    },
+    "createdAt": "2026-02-10T16:09:31.768Z",
+    "nodeRunId": {
+      "wfRunId": {
+        "id": "e8c717722a6a49df8f2afcd4a4b226c4"
+      },
+      "threadRunNumber": 0,
+      "position": 2
+    }
+  }
+}
+cluster1_default_execution: e8c717722a6a49df8f2afcd4a4b226c4 => {
+  "timestamp": "2026-02-10T16:09:31.695Z",
+  "wfRun": {
+    "id": {
+      "id": "e8c717722a6a49df8f2afcd4a4b226c4"
+    },
+    "wfSpecId": {
+      "name": "await-wf-event",
+      "majorVersion": 0,
+      "revision": 0
+    },
+    "oldWfSpecVersions": [],
+    "status": "COMPLETED",
+    "greatestThreadrunNumber": 0,
+    "startTime": "2026-02-10T16:09:29.690Z",
+    "endTime": "2026-02-10T16:09:31.695Z",
+    "threadRuns": [{
+      "wfSpecId": {
+        "name": "await-wf-event",
+        "majorVersion": 0,
+        "revision": 0
+      },
+      "number": 0,
+      "status": "COMPLETED",
+      "threadSpecName": "entrypoint",
+      "startTime": "2026-02-10T16:09:29.695Z",
+      "endTime": "2026-02-10T16:09:31.695Z",
+      "childThreadIds": [],
+      "haltReasons": [],
+      "currentNodePosition": 3,
+      "handledFailedChildren": [],
+      "type": "ENTRYPOINT"
+    }],
+    "pendingInterrupts": [],
+    "pendingFailures": []
+  }
+}
+cluster1_default_execution: 3549a0f755824b21992cb80ea2a766e2 => {
+  "timestamp": "2026-02-10T16:10:08.848Z",
+  "wfRun": {
+    "id": {
+      "id": "3549a0f755824b21992cb80ea2a766e2"
+    },
+    "wfSpecId": {
+      "name": "it-request",
+      "majorVersion": 0,
+      "revision": 0
+    },
+    "oldWfSpecVersions": [],
+    "status": "RUNNING",
+    "greatestThreadrunNumber": 0,
+    "startTime": "2026-02-10T16:10:08.848Z",
+    "threadRuns": [{
+      "wfSpecId": {
+        "name": "it-request",
+        "majorVersion": 0,
+        "revision": 0
+      },
+      "number": 0,
+      "status": "RUNNING",
+      "threadSpecName": "entrypoint",
+      "startTime": "2026-02-10T16:10:08.851Z",
+      "childThreadIds": [],
+      "haltReasons": [],
+      "currentNodePosition": 1,
+      "handledFailedChildren": [],
+      "type": "ENTRYPOINT"
+    }],
+    "pendingInterrupts": [],
+    "pendingFailures": []
+  }
+}
+cluster1_default_execution: 3549a0f755824b21992cb80ea2a766e2 => {
+  "timestamp": "2026-02-10T16:10:08.848Z",
+  "userTaskRun": {
+    "id": {
+      "wfRunId": {
+        "id": "3549a0f755824b21992cb80ea2a766e2"
+      },
+      "userTaskGuid": "0-1"
+    },
+    "userTaskDefId": {
+      "name": "it-request",
+      "version": 0
+    },
+    "userGroup": "testGroup",
+    "userId": "anakin",
+    "results": {
+    },
+    "status": "ASSIGNED",
+    "events": [{
+      "time": "2026-02-10T16:10:08.848Z",
+      "assigned": {
+        "newUserId": "anakin",
+        "newUserGroup": "testGroup"
+      }
+    }],
+    "scheduledTime": "2026-02-10T16:10:08.857Z",
+    "nodeRunId": {
+      "wfRunId": {
+        "id": "3549a0f755824b21992cb80ea2a766e2"
+      },
+      "threadRunNumber": 0,
+      "position": 1
+    },
+    "epoch": 1
+  }
+}
+cluster1_default_execution: 3549a0f755824b21992cb80ea2a766e2 => {
+  "timestamp": "2026-02-10T16:11:08.858Z",
+  "userTaskRun": {
+    "id": {
+      "wfRunId": {
+        "id": "3549a0f755824b21992cb80ea2a766e2"
+      },
+      "userTaskGuid": "0-1"
+    },
+    "userTaskDefId": {
+      "name": "it-request",
+      "version": 0
+    },
+    "userGroup": "testGroup",
+    "results": {
+    },
+    "status": "UNASSIGNED",
+    "events": [{
+      "time": "2026-02-10T16:10:08.848Z",
+      "assigned": {
+        "newUserId": "anakin",
+        "newUserGroup": "testGroup"
+      }
+    }, {
+      "time": "2026-02-10T16:11:08.858Z",
+      "assigned": {
+        "oldUserId": "anakin",
+        "oldUserGroup": "testGroup",
+        "newUserGroup": "testGroup"
+      }
+    }],
+    "scheduledTime": "2026-02-10T16:10:08.857Z",
+    "nodeRunId": {
+      "wfRunId": {
+        "id": "3549a0f755824b21992cb80ea2a766e2"
+      },
+      "threadRunNumber": 0,
+      "position": 1
+    },
+    "epoch": 2
+  }
+}
+cluster1_default_execution: 18f9b31ad3d049eeacc6f2c747ea36b6 => {
+  "timestamp": "2026-02-10T16:13:28.380Z",
+  "wfRun": {
+    "id": {
+      "id": "18f9b31ad3d049eeacc6f2c747ea36b6"
+    },
+    "wfSpecId": {
+      "name": "it-request",
+      "majorVersion": 0,
+      "revision": 0
+    },
+    "oldWfSpecVersions": [],
+    "status": "RUNNING",
+    "greatestThreadrunNumber": 0,
+    "startTime": "2026-02-10T16:13:28.380Z",
+    "threadRuns": [{
+      "wfSpecId": {
+        "name": "it-request",
+        "majorVersion": 0,
+        "revision": 0
+      },
+      "number": 0,
+      "status": "RUNNING",
+      "threadSpecName": "entrypoint",
+      "startTime": "2026-02-10T16:13:28.383Z",
+      "childThreadIds": [],
+      "haltReasons": [],
+      "currentNodePosition": 1,
+      "handledFailedChildren": [],
+      "type": "ENTRYPOINT"
+    }],
+    "pendingInterrupts": [],
+    "pendingFailures": []
+  }
+}
+cluster1_default_execution: 18f9b31ad3d049eeacc6f2c747ea36b6 => {
+  "timestamp": "2026-02-10T16:13:28.380Z",
+  "userTaskRun": {
+    "id": {
+      "wfRunId": {
+        "id": "18f9b31ad3d049eeacc6f2c747ea36b6"
+      },
+      "userTaskGuid": "0-1"
+    },
+    "userTaskDefId": {
+      "name": "it-request",
+      "version": 0
+    },
+    "userGroup": "testGroup",
+    "userId": "r2d2",
+    "results": {
+    },
+    "status": "ASSIGNED",
+    "events": [{
+      "time": "2026-02-10T16:13:28.380Z",
+      "assigned": {
+        "newUserId": "r2d2",
+        "newUserGroup": "testGroup"
+      }
+    }],
+    "scheduledTime": "2026-02-10T16:13:28.383Z",
+    "nodeRunId": {
+      "wfRunId": {
+        "id": "18f9b31ad3d049eeacc6f2c747ea36b6"
+      },
+      "threadRunNumber": 0,
+      "position": 1
+    },
+    "epoch": 1
+  }
+}
+cluster1_default_execution: 18f9b31ad3d049eeacc6f2c747ea36b6 => {
+  "timestamp": "2026-02-10T16:14:28.383Z",
+  "userTaskRun": {
+    "id": {
+      "wfRunId": {
+        "id": "18f9b31ad3d049eeacc6f2c747ea36b6"
+      },
+      "userTaskGuid": "0-1"
+    },
+    "userTaskDefId": {
+      "name": "it-request",
+      "version": 0
+    },
+    "userGroup": "testGroup",
+    "results": {
+    },
+    "status": "UNASSIGNED",
+    "events": [{
+      "time": "2026-02-10T16:13:28.380Z",
+      "assigned": {
+        "newUserId": "r2d2",
+        "newUserGroup": "testGroup"
+      }
+    }, {
+      "time": "2026-02-10T16:14:28.383Z",
+      "assigned": {
+        "oldUserId": "r2d2",
+        "oldUserGroup": "testGroup",
+        "newUserGroup": "testGroup"
+      }
+    }],
+    "scheduledTime": "2026-02-10T16:13:28.383Z",
+    "nodeRunId": {
+      "wfRunId": {
+        "id": "18f9b31ad3d049eeacc6f2c747ea36b6"
+      },
+      "threadRunNumber": 0,
+      "position": 1
+    },
+    "epoch": 2
+  }
+}
+cluster1_default_execution: c59560f521b34a158d58ac7b12c50eb0 => {
+  "timestamp": "2026-02-10T16:16:26.748Z",
+  "wfRun": {
+    "id": {
+      "id": "c59560f521b34a158d58ac7b12c50eb0"
+    },
+    "wfSpecId": {
+      "name": "it-request",
+      "majorVersion": 0,
+      "revision": 0
+    },
+    "oldWfSpecVersions": [],
+    "status": "RUNNING",
+    "greatestThreadrunNumber": 0,
+    "startTime": "2026-02-10T16:16:26.748Z",
+    "threadRuns": [{
+      "wfSpecId": {
+        "name": "it-request",
+        "majorVersion": 0,
+        "revision": 0
+      },
+      "number": 0,
+      "status": "RUNNING",
+      "threadSpecName": "entrypoint",
+      "startTime": "2026-02-10T16:16:26.752Z",
+      "childThreadIds": [],
+      "haltReasons": [],
+      "currentNodePosition": 1,
+      "handledFailedChildren": [],
+      "type": "ENTRYPOINT"
+    }],
+    "pendingInterrupts": [],
+    "pendingFailures": []
+  }
+}
+cluster1_default_execution: c59560f521b34a158d58ac7b12c50eb0 => {
+  "timestamp": "2026-02-10T16:16:26.748Z",
+  "userTaskRun": {
+    "id": {
+      "wfRunId": {
+        "id": "c59560f521b34a158d58ac7b12c50eb0"
+      },
+      "userTaskGuid": "0-1"
+    },
+    "userTaskDefId": {
+      "name": "it-request",
+      "version": 0
+    },
+    "userGroup": "testGroup",
+    "userId": "r2d2",
+    "results": {
+    },
+    "status": "ASSIGNED",
+    "events": [{
+      "time": "2026-02-10T16:16:26.748Z",
+      "assigned": {
+        "newUserId": "r2d2",
+        "newUserGroup": "testGroup"
+      }
+    }],
+    "scheduledTime": "2026-02-10T16:16:26.752Z",
+    "nodeRunId": {
+      "wfRunId": {
+        "id": "c59560f521b34a158d58ac7b12c50eb0"
+      },
+      "threadRunNumber": 0,
+      "position": 1
+    },
+    "epoch": 1
+  }
+}
+cluster1_default_execution: c59560f521b34a158d58ac7b12c50eb0 => {
+  "timestamp": "2026-02-10T16:17:26.752Z",
+  "userTaskRun": {
+    "id": {
+      "wfRunId": {
+        "id": "c59560f521b34a158d58ac7b12c50eb0"
+      },
+      "userTaskGuid": "0-1"
+    },
+    "userTaskDefId": {
+      "name": "it-request",
+      "version": 0
+    },
+    "userGroup": "testGroup",
+    "results": {
+    },
+    "status": "UNASSIGNED",
+    "events": [{
+      "time": "2026-02-10T16:16:26.748Z",
+      "assigned": {
+        "newUserId": "r2d2",
+        "newUserGroup": "testGroup"
+      }
+    }, {
+      "time": "2026-02-10T16:17:26.752Z",
+      "assigned": {
+        "oldUserId": "r2d2",
+        "oldUserGroup": "testGroup",
+        "newUserGroup": "testGroup"
+      }
+    }],
+    "scheduledTime": "2026-02-10T16:16:26.752Z",
+    "nodeRunId": {
+      "wfRunId": {
+        "id": "c59560f521b34a158d58ac7b12c50eb0"
+      },
+      "threadRunNumber": 0,
+      "position": 1
+    },
+    "epoch": 2
+  }
+}
+cluster1_default_execution: c59560f521b34a158d58ac7b12c50eb0 => {
+  "timestamp": "2026-02-10T16:17:29.669Z",
+  "userTaskRun": {
+    "id": {
+      "wfRunId": {
+        "id": "c59560f521b34a158d58ac7b12c50eb0"
+      },
+      "userTaskGuid": "0-1"
+    },
+    "userTaskDefId": {
+      "name": "it-request",
+      "version": 0
+    },
+    "userGroup": "testGroup",
+    "userId": "r2d2",
+    "results": {
+      "requestedItem": {
+        "str": "Test response"
+      },
+      "justification": {
+        "str": "just because"
+      }
+    },
+    "status": "DONE",
+    "events": [{
+      "time": "2026-02-10T16:16:26.748Z",
+      "assigned": {
+        "newUserId": "r2d2",
+        "newUserGroup": "testGroup"
+      }
+    }, {
+      "time": "2026-02-10T16:17:26.752Z",
+      "assigned": {
+        "oldUserId": "r2d2",
+        "oldUserGroup": "testGroup",
+        "newUserGroup": "testGroup"
+      }
+    }, {
+      "time": "2026-02-10T16:17:29.669Z",
+      "assigned": {
+        "oldUserGroup": "testGroup",
+        "newUserId": "r2d2",
+        "newUserGroup": "testGroup"
+      }
+    }, {
+      "time": "2026-02-10T16:17:29.669Z",
+      "completed": {
+      }
+    }],
+    "scheduledTime": "2026-02-10T16:16:26.752Z",
+    "nodeRunId": {
+      "wfRunId": {
+        "id": "c59560f521b34a158d58ac7b12c50eb0"
+      },
+      "threadRunNumber": 0,
+      "position": 1
+    },
+    "epoch": 3
+  }
+}
+cluster1_default_execution: c59560f521b34a158d58ac7b12c50eb0 => {
+  "timestamp": "2026-02-10T16:17:29.669Z",
+  "userTaskRun": {
+    "id": {
+      "wfRunId": {
+        "id": "c59560f521b34a158d58ac7b12c50eb0"
+      },
+      "userTaskGuid": "0-2"
+    },
+    "userTaskDefId": {
+      "name": "approve-it-request",
+      "version": 0
+    },
+    "userGroup": "finance",
+    "results": {
+    },
+    "status": "UNASSIGNED",
+    "events": [{
+      "time": "2026-02-10T16:17:29.669Z",
+      "assigned": {
+        "newUserGroup": "finance"
+      }
+    }],
+    "notes": "User r2d2 is requesting to buy item Test response.\nJustification: just because",
+    "scheduledTime": "2026-02-10T16:17:29.683Z",
+    "nodeRunId": {
+      "wfRunId": {
+        "id": "c59560f521b34a158d58ac7b12c50eb0"
+      },
+      "threadRunNumber": 0,
+      "position": 2
+    },
+    "epoch": 1
+  }
+}
+cluster1_default_execution: c59560f521b34a158d58ac7b12c50eb0 => {
+  "timestamp": "2026-02-10T16:17:31.714Z",
+  "taskRun": {
+    "id": {
+      "wfRunId": {
+        "id": "c59560f521b34a158d58ac7b12c50eb0"
+      },
+      "taskGuid": "ut-0-2-1"
+    },
+    "taskDefId": {
+      "name": "send-email"
+    },
+    "attempts": [{
+      "scheduleTime": "2026-02-10T16:17:32.100Z",
+      "taskWorkerId": "",
+      "status": "TASK_SCHEDULED",
+      "maskedValue": false
+    }],
+    "totalAttempts": 1,
+    "inputVariables": [{
+      "varName": "arg0",
+      "value": {
+        "str": "finance@gmail.com"
+      },
+      "masked": false
+    }, {
+      "varName": "arg1",
+      "value": {
+        "str": "Hi finance team, you have a new assigned task"
+      },
+      "masked": false
+    }],
+    "source": {
+      "userTaskTrigger": {
+        "nodeRunId": {
+          "wfRunId": {
+            "id": "c59560f521b34a158d58ac7b12c50eb0"
+          },
+          "threadRunNumber": 0,
+          "position": 2
+        },
+        "userTaskEventNumber": 1,
+        "userGroup": "finance"
+      }
+    },
+    "scheduledAt": "2026-02-10T16:17:32.100Z",
+    "status": "TASK_SCHEDULED",
+    "timeoutSeconds": 60,
+    "totalCheckpoints": 0
+  }
+}
+cluster1_default_execution: c59560f521b34a158d58ac7b12c50eb0 => {
+  "timestamp": "2026-02-10T16:17:31.714Z",
+  "userTaskRun": {
+    "id": {
+      "wfRunId": {
+        "id": "c59560f521b34a158d58ac7b12c50eb0"
+      },
+      "userTaskGuid": "0-2"
+    },
+    "userTaskDefId": {
+      "name": "approve-it-request",
+      "version": 0
+    },
+    "userGroup": "finance",
+    "results": {
+    },
+    "status": "UNASSIGNED",
+    "events": [{
+      "time": "2026-02-10T16:17:29.669Z",
+      "assigned": {
+        "newUserGroup": "finance"
+      }
+    }, {
+      "time": "2026-02-10T16:17:32.100Z",
+      "taskExecuted": {
+        "taskRun": {
+          "wfRunId": {
+            "id": "c59560f521b34a158d58ac7b12c50eb0"
+          },
+          "taskGuid": "ut-0-2-1"
+        }
+      }
+    }],
+    "notes": "User r2d2 is requesting to buy item Test response.\nJustification: just because",
+    "scheduledTime": "2026-02-10T16:17:29.683Z",
+    "nodeRunId": {
+      "wfRunId": {
+        "id": "c59560f521b34a158d58ac7b12c50eb0"
+      },
+      "threadRunNumber": 0,
+      "position": 2
+    },
+    "epoch": 1
+  }
+}
+cluster1_default_execution: c59560f521b34a158d58ac7b12c50eb0 => {
+  "timestamp": "2026-02-10T16:17:32.103Z",
+  "taskRun": {
+    "id": {
+      "wfRunId": {
+        "id": "c59560f521b34a158d58ac7b12c50eb0"
+      },
+      "taskGuid": "ut-0-2-1"
+    },
+    "taskDefId": {
+      "name": "send-email"
+    },
+    "attempts": [{
+      "scheduleTime": "2026-02-10T16:17:32.100Z",
+      "startTime": "2026-02-10T16:17:32.103Z",
+      "taskWorkerId": "worker-5ce79672ac54402189b189d78197ea5a",
+      "taskWorkerVersion": "",
+      "status": "TASK_RUNNING",
+      "maskedValue": false
+    }],
+    "totalAttempts": 1,
+    "inputVariables": [{
+      "varName": "arg0",
+      "value": {
+        "str": "finance@gmail.com"
+      },
+      "masked": false
+    }, {
+      "varName": "arg1",
+      "value": {
+        "str": "Hi finance team, you have a new assigned task"
+      },
+      "masked": false
+    }],
+    "source": {
+      "userTaskTrigger": {
+        "nodeRunId": {
+          "wfRunId": {
+            "id": "c59560f521b34a158d58ac7b12c50eb0"
+          },
+          "threadRunNumber": 0,
+          "position": 2
+        },
+        "userTaskEventNumber": 1,
+        "userGroup": "finance"
+      }
+    },
+    "scheduledAt": "2026-02-10T16:17:32.100Z",
+    "status": "TASK_RUNNING",
+    "timeoutSeconds": 60,
+    "totalCheckpoints": 0
+  }
+}
+cluster1_default_execution: c59560f521b34a158d58ac7b12c50eb0 => {
+  "timestamp": "2026-02-10T16:17:32.135Z",
+  "taskRun": {
+    "id": {
+      "wfRunId": {
+        "id": "c59560f521b34a158d58ac7b12c50eb0"
+      },
+      "taskGuid": "ut-0-2-1"
+    },
+    "taskDefId": {
+      "name": "send-email"
+    },
+    "attempts": [{
+      "output": {
+      },
+      "logOutput": {
+        "str": ""
+      },
+      "scheduleTime": "2026-02-10T16:17:32.100Z",
+      "startTime": "2026-02-10T16:17:32.103Z",
+      "endTime": "2026-02-10T16:17:32.131Z",
+      "taskWorkerId": "worker-5ce79672ac54402189b189d78197ea5a",
+      "taskWorkerVersion": "",
+      "status": "TASK_SUCCESS",
+      "maskedValue": false
+    }],
+    "totalAttempts": 1,
+    "inputVariables": [{
+      "varName": "arg0",
+      "value": {
+        "str": "finance@gmail.com"
+      },
+      "masked": false
+    }, {
+      "varName": "arg1",
+      "value": {
+        "str": "Hi finance team, you have a new assigned task"
+      },
+      "masked": false
+    }],
+    "source": {
+      "userTaskTrigger": {
+        "nodeRunId": {
+          "wfRunId": {
+            "id": "c59560f521b34a158d58ac7b12c50eb0"
+          },
+          "threadRunNumber": 0,
+          "position": 2
+        },
+        "userTaskEventNumber": 1,
+        "userGroup": "finance"
+      }
+    },
+    "scheduledAt": "2026-02-10T16:17:32.100Z",
+    "status": "TASK_SUCCESS",
+    "timeoutSeconds": 60,
+    "totalCheckpoints": 0
+  }
+}
+cluster1_default_execution: c59560f521b34a158d58ac7b12c50eb0 => {
+  "timestamp": "2026-02-10T16:19:03.087Z",
+  "userTaskRun": {
+    "id": {
+      "wfRunId": {
+        "id": "c59560f521b34a158d58ac7b12c50eb0"
+      },
+      "userTaskGuid": "0-2"
+    },
+    "userTaskDefId": {
+      "name": "approve-it-request",
+      "version": 0
+    },
+    "userId": "mace",
+    "results": {
+    },
+    "status": "ASSIGNED",
+    "events": [{
+      "time": "2026-02-10T16:17:29.669Z",
+      "assigned": {
+        "newUserGroup": "finance"
+      }
+    }, {
+      "time": "2026-02-10T16:17:32.100Z",
+      "taskExecuted": {
+        "taskRun": {
+          "wfRunId": {
+            "id": "c59560f521b34a158d58ac7b12c50eb0"
+          },
+          "taskGuid": "ut-0-2-1"
+        }
+      }
+    }, {
+      "time": "2026-02-10T16:19:03.087Z",
+      "assigned": {
+        "oldUserGroup": "finance",
+        "newUserId": "mace"
+      }
+    }],
+    "notes": "User r2d2 is requesting to buy item Test response.\nJustification: just because",
+    "scheduledTime": "2026-02-10T16:17:29.683Z",
+    "nodeRunId": {
+      "wfRunId": {
+        "id": "c59560f521b34a158d58ac7b12c50eb0"
+      },
+      "threadRunNumber": 0,
+      "position": 2
+    },
+    "epoch": 2
+  }
+}
+cluster1_default_execution: c59560f521b34a158d58ac7b12c50eb0 => {
+  "timestamp": "2026-02-10T16:19:40.114Z",
+  "taskRun": {
+    "id": {
+      "wfRunId": {
+        "id": "c59560f521b34a158d58ac7b12c50eb0"
+      },
+      "taskGuid": "0-4"
+    },
+    "taskDefId": {
+      "name": "send-email"
+    },
+    "attempts": [{
+      "scheduleTime": "2026-02-10T16:19:40.129Z",
+      "taskWorkerId": "",
+      "status": "TASK_SCHEDULED",
+      "maskedValue": false
+    }],
+    "totalAttempts": 1,
+    "inputVariables": [{
+      "varName": "arg0",
+      "value": {
+        "str": "r2d2"
+      },
+      "masked": false
+    }, {
+      "varName": "arg1",
+      "value": {
+        "str": "Dear r2d2, your request for Test response has been approved!"
+      },
+      "masked": false
+    }],
+    "source": {
+      "taskNode": {
+        "nodeRunId": {
+          "wfRunId": {
+            "id": "c59560f521b34a158d58ac7b12c50eb0"
+          },
+          "threadRunNumber": 0,
+          "position": 4
+        }
+      }
+    },
+    "scheduledAt": "2026-02-10T16:19:40.129Z",
+    "status": "TASK_SCHEDULED",
+    "timeoutSeconds": 60,
+    "totalCheckpoints": 0
+  }
+}
+cluster1_default_execution: c59560f521b34a158d58ac7b12c50eb0 => {
+  "timestamp": "2026-02-10T16:19:40.114Z",
+  "userTaskRun": {
+    "id": {
+      "wfRunId": {
+        "id": "c59560f521b34a158d58ac7b12c50eb0"
+      },
+      "userTaskGuid": "0-2"
+    },
+    "userTaskDefId": {
+      "name": "approve-it-request",
+      "version": 0
+    },
+    "userId": "Lalalu",
+    "results": {
+      "isApproved": {
+        "bool": true
+      }
+    },
+    "status": "DONE",
+    "events": [{
+      "time": "2026-02-10T16:17:29.669Z",
+      "assigned": {
+        "newUserGroup": "finance"
+      }
+    }, {
+      "time": "2026-02-10T16:17:32.100Z",
+      "taskExecuted": {
+        "taskRun": {
+          "wfRunId": {
+            "id": "c59560f521b34a158d58ac7b12c50eb0"
+          },
+          "taskGuid": "ut-0-2-1"
+        }
+      }
+    }, {
+      "time": "2026-02-10T16:19:03.087Z",
+      "assigned": {
+        "oldUserGroup": "finance",
+        "newUserId": "mace"
+      }
+    }, {
+      "time": "2026-02-10T16:19:40.114Z",
+      "assigned": {
+        "oldUserId": "mace",
+        "newUserId": "Lalalu"
+      }
+    }, {
+      "time": "2026-02-10T16:19:40.114Z",
+      "completed": {
+      }
+    }],
+    "notes": "User r2d2 is requesting to buy item Test response.\nJustification: just because",
+    "scheduledTime": "2026-02-10T16:17:29.683Z",
+    "nodeRunId": {
+      "wfRunId": {
+        "id": "c59560f521b34a158d58ac7b12c50eb0"
+      },
+      "threadRunNumber": 0,
+      "position": 2
+    },
+    "epoch": 3
+  }
+}
+cluster1_default_execution: c59560f521b34a158d58ac7b12c50eb0 => {
+  "timestamp": "2026-02-10T16:19:40.133Z",
+  "taskRun": {
+    "id": {
+      "wfRunId": {
+        "id": "c59560f521b34a158d58ac7b12c50eb0"
+      },
+      "taskGuid": "0-4"
+    },
+    "taskDefId": {
+      "name": "send-email"
+    },
+    "attempts": [{
+      "scheduleTime": "2026-02-10T16:19:40.129Z",
+      "startTime": "2026-02-10T16:19:40.133Z",
+      "taskWorkerId": "worker-5ce79672ac54402189b189d78197ea5a",
+      "taskWorkerVersion": "",
+      "status": "TASK_RUNNING",
+      "maskedValue": false
+    }],
+    "totalAttempts": 1,
+    "inputVariables": [{
+      "varName": "arg0",
+      "value": {
+        "str": "r2d2"
+      },
+      "masked": false
+    }, {
+      "varName": "arg1",
+      "value": {
+        "str": "Dear r2d2, your request for Test response has been approved!"
+      },
+      "masked": false
+    }],
+    "source": {
+      "taskNode": {
+        "nodeRunId": {
+          "wfRunId": {
+            "id": "c59560f521b34a158d58ac7b12c50eb0"
+          },
+          "threadRunNumber": 0,
+          "position": 4
+        }
+      }
+    },
+    "scheduledAt": "2026-02-10T16:19:40.129Z",
+    "status": "TASK_RUNNING",
+    "timeoutSeconds": 60,
+    "totalCheckpoints": 0
+  }
+}
+cluster1_default_execution: c59560f521b34a158d58ac7b12c50eb0 => {
+  "timestamp": "2026-02-10T16:19:40.143Z",
+  "taskRun": {
+    "id": {
+      "wfRunId": {
+        "id": "c59560f521b34a158d58ac7b12c50eb0"
+      },
+      "taskGuid": "0-4"
+    },
+    "taskDefId": {
+      "name": "send-email"
+    },
+    "attempts": [{
+      "output": {
+      },
+      "logOutput": {
+        "str": ""
+      },
+      "scheduleTime": "2026-02-10T16:19:40.129Z",
+      "startTime": "2026-02-10T16:19:40.133Z",
+      "endTime": "2026-02-10T16:19:40.142Z",
+      "taskWorkerId": "worker-5ce79672ac54402189b189d78197ea5a",
+      "taskWorkerVersion": "",
+      "status": "TASK_SUCCESS",
+      "maskedValue": false
+    }],
+    "totalAttempts": 1,
+    "inputVariables": [{
+      "varName": "arg0",
+      "value": {
+        "str": "r2d2"
+      },
+      "masked": false
+    }, {
+      "varName": "arg1",
+      "value": {
+        "str": "Dear r2d2, your request for Test response has been approved!"
+      },
+      "masked": false
+    }],
+    "source": {
+      "taskNode": {
+        "nodeRunId": {
+          "wfRunId": {
+            "id": "c59560f521b34a158d58ac7b12c50eb0"
+          },
+          "threadRunNumber": 0,
+          "position": 4
+        }
+      }
+    },
+    "scheduledAt": "2026-02-10T16:19:40.129Z",
+    "status": "TASK_SUCCESS",
+    "timeoutSeconds": 60,
+    "totalCheckpoints": 0
+  }
+}
+cluster1_default_execution: c59560f521b34a158d58ac7b12c50eb0 => {
+  "timestamp": "2026-02-10T16:19:40.143Z",
+  "wfRun": {
+    "id": {
+      "id": "c59560f521b34a158d58ac7b12c50eb0"
+    },
+    "wfSpecId": {
+      "name": "it-request",
+      "majorVersion": 0,
+      "revision": 0
+    },
+    "oldWfSpecVersions": [],
+    "status": "COMPLETED",
+    "greatestThreadrunNumber": 0,
+    "startTime": "2026-02-10T16:16:26.748Z",
+    "endTime": "2026-02-10T16:19:40.142Z",
+    "threadRuns": [{
+      "wfSpecId": {
+        "name": "it-request",
+        "majorVersion": 0,
+        "revision": 0
+      },
+      "number": 0,
+      "status": "COMPLETED",
+      "threadSpecName": "entrypoint",
+      "startTime": "2026-02-10T16:16:26.752Z",
+      "endTime": "2026-02-10T16:19:40.142Z",
+      "childThreadIds": [],
+      "haltReasons": [],
+      "currentNodePosition": 6,
+      "handledFailedChildren": [],
+      "type": "ENTRYPOINT"
+    }],
+    "pendingInterrupts": [],
+    "pendingFailures": []
+  }
+}

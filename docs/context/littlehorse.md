@@ -159,8 +159,8 @@ User Tasks bring humans into workflows:
 
 The Kernel produces real-time updates to per-Tenant Kafka topics (this is the input to the WFD):
 
-- **Execution Output** (`{cluster}_{tenant}_execution-output`) — multi-partition, `OutputTopicRecord` protobuf messages containing TaskRun, WfRun, UserTaskRun, Variable, ExternalEvent, or WorkflowEvent updates.
-- **Metadata Output** (`{cluster}_{tenant}_metadata-output`) — single-partition, compacted, `MetadataOutputTopicRecord` with WfSpec, TaskDef, ExternalEventDef, WorkflowEventDef, UserTaskDef snapshots.
+- **Execution Output** (`{cluster}_{tenant}_execution`) — multi-partition, `OutputTopicRecord` protobuf messages containing TaskRun, WfRun, UserTaskRun, Variable, ExternalEvent, or WorkflowEvent updates.
+- **Metadata Output** (`{cluster}_{tenant}_metadata`) — single-partition, compacted, `MetadataOutputTopicRecord` with WfSpec, TaskDef, ExternalEventDef, WorkflowEventDef, UserTaskDef snapshots.
 - Configurable per Tenant (`ALL_ENTITY_EVENTS` / `NO_ENTITY_EVENTS`) with per-metadata overrides.
 
 See `docs/context/output-topic.md` for the full Output Topic design.
