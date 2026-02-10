@@ -38,7 +38,7 @@ public class WorkflowDiffuserApp {
                 appConfig.lhClusterId(), appConfig.tenants().size());
 
         // 2. Build Kafka Streams topology
-        Topology topology = TopologyFactory.build(appConfig);
+        Topology topology = TopologyFactory.build(appConfig, ksConfig.applicationId());
         log.info("Topology built:\n{}", topology.describe());
 
         // 3. Create KafkaStreams instance

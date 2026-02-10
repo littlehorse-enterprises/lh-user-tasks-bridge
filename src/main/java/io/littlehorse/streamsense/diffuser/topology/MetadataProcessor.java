@@ -11,16 +11,16 @@ import org.slf4j.LoggerFactory;
 /**
  * Processor for sub-topology 0: ingests metadata records from metadata topics,
  * resolves tenant from the topic name, prefixes the key with tenant, and stores
- * in the local state store. The store's changelog feeds the GlobalKTable.
+ * in the local state store. The store's automatic changelog feeds the GlobalKTable.
  */
-public class MetadataProcessor implements Processor<String, MetadataOutputTopicRecord, String, MetadataOutputTopicRecord> {
+public class MetadataProcessor implements Processor<String, MetadataOutputTopicRecord, Void, Void> {
 
     private static final Logger log = LoggerFactory.getLogger(MetadataProcessor.class);
 
-    public static final String METADATA_STORE = "tenant-metadata-store";
+    public static final String METADATA_STORE = "global-metadata";
 
     private final TenantResolver tenantResolver;
-    private ProcessorContext<String, MetadataOutputTopicRecord> context;
+    private ProcessorContext<Void, Void> context;
     private KeyValueStore<String, byte[]> metadataStore;
 
     public MetadataProcessor(TenantResolver tenantResolver) {
@@ -28,8 +28,7 @@ public class MetadataProcessor implements Processor<String, MetadataOutputTopicR
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public void init(ProcessorContext<String, MetadataOutputTopicRecord> context) {
+    public void init(ProcessorContext<Void, Void> context) {
         this.context = context;
         this.metadataStore = context.getStateStore(METADATA_STORE);
     }
@@ -45,11 +44,8 @@ public class MetadataProcessor implements Processor<String, MetadataOutputTopicR
             String tenant = tenantResolver.resolve(topic);
             String prefixedKey = tenant + "/" + record.key();
 
-            // Store the serialized protobuf bytes
+            // Store the serialized protobuf bytes; automatic changelog feeds the GlobalKTable
             metadataStore.put(prefixedKey, record.value().toByteArray());
-
-            // Forward with prefixed key for the changelog → GlobalKTable
-            context.forward(new Record<>(prefixedKey, record.value(), record.timestamp()));
 
             log.debug("Stored metadata: key={}, tenant={}", prefixedKey, tenant);
         } catch (Exception e) {

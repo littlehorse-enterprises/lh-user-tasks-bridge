@@ -60,24 +60,25 @@ class WorkflowDiffuserIntegrationTest {
     void setUp() throws Exception {
         String bootstrapServers = kafka.getBootstrapServers();
 
+        // Build and start topology
+        AppConfig appConfig = buildTestConfig();
+        String applicationId = "integration-test-" + UUID.randomUUID();
+        Topology topology = TopologyFactory.build(appConfig, applicationId);
+        log.info("Starting topology with config: {}", appConfig);
+
         // Create input and output topics
         try (AdminClient admin = AdminClient.create(Map.of(
                 "bootstrap.servers", bootstrapServers))) {
             admin.createTopics(List.of(
                     new NewTopic(EXECUTION_TOPIC, 1, (short) 1),
                     new NewTopic(OUTPUT_TOPIC, 1, (short) 1),
-                    new NewTopic("wfd-metadata-changelog", 1, (short) 1),
+                    new NewTopic(applicationId + "-global-metadata-changelog", 1, (short) 1),
                     new NewTopic("cluster1_default_metadata", 1, (short) 1)
             )).all().get(10, TimeUnit.SECONDS);
         }
 
-        // Build and start topology
-        AppConfig appConfig = buildTestConfig();
-        Topology topology = TopologyFactory.build(appConfig);
-        log.info("Starting topology with config: {}", appConfig);
-
         Properties props = new Properties();
-        props.put(StreamsConfig.APPLICATION_ID_CONFIG, "integration-test-" + UUID.randomUUID());
+        props.put(StreamsConfig.APPLICATION_ID_CONFIG, applicationId);
         props.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
         props.put(StreamsConfig.COMMIT_INTERVAL_MS_CONFIG, 0);
         props.put(StreamsConfig.STATE_DIR_CONFIG, "/tmp/kafka-streams-test-" + UUID.randomUUID());
