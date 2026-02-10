@@ -19,18 +19,15 @@ public class KafkaStreamsConfig {
         this.properties = new Properties();
         for (String name : config.getPropertyNames()) {
             if (name.startsWith(PREFIX)) {
-                String ksKey = name.substring(PREFIX.length());
+                String ksKey = unquote(name.substring(PREFIX.length()));
                 config.getOptionalValue(name, String.class)
                         .ifPresent(value -> properties.put(ksKey, value));
             }
         }
-        // Ensure defaults
-        properties.putIfAbsent("application.id", "lh-workflow-diffuser");
-        properties.putIfAbsent("bootstrap.servers", "localhost:9092");
     }
 
     public String applicationId() {
-        return properties.getProperty("application.id", "lh-workflow-diffuser");
+        return properties.getProperty("application.id");
     }
 
     public String bootstrapServers() {
@@ -39,5 +36,13 @@ public class KafkaStreamsConfig {
 
     public Properties asProperties() {
         return new Properties(properties);
+    }
+
+    /** SmallRye YAML quotes dotted keys (e.g. {@code "application.id"}) — strip the quotes. */
+    private static String unquote(String key) {
+        if (key.startsWith("\"") && key.endsWith("\"")) {
+            return key.substring(1, key.length() - 1);
+        }
+        return key;
     }
 }

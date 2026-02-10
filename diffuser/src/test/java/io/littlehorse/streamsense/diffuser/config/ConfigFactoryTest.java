@@ -12,7 +12,7 @@ class ConfigFactoryTest {
         SmallRyeConfig config = ConfigFactory.build();
         AppConfig appConfig = config.getConfigMapping(AppConfig.class);
 
-        assertEquals("my-cluster", appConfig.lhClusterId());
+        assertEquals("cluster1", appConfig.lhClusterId());
         assertEquals(8080, appConfig.server().port());
         assertTrue(appConfig.tenants().isEmpty());
     }
@@ -22,7 +22,7 @@ class ConfigFactoryTest {
         SmallRyeConfig config = ConfigFactory.build();
         KafkaStreamsConfig ksConfig = new KafkaStreamsConfig(config);
 
-        assertEquals("lh-workflow-diffuser", ksConfig.applicationId());
+        assertEquals("cluster1-wf-diffuser", ksConfig.applicationId());
         assertEquals("localhost:9092", ksConfig.bootstrapServers());
         assertNotNull(ksConfig.asProperties());
     }

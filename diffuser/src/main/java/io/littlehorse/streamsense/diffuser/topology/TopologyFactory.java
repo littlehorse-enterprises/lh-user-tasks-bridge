@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
  */
 public class TopologyFactory {
 
-    public static Topology build(AppConfig appConfig) {
+    public static Topology build(AppConfig appConfig, String applicationId) {
         Topology topology = new Topology();
 
         TenantResolver tenantResolver = new TenantResolver(appConfig.lhClusterId());
@@ -28,7 +28,7 @@ public class TopologyFactory {
             return topology;
         }
 
-        buildMetadataSubTopology(topology, patternBuilder.metadataTopicPattern(), tenantResolver);
+        buildMetadataSubTopology(topology, patternBuilder.metadataTopicPattern(), tenantResolver, applicationId);
         buildDiffuserSubTopology(topology, patternBuilder.executionTopicPattern(), tenantResolver, recordRouter);
 
         return topology;
@@ -37,17 +37,19 @@ public class TopologyFactory {
     /**
      * Sub-topology 0: Metadata Processor
      *
-     * <p>metadata-source → MetadataProcessor → tenant-metadata-store (with changelog)
-     * Then a GlobalKTable reads from the changelog for global-metadata-store.</p>
+     * <p>tenant-metadata-source → MetadataProcessor → "global-metadata" store (with automatic changelog)
+     * Then a GlobalKTable reads from the automatic changelog for "global-metadata-store".</p>
      */
     private static void buildMetadataSubTopology(Topology topology,
                                                   Pattern metadataPattern,
-                                                  TenantResolver tenantResolver) {
+                                                  TenantResolver tenantResolver,
+                                                  String applicationId) {
         var metadataSerde = ProtobufSerdes.metadataOutputTopicRecord();
+        String changelogTopic = applicationId + "-" + MetadataProcessor.METADATA_STORE + "-changelog";
 
         // Source: metadata topics
         topology.addSource(
-                "metadata-source",
+                "tenant-metadata-source",
                 Serdes.String().deserializer(),
                 metadataSerde.deserializer(),
                 metadataPattern
@@ -57,10 +59,11 @@ public class TopologyFactory {
         topology.addProcessor(
                 "metadata-processor",
                 () -> new MetadataProcessor(tenantResolver),
-                "metadata-source"
+                "tenant-metadata-source"
         );
 
         // State store for metadata (connected to metadata-processor)
+        // Its automatic changelog feeds the GlobalKTable below
         topology.addStateStore(
                 Stores.keyValueStoreBuilder(
                         Stores.persistentKeyValueStore(MetadataProcessor.METADATA_STORE),
@@ -70,16 +73,7 @@ public class TopologyFactory {
                 "metadata-processor"
         );
 
-        // Sink: write to internal changelog topic for the GlobalKTable
-        topology.addSink(
-                "metadata-changelog-sink",
-                "wfd-metadata-changelog",
-                Serdes.String().serializer(),
-                metadataSerde.serializer(),
-                "metadata-processor"
-        );
-
-        // GlobalKTable: reads from the changelog topic
+        // GlobalKTable: reads from the store's automatic changelog topic
         topology.addGlobalStore(
                 Stores.keyValueStoreBuilder(
                         Stores.persistentKeyValueStore("global-metadata-store"),
@@ -88,8 +82,8 @@ public class TopologyFactory {
                 ),
                 "global-metadata-source",
                 Serdes.String().deserializer(),
-                metadataSerde.deserializer(),
-                "wfd-metadata-changelog",
+                Serdes.ByteArray().deserializer(),
+                changelogTopic,
                 "global-metadata-processor",
                 () -> new GlobalStoreUpdater("global-metadata-store")
         );

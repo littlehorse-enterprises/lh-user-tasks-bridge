@@ -25,8 +25,6 @@ class TopologyTest {
     private static final String TENANT = "default";
     private static final String EXECUTION_TOPIC = "cluster1_default_execution";
     private static final String METADATA_TOPIC = "cluster1_default_metadata";
-    private static final String METADATA_CHANGELOG = "wfd-metadata-changelog";
-
     private TopologyTestDriver testDriver;
     private TestInputTopic<String, OutputTopicRecord> executionInput;
     private TestInputTopic<String, MetadataOutputTopicRecord> metadataInput;
@@ -34,7 +32,7 @@ class TopologyTest {
     @BeforeEach
     void setUp() {
         AppConfig appConfig = buildTestConfig();
-        Topology topology = TopologyFactory.build(appConfig);
+        Topology topology = TopologyFactory.build(appConfig, "test");
 
         Properties props = new Properties();
         props.put(StreamsConfig.APPLICATION_ID_CONFIG, "test");
@@ -301,7 +299,7 @@ class TopologyTest {
     void multiTenantIsolation() throws Exception {
         // Configure a second tenant
         AppConfig appConfig = buildMultiTenantConfig();
-        Topology topology = TopologyFactory.build(appConfig);
+        Topology topology = TopologyFactory.build(appConfig, "test-multi");
 
         Properties props = new Properties();
         props.put(StreamsConfig.APPLICATION_ID_CONFIG, "test-multi");

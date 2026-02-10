@@ -6,7 +6,7 @@ app:
 
 kafka:
   streams:
-    application.id: lh-workflow-diffuser
+    application.id: ${app.lh-cluster-id}-wf-diffuser
     bootstrap.servers: localhost:9092
     schema.registry.url: http://localhost:8081/apis/registry/v2
     auto.offset.reset: latest
