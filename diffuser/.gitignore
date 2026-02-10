@@ -31,10 +31,5 @@ Thumbs.db
 .env
 *.local
 
-# Claude
-.claude/
-CLAUDE.md
-prompts.md
-
 # Other
-#tmp/
+prompts.md
