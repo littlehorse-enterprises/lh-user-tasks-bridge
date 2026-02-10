@@ -90,17 +90,11 @@ Early stage - repository initialized, requirements and design docs complete, imp
 
 ## Design References
 
-Design documents are in the `docs/` directory:
-- `docs/requirements/workflow-diffuser-requirements.md` - Detailed requirements spec for the WFD
-- `docs/design/workflow-diffuser.md` - WFD design document (architecture, config, schemas, multi-tenancy)
-- `docs/design/topology-design/topology-design.md` - Kafka Streams topology design
-- `docs/design/dynamic-topic-routing.md` - Dynamic topic routing design
-- `docs/context/saddle-glossary.md` - LH glossary and platform architecture
-- `docs/context/saddle-multitenancy.md` - Multi-tenancy strategy and conventions
-- `docs/context/output-topic.md` - Output Topic design: topic structure, protobuf schemas, partitioning, and per-tenant configuration
-- `docs/context/littlehorse.md` - LittleHorse platform overview
-- `docs/context/metadata-topic-analysis.md` - Schema derivation analysis from live metadata samples
-- `docs/context/execution-topic-analysis.md` - Execution record sequences and Streamlet transformation analysis
+- `docs/requirements/workflow-diffuser-requirements.md` - Detailed requirements spec
+- `docs/design/workflow-diffuser.md` - **Base design document** — references all sub-docs below
+  - `docs/design/topology-design/topology-design.md` - Kafka Streams topology design
+  - `docs/design/details/dynamic-topic-routing.md` - Dynamic topic routing design
+- `docs/context/` - Reference material (LH glossary, output topic spec, multitenancy, data analysis)
 
 ## Available Tools
 
@@ -110,6 +104,7 @@ Design documents are in the `docs/` directory:
 
 - Follow existing LH Java conventions
 - Design for configurability - new tenants and *specs via config, not code changes
+- **Design docs**: `docs/design/workflow-diffuser.md` is the base design document. All other design docs go in subfolders of `docs/design/` and must be referenced from the base doc.
 
 ## Git Commits
 
