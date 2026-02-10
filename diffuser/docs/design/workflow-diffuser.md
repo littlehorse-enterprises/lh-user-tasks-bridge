@@ -368,21 +368,25 @@ The WFD produces to one topic per enabled Streamlet, per tenant. Topic naming fo
 
 Examples for `tenant1` with the config above:
 
-| Streamlet Type     | Spec Name            | Output Topic                                                 |
-| ------------------ | -------------------- |--------------------------------------------------------------|
-| WfSpec             | order-processing     | `cluster1_tenant1_streamlet_workflow-order-processing`       |
-| WfSpec             | stock-update         | `cluster1_tenant1_streamlet_workflow-stock-update`           |
-| UserTaskDef        | confirm-purchase     | `cluster1_tenant1_streamlet_usertask-confirm-purchase`       |
-| ExternalEventDef   | payment-confirmed    | `cluster1_tenant1_streamlet_externalevent-payment-confirmed` |
-| WorkflowEventDef   | order-shipped        | `cluster1_tenant1_streamlet_workflowevent-order-shipped`     |
+| Streamlet Type | Spec Name            | Output Topic                                                 |
+|----------------| -------------------- |--------------------------------------------------------------|
+| WfRun          | order-processing     | `cluster1_tenant1_streamlet_workflow-order-processing`       |
+| WfRun          | stock-update         | `cluster1_tenant1_streamlet_workflow-stock-update`           |
+| UserTask       | confirm-purchase     | `cluster1_tenant1_streamlet_usertask-confirm-purchase`       |
+| ExternalEvent  | payment-confirmed    | `cluster1_tenant1_streamlet_externalevent-payment-confirmed` |
+| WorkflowEvent  | order-shipped        | `cluster1_tenant1_streamlet_workflowevent-order-shipped`     |
 
-Output format for WfSpec Streamlets:
+Output topics are resolved at runtime using a `TopicNameExtractor` with Apicurio JSON Schema SerDes. See [details/dynamic-topic-routing.md](details/dynamic-topic-routing.md) for the routing mechanism.
+
+### Streamlet Output Schemas
+
+Output format for WfRun Streamlets:
 
 ```json
 {
   "id": "<wfRunId>",
   "status": "<status>",
-  "columns": {
+  "variables": {
     "user-id": "obi-wan",
     "order-status": "SHIPPING",
     "item-id": "lightsaber"
@@ -392,11 +396,110 @@ Output format for WfSpec Streamlets:
 }
 ```
 
-Output formats for other Streamlet types will be defined with the topology design.
+Concrete example from the `output-topic` WfSpec (successful completion with both public variables populated):
 
-Schemas are registered in ApiCurio using the tenant-prefixed naming convention:
+```json
+{
+  "id": "2f5fa6471cd346258a4da55ef45b93d3",
+  "status": "COMPLETED",
+  "variables": {
+    "input-name": "Colt",
+    "public-greeting": "Hello there, Colt"
+  },
+  "createdAt": "2026-02-10T16:04:33.531Z",
+  "updatedAt": "2026-02-10T16:05:33.642Z"
+}
+```
+
+Output format for ExternalEvent Streamlets:
+
+```json
+{
+  "id": "<externalEventId>",
+  "wfRunId": "<wfRunId>",
+  "content": "<payload>",
+  "claimed": "<boolean>",
+  "createdAt": "<timestamp>"
+}
+```
+
+Example from `name-event` ExternalEventDef (wfRunId `c788297c`):
+
+```json
+{
+  "id": "c788297c849347609500f553eaf3b335/name-event/09481e551f6f44b2b0acbbd4abbd71a1",
+  "wfRunId": "c788297c849347609500f553eaf3b335",
+  "content": "Obi-Wan",
+  "claimed": true,
+  "createdAt": "2026-02-10T16:07:12.745Z"
+}
+```
+
+Output format for UserTask Streamlets:
+
+```json
+{
+  "id": "<userTaskRunId>",
+  "wfRunId": "<wfRunId>",
+  "userTaskDefName": "<name>",
+  "userTaskDefVersion": "<version>",
+  "status": "<UserTaskRunStatus>",
+  "userId": "<userId or null>",
+  "userGroup": "<userGroup or null>",
+  "results": {
+    "<field-name-1>": "<value>",
+    "<field-name-2>": "<value>"
+  },
+  "createdAt": "<timestamp>"
+}
+```
+
+Example from `it-request` UserTaskDef (wfRunId `c59560f5`, DONE snapshot):
+
+```json
+{
+  "id": "c59560f521b34a158d58ac7b12c50eb0/0-1",
+  "wfRunId": "c59560f521b34a158d58ac7b12c50eb0",
+  "userTaskDefName": "it-request",
+  "userTaskDefVersion": 0,
+  "status": "DONE",
+  "userId": "r2d2",
+  "userGroup": "testGroup",
+  "results": {
+    "requestedItem": "Test response",
+    "justification": "just because"
+  },
+  "createdAt": "2026-02-10T16:16:26.752Z"
+}
+```
+
+Output format for WorkflowEvent Streamlets:
+
+```json
+{
+  "id": "<workflowEventId>",
+  "wfRunId": "<wfRunId>",
+  "workflowEventDefName": "<name>",
+  "content": "<payload or null>",
+  "createdAt": "<timestamp>"
+}
+```
+
+Example from `sleep-done` WorkflowEventDef (wfRunId `26ab000b`):
+
+```json
+{
+  "id": "26ab000bba79445dbb85f4f5ceff7a30/sleep-done/0",
+  "wfRunId": "26ab000bba79445dbb85f4f5ceff7a30",
+  "workflowEventDefName": "sleep-done",
+  "content": "hello there!",
+  "createdAt": "2026-02-10T15:16:31.164Z"
+}
+```
+
+Streamlet Value Schemas are registered in ApiCurio using the tenant-prefixed naming convention:
+- Key schema: string
 - Value schema: `{tenant-id}__{streamlet-name}-value`
-- Key schema: `{tenant-id}__{streamlet-name}-key`
 
 ## Multi-Tenancy
 
@@ -411,13 +514,11 @@ Key conventions:
 
 ## Kafka Streams Topology
 
-> **TBD** — The Kafka Streams topology, including sub-topologies, state stores, processors, and business logic for each Streamlet type, will be detailed in a subsequent iteration of this document.
+The topology uses a two-sub-topology design:
 
-High-level overview:
+- **Sub-topology 0 — Metadata Processor**: Ingests metadata records, resolves tenants, and populates a `GlobalKTable` accessible to the diffuser processor.
+- **Sub-topology 1 — Diffuser Processor**: Consumes execution records, enriches them with metadata from the global store, and routes output to dynamic tenant-scoped sink topics via `TopicNameExtractor`.
 
-1. **Global Store**: Load metadata topic (compacted) as a `GlobalKTable` for WfSpec/TaskDef/EventDef lookups
-2. **Source**: Read from execution-output topic(s) for all configured tenants
-3. **Filter**: Route `OutputTopicRecord`s by payload type and configured specs
-4. **Enrich**: Join execution data with metadata to extract business meaning (variable names, column mappings)
-5. **Transform**: Convert to Streamlet output format (JSON)
-6. **Sink**: Produce to per-tenant, per-spec output topics with ApiCurio Serdes
+Processing is stateless for `ExternalEvent` and `WorkflowEvent` (passthrough transform-and-forward), and stateful for `WfRun` (aggregates status + variable updates) and `UserTaskRun` (entity create/patch via local state stores).
+
+For the full topology design — including state store schemas, changelog topics, and open items — see [topology-design.md](topology-design/topology-design.md).
