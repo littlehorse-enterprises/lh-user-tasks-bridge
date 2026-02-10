@@ -512,13 +512,11 @@ Key conventions:
 
 ## Kafka Streams Topology
 
-> **TBD** — The Kafka Streams topology, including sub-topologies, state stores, processors, and business logic for each Streamlet type, will be detailed in a subsequent iteration of this document.
+The topology uses a two-sub-topology design:
 
-High-level overview:
+- **Sub-topology 0 — Metadata Processor**: Ingests metadata records, resolves tenants, and populates a `GlobalKTable` accessible to the diffuser processor.
+- **Sub-topology 1 — Diffuser Processor**: Consumes execution records, enriches them with metadata from the global store, and routes output to dynamic tenant-scoped sink topics via `TopicNameExtractor`.
 
-1. **Global Store**: Load metadata topic (compacted) as a `GlobalKTable` for WfSpec/TaskDef/EventDef lookups
-2. **Source**: Read from execution topic(s) for all configured tenants
-3. **Filter**: Route `OutputTopicRecord`s by payload type and configured specs
-4. **Enrich**: Join execution data with metadata to extract business meaning (variable names, column mappings)
-5. **Transform**: Convert to Streamlet output format (JSON)
-6. **Sink**: Produce to per-tenant, per-spec output topics with ApiCurio Serdes
+Processing is stateless for `ExternalEvent` and `WorkflowEvent` (passthrough transform-and-forward), and stateful for `WfRun` (aggregates status + variable updates) and `UserTaskRun` (entity create/patch via local state stores).
+
+For the full topology design — including state store schemas, changelog topics, and open items — see [topology-design.md](topology-design/topology-design.md).
