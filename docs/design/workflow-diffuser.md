@@ -386,7 +386,7 @@ Output format for WfRun Streamlets:
 {
   "id": "<wfRunId>",
   "status": "<status>",
-  "variables": {
+  "columns": {
     "user-id": "obi-wan",
     "order-status": "SHIPPING",
     "item-id": "lightsaber"
@@ -402,7 +402,7 @@ Concrete example from the `output-topic` WfSpec (successful completion with both
 {
   "id": "2f5fa6471cd346258a4da55ef45b93d3",
   "status": "COMPLETED",
-  "variables": {
+  "columns": {
     "input-name": "Colt",
     "public-greeting": "Hello there, Colt"
   },
