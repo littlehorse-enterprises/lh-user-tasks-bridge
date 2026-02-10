@@ -416,7 +416,7 @@ Key conventions:
 High-level overview:
 
 1. **Global Store**: Load metadata topic (compacted) as a `GlobalKTable` for WfSpec/TaskDef/EventDef lookups
-2. **Source**: Read from execution-output topic(s) for all configured tenants
+2. **Source**: Read from execution topic(s) for all configured tenants
 3. **Filter**: Route `OutputTopicRecord`s by payload type and configured specs
 4. **Enrich**: Join execution data with metadata to extract business meaning (variable names, column mappings)
 5. **Transform**: Convert to Streamlet output format (JSON)

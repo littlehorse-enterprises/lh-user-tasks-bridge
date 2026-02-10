@@ -109,8 +109,8 @@ This prevents an expensive proliferation of Kafka topics and partitions as much 
 
 Since there will be one `metadata-output` topic for each `Tenant` and one `execution-output` topic for each `Tenant`, the topics will be named as follows:
 
-* `f"{LHS_CLUSTER_ID}_{tenant}_execution-output"`
-* `f"{LHS_CLUSTER_ID}_{tenant}_metadata-output"`
+* `f"{LHS_CLUSTER_ID}_{tenant}_execution"`
+* `f"{LHS_CLUSTER_ID}_{tenant}_metadata"`
 
 The `LHS_CLUSTER_ID` is the prefix of all topics for the cluster, so the LH Server already has permissions to write to it. By further isolating with `tenant_id` as the next step in the prefix, we can use Kafka's prefix-based ACL's to give a consumer permissions to read those specific topics.
 
