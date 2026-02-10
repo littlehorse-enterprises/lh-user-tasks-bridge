@@ -1,4 +1,4 @@
-# Workflow Diffuser
+# Workflow Diffuser - Requirements
 
 The Workflow Diffuser will be a core component of the LittleHorse StreamSense product. The goals of the Workflow Diffuser are to read the Output Topic and provide the following capabilities, top priority first:
 
