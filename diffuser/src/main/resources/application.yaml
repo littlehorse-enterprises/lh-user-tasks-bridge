@@ -11,4 +11,5 @@ kafka:
     schema.registry.url: http://localhost:8081/apis/registry/v2
     auto.offset.reset: latest
     default.key.serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+    ensure.explicit.internal.resource.naming: true
     num.stream.threads: 2

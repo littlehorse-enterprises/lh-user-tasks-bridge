@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.Timestamp;
 import io.littlehorse.sdk.common.proto.*;
 import io.littlehorse.streamsense.diffuser.config.AppConfig;
-import io.littlehorse.streamsense.diffuser.topology.DiffuserProcessor;
 import io.littlehorse.streamsense.diffuser.topology.TopologyFactory;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.NewTopic;
@@ -22,18 +21,22 @@ import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.kafka.KafkaContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.kafka.KafkaContainer;
 
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Integration test using Testcontainers with a real Kafka broker.
@@ -64,6 +67,7 @@ class WorkflowDiffuserIntegrationTest {
         AppConfig appConfig = buildTestConfig();
         String applicationId = "integration-test-" + UUID.randomUUID();
         Topology topology = TopologyFactory.build(appConfig, applicationId, null);
+        log.info("Topology built:\n{}", topology.describe());
         log.info("Starting topology with config: {}", appConfig);
 
         // Create input and output topics
