@@ -8,7 +8,12 @@
     "status": {"type": "string"},
     "userId": {"type": ["string", "null"]},
     "userGroup": {"type": ["string", "null"]},
-    "results": {"type": "object"},
+    "results": {
+      "type": "object",
+      "properties": {
+        "isApproved": {"type": "boolean"}
+      }
+    },
     "createdAt": {"type": "string", "format": "date-time"}
   }
 }
