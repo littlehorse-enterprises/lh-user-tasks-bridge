@@ -17,12 +17,10 @@ kafka:
   streams:
     application.id: ${app.lh-cluster-id}-wf-diffuser
     bootstrap.servers: localhost:9092
-    schema.registry.url: http://localhost:8085/apis/registry/v3
     auto.offset.reset: latest
     default.key.serde: org.apache.kafka.common.serialization.Serdes$StringSerde
     ensure.explicit.internal.resource.naming: true
     num.stream.threads: 2
-    session.timeout.ms: 10000
 
 #logging:
 #  level:

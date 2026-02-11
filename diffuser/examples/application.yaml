@@ -3,6 +3,8 @@ logging:
     io.littlehorse.streamsense: DEBUG
 
 app:
+  server:
+    port: 8081
   tenants:
     - name: default
       wf-specs:
@@ -22,3 +24,8 @@ app:
     - name: cars
       wf-specs:
         - example-json
+
+kafka:
+  streams:
+    schema.registry.url: http://localhost:8085/apis/registry/v3
+    session.timeout.ms: 10000
