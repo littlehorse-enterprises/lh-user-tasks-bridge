@@ -25,7 +25,10 @@ app:
       wf-specs:
         - example-json
 
+apicurio:
+  registry:
+    url: http://localhost:8085/apis/registry/v3
+
 kafka:
   streams:
-    schema.registry.url: http://localhost:8085/apis/registry/v3
     session.timeout.ms: 10000

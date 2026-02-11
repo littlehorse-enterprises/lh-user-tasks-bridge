@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 
@@ -34,7 +35,7 @@ class TopologyTest {
     @BeforeEach
     void setUp() {
         AppConfig appConfig = buildTestConfig();
-        Topology topology = TopologyFactory.build(appConfig, "test", null);
+        Topology topology = TopologyFactory.build(appConfig, "test", Map.of());
 
         Properties props = new Properties();
         props.put(StreamsConfig.APPLICATION_ID_CONFIG, "test");
@@ -389,7 +390,7 @@ class TopologyTest {
     void multiTenantIsolation() throws Exception {
         // Configure a second tenant
         AppConfig appConfig = buildMultiTenantConfig();
-        Topology topology = TopologyFactory.build(appConfig, "test-multi", null);
+        Topology topology = TopologyFactory.build(appConfig, "test-multi", Map.of());
 
         Properties props = new Properties();
         props.put(StreamsConfig.APPLICATION_ID_CONFIG, "test-multi");

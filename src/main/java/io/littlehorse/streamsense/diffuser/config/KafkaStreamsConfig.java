@@ -13,42 +13,25 @@ public class KafkaStreamsConfig {
 
     private static final String PREFIX = "kafka.streams.";
 
-    private final Properties properties;
+    private final PrefixConfig delegate;
 
     public KafkaStreamsConfig(SmallRyeConfig config) {
-        this.properties = new Properties();
-        for (String name : config.getPropertyNames()) {
-            if (name.startsWith(PREFIX)) {
-                String ksKey = unquote(name.substring(PREFIX.length()));
-                config.getOptionalValue(name, String.class)
-                        .ifPresent(value -> properties.put(ksKey, value));
-            }
-        }
+        this.delegate = new PrefixConfig(config, PREFIX);
     }
 
     public String applicationId() {
-        return properties.getProperty("application.id");
+        return delegate.get("application.id");
     }
 
     public String bootstrapServers() {
-        return properties.getProperty("bootstrap.servers", "localhost:9092");
+        return delegate.get("bootstrap.servers", "localhost:9092");
     }
 
     public String schemaRegistryUrl() {
-        return properties.getProperty("schema.registry.url");
+        return delegate.get("schema.registry.url");
     }
 
     public Properties asProperties() {
-        Properties copy = new Properties();
-        copy.putAll(properties);
-        return copy;
-    }
-
-    /** SmallRye YAML quotes dotted keys (e.g. {@code "application.id"}) — strip the quotes. */
-    private static String unquote(String key) {
-        if (key.startsWith("\"") && key.endsWith("\"")) {
-            return key.substring(1, key.length() - 1);
-        }
-        return key;
+        return delegate.asProperties();
     }
 }

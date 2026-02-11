@@ -21,6 +21,8 @@ import org.apache.kafka.streams.state.Stores;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
+
 /**
  * Builds the complete Kafka Streams topology using the {@link StreamsBuilder} DSL.
  *
@@ -41,12 +43,13 @@ public class TopologyFactory {
     /**
      * Builds and returns the Kafka Streams {@link Topology}.
      *
-     * @param appConfig         application configuration (cluster ID, tenants, specs)
-     * @param applicationId     Kafka Streams {@code application.id}, used to derive the changelog topic name
-     * @param schemaRegistryUrl Apicurio registry URL; when {@code null}, falls back to plain JSON serialization
+     * @param appConfig      application configuration (cluster ID, tenants, specs)
+     * @param applicationId  Kafka Streams {@code application.id}, used to derive the changelog topic name
+     * @param apicurioConfig Apicurio serde config with {@code apicurio.registry.*} prefixed keys;
+     *                       when empty or missing {@code apicurio.registry.url}, falls back to plain JSON
      * @return an empty topology if no tenants are configured, otherwise the full diffuser topology
      */
-    public static Topology build(AppConfig appConfig, String applicationId, String schemaRegistryUrl) {
+    public static Topology build(AppConfig appConfig, String applicationId, Map<String, Object> apicurioConfig) {
         StreamsBuilder builder = new StreamsBuilder();
 
         TenantResolver tenantResolver = new TenantResolver(appConfig.lhClusterId());
@@ -97,9 +100,9 @@ public class TopologyFactory {
                 Serdes.String(), Serdes.ByteArray()));
 
         Serde<JsonNode> valueSerde;
-        if (schemaRegistryUrl != null) {
-            log.debug("Using Apicurio serde with registry: {}", schemaRegistryUrl);
-            valueSerde = ApicurioJsonNodeSerdeFactory.create(schemaRegistryUrl);
+        if (apicurioConfig.containsKey("apicurio.registry.url")) {
+            log.debug("Using Apicurio serde with config: {}", apicurioConfig);
+            valueSerde = ApicurioJsonNodeSerdeFactory.create(apicurioConfig);
         } else {
             log.debug("Using plain JSON serde (no schema registry configured)");
             valueSerde = Serdes.serdeFrom(new JsonNodeSerializer(), (topic, data) -> {
