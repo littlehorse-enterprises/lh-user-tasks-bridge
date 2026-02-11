@@ -8,7 +8,13 @@
     "status": {"type": "string"},
     "userId": {"type": ["string", "null"]},
     "userGroup": {"type": ["string", "null"]},
-    "results": {"type": "object"},
+    "results": {
+      "type": "object",
+      "properties": {
+        "requestedItem": {"type": "string"},
+        "justification": {"type": "string"}
+      }
+    },
     "createdAt": {"type": "string", "format": "date-time"}
   }
 }
