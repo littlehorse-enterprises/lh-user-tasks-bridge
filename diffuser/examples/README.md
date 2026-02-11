@@ -82,12 +82,14 @@ see the READMEs in the LittleHorse examples repo:
 
 ## Services
 
-| Service           | URL                     |
-|-------------------|-------------------------|
-| Kafka             | `localhost:9092`        |
-| Apicurio API      | http://localhost:8085   |
-| Apicurio UI       | http://localhost:8086   |
-| Apicurio Console  | http://localhost:8087   |
+| Service                    | URL                                                       |
+|----------------------------|-----------------------------------------------------------|
+| LH Dashboard (default)     | http://localhost:8080/default                             |
+| LH Dashboard (cars)        | http://localhost:8080/cars                                |
+| Kafbat UI                  | http://localhost:8088/ui/clusters/lh-kafka/all-topics     |
+| Kafka                      | `localhost:9092`                                          |
+| Apicurio API               | http://localhost:8085                                     |
+| Apicurio UI                | http://localhost:8086                                     |
 
 ## Schema Files
 
