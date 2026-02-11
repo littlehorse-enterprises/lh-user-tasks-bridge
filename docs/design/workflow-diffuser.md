@@ -386,7 +386,7 @@ Output format for WfRun Streamlets:
 {
   "id": "<wfRunId>",
   "status": "<status>",
-  "variables": {
+  "columns": {
     "user-id": "obi-wan",
     "order-status": "SHIPPING",
     "item-id": "lightsaber"
@@ -402,7 +402,7 @@ Concrete example from the `output-topic` WfSpec (successful completion with both
 {
   "id": "2f5fa6471cd346258a4da55ef45b93d3",
   "status": "COMPLETED",
-  "variables": {
+  "columns": {
     "input-name": "Colt",
     "public-greeting": "Hello there, Colt"
   },
@@ -521,4 +521,4 @@ The topology uses a two-sub-topology design:
 
 Processing is stateless for `ExternalEvent` and `WorkflowEvent` (passthrough transform-and-forward), and stateful for `WfRun` (aggregates status + variable updates) and `UserTaskRun` (entity create/patch via local state stores).
 
-For the full topology design — including state store schemas, changelog topics, and open items — see [topology-design.md](topology-design/topology-design.md).
+For the full topology design — including state store schemas, changelog topics, and open items — see [topology-design.md](topology-design/topology-design_v0.1.1.md).

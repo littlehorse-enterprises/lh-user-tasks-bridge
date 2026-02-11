@@ -1,0 +1,32 @@
+app:
+  lh-cluster-id: cluster1
+  server:
+    port: 8080
+  tenants:
+    - name: default
+      wf-specs:
+        - example-external-event
+        - output-topic
+        - await-wf-event
+        - example-variables
+        - it-request
+      user-task-defs:
+        - approve-it-request
+        - it-request
+      external-event-defs:
+        - name-event
+      workflow-event-defs:
+        - sleep-done
+
+kafka:
+  streams:
+    application.id: ${app.lh-cluster-id}-wf-diffuser
+    bootstrap.servers: localhost:9092
+    #schema.registry.url: http://localhost:8081/apis/registry/v2
+    auto.offset.reset: latest
+    default.key.serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+    ensure.explicit.internal.resource.naming: true
+    num.stream.threads: 2
+
+
+
