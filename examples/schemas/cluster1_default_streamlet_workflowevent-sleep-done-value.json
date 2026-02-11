@@ -1,0 +1,10 @@
+{
+  "type": "object",
+  "properties": {
+    "id": {"type": "string"},
+    "wfRunId": {"type": "string"},
+    "workflowEventDefName": {"type": "string"},
+    "content": {},
+    "createdAt": {"type": "string", "format": "date-time"}
+  }
+}

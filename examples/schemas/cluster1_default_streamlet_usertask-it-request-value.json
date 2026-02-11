@@ -1,0 +1,20 @@
+{
+  "type": "object",
+  "properties": {
+    "id": {"type": "string"},
+    "wfRunId": {"type": "string"},
+    "userTaskDefName": {"type": "string"},
+    "userTaskDefVersion": {"type": "integer"},
+    "status": {"type": "string"},
+    "userId": {"type": ["string", "null"]},
+    "userGroup": {"type": ["string", "null"]},
+    "results": {
+      "type": "object",
+      "properties": {
+        "requestedItem": {"type": ["string", "null"]},
+        "justification": {"type": ["string", "null"]}
+      }
+    },
+    "createdAt": {"type": "string", "format": "date-time"}
+  }
+}
