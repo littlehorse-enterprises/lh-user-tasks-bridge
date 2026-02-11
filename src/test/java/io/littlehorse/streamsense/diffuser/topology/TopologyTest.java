@@ -14,7 +14,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.*;
+import java.util.List;
+import java.util.Optional;
+import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -67,6 +69,15 @@ class TopologyTest {
         String wfRunId = "2f5fa6471cd346258a4da55ef45b93d3";
         Timestamp ts1 = ts(1770710673, 531000000);
         Timestamp ts2 = ts(1770710733, 642000000);
+
+        // Pipe WfSpec metadata so the filtering path is exercised
+        pipeOutputTopicWfSpec("output-topic", 0, 0,
+                ThreadVarDef.newBuilder()
+                        .setVarDef(VariableDef.newBuilder().setName("input-name"))
+                        .setAccessLevel(WfRunVariableAccessLevel.PUBLIC_VAR).build(),
+                ThreadVarDef.newBuilder()
+                        .setVarDef(VariableDef.newBuilder().setName("public-greeting"))
+                        .setAccessLevel(WfRunVariableAccessLevel.PUBLIC_VAR).build());
 
         // Record 1: WfRun RUNNING
         pipeExecution(wfRunId, OutputTopicRecord.newBuilder()
@@ -254,6 +265,85 @@ class TopologyTest {
     }
 
     @Test
+    void privateVariablesAreFiltered() throws Exception {
+        String wfRunId = "aabb00112233445566778899aabbccdd";
+        Timestamp ts = ts(1770710673, 531000000);
+
+        // WfSpec with mixed access levels
+        pipeOutputTopicWfSpec("output-topic", 0, 0,
+                ThreadVarDef.newBuilder()
+                        .setVarDef(VariableDef.newBuilder().setName("input-name"))
+                        .setAccessLevel(WfRunVariableAccessLevel.PUBLIC_VAR).build(),
+                ThreadVarDef.newBuilder()
+                        .setVarDef(VariableDef.newBuilder().setName("public-greeting"))
+                        .setAccessLevel(WfRunVariableAccessLevel.PUBLIC_VAR).build(),
+                ThreadVarDef.newBuilder()
+                        .setVarDef(VariableDef.newBuilder().setName("secret-var"))
+                        .setAccessLevel(WfRunVariableAccessLevel.PRIVATE_VAR).build());
+
+        // WfRun RUNNING
+        pipeExecution(wfRunId, OutputTopicRecord.newBuilder()
+                .setTimestamp(ts)
+                .setWfRun(WfRun.newBuilder()
+                        .setId(WfRunId.newBuilder().setId(wfRunId))
+                        .setWfSpecId(WfSpecId.newBuilder().setName("output-topic").setMajorVersion(0).setRevision(0))
+                        .setStatus(LHStatus.RUNNING)
+                        .setStartTime(ts))
+                .build());
+
+        // Variable input-name (PUBLIC)
+        pipeExecution(wfRunId, OutputTopicRecord.newBuilder()
+                .setTimestamp(ts)
+                .setVariable(Variable.newBuilder()
+                        .setId(VariableId.newBuilder()
+                                .setWfRunId(WfRunId.newBuilder().setId(wfRunId))
+                                .setName("input-name")
+                                .setThreadRunNumber(0))
+                        .setValue(VariableValue.newBuilder().setStr("Obi-Wan"))
+                        .setWfSpecId(WfSpecId.newBuilder().setName("output-topic").setMajorVersion(0).setRevision(0)))
+                .build());
+
+        // Variable public-greeting (PUBLIC)
+        pipeExecution(wfRunId, OutputTopicRecord.newBuilder()
+                .setTimestamp(ts)
+                .setVariable(Variable.newBuilder()
+                        .setId(VariableId.newBuilder()
+                                .setWfRunId(WfRunId.newBuilder().setId(wfRunId))
+                                .setName("public-greeting")
+                                .setThreadRunNumber(0))
+                        .setValue(VariableValue.newBuilder().setStr("Hello there!"))
+                        .setWfSpecId(WfSpecId.newBuilder().setName("output-topic").setMajorVersion(0).setRevision(0)))
+                .build());
+
+        // Variable secret-var (PRIVATE) — should be filtered out
+        pipeExecution(wfRunId, OutputTopicRecord.newBuilder()
+                .setTimestamp(ts)
+                .setVariable(Variable.newBuilder()
+                        .setId(VariableId.newBuilder()
+                                .setWfRunId(WfRunId.newBuilder().setId(wfRunId))
+                                .setName("secret-var")
+                                .setThreadRunNumber(0))
+                        .setValue(VariableValue.newBuilder().setStr("top-secret"))
+                        .setWfSpecId(WfSpecId.newBuilder().setName("output-topic").setMajorVersion(0).setRevision(0)))
+                .build());
+
+        String outputTopic = "cluster1_default_streamlet_workflow-output-topic";
+        TestOutputTopic<String, byte[]> output = testDriver.createOutputTopic(
+                outputTopic, new StringDeserializer(), Serdes.ByteArray().deserializer());
+
+        List<KeyValue<String, byte[]>> records = output.readKeyValuesToList();
+        // 3 emissions: WfRun RUNNING, var input-name, var public-greeting
+        // (secret-var was filtered)
+        assertEquals(3, records.size());
+
+        // Verify final emission has both public vars but NOT secret-var
+        JsonNode last = MAPPER.readTree(records.get(2).value);
+        assertEquals("Obi-Wan", last.get("columns").get("input-name").asText());
+        assertEquals("Hello there!", last.get("columns").get("public-greeting").asText());
+        assertNull(last.get("columns").get("secret-var"));
+    }
+
+    @Test
     void unconfiguredSpecsAreSkipped() {
         String wfRunId = "abc123";
         Timestamp ts = ts(1770710673, 0);
@@ -358,6 +448,19 @@ class TopologyTest {
     }
 
     // --- Helpers ---
+
+    private void pipeOutputTopicWfSpec(String name, int major, int revision, ThreadVarDef... varDefs) {
+        String key = "WF_SPEC/%s/%05d/%05d".formatted(name, major, revision);
+        MetadataOutputTopicRecord record = MetadataOutputTopicRecord.newBuilder()
+                .setWfSpec(WfSpec.newBuilder()
+                        .setId(WfSpecId.newBuilder().setName(name).setMajorVersion(major).setRevision(revision))
+                        .putThreadSpecs("entrypoint", ThreadSpec.newBuilder()
+                                .addAllVariableDefs(List.of(varDefs))
+                                .build())
+                        .setEntrypointThreadName("entrypoint"))
+                .build();
+        metadataInput.pipeInput(key, record);
+    }
 
     private void pipeExecution(String key, OutputTopicRecord record) {
         executionInput.pipeInput(key, record);
