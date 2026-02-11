@@ -3,7 +3,6 @@ package io.littlehorse.streamsense.diffuser.topology;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.google.protobuf.InvalidProtocolBufferException;
 import io.littlehorse.sdk.common.proto.*;
 import io.littlehorse.streamsense.diffuser.topology.transformer.ExternalEventTransformer;
 import io.littlehorse.streamsense.diffuser.topology.transformer.UserTaskRunTransformer;
@@ -42,7 +41,7 @@ public class DiffuserProcessor implements Processor<String, OutputTopicRecord, S
 
     private ProcessorContext<String, JsonNode> context;
     private KeyValueStore<String, byte[]> wfRunStore;
-    private ReadOnlyKeyValueStore<String, ValueAndTimestamp<byte[]>> globalMetadataStore;
+    private ReadOnlyKeyValueStore<String, ValueAndTimestamp<MetadataOutputTopicRecord>> globalMetadataStore;
     private final Map<String, Set<String>> publicVarCache = new HashMap<>();
 
     public DiffuserProcessor(TenantResolver tenantResolver, RecordRouter recordRouter) {
@@ -158,18 +157,12 @@ public class DiffuserProcessor implements Processor<String, OutputTopicRecord, S
                 tenant, wfSpecId.getName(), wfSpecId.getMajorVersion(), wfSpecId.getRevision());
 
         return publicVarCache.computeIfAbsent(metaKey, key -> {
-            ValueAndTimestamp<byte[]> entry = globalMetadataStore.get(key);
+            ValueAndTimestamp<MetadataOutputTopicRecord> entry = globalMetadataStore.get(key);
             if (entry == null) {
                 log.warn("WfSpec metadata not found in global store: key={}", key);
                 return null;
             }
-            try {
-                MetadataOutputTopicRecord record = MetadataOutputTopicRecord.parseFrom(entry.value());
-                return WfSpecAccessFilter.publicVariableNames(record.getWfSpec());
-            } catch (InvalidProtocolBufferException e) {
-                log.error("Failed to parse WfSpec metadata: key={}", key, e);
-                return null;
-            }
+            return WfSpecAccessFilter.publicVariableNames(entry.value().getWfSpec());
         });
     }
 

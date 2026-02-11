@@ -1,6 +1,5 @@
 package io.littlehorse.streamsense.diffuser.topology;
 
-import io.littlehorse.sdk.common.proto.MetadataOutputTopicRecord;
 import org.apache.kafka.streams.processor.api.Processor;
 import org.apache.kafka.streams.processor.api.ProcessorContext;
 import org.apache.kafka.streams.processor.api.Record;
@@ -9,11 +8,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Processor for sub-topology 0: ingests metadata records from metadata topics,
+ * Processor for sub-topology 0: ingests raw metadata bytes from metadata topics,
  * resolves tenant from the topic name, prefixes the key with tenant, and stores
- * in the local state store. The store's automatic changelog feeds the GlobalKTable.
+ * as-is in the local state store. The store's automatic changelog feeds the GlobalKTable.
  */
-public class MetadataProcessor implements Processor<String, MetadataOutputTopicRecord, Void, Void> {
+public class MetadataProcessor implements Processor<String, byte[], Void, Void> {
 
     private static final Logger log = LoggerFactory.getLogger(MetadataProcessor.class);
 
@@ -34,7 +33,7 @@ public class MetadataProcessor implements Processor<String, MetadataOutputTopicR
     }
 
     @Override
-    public void process(Record<String, MetadataOutputTopicRecord> record) {
+    public void process(Record<String, byte[]> record) {
         if (record.value() == null) {
             return;
         }
@@ -44,8 +43,8 @@ public class MetadataProcessor implements Processor<String, MetadataOutputTopicR
             String tenant = tenantResolver.resolve(topic);
             String prefixedKey = tenant + "/" + record.key();
 
-            // Store the serialized protobuf bytes; automatic changelog feeds the GlobalKTable
-            metadataStore.put(prefixedKey, record.value().toByteArray());
+            // Store raw bytes as-is; automatic changelog feeds the GlobalKTable
+            metadataStore.put(prefixedKey, record.value());
 
             log.debug("Stored metadata: key={}, tenant={}", prefixedKey, tenant);
         } catch (Exception e) {
