@@ -34,15 +34,10 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.kafka.KafkaContainer;
 
-import io.apicurio.registry.rest.client.RegistryClient;
-import io.apicurio.registry.rest.client.RegistryClientFactory;
-
-import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -54,15 +49,13 @@ import static org.junit.jupiter.api.Assertions.*;
  * Spins up both Kafka and Apicurio Registry containers, processes records through the
  * full topology with Apicurio serde enabled, and verifies the Apicurio serde round-trip.
  *
- * <p>When Kafka record headers are available (as in Kafka Streams), Apicurio 2.6.x uses
+ * <p>When Kafka record headers are available (as in Kafka Streams), Apicurio 3.x uses
  * <b>header-based encoding</b>: the schema globalId is written to Kafka headers while the
  * payload remains plain JSON. The deserializer reads the globalId from headers to resolve
  * the schema. Both serializer and deserializer must use the headers-aware API
  * ({@code serialize(topic, headers, data)} / {@code deserialize(topic, headers, data)}).
  *
- * <p>Note: Apicurio 2.6.x's {@code JsonSchemaParser.getSchemaFromData()} returns {@code null}
- * for {@code JsonNode}, so runtime auto-registration from data does not work. Schemas are
- * pre-registered via the Apicurio Java client before starting the topology.
+ * <p>Schemas are pre-registered via the Apicurio v3 REST API before starting the topology.
  */
 @Testcontainers
 @Tag("integration")
@@ -78,26 +71,39 @@ class ApicurioSchemaRegistryIntegrationTest {
 
     @SuppressWarnings("resource")
     @Container
-    static GenericContainer<?> apicurio = new GenericContainer<>("apicurio/apicurio-registry-mem:2.6.4.Final")
+    static GenericContainer<?> apicurio = new GenericContainer<>("apicurio/apicurio-registry:3.1.7")
             .withExposedPorts(8080)
-            .waitingFor(Wait.forHttp("/apis/registry/v2/system/info").forStatusCode(200));
+            .waitingFor(Wait.forHttp("/apis/registry/v3/system/info").forStatusCode(200));
 
     // --- Apicurio helpers ---
 
     private static String apicurioRegistryUrl() {
-        return "http://%s:%d/apis/registry/v2".formatted(apicurio.getHost(), apicurio.getMappedPort(8080));
+        return "http://%s:%d/apis/registry/v3".formatted(apicurio.getHost(), apicurio.getMappedPort(8080));
     }
 
     /**
-     * Pre-registers a JSON Schema artifact in Apicurio Registry using the Java client.
-     * Uses {@code null} groupId to match the TopicIdStrategy resolver, which passes
-     * Java null as the group (mapped to "null" in URL paths by the client).
+     * Pre-registers a JSON Schema artifact in Apicurio Registry via the v3 REST API.
+     * Uses the {@code default} group to match the TopicIdStrategy resolver.
      */
-    private void registerSchema(String artifactId, String schemaJson) {
-        RegistryClient client = RegistryClientFactory.create(apicurioRegistryUrl());
-        client.createArtifact(null, artifactId, "JSON",
-                new ByteArrayInputStream(schemaJson.getBytes(StandardCharsets.UTF_8)));
-        log.info("Registered schema via Java client: artifactId={}", artifactId);
+    private void registerSchema(String artifactId, String schemaJson) throws Exception {
+        String body = MAPPER.writeValueAsString(Map.of(
+                "artifactId", artifactId,
+                "artifactType", "JSON",
+                "firstVersion", Map.of(
+                        "content", Map.of(
+                                "content", schemaJson,
+                                "contentType", "application/json"
+                        )
+                )
+        ));
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(apicurioRegistryUrl() + "/groups/default/artifacts"))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(body))
+                .build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        log.info("Registered schema via REST: artifactId={}, status={}", artifactId, response.statusCode());
     }
 
     private static final String WORKFLOW_SCHEMA = """
@@ -193,7 +199,8 @@ class ApicurioSchemaRegistryIntegrationTest {
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(apicurioRegistryUrl()
-                        + "/groups/" + groupId + "/artifacts/" + artifactId))
+                        + "/groups/" + groupId + "/artifacts/" + artifactId
+                        + "/versions/branch=latest/content"))
                 .header("Accept", "application/json")
                 .GET()
                 .build();
@@ -456,7 +463,7 @@ class ApicurioSchemaRegistryIntegrationTest {
             for (JsonNode artifact : searchResult.get("artifacts")) {
                 String gId = artifact.has("groupId") && !artifact.get("groupId").isNull()
                         ? artifact.get("groupId").asText() : "default";
-                artifactGroupMap.put(artifact.get("id").asText(), gId);
+                artifactGroupMap.put(artifact.get("artifactId").asText(), gId);
             }
 
             String[] expectedArtifactIds = {
@@ -516,7 +523,7 @@ class ApicurioSchemaRegistryIntegrationTest {
             JsonNode searchResult = queryApicurioArtifacts();
             String groupId = null;
             for (JsonNode artifact : searchResult.get("artifacts")) {
-                if (artifactId.equals(artifact.get("id").asText())) {
+                if (artifactId.equals(artifact.get("artifactId").asText())) {
                     groupId = artifact.has("groupId") && !artifact.get("groupId").isNull()
                             ? artifact.get("groupId").asText() : "default";
                     break;

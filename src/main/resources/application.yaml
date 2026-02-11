@@ -10,6 +10,7 @@ app:
         - await-wf-event
         - example-variables
         - it-request
+        - example-json
       user-task-defs:
         - approve-it-request
         - it-request
@@ -17,16 +18,20 @@ app:
         - name-event
       workflow-event-defs:
         - sleep-done
+    - name: cars
+      wf-specs:
+        - example-json
 
 kafka:
   streams:
     application.id: ${app.lh-cluster-id}-wf-diffuser
     bootstrap.servers: localhost:9092
-    #schema.registry.url: http://localhost:8081/apis/registry/v2
+    schema.registry.url: http://localhost:8085/apis/registry/v3
     auto.offset.reset: latest
     default.key.serde: org.apache.kafka.common.serialization.Serdes$StringSerde
     ensure.explicit.internal.resource.naming: true
     num.stream.threads: 2
+    session.timeout.ms: 10000
 
 
 

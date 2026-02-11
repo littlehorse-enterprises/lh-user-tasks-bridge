@@ -20,7 +20,7 @@ val kafkaVersion = "4.1.1"
 val smallryeConfigVersion = "3.9.1"
 val micrometerVersion = "1.14.4"
 val jacksonVersion = "2.17.2"
-val apicurioVersion = "2.6.4.Final"
+val apicurioVersion = "3.1.7"
 val lhClientVersion = "0.16.0"
 val logbackVersion = "1.5.16"
 val junitVersion = "5.11.4"
@@ -43,7 +43,7 @@ dependencies {
     implementation("com.fasterxml.jackson.core:jackson-databind:$jacksonVersion")
 
     // Apicurio Registry SerDe
-    implementation("io.apicurio:apicurio-registry-serdes-jsonschema-serde:$apicurioVersion")
+    implementation("io.apicurio:apicurio-registry-jsonschema-serde-kafka:$apicurioVersion")
 
     // Logging
     implementation("ch.qos.logback:logback-classic:$logbackVersion")

@@ -55,7 +55,7 @@ public class WorkflowDiffuserApp {
                 LogAndContinueProductionExceptionHandler.class);
         KafkaStreams streams = new KafkaStreams(topology, streamsProps);
 
-        // 4. Setup Micrometer metrics
+        // 4. Set up Micrometer metrics
         PrometheusMeterRegistry registry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
         new KafkaStreamsMetrics(streams).bindTo(registry);
         new JvmMemoryMetrics().bindTo(registry);
