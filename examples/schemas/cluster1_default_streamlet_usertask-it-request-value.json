@@ -1,0 +1,14 @@
+{
+  "type": "object",
+  "properties": {
+    "id": {"type": "string"},
+    "wfRunId": {"type": "string"},
+    "userTaskDefName": {"type": "string"},
+    "userTaskDefVersion": {"type": "integer"},
+    "status": {"type": "string"},
+    "userId": {"type": ["string", "null"]},
+    "userGroup": {"type": ["string", "null"]},
+    "results": {"type": "object"},
+    "createdAt": {"type": "string", "format": "date-time"}
+  }
+}
