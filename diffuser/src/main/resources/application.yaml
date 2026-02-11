@@ -2,25 +2,16 @@ app:
   lh-cluster-id: cluster1
   server:
     port: 8080
-  tenants:
-    - name: default
-      wf-specs:
-        - example-external-event
-        - output-topic
-        - await-wf-event
-        - example-variables
-        - it-request
-        - example-json
-      user-task-defs:
-        - approve-it-request
-        - it-request
-      external-event-defs:
-        - name-event
-      workflow-event-defs:
-        - sleep-done
-    - name: cars
-      wf-specs:
-        - example-json
+#  tenants:
+#    - name: default
+#      wf-specs:
+#        - my-workflow
+#      user-task-defs:
+#        - my-user-task
+#      external-event-defs:
+#        - my-external-event
+#      workflow-event-defs:
+#        - my-workflow-event
 
 kafka:
   streams:
@@ -33,5 +24,6 @@ kafka:
     num.stream.threads: 2
     session.timeout.ms: 10000
 
-
-
+#logging:
+#  level:
+#    io.littlehorse.streamsense: DEBUG

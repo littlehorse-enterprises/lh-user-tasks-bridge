@@ -65,6 +65,23 @@ export LH_KAFKA_STREAMS_BOOTSTRAP_SERVERS=kafka:9092
 export LH_APP_SERVER_PORT=9090
 ```
 
+#### Log Levels
+
+Log levels are configured per-package via `logging.level.*` properties in `application.yaml`:
+
+```yaml
+logging:
+  level:
+    io.littlehorse.streamsense: DEBUG
+    org.apache.kafka: WARN
+```
+
+These can also be set via environment variables:
+
+```bash
+export LH_LOGGING_LEVEL_IO_LITTLEHORSE_STREAMSENSE=DEBUG
+```
+
 ## Repo Structure
 
 ```

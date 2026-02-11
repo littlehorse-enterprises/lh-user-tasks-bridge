@@ -25,8 +25,15 @@ at the Apicurio UI: http://localhost:8086
 From the project root:
 
 ```bash
-./gradlew run
+LH_CONFIG_FILES=examples/application.yaml ./gradlew run
 ```
+
+This loads the example tenant/spec configuration from `examples/application.yaml`, which overrides
+the defaults in `src/main/resources/application.yaml`. Debug logging for `io.littlehorse.streamsense`
+is configured in `examples/application.yaml` via the `logging.level` section.
+
+Log levels can also be set via environment variables, e.g.:
+`LH_LOGGING_LEVEL_IO_LITTLEHORSE_STREAMSENSE=DEBUG`
 
 ## Services
 
