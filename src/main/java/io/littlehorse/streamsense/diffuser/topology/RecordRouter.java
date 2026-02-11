@@ -1,6 +1,8 @@
 package io.littlehorse.streamsense.diffuser.topology;
 
 import io.littlehorse.streamsense.diffuser.config.AppConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
@@ -9,6 +11,8 @@ import java.util.*;
  * based on the configured specs for each tenant.
  */
 public class RecordRouter {
+
+    private static final Logger log = LoggerFactory.getLogger(RecordRouter.class);
 
     private final TopicNameResolver topicNameResolver;
     // tenant -> set of spec names
@@ -40,8 +44,11 @@ public class RecordRouter {
     public Optional<String> resolveWfSpecTopic(String tenant, String wfSpecName) {
         Set<String> specs = wfSpecsByTenant.get(tenant);
         if (specs != null && specs.contains(wfSpecName)) {
-            return Optional.of(topicNameResolver.resolve(tenant, StreamletType.WORKFLOW, wfSpecName));
+            String topic = topicNameResolver.resolve(tenant, StreamletType.WORKFLOW, wfSpecName);
+            log.debug("Resolved WfSpec topic: tenant={}, spec={}, topic={}", tenant, wfSpecName, topic);
+            return Optional.of(topic);
         }
+        log.debug("WfSpec not configured, skipping: tenant={}, spec={}", tenant, wfSpecName);
         return Optional.empty();
     }
 
@@ -49,8 +56,11 @@ public class RecordRouter {
     public Optional<String> resolveUserTaskDefTopic(String tenant, String userTaskDefName) {
         Set<String> specs = userTaskDefsByTenant.get(tenant);
         if (specs != null && specs.contains(userTaskDefName)) {
-            return Optional.of(topicNameResolver.resolve(tenant, StreamletType.USERTASK, userTaskDefName));
+            String topic = topicNameResolver.resolve(tenant, StreamletType.USERTASK, userTaskDefName);
+            log.debug("Resolved UserTaskDef topic: tenant={}, spec={}, topic={}", tenant, userTaskDefName, topic);
+            return Optional.of(topic);
         }
+        log.debug("UserTaskDef not configured, skipping: tenant={}, spec={}", tenant, userTaskDefName);
         return Optional.empty();
     }
 
@@ -58,8 +68,11 @@ public class RecordRouter {
     public Optional<String> resolveExternalEventDefTopic(String tenant, String externalEventDefName) {
         Set<String> specs = externalEventDefsByTenant.get(tenant);
         if (specs != null && specs.contains(externalEventDefName)) {
-            return Optional.of(topicNameResolver.resolve(tenant, StreamletType.EXTERNALEVENT, externalEventDefName));
+            String topic = topicNameResolver.resolve(tenant, StreamletType.EXTERNALEVENT, externalEventDefName);
+            log.debug("Resolved ExternalEventDef topic: tenant={}, spec={}, topic={}", tenant, externalEventDefName, topic);
+            return Optional.of(topic);
         }
+        log.debug("ExternalEventDef not configured, skipping: tenant={}, spec={}", tenant, externalEventDefName);
         return Optional.empty();
     }
 
@@ -67,8 +80,11 @@ public class RecordRouter {
     public Optional<String> resolveWorkflowEventDefTopic(String tenant, String workflowEventDefName) {
         Set<String> specs = workflowEventDefsByTenant.get(tenant);
         if (specs != null && specs.contains(workflowEventDefName)) {
-            return Optional.of(topicNameResolver.resolve(tenant, StreamletType.WORKFLOWEVENT, workflowEventDefName));
+            String topic = topicNameResolver.resolve(tenant, StreamletType.WORKFLOWEVENT, workflowEventDefName);
+            log.debug("Resolved WorkflowEventDef topic: tenant={}, spec={}, topic={}", tenant, workflowEventDefName, topic);
+            return Optional.of(topic);
         }
+        log.debug("WorkflowEventDef not configured, skipping: tenant={}, spec={}", tenant, workflowEventDefName);
         return Optional.empty();
     }
 }

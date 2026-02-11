@@ -18,6 +18,8 @@ import org.apache.kafka.streams.kstream.Named;
 import org.apache.kafka.streams.kstream.Produced;
 import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.Stores;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Builds the complete Kafka Streams topology using the {@link StreamsBuilder} DSL.
@@ -34,6 +36,8 @@ import org.apache.kafka.streams.state.Stores;
  */
 public class TopologyFactory {
 
+    private static final Logger log = LoggerFactory.getLogger(TopologyFactory.class);
+
     /**
      * Builds and returns the Kafka Streams {@link Topology}.
      *
@@ -48,6 +52,9 @@ public class TopologyFactory {
         TenantResolver tenantResolver = new TenantResolver(appConfig.lhClusterId());
         RecordRouter recordRouter = new RecordRouter(appConfig);
         InputTopicPatternBuilder patternBuilder = new InputTopicPatternBuilder(appConfig);
+
+        log.debug("Building topology: executionPattern={}, metadataPattern={}",
+                patternBuilder.executionTopicPattern(), patternBuilder.metadataTopicPattern());
 
         if (appConfig.tenants().isEmpty()) {
             return builder.build();
@@ -72,6 +79,7 @@ public class TopologyFactory {
         // GlobalKTable reads from the metadata store's changelog and deserializes as protobuf,
         // making WfSpec metadata available to DiffuserProcessor on all partitions.
         String changelogTopic = applicationId + "-" + MetadataProcessor.METADATA_STORE + "-changelog";
+        log.debug("Changelog topic for GlobalKTable: {}", changelogTopic);
         Serde<MetadataOutputTopicRecord> metadataSerde = ProtobufSerdes.metadataOutputTopicRecord();
         builder.globalTable(changelogTopic,
                 Consumed.<String, MetadataOutputTopicRecord>as("global-metadata-source")
@@ -88,11 +96,16 @@ public class TopologyFactory {
                 Stores.persistentKeyValueStore(DiffuserProcessor.WFRUN_STORE),
                 Serdes.String(), Serdes.ByteArray()));
 
-        Serde<JsonNode> valueSerde = schemaRegistryUrl != null
-                ? ApicurioJsonNodeSerdeFactory.create(schemaRegistryUrl)
-                : Serdes.serdeFrom(new JsonNodeSerializer(), (topic, data) -> {
-            throw new UnsupportedOperationException("Deserialization not supported");
-        });
+        Serde<JsonNode> valueSerde;
+        if (schemaRegistryUrl != null) {
+            log.debug("Using Apicurio serde with registry: {}", schemaRegistryUrl);
+            valueSerde = ApicurioJsonNodeSerdeFactory.create(schemaRegistryUrl);
+        } else {
+            log.debug("Using plain JSON serde (no schema registry configured)");
+            valueSerde = Serdes.serdeFrom(new JsonNodeSerializer(), (topic, data) -> {
+                throw new UnsupportedOperationException("Deserialization not supported");
+            });
+        }
 
         builder.stream(patternBuilder.executionTopicPattern(),
                         Consumed.<String, OutputTopicRecord>as("execution-source")

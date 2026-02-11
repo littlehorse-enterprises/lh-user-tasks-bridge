@@ -79,6 +79,8 @@ public class DiffuserProcessor implements Processor<String, OutputTopicRecord, S
             String tenant = tenantResolver.resolve(topic);
             OutputTopicRecord otr = record.value();
 
+            log.debug("Processing record: key={}, tenant={}, payloadType={}", record.key(), tenant, otr.getPayloadCase());
+
             switch (otr.getPayloadCase()) {
                 case WF_RUN -> processWfRun(record.key(), tenant, otr, record.timestamp());
                 case VARIABLE -> processVariable(record.key(), tenant, otr, record.timestamp());
@@ -102,6 +104,7 @@ public class DiffuserProcessor implements Processor<String, OutputTopicRecord, S
         if (targetTopic.isEmpty()) return;
 
         String storeKey = tenant + "/" + wfRunId;
+        log.debug("WfRun update: storeKey={}, targetTopic={}", storeKey, targetTopic.get());
         ObjectNode state = loadWfRunState(storeKey);
         state = WfRunTransformer.applyWfRun(wfRun, state, otr.getTimestamp());
         saveWfRunState(storeKey, state);
@@ -118,8 +121,10 @@ public class DiffuserProcessor implements Processor<String, OutputTopicRecord, S
 
         Set<String> publicVars = resolvePublicVariables(tenant, variable.getWfSpecId());
         if (publicVars != null && !publicVars.contains(variable.getId().getName())) {
+            log.debug("Variable filtered (not public): name={}, wfSpec={}", variable.getId().getName(), wfSpecName);
             return;
         }
+        log.debug("Variable accepted: name={}, wfSpec={}", variable.getId().getName(), wfSpecName);
 
         String storeKey = tenant + "/" + wfRunId;
         ObjectNode state = loadWfRunState(storeKey);
@@ -136,6 +141,7 @@ public class DiffuserProcessor implements Processor<String, OutputTopicRecord, S
         Optional<String> targetTopic = recordRouter.resolveUserTaskDefTopic(tenant, defName);
         if (targetTopic.isEmpty()) return;
 
+        log.debug("UserTaskRun: def={}, targetTopic={}", defName, targetTopic.get());
         ObjectNode output = UserTaskRunTransformer.transform(userTaskRun);
         String outputKey = wfRunId + "/" + userTaskRun.getId().getUserTaskGuid();
         forward(outputKey, output, targetTopic.get(), timestamp);
@@ -148,6 +154,7 @@ public class DiffuserProcessor implements Processor<String, OutputTopicRecord, S
         Optional<String> targetTopic = recordRouter.resolveExternalEventDefTopic(tenant, defName);
         if (targetTopic.isEmpty()) return;
 
+        log.debug("ExternalEvent: def={}, targetTopic={}", defName, targetTopic.get());
         ObjectNode output = ExternalEventTransformer.transform(event);
         String outputKey = output.get("id").asText();
         forward(outputKey, output, targetTopic.get(), timestamp);
@@ -160,6 +167,7 @@ public class DiffuserProcessor implements Processor<String, OutputTopicRecord, S
         Optional<String> targetTopic = recordRouter.resolveWorkflowEventDefTopic(tenant, defName);
         if (targetTopic.isEmpty()) return;
 
+        log.debug("WorkflowEvent: def={}, targetTopic={}", defName, targetTopic.get());
         ObjectNode output = WorkflowEventTransformer.transform(event);
         String outputKey = output.get("id").asText();
         forward(outputKey, output, targetTopic.get(), timestamp);
@@ -187,6 +195,7 @@ public class DiffuserProcessor implements Processor<String, OutputTopicRecord, S
 
     /** Adds the {@code streamlet-topic} header and forwards the JSON record downstream. */
     private void forward(String key, JsonNode value, String targetTopic, long timestamp) {
+        log.debug("Forwarding: key={}, targetTopic={}", key, targetTopic);
         Record<String, JsonNode> outRecord = new Record<>(key, value, timestamp);
         outRecord.headers().add(new RecordHeader(
                 StreamletTopicExtractor.STREAMLET_TOPIC_HEADER,
