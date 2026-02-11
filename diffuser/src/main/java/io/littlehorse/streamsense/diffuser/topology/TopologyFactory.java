@@ -47,21 +47,22 @@ public class TopologyFactory {
                 Serdes.String(), Serdes.ByteArray()));
 
         builder.stream(patternBuilder.metadataTopicPattern(),
-                        Consumed.<String, MetadataOutputTopicRecord>as("metadata-source")
+                        Consumed.<String, byte[]>as("metadata-source")
                                 .withKeySerde(Serdes.String())
-                                .withValueSerde(ProtobufSerdes.metadataOutputTopicRecord()))
+                                .withValueSerde(Serdes.ByteArray()))
                 .process(() -> new MetadataProcessor(tenantResolver),
                         Named.as("metadata-processor"),
                         MetadataProcessor.METADATA_STORE);
 
         String changelogTopic = applicationId + "-" + MetadataProcessor.METADATA_STORE + "-changelog";
+        Serde<MetadataOutputTopicRecord> metadataSerde = ProtobufSerdes.metadataOutputTopicRecord();
         builder.globalTable(changelogTopic,
-                Consumed.<String, byte[]>as("global-metadata-source")
+                Consumed.<String, MetadataOutputTopicRecord>as("global-metadata-source")
                         .withKeySerde(Serdes.String())
-                        .withValueSerde(Serdes.ByteArray()),
-                Materialized.<String, byte[], KeyValueStore<Bytes, byte[]>>as(DiffuserProcessor.GLOBAL_METADATA_STORE)
+                        .withValueSerde(metadataSerde),
+                Materialized.<String, MetadataOutputTopicRecord, KeyValueStore<Bytes, byte[]>>as(DiffuserProcessor.GLOBAL_METADATA_STORE)
                         .withKeySerde(Serdes.String())
-                        .withValueSerde(Serdes.ByteArray()));
+                        .withValueSerde(metadataSerde));
 
         // --- Execution diffusion ---
         builder.addStateStore(Stores.keyValueStoreBuilder(
