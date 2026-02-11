@@ -13,7 +13,6 @@ app:
         - await-wf-event
         - example-variables
         - it-request
-        - example-json
       user-task-defs:
         - approve-it-request
         - it-request
