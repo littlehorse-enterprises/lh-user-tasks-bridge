@@ -63,7 +63,7 @@ class WorkflowDiffuserIntegrationTest {
         // Build and start topology
         AppConfig appConfig = buildTestConfig();
         String applicationId = "integration-test-" + UUID.randomUUID();
-        Topology topology = TopologyFactory.build(appConfig, applicationId);
+        Topology topology = TopologyFactory.build(appConfig, applicationId, null);
         log.info("Starting topology with config: {}", appConfig);
 
         // Create input and output topics
