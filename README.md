@@ -69,7 +69,16 @@ src/main/java/io/littlehorse/streamsense/diffuser/
 ├── server/                            # HTTP health + metrics endpoints
 ├── topology/                          # Kafka Streams topology + processors
 │   └── transformer/                   # Record transformers (protobuf → JSON)
-└── serde/                             # Custom serdes
+└── serde/                             # Custom serdes (Apicurio + Protobuf)
+
+src/test/java/io/littlehorse/streamsense/diffuser/
+├── config/                            # Config unit tests
+├── topology/                          # Topology + processor unit tests
+│   └── transformer/                   # Transformer unit tests
+└── integration/                       # End-to-end tests (Testcontainers)
+
+src/test/resources/
+└── logback-test.xml                   # DEBUG-level logging for tests
 
 docs/
   requirements/   # Product requirements
