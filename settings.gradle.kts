@@ -1,1 +1,2 @@
 rootProject.name = "lh-workflow-diffuser"
+include("examples:lh-examples")

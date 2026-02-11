@@ -11,7 +11,7 @@
     "results": {
       "type": "object",
       "properties": {
-        "isApproved": {"type": "boolean"}
+        "isApproved": {"type": ["boolean", "null"]}
       }
     },
     "createdAt": {"type": "string", "format": "date-time"}

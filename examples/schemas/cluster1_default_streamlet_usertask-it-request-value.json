@@ -11,8 +11,8 @@
     "results": {
       "type": "object",
       "properties": {
-        "requestedItem": {"type": "string"},
-        "justification": {"type": "string"}
+        "requestedItem": {"type": ["string", "null"]},
+        "justification": {"type": ["string", "null"]}
       }
     },
     "createdAt": {"type": "string", "format": "date-time"}

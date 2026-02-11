@@ -6,8 +6,8 @@
     "columns": {
       "type": "object",
       "properties": {
-        "input-name": {"type": "string"},
-        "public-greeting": {"type": "string"}
+        "input-name": {"type": ["string", "null"]},
+        "public-greeting": {"type": ["string", "null"]}
       }
     },
     "createdAt": {"type": "string", "format": "date-time"},
