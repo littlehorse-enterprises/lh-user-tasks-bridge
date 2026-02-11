@@ -25,8 +25,21 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Core diffuser processor (sub-topology 1). Consumes execution records,
- * routes by record type, transforms to JSON, and forwards with streamlet-topic header.
+ * Core execution-path processor. Consumes {@link OutputTopicRecord} from execution topics,
+ * dispatches by payload type, transforms to JSON, and forwards with a {@code streamlet-topic}
+ * header so the downstream sink routes each record to the correct streamlet topic.
+ *
+ * <p>Processing modes:
+ * <ul>
+ *   <li><b>WfRun / Variable</b> — stateful aggregation via {@code wfrun-store}.
+ *       Each WfRun update and variable change is merged into a running JSON state keyed
+ *       by {@code tenant/wfRunId}. Private variables are filtered using WfSpec metadata
+ *       from the {@code global-metadata-store}.</li>
+ *   <li><b>UserTaskRun / ExternalEvent / WorkflowEvent</b> — stateless transform-and-forward.</li>
+ *   <li><b>TaskRun / CorrelatedEvent / TaskCheckpoint</b> — silently dropped (no streamlet).</li>
+ * </ul>
+ *
+ * <p>Records for unconfigured specs (not in {@link RecordRouter}) are skipped.
  */
 public class DiffuserProcessor implements Processor<String, OutputTopicRecord, String, JsonNode> {
 
@@ -152,6 +165,12 @@ public class DiffuserProcessor implements Processor<String, OutputTopicRecord, S
         forward(outputKey, output, targetTopic.get(), timestamp);
     }
 
+    /**
+     * Looks up the set of PUBLIC_VAR variable names for a WfSpec from the global metadata store.
+     * Results are cached per WfSpec version to avoid repeated store lookups.
+     *
+     * @return the set of public variable names, or {@code null} if the WfSpec is not in the store
+     */
     private Set<String> resolvePublicVariables(String tenant, WfSpecId wfSpecId) {
         String metaKey = WfSpecAccessFilter.metadataStoreKey(
                 tenant, wfSpecId.getName(), wfSpecId.getMajorVersion(), wfSpecId.getRevision());
@@ -166,6 +185,7 @@ public class DiffuserProcessor implements Processor<String, OutputTopicRecord, S
         });
     }
 
+    /** Adds the {@code streamlet-topic} header and forwards the JSON record downstream. */
     private void forward(String key, JsonNode value, String targetTopic, long timestamp) {
         Record<String, JsonNode> outRecord = new Record<>(key, value, timestamp);
         outRecord.headers().add(new RecordHeader(

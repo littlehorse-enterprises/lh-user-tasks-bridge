@@ -33,6 +33,10 @@ public class RecordRouter {
         }
     }
 
+    /**
+     * Resolves the output topic for a WfSpec streamlet, or empty if the spec is not
+     * configured for this tenant.
+     */
     public Optional<String> resolveWfSpecTopic(String tenant, String wfSpecName) {
         Set<String> specs = wfSpecsByTenant.get(tenant);
         if (specs != null && specs.contains(wfSpecName)) {
@@ -41,6 +45,7 @@ public class RecordRouter {
         return Optional.empty();
     }
 
+    /** Resolves the output topic for a UserTaskDef streamlet, or empty if not configured. */
     public Optional<String> resolveUserTaskDefTopic(String tenant, String userTaskDefName) {
         Set<String> specs = userTaskDefsByTenant.get(tenant);
         if (specs != null && specs.contains(userTaskDefName)) {
@@ -49,6 +54,7 @@ public class RecordRouter {
         return Optional.empty();
     }
 
+    /** Resolves the output topic for an ExternalEventDef streamlet, or empty if not configured. */
     public Optional<String> resolveExternalEventDefTopic(String tenant, String externalEventDefName) {
         Set<String> specs = externalEventDefsByTenant.get(tenant);
         if (specs != null && specs.contains(externalEventDefName)) {
@@ -57,6 +63,7 @@ public class RecordRouter {
         return Optional.empty();
     }
 
+    /** Resolves the output topic for a WorkflowEventDef streamlet, or empty if not configured. */
     public Optional<String> resolveWorkflowEventDefTopic(String tenant, String workflowEventDefName) {
         Set<String> specs = workflowEventDefsByTenant.get(tenant);
         if (specs != null && specs.contains(workflowEventDefName)) {

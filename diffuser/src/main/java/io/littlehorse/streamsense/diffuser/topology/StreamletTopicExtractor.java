@@ -5,6 +5,11 @@ import org.apache.kafka.streams.processor.RecordContext;
 
 import java.nio.charset.StandardCharsets;
 
+/**
+ * Extracts the target sink topic name from the {@code streamlet-topic} record header.
+ * Used as a {@link org.apache.kafka.streams.processor.TopicNameExtractor} in the
+ * dynamic-routing sink so each record is produced to the correct streamlet topic.
+ */
 public class StreamletTopicExtractor {
 
     public static final String STREAMLET_TOPIC_HEADER = "streamlet-topic";

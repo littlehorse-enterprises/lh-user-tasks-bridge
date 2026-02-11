@@ -40,6 +40,7 @@ public class WorkflowEventTransformer {
         return node;
     }
 
+    /** Extracts the WorkflowEventDef name used for topic routing. */
     public static String extractDefName(WorkflowEvent event) {
         return event.getId().getWorkflowEventDefId().getName();
     }

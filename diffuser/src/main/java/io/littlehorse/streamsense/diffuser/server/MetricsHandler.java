@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
+/** HTTP handler that serves Prometheus metrics in the OpenMetrics text format. */
 public class MetricsHandler implements HttpHandler {
 
     private final PrometheusMeterRegistry registry;

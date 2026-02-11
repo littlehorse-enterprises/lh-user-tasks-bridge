@@ -70,6 +70,7 @@ public class UserTaskRunTransformer {
         return node;
     }
 
+    /** Extracts the UserTaskDef name used for topic routing. */
     public static String extractDefName(UserTaskRun userTaskRun) {
         return userTaskRun.getUserTaskDefId().getName();
     }

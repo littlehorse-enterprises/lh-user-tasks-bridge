@@ -9,6 +9,17 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.InetSocketAddress;
 
+/**
+ * Creates the HTTP server with health check and Prometheus metrics endpoints.
+ *
+ * <p>Endpoints:
+ * <ul>
+ *   <li>{@code /health} — combined liveness + readiness</li>
+ *   <li>{@code /health/liveness} — liveness only (Kafka Streams not in ERROR/NOT_RUNNING)</li>
+ *   <li>{@code /health/readiness} — readiness only (Kafka Streams RUNNING or REBALANCING)</li>
+ *   <li>{@code /metrics} — Prometheus scrape endpoint</li>
+ * </ul>
+ */
 public class HttpServerFactory {
 
     public static HttpServer create(KafkaStreams streams, PrometheusMeterRegistry registry, AppConfig appConfig) {

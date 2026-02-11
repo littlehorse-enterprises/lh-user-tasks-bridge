@@ -8,6 +8,10 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
+/**
+ * Logs deserialization errors and instructs Kafka Streams to skip the corrupt record
+ * rather than shutting down the application.
+ */
 public class LogAndContinueDeserializationExceptionHandler implements DeserializationExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(LogAndContinueDeserializationExceptionHandler.class);

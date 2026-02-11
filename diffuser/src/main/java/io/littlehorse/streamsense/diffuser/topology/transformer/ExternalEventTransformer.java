@@ -40,6 +40,7 @@ public class ExternalEventTransformer {
         return node;
     }
 
+    /** Extracts the ExternalEventDef name used for topic routing. */
     public static String extractDefName(ExternalEvent event) {
         return event.getId().getExternalEventDefId().getName();
     }

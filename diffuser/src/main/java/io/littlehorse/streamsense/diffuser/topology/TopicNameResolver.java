@@ -12,6 +12,9 @@ public class TopicNameResolver {
         this.lhClusterId = lhClusterId;
     }
 
+    /**
+     * @return the fully qualified topic name, e.g. {@code cluster1_tenant1_streamlet_workflow-order-processing}
+     */
     public String resolve(String tenant, StreamletType type, String specName) {
         return "%s_%s_streamlet_%s-%s".formatted(lhClusterId, tenant, type.prefix(), specName);
     }

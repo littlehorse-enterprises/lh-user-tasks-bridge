@@ -7,6 +7,10 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
+/**
+ * Logs production errors and instructs Kafka Streams to skip the failed record
+ * rather than shutting down the application.
+ */
 public class LogAndContinueProductionExceptionHandler implements ProductionExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(LogAndContinueProductionExceptionHandler.class);
