@@ -25,6 +25,6 @@ class ConfigFactoryTest {
 
         assertEquals("cluster1-wf-diffuser", ksConfig.applicationId());
         assertEquals("localhost:9092", ksConfig.bootstrapServers());
-        assertNotNull(ksConfig.asProperties());
+        assertFalse(ksConfig.asProperties().isEmpty(), "asProperties() must contain entries, not just defaults");
     }
 }

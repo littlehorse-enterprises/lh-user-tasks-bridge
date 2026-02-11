@@ -4,18 +4,18 @@ app:
     port: 8080
   tenants:
     - name: default
-      wfSpecs:
+      wf-specs:
         - example-external-event
         - output-topic
         - await-wf-event
         - example-variables
         - it-request
-      userTaskDefs:
+      user-task-defs:
         - approve-it-request
         - it-request
-      externalEventDefs:
+      external-event-defs:
         - name-event
-      workflowEventDefs:
+      workflow-event-defs:
         - sleep-done
 
 kafka:
