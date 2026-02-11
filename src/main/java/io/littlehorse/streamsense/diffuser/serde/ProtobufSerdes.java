@@ -7,6 +7,10 @@ import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.serialization.Serializer;
 
+/**
+ * Factory for Kafka {@link Serde} instances that serialize/deserialize LH protobuf types
+ * using native protobuf binary encoding ({@code toByteArray()} / {@code parseFrom()}).
+ */
 public class ProtobufSerdes {
 
     public static Serde<OutputTopicRecord> outputTopicRecord() {

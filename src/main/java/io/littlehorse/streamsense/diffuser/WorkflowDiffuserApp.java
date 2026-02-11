@@ -24,6 +24,12 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.util.Properties;
 
+/**
+ * Entry point for the Workflow Diffuser application.
+ *
+ * <p>Bootstraps configuration, builds the Kafka Streams topology, starts an HTTP server
+ * for health checks and Prometheus metrics, and runs the Kafka Streams instance.
+ */
 public class WorkflowDiffuserApp {
 
     private static final Logger log = LoggerFactory.getLogger(WorkflowDiffuserApp.class);

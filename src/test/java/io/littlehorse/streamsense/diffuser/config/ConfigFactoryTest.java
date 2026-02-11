@@ -14,7 +14,8 @@ class ConfigFactoryTest {
 
         assertEquals("cluster1", appConfig.lhClusterId());
         assertEquals(8080, appConfig.server().port());
-        assertTrue(appConfig.tenants().isEmpty());
+        assertFalse(appConfig.tenants().isEmpty());
+        assertEquals("default", appConfig.tenants().get(0).name());
     }
 
     @Test

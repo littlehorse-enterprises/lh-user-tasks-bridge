@@ -9,6 +9,7 @@ import io.littlehorse.streamsense.diffuser.serde.ProtobufSerdes;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.utils.Bytes;
+import org.apache.kafka.streams.AutoOffsetReset;
 import org.apache.kafka.streams.StreamsBuilder;
 import org.apache.kafka.streams.Topology;
 import org.apache.kafka.streams.kstream.Consumed;
@@ -19,16 +20,27 @@ import org.apache.kafka.streams.state.KeyValueStore;
 import org.apache.kafka.streams.state.Stores;
 
 /**
- * Builds the complete Kafka Streams topology using the StreamsBuilder DSL:
- * <ul>
- *   <li>Metadata ingestion → local state store → changelog → GlobalKTable</li>
- *   <li>Execution processing → diffusion → dynamic sink</li>
- * </ul>
+ * Builds the complete Kafka Streams topology using the {@link StreamsBuilder} DSL.
+ *
+ * <p>The topology has two data paths:
+ * <ol>
+ *   <li><b>Metadata path:</b> metadata-source → MetadataProcessor (stores raw bytes,
+ *       keyed by tenant) → automatic changelog → GlobalKTable (deserialized as protobuf,
+ *       available to all execution-path tasks)</li>
+ *   <li><b>Execution path:</b> execution-source → DiffuserProcessor (routes, transforms,
+ *       enriches with metadata from the GlobalKTable) → streamlet-sink (dynamic topic
+ *       per streamlet, resolved from the {@code streamlet-topic} header)</li>
+ * </ol>
  */
 public class TopologyFactory {
 
     /**
-     * @param schemaRegistryUrl Apicurio registry URL; when {@code null}, falls back to plain JSON serialization.
+     * Builds and returns the Kafka Streams {@link Topology}.
+     *
+     * @param appConfig         application configuration (cluster ID, tenants, specs)
+     * @param applicationId     Kafka Streams {@code application.id}, used to derive the changelog topic name
+     * @param schemaRegistryUrl Apicurio registry URL; when {@code null}, falls back to plain JSON serialization
+     * @return an empty topology if no tenants are configured, otherwise the full diffuser topology
      */
     public static Topology build(AppConfig appConfig, String applicationId, String schemaRegistryUrl) {
         StreamsBuilder builder = new StreamsBuilder();
@@ -41,19 +53,24 @@ public class TopologyFactory {
             return builder.build();
         }
 
-        // --- Metadata ingestion ---
+        // --- Metadata path ---
+        // Ingest raw metadata bytes from per-tenant metadata topics, re-key with tenant prefix,
+        // and store in a local state store. Its automatic changelog feeds the GlobalKTable below.
         builder.addStateStore(Stores.keyValueStoreBuilder(
                 Stores.persistentKeyValueStore(MetadataProcessor.METADATA_STORE),
                 Serdes.String(), Serdes.ByteArray()));
 
         builder.stream(patternBuilder.metadataTopicPattern(),
                         Consumed.<String, byte[]>as("metadata-source")
+                                .withOffsetResetPolicy(AutoOffsetReset.earliest()) // always ensure all metadata is read
                                 .withKeySerde(Serdes.String())
                                 .withValueSerde(Serdes.ByteArray()))
                 .process(() -> new MetadataProcessor(tenantResolver),
                         Named.as("metadata-processor"),
                         MetadataProcessor.METADATA_STORE);
 
+        // GlobalKTable reads from the metadata store's changelog and deserializes as protobuf,
+        // making WfSpec metadata available to DiffuserProcessor on all partitions.
         String changelogTopic = applicationId + "-" + MetadataProcessor.METADATA_STORE + "-changelog";
         Serde<MetadataOutputTopicRecord> metadataSerde = ProtobufSerdes.metadataOutputTopicRecord();
         builder.globalTable(changelogTopic,
@@ -64,7 +81,9 @@ public class TopologyFactory {
                         .withKeySerde(Serdes.String())
                         .withValueSerde(metadataSerde));
 
-        // --- Execution diffusion ---
+        // --- Execution path ---
+        // Process execution records (WfRun, Variable, UserTaskRun, ExternalEvent, WorkflowEvent),
+        // transform to JSON, and route to dynamically resolved streamlet topics.
         builder.addStateStore(Stores.keyValueStoreBuilder(
                 Stores.persistentKeyValueStore(DiffuserProcessor.WFRUN_STORE),
                 Serdes.String(), Serdes.ByteArray()));

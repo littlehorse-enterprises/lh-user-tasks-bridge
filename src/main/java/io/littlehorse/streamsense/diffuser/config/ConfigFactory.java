@@ -11,6 +11,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Enumeration;
 
+/**
+ * Builds the SmallRye configuration from multiple sources in priority order:
+ * <ol>
+ *   <li>{@code LH_}-prefixed environment variables (ordinal 400, via {@link LhEnvConfigSource})</li>
+ *   <li>External YAML files specified in {@code LH_CONFIG_FILES} env var (ordinal 300)</li>
+ *   <li>Classpath {@code application.yml} (ordinal 260)</li>
+ *   <li>Classpath {@code application.yaml} (ordinal 250)</li>
+ *   <li>Default MicroProfile Config sources (system properties, env vars)</li>
+ * </ol>
+ */
 public class ConfigFactory {
 
     public static SmallRyeConfig build() {

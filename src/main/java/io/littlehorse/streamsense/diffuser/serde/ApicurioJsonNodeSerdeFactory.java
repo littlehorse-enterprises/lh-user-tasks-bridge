@@ -8,8 +8,17 @@ import org.apache.kafka.common.serialization.Serdes;
 
 import java.util.Map;
 
+/**
+ * Creates a {@link Serde} for {@link JsonNode} backed by Apicurio Registry JSON Schema
+ * serializer/deserializer. Uses {@code TopicIdStrategy} so the schema artifact is resolved
+ * as {@code <topic>-value} from the registry.
+ */
 public class ApicurioJsonNodeSerdeFactory {
 
+    /**
+     * @param registryUrl the Apicurio Registry API base URL
+     *                    (e.g. {@code http://localhost:8081/apis/registry/v2})
+     */
     public static Serde<JsonNode> create(String registryUrl) {
         JsonSchemaKafkaSerializer<JsonNode> serializer = new JsonSchemaKafkaSerializer<>();
         JsonSchemaKafkaDeserializer<JsonNode> deserializer = new JsonSchemaKafkaDeserializer<>();

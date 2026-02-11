@@ -9,6 +9,11 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
 
+/**
+ * HTTP handler that exposes Kafka Streams health status as JSON.
+ * Supports liveness, readiness, and combined probe types — returns 200 when healthy,
+ * 503 when degraded.
+ */
 public class HealthHandler implements HttpHandler {
 
     private static final Set<KafkaStreams.State> READY_STATES = Set.of(
