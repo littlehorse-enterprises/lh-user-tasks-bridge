@@ -32,7 +32,7 @@ class TopologyTest {
     @BeforeEach
     void setUp() {
         AppConfig appConfig = buildTestConfig();
-        Topology topology = TopologyFactory.build(appConfig, "test");
+        Topology topology = TopologyFactory.build(appConfig, "test", null);
 
         Properties props = new Properties();
         props.put(StreamsConfig.APPLICATION_ID_CONFIG, "test");
@@ -299,7 +299,7 @@ class TopologyTest {
     void multiTenantIsolation() throws Exception {
         // Configure a second tenant
         AppConfig appConfig = buildMultiTenantConfig();
-        Topology topology = TopologyFactory.build(appConfig, "test-multi");
+        Topology topology = TopologyFactory.build(appConfig, "test-multi", null);
 
         Properties props = new Properties();
         props.put(StreamsConfig.APPLICATION_ID_CONFIG, "test-multi");

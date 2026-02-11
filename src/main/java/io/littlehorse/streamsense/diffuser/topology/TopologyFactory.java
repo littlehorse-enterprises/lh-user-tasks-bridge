@@ -1,6 +1,7 @@
 package io.littlehorse.streamsense.diffuser.topology;
 
 import io.littlehorse.streamsense.diffuser.config.AppConfig;
+import io.littlehorse.streamsense.diffuser.serde.ApicurioJsonNodeSerdeFactory;
 import io.littlehorse.streamsense.diffuser.serde.ProtobufSerdes;
 import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
@@ -25,7 +26,10 @@ import com.fasterxml.jackson.databind.JsonNode;
  */
 public class TopologyFactory {
 
-    public static Topology build(AppConfig appConfig, String applicationId) {
+    /**
+     * @param schemaRegistryUrl Apicurio registry URL; when {@code null}, falls back to plain JSON serialization.
+     */
+    public static Topology build(AppConfig appConfig, String applicationId, String schemaRegistryUrl) {
         StreamsBuilder builder = new StreamsBuilder();
 
         TenantResolver tenantResolver = new TenantResolver(appConfig.lhClusterId());
@@ -59,20 +63,22 @@ public class TopologyFactory {
                 Stores.persistentKeyValueStore(DiffuserProcessor.WFRUN_STORE),
                 Serdes.String(), Serdes.ByteArray()));
 
+        Serde<JsonNode> valueSerde = schemaRegistryUrl != null
+                ? ApicurioJsonNodeSerdeFactory.create(schemaRegistryUrl)
+                : Serdes.serdeFrom(new JsonNodeSerializer(), (topic, data) -> {
+                    throw new UnsupportedOperationException("Deserialization not supported");
+                });
+
         builder.stream(patternBuilder.executionTopicPattern(),
                         Consumed.with(Serdes.String(), ProtobufSerdes.outputTopicRecord()))
                 .process(() -> new DiffuserProcessor(tenantResolver, recordRouter),
                         Named.as("diffuser-processor"),
                         DiffuserProcessor.WFRUN_STORE)
                 .to((key, value, ctx) -> StreamletTopicExtractor.extract(ctx),
-                        Produced.with(Serdes.String(), jsonNodeSerde()));
+                        Produced.<String, JsonNode>as("streamlet-sink")
+                                .withKeySerde(Serdes.String())
+                                .withValueSerde(valueSerde));
 
         return builder.build();
-    }
-
-    private static Serde<JsonNode> jsonNodeSerde() {
-        return Serdes.serdeFrom(new JsonNodeSerializer(), (topic, data) -> {
-            throw new UnsupportedOperationException("Deserialization not supported");
-        });
     }
 }

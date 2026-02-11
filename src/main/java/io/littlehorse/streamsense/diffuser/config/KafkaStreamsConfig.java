@@ -34,6 +34,10 @@ public class KafkaStreamsConfig {
         return properties.getProperty("bootstrap.servers", "localhost:9092");
     }
 
+    public String schemaRegistryUrl() {
+        return properties.getProperty("schema.registry.url");
+    }
+
     public Properties asProperties() {
         return new Properties(properties);
     }
