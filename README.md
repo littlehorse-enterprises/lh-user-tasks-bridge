@@ -33,17 +33,22 @@ Integration tests use Testcontainers and require Docker:
 
 ### Run Locally
 
-Start Kafka and Apicurio:
-
-```bash
-docker compose up -d
-```
-
-Run the application:
-
 ```bash
 ./gradlew run
 ```
+
+### HTTP Endpoints
+
+The application exposes health and metrics endpoints on port **8080** (configurable via `app.server.port`).
+
+| Endpoint | Description | Response |
+|---|---|---|
+| `GET /health` | Combined liveness + readiness probe | `{"status":"UP","kafkaStreams":{"state":"RUNNING"}}` |
+| `GET /health/liveness` | Liveness probe (Kafka Streams not in ERROR/NOT_RUNNING) | Same format |
+| `GET /health/readiness` | Readiness probe (Kafka Streams RUNNING or REBALANCING) | Same format |
+| `GET /metrics` | Prometheus metrics scrape endpoint | OpenMetrics text format |
+
+Health endpoints return **200** when healthy, **503** when unhealthy.
 
 ### Configuration
 
