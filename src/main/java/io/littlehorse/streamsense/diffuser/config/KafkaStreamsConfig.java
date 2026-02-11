@@ -39,7 +39,9 @@ public class KafkaStreamsConfig {
     }
 
     public Properties asProperties() {
-        return new Properties(properties);
+        Properties copy = new Properties();
+        copy.putAll(properties);
+        return copy;
     }
 
     /** SmallRye YAML quotes dotted keys (e.g. {@code "application.id"}) — strip the quotes. */
