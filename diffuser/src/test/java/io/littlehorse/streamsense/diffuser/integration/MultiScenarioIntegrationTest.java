@@ -136,7 +136,7 @@ class MultiScenarioIntegrationTest {
     }
 
     private KafkaStreams startStreams(AppConfig config, String applicationId) throws Exception {
-        Topology topology = TopologyFactory.build(config, applicationId, null);
+        Topology topology = TopologyFactory.build(config, applicationId, Map.of());
         log.info("Topology built:\n{}", topology.describe());
 
         Properties props = new Properties();

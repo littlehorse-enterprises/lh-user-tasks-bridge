@@ -158,7 +158,8 @@ class ApicurioSchemaRegistryIntegrationTest {
 
     private List<JsonNode> consumeAllWithApicurioSerde(String topic, int minCount, Duration timeout) {
         List<JsonNode> results = new ArrayList<>();
-        Serde<JsonNode> serde = ApicurioJsonNodeSerdeFactory.create(apicurioRegistryUrl());
+        Serde<JsonNode> serde = ApicurioJsonNodeSerdeFactory.create(
+                Map.of("apicurio.registry.url", apicurioRegistryUrl()));
         Deserializer<JsonNode> deserializer = serde.deserializer();
 
         try (KafkaConsumer<String, byte[]> consumer = new KafkaConsumer<>(Map.of(
@@ -293,7 +294,8 @@ class ApicurioSchemaRegistryIntegrationTest {
     }
 
     private KafkaStreams startStreams(AppConfig config, String applicationId) throws Exception {
-        Topology topology = TopologyFactory.build(config, applicationId, apicurioRegistryUrl());
+        Topology topology = TopologyFactory.build(config, applicationId,
+                Map.of("apicurio.registry.url", apicurioRegistryUrl()));
         log.info("Topology built:\n{}", topology.describe());
 
         Properties props = new Properties();

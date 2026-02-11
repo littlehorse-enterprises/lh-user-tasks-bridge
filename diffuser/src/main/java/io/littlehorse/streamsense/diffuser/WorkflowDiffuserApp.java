@@ -4,6 +4,7 @@ import com.sun.net.httpserver.HttpServer;
 import io.littlehorse.streamsense.diffuser.config.AppConfig;
 import io.littlehorse.streamsense.diffuser.config.ConfigFactory;
 import io.littlehorse.streamsense.diffuser.config.KafkaStreamsConfig;
+import io.littlehorse.streamsense.diffuser.config.PrefixConfig;
 import io.littlehorse.streamsense.diffuser.server.HttpServerFactory;
 import io.littlehorse.streamsense.diffuser.topology.LogAndContinueDeserializationExceptionHandler;
 import io.littlehorse.streamsense.diffuser.topology.LogAndContinueProductionExceptionHandler;
@@ -24,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -55,11 +57,18 @@ public class WorkflowDiffuserApp {
         log.info("Starting Workflow Diffuser with cluster={}, tenants={}",
                 appConfig.lhClusterId(), appConfig.tenants().size());
 
-        // 3. Build Kafka Streams topology
-        Topology topology = TopologyFactory.build(appConfig, ksConfig.applicationId(), ksConfig.schemaRegistryUrl());
+        // 3. Build Apicurio config from apicurio.registry.* properties, with fallback
+        PrefixConfig apicurioPrefixConfig = new PrefixConfig(config, "apicurio.registry.");
+        Map<String, Object> apicurioConfig = apicurioPrefixConfig.asPrefixedMap("apicurio.registry.");
+        if (!apicurioConfig.containsKey("apicurio.registry.url") && ksConfig.schemaRegistryUrl() != null) {
+            apicurioConfig.put("apicurio.registry.url", ksConfig.schemaRegistryUrl());
+        }
+
+        // 4. Build Kafka Streams topology
+        Topology topology = TopologyFactory.build(appConfig, ksConfig.applicationId(), apicurioConfig);
         log.info("Topology built:\n{}", topology.describe());
 
-        // 4. Create KafkaStreams instance
+        // 5. Create KafkaStreams instance
         Properties streamsProps = ksConfig.asProperties();
         streamsProps.put(StreamsConfig.DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG,
                 LogAndContinueDeserializationExceptionHandler.class);
@@ -67,19 +76,19 @@ public class WorkflowDiffuserApp {
                 LogAndContinueProductionExceptionHandler.class);
         KafkaStreams streams = new KafkaStreams(topology, streamsProps);
 
-        // 5. Set up Micrometer metrics
+        // 6. Set up Micrometer metrics
         PrometheusMeterRegistry registry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
         new KafkaStreamsMetrics(streams).bindTo(registry);
         new JvmMemoryMetrics().bindTo(registry);
         new JvmGcMetrics().bindTo(registry);
         new JvmThreadMetrics().bindTo(registry);
 
-        // 6. Start HTTP server (metrics + health)
+        // 7. Start HTTP server (metrics + health)
         HttpServer server = HttpServerFactory.create(streams, registry, appConfig);
         server.start();
         log.info("HTTP server started on port {}", appConfig.server().port());
 
-        // 7. Register shutdown hook
+        // 8. Register shutdown hook
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             log.info("Shutting down Workflow Diffuser...");
             streams.close(Duration.ofSeconds(30));
@@ -87,7 +96,7 @@ public class WorkflowDiffuserApp {
             log.info("Workflow Diffuser stopped.");
         }));
 
-        // 8. Start Kafka Streams
+        // 9. Start Kafka Streams
         streams.start();
         log.info("Kafka Streams started.");
     }

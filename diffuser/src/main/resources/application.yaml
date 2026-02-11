@@ -22,6 +22,14 @@ kafka:
     ensure.explicit.internal.resource.naming: true
     num.stream.threads: 2
 
+#apicurio:
+#  registry:
+#    url: http://schema-registry:8081/apis/registry/v3
+#    auth:
+#      service.token.endpoint: https://auth.example.com/token
+#      client.id: my-client
+#      client.secret: my-secret
+
 #logging:
 #  level:
 #    io.littlehorse.streamsense: DEBUG
