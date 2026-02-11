@@ -82,6 +82,13 @@ These can also be set via environment variables:
 export LH_LOGGING_LEVEL_IO_LITTLEHORSE_STREAMSENSE=DEBUG
 ```
 
+## Examples
+
+The [`examples/`](examples/) directory provides a complete local development environment with
+Docker Compose (LH Server, Kafka, Apicurio Registry, dashboards) and a set of
+[LH workflow examples](examples/lh-examples/) that register WfSpecs, TaskDefs, and other
+metadata across two tenants. See the [examples README](examples/README.md) for setup instructions.
+
 ## Repo Structure
 
 ```
@@ -101,6 +108,11 @@ src/test/java/io/littlehorse/streamsense/diffuser/
 
 src/test/resources/
 └── logback-test.xml                   # DEBUG-level logging for tests
+
+examples/
+├── docker-compose.yaml                # Local dev environment (LH Server, Kafka, Apicurio)
+├── lh-examples/                       # Gradle subproject: LH workflow examples
+└── schemas/                           # JSON Schema files for Apicurio registration
 
 docs/
   requirements/   # Product requirements
