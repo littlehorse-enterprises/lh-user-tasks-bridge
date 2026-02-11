@@ -26,7 +26,7 @@ public class ApicurioJsonNodeSerdeFactory {
 
     /**
      * @param registryUrl the Apicurio Registry API base URL
-     *                    (e.g. {@code http://localhost:8081/apis/registry/v2})
+     *                    (e.g. {@code http://localhost:8085/apis/registry/v3})
      */
     public static Serde<JsonNode> create(String registryUrl) {
         JsonSchemaKafkaSerializer<JsonNode> serializer = new JsonSchemaKafkaSerializer<>();
