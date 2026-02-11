@@ -4,6 +4,7 @@ import com.sun.net.httpserver.HttpServer;
 import io.littlehorse.streamsense.diffuser.config.AppConfig;
 import io.littlehorse.streamsense.diffuser.config.ConfigFactory;
 import io.littlehorse.streamsense.diffuser.config.KafkaStreamsConfig;
+import io.littlehorse.streamsense.diffuser.config.PrefixConfig;
 import io.littlehorse.streamsense.diffuser.server.HttpServerFactory;
 import io.littlehorse.streamsense.diffuser.topology.LogAndContinueDeserializationExceptionHandler;
 import io.littlehorse.streamsense.diffuser.topology.LogAndContinueProductionExceptionHandler;
@@ -18,10 +19,13 @@ import io.smallrye.config.SmallRyeConfig;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsConfig;
 import org.apache.kafka.streams.Topology;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.LoggerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
+import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -40,14 +44,31 @@ public class WorkflowDiffuserApp {
         AppConfig appConfig = config.getConfigMapping(AppConfig.class);
         KafkaStreamsConfig ksConfig = new KafkaStreamsConfig(config);
 
+        // 2. Apply log-level overrides from config (logging.level.{package}={LEVEL})
+        LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
+        for (String name : config.getPropertyNames()) {
+            if (name.startsWith("logging.level.")) {
+                String loggerName = name.substring("logging.level.".length());
+                String levelStr = config.getValue(name, String.class);
+                loggerContext.getLogger(loggerName).setLevel(Level.toLevel(levelStr));
+            }
+        }
+
         log.info("Starting Workflow Diffuser with cluster={}, tenants={}",
                 appConfig.lhClusterId(), appConfig.tenants().size());
 
-        // 2. Build Kafka Streams topology
-        Topology topology = TopologyFactory.build(appConfig, ksConfig.applicationId(), ksConfig.schemaRegistryUrl());
+        // 3. Build Apicurio config from apicurio.registry.* properties, with fallback
+        PrefixConfig apicurioPrefixConfig = new PrefixConfig(config, "apicurio.registry.");
+        Map<String, Object> apicurioConfig = apicurioPrefixConfig.asPrefixedMap("apicurio.registry.");
+        if (!apicurioConfig.containsKey("apicurio.registry.url") && ksConfig.schemaRegistryUrl() != null) {
+            apicurioConfig.put("apicurio.registry.url", ksConfig.schemaRegistryUrl());
+        }
+
+        // 4. Build Kafka Streams topology
+        Topology topology = TopologyFactory.build(appConfig, ksConfig.applicationId(), apicurioConfig);
         log.info("Topology built:\n{}", topology.describe());
 
-        // 3. Create KafkaStreams instance
+        // 5. Create KafkaStreams instance
         Properties streamsProps = ksConfig.asProperties();
         streamsProps.put(StreamsConfig.DEFAULT_DESERIALIZATION_EXCEPTION_HANDLER_CLASS_CONFIG,
                 LogAndContinueDeserializationExceptionHandler.class);
@@ -55,19 +76,19 @@ public class WorkflowDiffuserApp {
                 LogAndContinueProductionExceptionHandler.class);
         KafkaStreams streams = new KafkaStreams(topology, streamsProps);
 
-        // 4. Setup Micrometer metrics
+        // 6. Set up Micrometer metrics
         PrometheusMeterRegistry registry = new PrometheusMeterRegistry(PrometheusConfig.DEFAULT);
         new KafkaStreamsMetrics(streams).bindTo(registry);
         new JvmMemoryMetrics().bindTo(registry);
         new JvmGcMetrics().bindTo(registry);
         new JvmThreadMetrics().bindTo(registry);
 
-        // 5. Start HTTP server (metrics + health)
+        // 7. Start HTTP server (metrics + health)
         HttpServer server = HttpServerFactory.create(streams, registry, appConfig);
         server.start();
         log.info("HTTP server started on port {}", appConfig.server().port());
 
-        // 6. Register shutdown hook
+        // 8. Register shutdown hook
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             log.info("Shutting down Workflow Diffuser...");
             streams.close(Duration.ofSeconds(30));
@@ -75,7 +96,7 @@ public class WorkflowDiffuserApp {
             log.info("Workflow Diffuser stopped.");
         }));
 
-        // 7. Start Kafka Streams
+        // 9. Start Kafka Streams
         streams.start();
         log.info("Kafka Streams started.");
     }
