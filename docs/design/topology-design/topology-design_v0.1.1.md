@@ -1,3 +1,5 @@
+> **Superseded** — This document has been superseded by [topology-design_v0.3.0.md](topology-design_v0.3.0.md).
+
 # LittleHorse Workflow Diffuser — Kafka Streams Topology Design
 
 **Version:** 0.1.0

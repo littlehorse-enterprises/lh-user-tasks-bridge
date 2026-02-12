@@ -519,6 +519,6 @@ The topology uses a two-sub-topology design:
 - **Sub-topology 0 — Metadata Processor**: Ingests metadata records, resolves tenants, and populates a `GlobalKTable` accessible to the diffuser processor.
 - **Sub-topology 1 — Diffuser Processor**: Consumes execution records, enriches them with metadata from the global store, and routes output to dynamic tenant-scoped sink topics via `TopicNameExtractor`.
 
-Processing is stateless for `ExternalEvent` and `WorkflowEvent` (passthrough transform-and-forward), and stateful for `WfRun` (aggregates status + variable updates) and `UserTaskRun` (entity create/patch via local state stores).
+Processing is stateless for `ExternalEvent`, `WorkflowEvent`, and `UserTaskRun` (passthrough transform-and-forward), and stateful for `WfRun` and `Variable` (aggregated into `wfrun-store` with public variable filtering via metadata lookup).
 
-For the full topology design — including state store schemas, changelog topics, and open items — see [topology-design.md](topology-design/topology-design_v0.1.1.md).
+For the full topology design — including state store schemas, dynamic topic routing, and open items — see [topology-design.md](topology-design/topology-design_v0.3.0.md).
