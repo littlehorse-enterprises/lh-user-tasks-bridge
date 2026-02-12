@@ -17,13 +17,13 @@ repositories {
 }
 
 val kafkaVersion = "4.1.1"
-val smallryeConfigVersion = "3.9.1"
-val micrometerVersion = "1.14.4"
-val jacksonVersion = "2.17.2"
+val smallryeConfigVersion = "3.16.0"
+val micrometerVersion = "1.16.3"
+val jacksonVersion = "2.21.0"
 val apicurioVersion = "3.1.7"
 val lhClientVersion = "0.16.0"
-val logbackVersion = "1.5.16"
-val junitVersion = "5.11.4"
+val logbackVersion = "1.5.29"
+val junitVersion = "5.14.2"
 
 dependencies {
     // Kafka Streams
@@ -51,9 +51,9 @@ dependencies {
     // Test
     testImplementation("org.junit.jupiter:junit-jupiter:$junitVersion")
     testImplementation("org.apache.kafka:kafka-streams-test-utils:$kafkaVersion")
-    testImplementation("org.testcontainers:testcontainers:1.20.4")
-    testImplementation("org.testcontainers:junit-jupiter:1.20.4")
-    testImplementation("org.testcontainers:kafka:1.20.4")
+    testImplementation("org.testcontainers:testcontainers:1.21.4")
+    testImplementation("org.testcontainers:junit-jupiter:1.21.4")
+    testImplementation("org.testcontainers:kafka:1.21.4")
     testImplementation("org.apache.kafka:kafka-clients:$kafkaVersion")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
