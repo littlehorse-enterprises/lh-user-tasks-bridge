@@ -376,7 +376,7 @@ Examples for `tenant1` with the config above:
 | ExternalEvent  | payment-confirmed    | `cluster1_tenant1_streamlet_externalevent-payment-confirmed` |
 | WorkflowEvent  | order-shipped        | `cluster1_tenant1_streamlet_workflowevent-order-shipped`     |
 
-Output topics are resolved at runtime using a `TopicNameExtractor` with Apicurio JSON Schema SerDes. See [details/dynamic-topic-routing.md](details/dynamic-topic-routing.md) for the routing mechanism.
+Output topics are resolved at runtime using a `TopicNameExtractor` with Apicurio JSON Schema SerDes. See [details/dynamic-topic-routing.md](details/dynamic-topic-routing.md) for the routing mechanism. See [details/wfrun-store-eviction.md](details/wfrun-store-eviction.md) for the WfRun store eviction design.
 
 ### Streamlet Output Schemas
 
