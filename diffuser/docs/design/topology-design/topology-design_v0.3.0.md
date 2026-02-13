@@ -217,23 +217,20 @@ It extracts public variable names from `frozenVariables` and all `ThreadSpec.var
 | -------------- | ---------------------- | ---------------------- | ----- | ----------- |
 | `wfrun-store`  | `{tenant}/{wfRunId}`   | JSON bytes (ObjectNode)| Local | Persistent  |
 
-### WfRun Store Eviction (Planned)
+### WfRun Store Eviction
 
-> **Status:** Planned — not yet implemented.
+A wall-clock punctuator periodically evicts terminal WfRun entries from the `wfrun-store`. A secondary `wfrun-eviction-store` with timestamp-prefixed keys enables efficient range scans. Eviction-eligible statuses are `COMPLETED`, `ERROR`, `EXCEPTION`, and `UNRECOGNIZED`. The retention period is resolved from the WfSpec's `WorkflowRetentionPolicy` or a configurable fallback (default: 30 days).
 
-The `wfrun-store` accumulates state for every WfRun processed. Without eviction, the store grows unboundedly. The planned eviction mechanism:
-
-- **Wall-clock punctuator** scheduled at a configurable interval.
-- **Evicts terminal WfRun entries** — those with status `COMPLETED`, `HALTED`, or `ERROR` — that are older than a configurable retention period (based on `updatedAt`).
-- **First implementation:** Silent removal from the store. No tombstone is emitted to the output topic.
+For the full eviction design — including store schema, scheduling/cancellation logic, punctuator algorithm, and edge cases — see [details/wfrun-store-eviction.md](../details/wfrun-store-eviction.md).
 
 ## State Stores
 
-| Store                    | Key                    | Value                            | Scope  | Persistence |
-| ------------------------ | ---------------------- | -------------------------------- | ------ | ----------- |
-| `global-metadata`        | `{tenant}/{metaId}`    | raw protobuf bytes               | Local (processor) | Persistent  |
-| `global-metadata-store`  | `{tenant}/{metaId}`    | `MetadataOutputTopicRecord`      | Global (GKT) | Materialized from changelog |
-| `wfrun-store`            | `{tenant}/{wfRunId}`   | JSON bytes (ObjectNode)          | Local  | Persistent  |
+| Store                    | Key                                              | Value                            | Scope  | Persistence |
+| ------------------------ | ------------------------------------------------ | -------------------------------- | ------ | ----------- |
+| `global-metadata`        | `{tenant}/{metaId}`                              | raw protobuf bytes               | Local (processor) | Persistent  |
+| `global-metadata-store`  | `{tenant}/{metaId}`                              | `MetadataOutputTopicRecord`      | Global (GKT) | Materialized from changelog |
+| `wfrun-store`            | `{tenant}/{wfRunId}`                             | JSON bytes (ObjectNode)          | Local  | Persistent  |
+| `wfrun-eviction-store`   | `{epoch-millis-016d}/{tenant}/{wfRunId}`         | UTF-8 bytes of wfrun-store key   | Local  | Persistent  |
 
 ## Design Decisions
 
@@ -267,6 +264,6 @@ Both processors resolve the tenant identifier from the input topic name (via `Te
 
 ## Open Items
 
-- [ ] Tombstone emission on eviction — emit tombstone to output topic or silent store removal only?
-- [ ] Eviction retention period default value
+- [ ] Tombstone emission on eviction — emit tombstone to output topic or silent store removal only? (see [eviction design](../details/wfrun-store-eviction.md#future-work))
+- [x] ~~Eviction retention period default value~~ — resolved: WfSpec `WorkflowRetentionPolicy` with 30-day fallback (see [eviction design](../details/wfrun-store-eviction.md#retention-resolution))
 - [ ] Partition count strategy for output topics (`p > 1` — exact count TBD)
