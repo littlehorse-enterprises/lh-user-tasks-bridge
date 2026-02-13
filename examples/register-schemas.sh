@@ -43,17 +43,25 @@ for schema_file in "$SCHEMAS_DIR"/*.json; do
 EOF
 )
 
-  http_code=$(curl -s -o /dev/null -w "%{http_code}" \
+  if ! response=$(curl -s -w "\n%{http_code}" \
     -X POST \
     -H "Content-Type: application/json" \
     -d "$body" \
-    "$REGISTRY_URL/groups/default/artifacts?ifExists=FIND_OR_CREATE_VERSION")
+    "$REGISTRY_URL/groups/default/artifacts?ifExists=FIND_OR_CREATE_VERSION"); then
+    echo "  FAIL $artifact_id (connection error — is the registry running at $REGISTRY_URL?)"
+    FAILURE=$((FAILURE + 1))
+    continue
+  fi
+
+  http_code=$(echo "$response" | tail -1)
+  response_body=$(echo "$response" | sed '$d')
 
   if [ "$http_code" -ge 200 ] && [ "$http_code" -lt 300 ]; then
     echo "  OK  $artifact_id (HTTP $http_code)"
     SUCCESS=$((SUCCESS + 1))
   else
     echo "  FAIL $artifact_id (HTTP $http_code)"
+    echo "       $response_body"
     FAILURE=$((FAILURE + 1))
   fi
 done
