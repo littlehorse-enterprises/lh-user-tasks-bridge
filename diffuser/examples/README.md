@@ -59,9 +59,6 @@ is configured in `examples/application.yaml` via the `logging.level` section.
 Log levels can also be set via environment variables, e.g.:
 `LH_LOGGING_LEVEL_IO_LITTLEHORSE_STREAMSENSE=DEBUG`
 
-> **Note:** On the first run, the Kafka Streams changelog topic is created but not yet available.
-> If the diffuser fails to start, stop it and run the command again — it will succeed on the second try.
-
 ### 6. Run a workflow
 
 ```bash

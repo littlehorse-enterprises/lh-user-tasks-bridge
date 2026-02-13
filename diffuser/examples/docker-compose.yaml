@@ -102,6 +102,22 @@ services:
     networks:
       - wfd-network
 
+  lh-create-topics:
+    container_name: lh-create-topics
+    image: confluentinc/cp-kafka:7.9.0
+    entrypoint: /bin/kafka-topics
+    command:
+      - --bootstrap-server=lh-kafka:29092
+      - --create
+      - --topic=cluster1-wf-diffuser-global-metadata-changelog
+      - --partitions=1
+      - --if-not-exists
+    depends_on:
+      lh-kafka:
+        condition: service_healthy
+    networks:
+      - wfd-network
+
   lh-kafka-ui:
     container_name: lh-kafka-ui
     hostname: lh-kafka-ui
