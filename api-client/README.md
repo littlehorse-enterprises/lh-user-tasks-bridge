@@ -10,7 +10,7 @@ npm install @littlehorse-enterprises/user-tasks-bridge-api-client
 
 ## Documentation
 
-Visit our [official documentation](https://littlehorse.io/docs/user-tasks-bridge/api-client).
+Visit our [official documentation](https://littlehorse.io/docs/integrations/user-tasks-bridge/developer-guide/using-api-client/reference).
 
 ## License
 
