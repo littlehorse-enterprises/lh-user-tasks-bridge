@@ -300,6 +300,31 @@ On rebalance, Kafka Streams restores both `wfrun-store` and `wfrun-eviction-stor
 
 If a non-terminal status update arrives after a terminal one (e.g., due to reprocessing), `cancelEviction()` removes the pending eviction. The WfRun remains in the store until a new terminal status triggers re-scheduling. This is the desired behavior — eviction should only happen for WfRuns that are durably in a terminal state.
 
+## Alternative: LH Server Tombstone Events
+
+> **Important:** Before implementing the full eviction mechanism described in this document, investigate whether the LH Server already emits (or could be made to emit) `DELETED` or `EVICTED` events on the output topic when it evicts a WfRun.
+
+If the LH Server publishes a tombstone-style event when a WfRun is evicted from its internal stores, the diffuser could simply react to that event and delete the corresponding `wfrun-store` entry. This would **eliminate the need for**:
+
+- The `wfrun-eviction-store` (secondary store with timestamp-keyed entries)
+- The wall-clock punctuator and its sweep logic
+- The `_evictionKey` bookkeeping field in wfrun-store state
+- The `WorkflowRetentionPolicy` / retention resolution logic in the diffuser
+- All edge-case handling around cancellation, re-termination, and out-of-order updates
+
+The eviction flow would reduce to:
+
+```
+Output Topic: WfRun DELETED/EVICTED event
+  → WfRunProcessor receives event
+  → Deletes entry from wfrun-store
+  → Done
+```
+
+This is dramatically simpler and keeps eviction policy ownership where it belongs — in the LH Server, which already manages `WorkflowRetentionPolicy`.
+
+**Recommended next step:** Check the LH Server's output topic behavior (or coordinate with the LH Server team) to confirm whether such events are emitted. If they are, this entire eviction design can be replaced with a handful of lines in the processor. If they are not, consider whether adding this capability to the LH Server is feasible before building the full eviction mechanism here.
+
 ## Key Design Decisions
 
 ### Secondary Eviction Store vs. Full Store Iteration
