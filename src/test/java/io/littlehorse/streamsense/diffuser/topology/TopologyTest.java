@@ -10,6 +10,7 @@ import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.streams.*;
+import org.apache.kafka.streams.state.KeyValueStore;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -448,6 +449,297 @@ class TopologyTest {
         }
     }
 
+    // --- Eviction tests ---
+
+    @Test
+    void evictionEligibleStatuses() {
+        assertTrue(DiffuserProcessor.isEvictionEligible(LHStatus.COMPLETED));
+        assertTrue(DiffuserProcessor.isEvictionEligible(LHStatus.ERROR));
+        assertTrue(DiffuserProcessor.isEvictionEligible(LHStatus.EXCEPTION));
+        assertTrue(DiffuserProcessor.isEvictionEligible(LHStatus.UNRECOGNIZED));
+
+        assertFalse(DiffuserProcessor.isEvictionEligible(LHStatus.STARTING));
+        assertFalse(DiffuserProcessor.isEvictionEligible(LHStatus.RUNNING));
+        assertFalse(DiffuserProcessor.isEvictionEligible(LHStatus.HALTING));
+        assertFalse(DiffuserProcessor.isEvictionEligible(LHStatus.HALTED));
+    }
+
+    @Test
+    void stripInternalFieldsRemovesEvictionKey() {
+        ObjectMapper mapper = new ObjectMapper();
+        var state = mapper.createObjectNode();
+        state.put("id", "run1");
+        state.put("status", "COMPLETED");
+        state.put("_evictionKey", "0001770710673000/default/run1");
+
+        var stripped = DiffuserProcessor.stripInternalFields(state);
+
+        assertFalse(stripped.has("_evictionKey"), "_evictionKey should be removed");
+        assertEquals("run1", stripped.get("id").asText(), "Other fields preserved");
+        assertTrue(state.has("_evictionKey"), "Original should not be modified");
+    }
+
+    @Test
+    void terminalWfRunSchedulesEviction() throws Exception {
+        String wfRunId = "evict-test-run-1";
+        Timestamp ts = ts(1770710673, 0);
+
+        // Pipe a WfRun in COMPLETED status
+        pipeExecution(wfRunId, OutputTopicRecord.newBuilder()
+                .setTimestamp(ts)
+                .setWfRun(WfRun.newBuilder()
+                        .setId(WfRunId.newBuilder().setId(wfRunId))
+                        .setWfSpecId(WfSpecId.newBuilder().setName("output-topic").setMajorVersion(0).setRevision(0))
+                        .setStatus(LHStatus.COMPLETED)
+                        .setStartTime(ts)
+                        .setEndTime(ts))
+                .build());
+
+        // Verify the output does NOT contain _evictionKey
+        String outputTopic = "cluster1_default_streamlet_workflow-output-topic";
+        TestOutputTopic<String, byte[]> output = testDriver.createOutputTopic(
+                outputTopic, new StringDeserializer(), Serdes.ByteArray().deserializer());
+
+        List<KeyValue<String, byte[]>> records = output.readKeyValuesToList();
+        assertEquals(1, records.size());
+        JsonNode result = MAPPER.readTree(records.get(0).value);
+        assertFalse(result.has("_evictionKey"), "_evictionKey must not leak to output");
+        assertEquals("COMPLETED", result.get("status").asText());
+
+        // Verify the eviction store has an entry
+        KeyValueStore<String, byte[]> evictionStore = testDriver.getKeyValueStore(DiffuserProcessor.WFRUN_EVICTION_STORE);
+        assertNotNull(evictionStore);
+
+        // The wfrun-store should still have the entry with _evictionKey internally
+        KeyValueStore<String, byte[]> wfrunStore = testDriver.getKeyValueStore(DiffuserProcessor.WFRUN_STORE);
+        byte[] stateBytes = wfrunStore.get("default/" + wfRunId);
+        assertNotNull(stateBytes, "WfRun state should exist in store");
+        JsonNode internalState = MAPPER.readTree(stateBytes);
+        assertTrue(internalState.has("_evictionKey"), "Internal state should have _evictionKey");
+    }
+
+    @Test
+    void nonTerminalWfRunCancelsEviction() throws Exception {
+        String wfRunId = "evict-cancel-run-1";
+        Timestamp ts1 = ts(1770710673, 0);
+        Timestamp ts2 = ts(1770710733, 0);
+
+        WfSpecId wfSpecId = WfSpecId.newBuilder().setName("output-topic").setMajorVersion(0).setRevision(0).build();
+
+        // First: COMPLETED (schedules eviction)
+        pipeExecution(wfRunId, OutputTopicRecord.newBuilder()
+                .setTimestamp(ts1)
+                .setWfRun(WfRun.newBuilder()
+                        .setId(WfRunId.newBuilder().setId(wfRunId))
+                        .setWfSpecId(wfSpecId)
+                        .setStatus(LHStatus.COMPLETED)
+                        .setStartTime(ts1)
+                        .setEndTime(ts1))
+                .build());
+
+        // Verify eviction is scheduled
+        KeyValueStore<String, byte[]> wfrunStore = testDriver.getKeyValueStore(DiffuserProcessor.WFRUN_STORE);
+        JsonNode state1 = MAPPER.readTree(wfrunStore.get("default/" + wfRunId));
+        assertTrue(state1.has("_evictionKey"));
+
+        // Then: RUNNING (cancels eviction — e.g., rescue)
+        pipeExecution(wfRunId, OutputTopicRecord.newBuilder()
+                .setTimestamp(ts2)
+                .setWfRun(WfRun.newBuilder()
+                        .setId(WfRunId.newBuilder().setId(wfRunId))
+                        .setWfSpecId(wfSpecId)
+                        .setStatus(LHStatus.RUNNING)
+                        .setStartTime(ts1))
+                .build());
+
+        // Verify eviction is cancelled
+        JsonNode state2 = MAPPER.readTree(wfrunStore.get("default/" + wfRunId));
+        assertFalse(state2.has("_evictionKey"), "Eviction should be cancelled when WfRun goes back to RUNNING");
+    }
+
+    @Test
+    void evictionSweepDeletesExpiredEntries() throws Exception {
+        String wfRunId = "evict-sweep-run-1";
+        // Use a very old timestamp so the eviction is immediately past due (with 30-day retention)
+        Timestamp oldTs = ts(1700000000, 0); // ~2023-11-14
+
+        WfSpecId wfSpecId = WfSpecId.newBuilder().setName("output-topic").setMajorVersion(0).setRevision(0).build();
+
+        // Pipe COMPLETED WfRun with old timestamp
+        pipeExecution(wfRunId, OutputTopicRecord.newBuilder()
+                .setTimestamp(oldTs)
+                .setWfRun(WfRun.newBuilder()
+                        .setId(WfRunId.newBuilder().setId(wfRunId))
+                        .setWfSpecId(wfSpecId)
+                        .setStatus(LHStatus.COMPLETED)
+                        .setStartTime(oldTs)
+                        .setEndTime(oldTs))
+                .build());
+
+        // Verify state exists before sweep
+        KeyValueStore<String, byte[]> wfrunStore = testDriver.getKeyValueStore(DiffuserProcessor.WFRUN_STORE);
+        assertNotNull(wfrunStore.get("default/" + wfRunId), "State should exist before sweep");
+
+        // Advance wall clock time to trigger the punctuator (default interval: 1 hour)
+        // The eviction timestamp is oldTs + 30 days = ~2023-12-14, which is well past
+        testDriver.advanceWallClockTime(java.time.Duration.ofHours(2));
+
+        // Verify state was evicted
+        assertNull(wfrunStore.get("default/" + wfRunId), "State should be evicted after sweep");
+
+        // Verify eviction store is also cleaned
+        KeyValueStore<String, byte[]> evictionStore = testDriver.getKeyValueStore(DiffuserProcessor.WFRUN_EVICTION_STORE);
+        try (var iter = evictionStore.all()) {
+            assertFalse(iter.hasNext(), "Eviction store should be empty after sweep");
+        }
+    }
+
+    @Test
+    void variableAfterEvictionIsSkipped() throws Exception {
+        String wfRunId = "evict-var-skip-run-1";
+        Timestamp oldTs = ts(1700000000, 0);
+        Timestamp newTs = ts(1770710673, 0);
+
+        WfSpecId wfSpecId = WfSpecId.newBuilder().setName("output-topic").setMajorVersion(0).setRevision(0).build();
+
+        // Pipe WfSpec metadata
+        pipeOutputTopicWfSpec("output-topic", 0, 0,
+                ThreadVarDef.newBuilder()
+                        .setVarDef(VariableDef.newBuilder().setName("test-var"))
+                        .setAccessLevel(WfRunVariableAccessLevel.PUBLIC_VAR).build());
+
+        // Pipe COMPLETED WfRun with old timestamp
+        pipeExecution(wfRunId, OutputTopicRecord.newBuilder()
+                .setTimestamp(oldTs)
+                .setWfRun(WfRun.newBuilder()
+                        .setId(WfRunId.newBuilder().setId(wfRunId))
+                        .setWfSpecId(wfSpecId)
+                        .setStatus(LHStatus.COMPLETED)
+                        .setStartTime(oldTs)
+                        .setEndTime(oldTs))
+                .build());
+
+        // Advance wall clock to trigger eviction
+        testDriver.advanceWallClockTime(java.time.Duration.ofHours(2));
+
+        // Confirm evicted
+        KeyValueStore<String, byte[]> wfrunStore = testDriver.getKeyValueStore(DiffuserProcessor.WFRUN_STORE);
+        assertNull(wfrunStore.get("default/" + wfRunId), "Should be evicted");
+
+        // Read and drain the output topic so far
+        String outputTopic = "cluster1_default_streamlet_workflow-output-topic";
+        TestOutputTopic<String, byte[]> output = testDriver.createOutputTopic(
+                outputTopic, new StringDeserializer(), Serdes.ByteArray().deserializer());
+        output.readKeyValuesToList(); // drain
+
+        // Now pipe a Variable for the evicted WfRun
+        pipeExecution(wfRunId, OutputTopicRecord.newBuilder()
+                .setTimestamp(newTs)
+                .setVariable(Variable.newBuilder()
+                        .setId(VariableId.newBuilder()
+                                .setWfRunId(WfRunId.newBuilder().setId(wfRunId))
+                                .setName("test-var")
+                                .setThreadRunNumber(0))
+                        .setValue(VariableValue.newBuilder().setStr("late-arrival"))
+                        .setWfSpecId(wfSpecId))
+                .build());
+
+        // Verify no output was emitted for the variable
+        assertTrue(output.isEmpty(), "Variable for evicted WfRun should not produce output");
+
+        // Verify no state was re-created
+        assertNull(wfrunStore.get("default/" + wfRunId), "No state should be recreated for evicted WfRun");
+    }
+
+    @Test
+    void evictionWithWfSpecRetentionPolicy() throws Exception {
+        String wfRunId = "evict-retention-policy-run-1";
+        // Use a timestamp that is 100 seconds ago relative to "now" concept
+        // With a 60-second retention from WfSpec policy, it should be evicted
+        Timestamp ts = ts(1770710673, 0);
+
+        // Pipe WfSpec with a short retention policy (60 seconds)
+        String key = "WF_SPEC/output-topic/00000/00000";
+        MetadataOutputTopicRecord record = MetadataOutputTopicRecord.newBuilder()
+                .setWfSpec(WfSpec.newBuilder()
+                        .setId(WfSpecId.newBuilder().setName("output-topic").setMajorVersion(0).setRevision(0))
+                        .putThreadSpecs("entrypoint", ThreadSpec.newBuilder().build())
+                        .setEntrypointThreadName("entrypoint")
+                        .setRetentionPolicy(WorkflowRetentionPolicy.newBuilder()
+                                .setSecondsAfterWfTermination(60)
+                                .build()))
+                .build();
+        metadataInput.pipeInput(key, record);
+
+        WfSpecId wfSpecId = WfSpecId.newBuilder().setName("output-topic").setMajorVersion(0).setRevision(0).build();
+
+        // Pipe COMPLETED WfRun
+        pipeExecution(wfRunId, OutputTopicRecord.newBuilder()
+                .setTimestamp(ts)
+                .setWfRun(WfRun.newBuilder()
+                        .setId(WfRunId.newBuilder().setId(wfRunId))
+                        .setWfSpecId(wfSpecId)
+                        .setStatus(LHStatus.COMPLETED)
+                        .setStartTime(ts)
+                        .setEndTime(ts))
+                .build());
+
+        // Verify the _evictionKey is based on 60 seconds, not the 30-day fallback
+        KeyValueStore<String, byte[]> wfrunStore = testDriver.getKeyValueStore(DiffuserProcessor.WFRUN_STORE);
+        JsonNode internalState = MAPPER.readTree(wfrunStore.get("default/" + wfRunId));
+        String evictionKey = internalState.get("_evictionKey").asText();
+
+        // evictAtMillis = 1770710673 * 1000 + 60 * 1000 = 1770710733000
+        String expectedPrefix = String.format("%016d", 1770710673000L + 60000L);
+        assertTrue(evictionKey.startsWith(expectedPrefix),
+                "Eviction key should use WfSpec retention policy (60s), got: " + evictionKey);
+    }
+
+    @Test
+    void reTerminationReschedulesEviction() throws Exception {
+        String wfRunId = "evict-reterminate-run-1";
+        Timestamp ts1 = ts(1770710673, 0);
+        Timestamp ts2 = ts(1770710733, 0);
+
+        WfSpecId wfSpecId = WfSpecId.newBuilder().setName("output-topic").setMajorVersion(0).setRevision(0).build();
+
+        // First: COMPLETED
+        pipeExecution(wfRunId, OutputTopicRecord.newBuilder()
+                .setTimestamp(ts1)
+                .setWfRun(WfRun.newBuilder()
+                        .setId(WfRunId.newBuilder().setId(wfRunId))
+                        .setWfSpecId(wfSpecId)
+                        .setStatus(LHStatus.COMPLETED)
+                        .setStartTime(ts1)
+                        .setEndTime(ts1))
+                .build());
+
+        KeyValueStore<String, byte[]> wfrunStore = testDriver.getKeyValueStore(DiffuserProcessor.WFRUN_STORE);
+        JsonNode state1 = MAPPER.readTree(wfrunStore.get("default/" + wfRunId));
+        String firstEvictionKey = state1.get("_evictionKey").asText();
+
+        // Then: ERROR (re-termination with different timestamp)
+        pipeExecution(wfRunId, OutputTopicRecord.newBuilder()
+                .setTimestamp(ts2)
+                .setWfRun(WfRun.newBuilder()
+                        .setId(WfRunId.newBuilder().setId(wfRunId))
+                        .setWfSpecId(wfSpecId)
+                        .setStatus(LHStatus.ERROR)
+                        .setStartTime(ts1)
+                        .setEndTime(ts2))
+                .build());
+
+        JsonNode state2 = MAPPER.readTree(wfrunStore.get("default/" + wfRunId));
+        String secondEvictionKey = state2.get("_evictionKey").asText();
+
+        assertNotEquals(firstEvictionKey, secondEvictionKey, "Re-termination should create a new eviction key");
+
+        // Verify old eviction entry was removed
+        KeyValueStore<String, byte[]> evictionStore = testDriver.getKeyValueStore(DiffuserProcessor.WFRUN_EVICTION_STORE);
+        assertNull(evictionStore.get(firstEvictionKey), "Old eviction entry should be deleted");
+        assertNotNull(evictionStore.get(secondEvictionKey), "New eviction entry should exist");
+    }
+
     // --- Helpers ---
 
     private void pipeOutputTopicWfSpec(String name, int major, int revision, ThreadVarDef... varDefs) {
@@ -496,6 +788,12 @@ class TopologyTest {
                     }
                 });
             }
+            @Override public EvictionConfig eviction() {
+                return new EvictionConfig() {
+                    @Override public long sweepIntervalSeconds() { return 60; }
+                    @Override public long fallbackRetentionSeconds() { return 2592000; }
+                };
+            }
         };
     }
 
@@ -526,6 +824,12 @@ class TopologyTest {
                             @Override public Optional<List<String>> workflowEventDefs() { return Optional.empty(); }
                         }
                 );
+            }
+            @Override public EvictionConfig eviction() {
+                return new EvictionConfig() {
+                    @Override public long sweepIntervalSeconds() { return 60; }
+                    @Override public long fallbackRetentionSeconds() { return 2592000; }
+                };
             }
         };
     }

@@ -1,5 +1,7 @@
 # WfRun Store Eviction
 
+**Status:** Implemented
+
 ## Overview
 
 The `wfrun-store` in the `DiffuserProcessor` accumulates state for every WfRun processed, keyed by `{tenant}/{wfRunId}` with the value being a JSON `ObjectNode` serialized as `byte[]`. Without eviction, the store grows unboundedly as new workflow runs are created over time.
@@ -16,20 +18,33 @@ Key properties:
 
 | Property | Type | Default | Description |
 |---|---|---|---|
-| `app.eviction.sweep-interval-ms` | `long` | `3600000` (1 hour) | Wall-clock interval between punctuator eviction sweeps |
+| `app.eviction.sweep-interval-seconds` | `long` | `60` (1 minute) | Wall-clock interval between punctuator eviction sweeps |
 | `app.eviction.fallback-retention-seconds` | `long` | `2592000` (30 days) | Retention period used when the WfSpec has no `WorkflowRetentionPolicy` |
 
 Configuration is added to `AppConfig`:
 
 ```java
 interface EvictionConfig {
-    @WithDefault("3600000")
-    long sweepIntervalMs();
+    @WithDefault("60")
+    long sweepIntervalSeconds();
 
     @WithDefault("2592000")
     long fallbackRetentionSeconds();
 }
 ```
+
+## Implementation Decisions
+
+The following decisions were made during design review and apply as modifications to the original design:
+
+1. **LH Server tombstone alternative deferred:** The decision was made to implement eviction in this project as designed. The LH Server tombstone approach (see [Alternative](#alternative-lh-server-tombstone-events)) remains a future simplification option.
+2. **Post-eviction variable handling:** If `loadWfRunState()` returns `null` in `processVariable()`, log a warning and skip the event entirely — no emit, no save. This differs from the original design which described applying to a "fresh skeleton state."
+3. **`stripInternalFields` in `forward()`:** Instead of requiring each caller to strip `_evictionKey` before forwarding, `stripInternalFields()` is applied inside `forward()` itself. This ensures all code paths are covered automatically and prevents accidental leakage of internal fields.
+4. **Punctuator batching deferred:** Accepted as future optimization. The initial implementation processes all due entries in a single sweep.
+5. **Logging convention:**
+   - Punctuator sweep START/END: `DEBUG` level
+   - Eviction summary with count: `INFO` level (only when entries were evicted)
+   - Per-entry eviction details: `TRACE` level
 
 ## Eviction-Eligible Statuses
 
@@ -72,7 +87,7 @@ A secondary state store tracks scheduled evictions, enabling efficient range sca
 | Type | `KeyValueStore<String, byte[]>` |
 | Persistence | Persistent |
 | Key | `{epoch-millis-zero-padded-16}/{tenant}/{wfRunId}` |
-| Value | UTF-8 bytes of the `wfrun-store` key (`{tenant}/{wfRunId}`) |
+| Value | Empty `byte[]` (the `wfrun-store` key is derived from the eviction key via `key.substring(17)`) |
 
 ### Key Format
 
@@ -149,7 +164,7 @@ private static boolean isEvictionEligible(LHStatus status) {
 2. Resolve the retention period from the WfSpec's `WorkflowRetentionPolicy` or fall back to config.
 3. Compute `evictAtMillis` from `updatedAt + retentionSeconds * 1000`.
 4. Build the eviction key: `String.format("%016d/%s", evictAtMillis, storeKey)`.
-5. Write to `wfrun-eviction-store`: key = eviction key, value = `storeKey` as UTF-8 bytes.
+5. Write to `wfrun-eviction-store`: key = eviction key, value = empty `byte[]` (the `storeKey` is derived from the eviction key via `key.substring(17)`).
 6. Set `_evictionKey` on the state `ObjectNode` (internal bookkeeping).
 
 ```java
@@ -162,7 +177,7 @@ private void scheduleEviction(String storeKey, ObjectNode state, WfSpecId wfSpec
     long evictAtMillis = updatedAtMillis + (retentionSeconds * 1000);
     String evictionKey = String.format("%016d/%s", evictAtMillis, storeKey);
 
-    evictionStore.put(evictionKey, storeKey.getBytes(StandardCharsets.UTF_8));
+    evictionStore.put(evictionKey, new byte[0]);
     state.put("_evictionKey", evictionKey);
 }
 ```
@@ -214,7 +229,7 @@ public void init(ProcessorContext<String, JsonNode> context) {
     this.globalMetadataStore = context.getStateStore(GLOBAL_METADATA_STORE);
 
     context.schedule(
-        Duration.ofMillis(evictionSweepIntervalMs),
+        Duration.ofSeconds(evictionSweepIntervalSeconds),
         PunctuationType.WALL_CLOCK_TIME,
         this::evictExpiredEntries
     );
@@ -230,7 +245,7 @@ private void evictExpiredEntries(long timestamp) {
     try (var iterator = evictionStore.range(null, upperBound)) {
         while (iterator.hasNext()) {
             KeyValue<String, byte[]> entry = iterator.next();
-            String wfrunStoreKey = new String(entry.value, StandardCharsets.UTF_8);
+            String wfrunStoreKey = entry.key.substring(17); // skip "{016d}/"
 
             wfRunStore.delete(wfrunStoreKey);
             evictionStore.delete(entry.key);
@@ -246,7 +261,7 @@ Steps:
 1. Compute the upper bound key: `{now-zero-padded-16}0`. The trailing `0` character is lexicographically greater than `/`, ensuring all entries with timestamps `<= now` are included.
 2. Range scan from the beginning of the eviction store to the upper bound.
 3. For each entry:
-   - Delete the WfRun state from `wfrun-store` using the value (the wfrun-store key).
+   - Derive the `wfrun-store` key from the eviction key via `key.substring(17)` and delete the WfRun state.
    - Delete the eviction entry from `wfrun-eviction-store`.
 4. No output is emitted — eviction is silent store cleanup.
 
@@ -259,7 +274,7 @@ The eviction mechanism adds one new state store. Updated state store table:
 | `global-metadata` | `{tenant}/{metaId}` | raw protobuf bytes | Local (processor) | Persistent |
 | `global-metadata-store` | `{tenant}/{metaId}` | `MetadataOutputTopicRecord` | Global (GKT) | Materialized from changelog |
 | `wfrun-store` | `{tenant}/{wfRunId}` | JSON bytes (ObjectNode) | Local | Persistent |
-| `wfrun-eviction-store` | `{epoch-millis-016d}/{tenant}/{wfRunId}` | UTF-8 bytes of wfrun-store key | Local | Persistent |
+| `wfrun-eviction-store` | `{epoch-millis-016d}/{tenant}/{wfRunId}` | Empty `byte[]` | Local | Persistent |
 
 The new store is registered in `TopologyFactory` alongside `wfrun-store`:
 
@@ -287,10 +302,7 @@ A WfRun may transition through multiple terminal statuses (e.g., `COMPLETED`, th
 
 ### Records After Eviction
 
-After a WfRun is evicted, new Variable records for the same `wfRunId` may still arrive (Kafka ordering is per-partition, and variable records may lag). The processor handles this naturally: `loadWfRunState()` returns `null`, and the variable is applied to a fresh skeleton state. This is acceptable because:
-
-- The WfRun was terminal for the full retention period, so further variable updates are unlikely.
-- If they do arrive, the partial state will itself be evicted after the next terminal status update (or cleaned up by a future enhancement).
+After a WfRun is evicted, new Variable records for the same `wfRunId` may still arrive (Kafka ordering is per-partition, and variable records may lag). When `loadWfRunState()` returns `null`, the processor logs a warning and skips the event entirely — no state is created, no output is emitted. This prevents orphaned skeleton states from accumulating in the store. (See [Implementation Decisions](#implementation-decisions), item 2.)
 
 ### Partition Rebalancing
 

@@ -261,6 +261,12 @@ class ApicurioSchemaRegistryIntegrationTest {
                     @Override public Optional<List<String>> workflowEventDefs() { return ts.workflowEventDefs(); }
                 }).map(AppConfig.TenantConfig.class::cast).toList();
             }
+            @Override public EvictionConfig eviction() {
+                return new EvictionConfig() {
+                    @Override public long sweepIntervalSeconds() { return 60; }
+                    @Override public long fallbackRetentionSeconds() { return 2592000; }
+                };
+            }
         };
     }
 
