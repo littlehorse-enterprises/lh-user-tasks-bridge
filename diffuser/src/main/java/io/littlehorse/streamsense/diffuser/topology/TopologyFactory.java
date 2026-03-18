@@ -98,6 +98,9 @@ public class TopologyFactory {
         builder.addStateStore(Stores.keyValueStoreBuilder(
                 Stores.persistentKeyValueStore(DiffuserProcessor.WFRUN_STORE),
                 Serdes.String(), Serdes.ByteArray()));
+        builder.addStateStore(Stores.keyValueStoreBuilder(
+                Stores.persistentKeyValueStore(DiffuserProcessor.WFRUN_EVICTION_STORE),
+                Serdes.String(), Serdes.ByteArray()));
 
         Serde<JsonNode> valueSerde;
         if (apicurioConfig.containsKey("apicurio.registry.url")) {
@@ -114,9 +117,10 @@ public class TopologyFactory {
                         Consumed.<String, OutputTopicRecord>as("execution-source")
                                 .withKeySerde(Serdes.String())
                                 .withValueSerde(ProtobufSerdes.outputTopicRecord()))
-                .process(() -> new DiffuserProcessor(tenantResolver, recordRouter),
+                .process(() -> new DiffuserProcessor(tenantResolver, recordRouter, appConfig.eviction()),
                         Named.as("diffuser-processor"),
-                        DiffuserProcessor.WFRUN_STORE)
+                        DiffuserProcessor.WFRUN_STORE,
+                        DiffuserProcessor.WFRUN_EVICTION_STORE)
                 .to((key, value, ctx) -> StreamletTopicExtractor.extract(ctx),
                         Produced.<String, JsonNode>as("streamlet-sink")
                                 .withKeySerde(Serdes.String())

@@ -23,10 +23,24 @@ public interface AppConfig {
     /** List of tenant configurations. Each tenant defines which specs to diffuse. */
     List<TenantConfig> tenants();
 
+    /** Eviction configuration for terminal WfRun entries in the wfrun-store. */
+    EvictionConfig eviction();
+
     interface ServerConfig {
         /** HTTP server port for health and metrics endpoints. */
         @WithDefault("8080")
         int port();
+    }
+
+    /** Configuration for periodic eviction of terminal WfRun entries from the wfrun-store. */
+    interface EvictionConfig {
+        /** Wall-clock interval (seconds) between punctuator eviction sweeps. */
+        @WithDefault("60")
+        long sweepIntervalSeconds();
+
+        /** Retention period (seconds) used when the WfSpec has no {@code WorkflowRetentionPolicy}. */
+        @WithDefault("2592000")
+        long fallbackRetentionSeconds();
     }
 
     /**

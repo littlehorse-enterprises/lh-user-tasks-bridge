@@ -296,6 +296,9 @@ app:
   lh-cluster-id: my-cluster
   server:
     port: 8080
+  eviction:
+    sweep-interval-seconds: 60              # 1 minute (default)
+    fallback-retention-seconds: 2592000  # 30 days (default)
   tenants:
     - name: tenant1
       wf-specs:
@@ -333,6 +336,16 @@ public interface AppConfig {
     interface ServerConfig {
         @WithDefault("8080")
         int port();
+    }
+
+    EvictionConfig eviction();
+
+    interface EvictionConfig {
+        @WithDefault("60")
+        long sweepIntervalSeconds();
+
+        @WithDefault("2592000")
+        long fallbackRetentionSeconds();
     }
 
     interface TenantConfig {

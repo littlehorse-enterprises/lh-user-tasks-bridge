@@ -13,7 +13,7 @@ The Workflow Diffuser (`lh-wf-diffuser`) is a Kafka Streams application that con
 
 Processing is **stateful** for `WfRun` and `Variable` records (aggregated into `wfrun-store`) and **stateless passthrough** for `UserTaskRun`, `ExternalEvent`, and `WorkflowEvent`. Dynamic topic routing is configuration-driven via `RecordRouter`, which resolves output topics based on configured tenants and spec names.
 
-A **store eviction** mechanism for terminal WfRun entries is planned but not yet implemented.
+A **store eviction** mechanism for terminal WfRun entries is implemented. See [details/wfrun-store-eviction.md](../details/wfrun-store-eviction.md) for the full design and implementation decisions.
 
 ## Input Topics
 
@@ -230,7 +230,7 @@ For the full eviction design — including store schema, scheduling/cancellation
 | `global-metadata`        | `{tenant}/{metaId}`                              | raw protobuf bytes               | Local (processor) | Persistent  |
 | `global-metadata-store`  | `{tenant}/{metaId}`                              | `MetadataOutputTopicRecord`      | Global (GKT) | Materialized from changelog |
 | `wfrun-store`            | `{tenant}/{wfRunId}`                             | JSON bytes (ObjectNode)          | Local  | Persistent  |
-| `wfrun-eviction-store`   | `{epoch-millis-016d}/{tenant}/{wfRunId}`         | UTF-8 bytes of wfrun-store key   | Local  | Persistent  |
+| `wfrun-eviction-store`   | `{epoch-millis-016d}/{tenant}/{wfRunId}`         | Empty `byte[]`                   | Local  | Persistent  |
 
 ## Design Decisions
 

@@ -173,6 +173,12 @@ class WorkflowDiffuserIntegrationTest {
                     @Override public Optional<List<String>> workflowEventDefs() { return Optional.empty(); }
                 });
             }
+            @Override public EvictionConfig eviction() {
+                return new EvictionConfig() {
+                    @Override public long sweepIntervalSeconds() { return 60; }
+                    @Override public long fallbackRetentionSeconds() { return 2592000; }
+                };
+            }
         };
     }
 }

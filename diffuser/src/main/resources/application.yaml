@@ -12,6 +12,9 @@ app:
 #        - my-external-event
 #      workflow-event-defs:
 #        - my-workflow-event
+#  eviction:
+#    sweep-interval-seconds: 60           # 1 minute (default)
+#    fallback-retention-seconds: 2592000  # 30 days (default)
 
 kafka:
   streams:
