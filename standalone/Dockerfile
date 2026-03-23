@@ -1,6 +1,6 @@
 FROM ghcr.io/littlehorse-enterprises/littlehorse/lh-standalone:latest
 
-ARG KEYCLOAK_VERSION="26.4.7"
+ARG KEYCLOAK_VERSION="26.5.6"
 ENV PATH=${PATH}:/keycloak/bin
 
 COPY --from=ghcr.io/littlehorse-enterprises/littlehorse/lhctl:latest /usr/local/bin/lhctl /usr/local/bin/lhctl

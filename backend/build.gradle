@@ -23,7 +23,7 @@ dependencies {
 
     implementation 'com.c4-soft.springaddons:spring-addons-starter-oidc:8.1.4'
 
-    implementation 'io.littlehorse:littlehorse-client:1.0.0'
+    implementation 'io.littlehorse:littlehorse-client:1.0.1'
     implementation 'jakarta.validation:jakarta.validation-api:3.1.0-M2'
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0'
     implementation 'org.springframework.boot:spring-boot-starter-web'
@@ -33,9 +33,13 @@ dependencies {
     implementation 'io.micrometer:micrometer-registry-prometheus'
     implementation 'org.hibernate.validator:hibernate-validator:8.0.2.Final'
 
-    implementation 'org.keycloak:keycloak-admin-client:26.0.4'
-    //Patches a vulnerability from an transitive dependency within keycloak-admin-client
-    implementation 'commons-io:commons-io:2.14.0'
+    implementation ('org.keycloak:keycloak-admin-client:26.0.8')
+
+    constraints {
+        implementation('jakarta.mail:jakarta.mail-api:2.1.5') {
+            because 'CVE-2025-7962 fix - patching vulnerable transitive dependency'
+        }
+    }
 
     testImplementation 'com.c4-soft.springaddons:spring-addons-starter-oidc-test:7.6.13'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
