@@ -159,6 +159,8 @@ public class UserController {
             log.error("Something went wrong when getting claims from token while trying to fetch UserTaskRuns.");
             return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR))
                     .build();
+        } catch (ResponseStatusException e) {
+            throw e;
         } catch (Exception e) {
             log.error(e.getMessage());
             return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR))
@@ -964,6 +966,8 @@ public class UserController {
                     "Something went wrong when getting claims from token while trying to fetch claimable UserTaskRuns.");
             return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR))
                     .build();
+        } catch (ResponseStatusException e) {
+            throw e;
         } catch (Exception e) {
             log.error(e.getMessage());
             return ResponseEntity.of(ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR))
