@@ -21,7 +21,16 @@ Part of the [LH StreamSense](https://github.com/littlehorse-enterprises) product
 ./gradlew build          # Build + unit tests
 ./gradlew test           # Unit tests only
 ./gradlew clean build    # Clean rebuild
+./gradlew installDist    # Create distribution for Docker/runtime packaging
 ```
+
+### Build Docker Image Locally
+
+```bash
+./local-dev/build.sh
+```
+
+By default this builds `littlehorse/lh-workflow-diffuser:latest`. Override with `IMAGE_NAME=...` if needed.
 
 ### Integration Tests
 
