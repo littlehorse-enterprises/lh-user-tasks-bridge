@@ -29,9 +29,9 @@ We are using Keycloak to work as a sample Identity Provider that will support Us
 identity provider configured. You can find a Docker Compose configuration
 in `docker-compose.yaml`. You can run Keycloak, a local LH Kernel and the User Tasks Bridge API locally with this command:
 
-  ```shell
-  ./local-dev/run.sh
-  ```
+```shell
+./local-dev/run.sh
+```
 
 > Stop it with `docker compose down -v`
 
@@ -81,11 +81,11 @@ curl --request GET \
 
 Update your `~/.config/littlehorse.config` or export the next env variables:
 
- ```shell
-  export LHC_API_HOST=localhost
-  export LHC_API_PORT=2023
-  export LHC_TENANT_ID=default
-  ```
+```shell
+ export LHC_API_HOST=localhost
+ export LHC_API_PORT=2023
+ export LHC_TENANT_ID=default
+```
 
 This is just an example, use the values that match your LittleHorse config
 
@@ -117,9 +117,9 @@ When you have your oidc-properties.yml properly configured, you will be ready to
 
 This command will execute Spring Boot's run task:
 
-  ```shell
-  ./gradlew backend:bootRun
-  ```
+```shell
+./gradlew backend:bootRun
+```
 
 > In case of using the standalone image update the `standalone/backend-properties.yml` file.
 
@@ -241,6 +241,7 @@ lhctl run user-tasks-bridge-demo group $(http --ignore-stdin -b -A bearer -a "${
 #### Prerequisites for Development
 
 - [Node.js](https://nodejs.org/) (version 20 or later)
+- [pnpm](https://pnpm.io/) 10.19.0
 - [pre-commit](https://pre-commit.com/)
 - [Git](https://git-scm.com/)
 
@@ -280,20 +281,20 @@ LHUT_AUTHORITIES=$.realm_access.roles,$.resource_access.*.roles
 
 ```
 
-1. Install dependencies and start development server:
+4. Install dependencies and start development server:
 
 ```shell
-npm install
+pnpm install
 ```
 
 ```shell
-npm run dev -w console
+pnpm --filter ./console dev
 ```
 
 In another terminal, start the API Client:
 
 ```shell
-npm run dev -w api-client
+pnpm --filter ./api-client dev
 ```
 
 The API Client will start listening to any live changes in the `api-client` folder and recompile it.
@@ -346,16 +347,16 @@ When SSL is enabled, the UI will be available on:
 
 #### Environment Variables for SSL
 
-| Variable                  | Description                                                | Required |
-| ------------------------- | ---------------------------------------------------------- | -------- |
-| `SSL`                     | Set to `enabled` to enable SSL                             | Yes      |
-| `AUTH_URL`                | Full URL where the app will be accessible (use HTTPS port) | Yes      |
-| `AUTH_SECRET`             | Random string used to hash tokens                          | Yes      |
-| `AUTH_KEYCLOAK_ID`        | Client ID from Keycloak                                    | Yes      |
-| `AUTH_KEYCLOAK_SECRET`    | Client secret from Keycloak                                | Yes      |
-| `AUTH_KEYCLOAK_ISSUER`    | Keycloak server URL                                        | Yes      |
-| `LHUT_API_URL`            | URL of the UserTasks API                                  | Yes      |
-| `LHUT_AUTHORITIES`        | Paths to extract roles from the token                      | Yes      |
+| Variable               | Description                                                | Required |
+| ---------------------- | ---------------------------------------------------------- | -------- |
+| `SSL`                  | Set to `enabled` to enable SSL                             | Yes      |
+| `AUTH_URL`             | Full URL where the app will be accessible (use HTTPS port) | Yes      |
+| `AUTH_SECRET`          | Random string used to hash tokens                          | Yes      |
+| `AUTH_KEYCLOAK_ID`     | Client ID from Keycloak                                    | Yes      |
+| `AUTH_KEYCLOAK_SECRET` | Client secret from Keycloak                                | Yes      |
+| `AUTH_KEYCLOAK_ISSUER` | Keycloak server URL                                        | Yes      |
+| `LHUT_API_URL`         | URL of the UserTasks API                                   | Yes      |
+| `LHUT_AUTHORITIES`     | Paths to extract roles from the token                      | Yes      |
 
 #### Notes
 

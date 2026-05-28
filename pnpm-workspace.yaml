@@ -1,0 +1,12 @@
+packages:
+  - api-client
+  - console
+
+minimumReleaseAge: 4320
+
+minimumReleaseAgeExclude:
+  - '@littlehorse-enterprises/*'
+
+onlyBuiltDependencies:
+  - esbuild
+  - sharp

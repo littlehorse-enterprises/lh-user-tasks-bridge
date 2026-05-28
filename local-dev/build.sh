@@ -7,8 +7,8 @@ CONTEXT_DIR=$(cd "$SCRIPT_DIR/.." && pwd)
 
 cd "${CONTEXT_DIR}"
 
-npm install
-npm run build -ws
+pnpm install
+pnpm -r run build
 
 cd demo-workflow
 ./gradlew build
