@@ -6,7 +6,7 @@ on:
       tag:
         type: string
         required: false
-        default: ''
+        default: ""
 permissions:
   packages: write
   contents: read
@@ -18,18 +18,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.19.0
+          run_install: false
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          cache: npm
-          cache-dependency-path: package-lock.json
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
           node-version: 22
 
       - name: Installing Dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Lint
-        run: npm run lint -ws
+        run: pnpm -r run lint
 
       - name: Update Console Version
         working-directory: ./console
@@ -43,7 +49,7 @@ jobs:
           sed -i "s|NEXT_PUBLIC_API_CLIENT_VERSION: \".*\"|NEXT_PUBLIC_API_CLIENT_VERSION: \"$VERSION\"|g" next.config.mjs
 
       - name: Build
-        run: npm run build -ws
+        run: pnpm -r run build
 
       - name: Publish Image
         uses: littlehorse-enterprises/publish-image@v1

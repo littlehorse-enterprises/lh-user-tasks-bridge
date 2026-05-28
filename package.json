@@ -1,12 +1,9 @@
 {
-	"name": "@littlehorse-enterprises/user-tasks-bridge",
-	"author": "LittleHorse Enterprises",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/littlehorse-enterprises/lh-user-tasks-bridge.git"
-	},
-	"workspaces": [
-		"api-client",
-		"console"
-	]
+  "name": "@littlehorse-enterprises/user-tasks-bridge",
+  "packageManager": "pnpm@10.19.0",
+  "author": "LittleHorse Enterprises",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/littlehorse-enterprises/lh-user-tasks-bridge.git"
+  }
 }

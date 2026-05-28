@@ -6,6 +6,10 @@ node_modules/
 .pnp.js
 .yarn/install-state.gz
 
+# ignore lockfiles other than pnpm's
+package-lock.json
+yarn.lock
+
 # testing
 coverage/
 
@@ -25,6 +29,7 @@ dist/
 
 # debug
 npm-debug.log*
+pnpm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
@@ -79,4 +84,3 @@ out/
 
 ### VS Code ###
 .vscode/
-
