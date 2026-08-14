@@ -240,7 +240,7 @@ lhctl run user-tasks-bridge-demo group $(http --ignore-stdin -b -A bearer -a "${
 
 #### Prerequisites for Development
 
-- [Node.js](https://nodejs.org/) (version 20 or later)
+- [Node.js](https://nodejs.org/) (version 20.9 or later, required by Next.js 16)
 - [pnpm](https://pnpm.io/) 10.19.0
 - [pre-commit](https://pre-commit.com/)
 - [Git](https://git-scm.com/)

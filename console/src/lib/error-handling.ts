@@ -1,3 +1,5 @@
+import { unstable_rethrow } from "next/navigation";
+
 // Error types for consistent error handling
 export enum ErrorType {
   UNAUTHORIZED = "UNAUTHORIZED",
@@ -49,6 +51,12 @@ export async function withErrorHandling<T>(
     const data = await action();
     return { data };
   } catch (error: unknown) {
+    // redirect()/notFound() signal control flow by throwing. Catching them here
+    // would swallow the sign-in redirect getClient() issues for an expired
+    // session, and the bogus error object we'd return in its place is not
+    // serializable across the React 19 server boundary.
+    unstable_rethrow(error);
+
     console.error("Action error detailed:", JSON.stringify(error, null, 2));
 
     // Handle fetch errors from API client
@@ -129,7 +137,14 @@ export async function withErrorHandling<T>(
         type: ErrorType.UNKNOWN,
         message:
           error instanceof Error ? error.message : "An unknown error occurred",
-        details: error,
+        // Only plain values survive the React 19 server boundary — an Error (or
+        // any class instance) makes the whole action reject during encoding.
+        details:
+          error instanceof Error
+            ? { name: error.name, message: error.message }
+            : typeof error === "object"
+              ? undefined
+              : String(error),
       },
     };
   }
