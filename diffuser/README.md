@@ -6,7 +6,7 @@ Part of the [LH StreamSense](https://github.com/littlehorse-enterprises) product
 
 ## Architecture
 
-![Kafka Streams Topology Design](docs/design/topology-design/LittleHorse%20Workflow%20Diffuser%20v0.2.0.excalidraw.png)
+![Kafka Streams Topology Design](docs/design/topology-design/LittleHorse%20Workflow%20Diffuser%20v0.3.0.excalidraw.png)
 
 ## Build & Run
 

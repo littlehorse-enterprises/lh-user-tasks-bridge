@@ -16,7 +16,7 @@ repositories {
     mavenCentral()
 }
 
-val kafkaVersion = "4.1.1"
+val kafkaVersion = "4.2.0"
 val smallryeConfigVersion = "3.16.0"
 val micrometerVersion = "1.16.3"
 val jacksonVersion = "2.21.0"
