@@ -82,6 +82,12 @@ class RecordRouterTest {
             @Override public String lhClusterId() { return CLUSTER_ID; }
             @Override public ServerConfig server() { return () -> 8080; }
             @Override public List<TenantConfig> tenants() { return List.of(tenants); }
+            @Override public EvictionConfig eviction() {
+                return new EvictionConfig() {
+                    @Override public long sweepIntervalSeconds() { return 60; }
+                    @Override public long fallbackRetentionSeconds() { return 2592000; }
+                };
+            }
         };
     }
 

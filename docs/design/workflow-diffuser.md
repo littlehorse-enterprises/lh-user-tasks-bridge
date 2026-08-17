@@ -296,6 +296,9 @@ app:
   lh-cluster-id: my-cluster
   server:
     port: 8080
+  eviction:
+    sweep-interval-seconds: 60              # 1 minute (default)
+    fallback-retention-seconds: 2592000  # 30 days (default)
   tenants:
     - name: tenant1
       wf-specs:
@@ -333,6 +336,16 @@ public interface AppConfig {
     interface ServerConfig {
         @WithDefault("8080")
         int port();
+    }
+
+    EvictionConfig eviction();
+
+    interface EvictionConfig {
+        @WithDefault("60")
+        long sweepIntervalSeconds();
+
+        @WithDefault("2592000")
+        long fallbackRetentionSeconds();
     }
 
     interface TenantConfig {
@@ -376,7 +389,7 @@ Examples for `tenant1` with the config above:
 | ExternalEvent  | payment-confirmed    | `cluster1_tenant1_streamlet_externalevent-payment-confirmed` |
 | WorkflowEvent  | order-shipped        | `cluster1_tenant1_streamlet_workflowevent-order-shipped`     |
 
-Output topics are resolved at runtime using a `TopicNameExtractor` with Apicurio JSON Schema SerDes. See [details/dynamic-topic-routing.md](details/dynamic-topic-routing.md) for the routing mechanism.
+Output topics are resolved at runtime using a `TopicNameExtractor` with Apicurio JSON Schema SerDes. See [details/dynamic-topic-routing.md](details/dynamic-topic-routing.md) for the routing mechanism. See [details/wfrun-store-eviction.md](details/wfrun-store-eviction.md) for the WfRun store eviction design.
 
 ### Streamlet Output Schemas
 
@@ -519,6 +532,6 @@ The topology uses a two-sub-topology design:
 - **Sub-topology 0 — Metadata Processor**: Ingests metadata records, resolves tenants, and populates a `GlobalKTable` accessible to the diffuser processor.
 - **Sub-topology 1 — Diffuser Processor**: Consumes execution records, enriches them with metadata from the global store, and routes output to dynamic tenant-scoped sink topics via `TopicNameExtractor`.
 
-Processing is stateless for `ExternalEvent` and `WorkflowEvent` (passthrough transform-and-forward), and stateful for `WfRun` (aggregates status + variable updates) and `UserTaskRun` (entity create/patch via local state stores).
+Processing is stateless for `ExternalEvent`, `WorkflowEvent`, and `UserTaskRun` (passthrough transform-and-forward), and stateful for `WfRun` and `Variable` (aggregated into `wfrun-store` with public variable filtering via metadata lookup).
 
-For the full topology design — including state store schemas, changelog topics, and open items — see [topology-design.md](topology-design/topology-design_v0.1.1.md).
+For the full topology design — including state store schemas, dynamic topic routing, and open items — see [topology-design.md](topology-design/topology-design_v0.3.0.md).
