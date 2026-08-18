@@ -1,4 +1,4 @@
-# CLAUDE.md - LH Workflow Diffuser (WFD)
+# AGENTS.md - LH Workflow Diffuser (WFD)
 
 ## Terminology
 
@@ -40,19 +40,23 @@ Early stage - repository initialized, requirements and design docs complete, imp
 ## Architecture
 
 ### Input
+
 - Two Kafka topics per Tenant, named `{LHS_CLUSTER_ID}_{tenant}_execution` and `{LHS_CLUSTER_ID}_{tenant}_metadata`
 - **Execution topic** (multi-partition): `OutputTopicRecord` protobuf messages with a `oneof` payload containing TaskRun, WfRun, UserTaskRun, Variable, ExternalEvent, or WorkflowEvent
 - **Metadata topic** (single-partition, compacted): `MetadataOutputTopicRecord` with WfSpec, TaskDef, ExternalEventDef, WorkflowEventDef, UserTaskDef — used as a global store for joins
 - Recording level is configurable per Tenant (`ALL_ENTITY_EVENTS` / `NO_ENTITY_EVENTS`) with per-metadata overrides
 
 ### Processing
+
 - Kafka Streams topology filters and enriches raw records
 - Groups by WfSpec, ExternalEventDef, UserTaskDef, WorkflowEventDef
 - Enriches with business meaning from WfSpec metadata
 
 ### Output
+
 - Produces to multiple Kafka topics (one per Streamlet)
 - Output format for WfSpec Streamlets:
+
 ```json
 {
   "id": "<wfRunId>",
@@ -65,9 +69,11 @@ Early stage - repository initialized, requirements and design docs complete, imp
   "createdAt": "<timestamp>"
 }
 ```
+
 - Schemas registered in ApiCurio
 
 ### Multi-Tenancy
+
 - Single WFD cluster processes all configured WfSpecs across tenants
 - Topic/consumer group naming: `{tenant-id}__<streamlet-name>`
 - Schema naming: `{tenant-id}__<schema-name>` in ApiCurio
@@ -102,10 +108,28 @@ Early stage - repository initialized, requirements and design docs complete, imp
 
 ## Code Conventions
 
-- Follow existing LH Java conventions
-- Design for configurability - new tenants and *specs via config, not code changes
+- Follow existing LH Java conventions.
+- Design for configurability - new tenants and *specs via config, not code changes.
 - **Design docs**: `docs/design/workflow-diffuser.md` is the base design document. All other design docs go in subfolders of `docs/design/` and must be referenced from the base doc.
 
 ## Git Commits
 
-- **No Co-Authored-By trailers**: Do not add "Co-Authored-By" trailers to commit messages.
+- Use Conventional Commits, with a mandatory scope: `<type>(<scope>): <description>`.
+- Use a lowercase Conventional Commit type and an imperative, concise description; do not end the subject with a period. The description must summarize the overall feature or fix, not enumerate each individual change.
+- Pull request titles follow the same Conventional Commit convention, including a mandatory scope.
+- Add a `Co-authored-by` trailer when appropriate; it is optional.
+- Append an attribution footer identifying the model used for the commit, separated from the subject/body by a blank line. For example:
+
+  ```text
+  Assisted-by: Claude Opus 4.8
+  ```
+
+  Substitute the active model name and version for each commit. For example:
+
+  ```text
+  Assisted-by: Codex GPT-5.6
+  ```
+
+  ```text
+  Assisted-by: Claude Sonnet 4.5
+  ```

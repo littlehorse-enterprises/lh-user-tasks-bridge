@@ -31,6 +31,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.kafka.KafkaContainer;
 
 import java.time.Duration;
+import java.util.Map;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 

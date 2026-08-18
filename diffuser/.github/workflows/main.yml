@@ -1,32 +1,53 @@
 name: main
-run-name: Publish images for ${{ github.ref_name }}
+run-name: Publish snapshot on ${{ github.ref_name }}
 
 on:
   workflow_dispatch:
   push:
     branches:
       - main
+      - "[0-9]+.[0-9]+"
 
 permissions:
-  id-token: write
   contents: read
   packages: write
 
 jobs:
-  publish:
+  prepare:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get-version.outputs.version }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
+
+      - name: Get version
+        id: get-version
+        run: echo "version=$(sed -n 's/^version=//p' gradle.properties)" >> "$GITHUB_OUTPUT"
+
+      - name: Validate snapshot format
+        env:
+          VERSION: ${{ steps.get-version.outputs.version }}
+        run: |
+          if ! printf '%s' "$VERSION" | grep -i -- '-SNAPSHOT$' >/dev/null; then
+            echo "ERROR: version does not end with -SNAPSHOT" >&2
+            exit 1
+          fi
+
+  test:
+    needs: prepare
+    runs-on: ubuntu-latest
+    env:
+      ORG_GRADLE_PROJECT_version: ${{ needs.prepare.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
 
       - name: Setup Java
         uses: actions/setup-java@v5
         with:
-          distribution: "corretto"
+          distribution: corretto
           java-version: "25"
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v5
 
       - name: Build and unit tests
         run: ./gradlew build installDist
@@ -34,15 +55,35 @@ jobs:
       - name: Integration tests
         run: ./gradlew integrationTest
 
-      - name: Build and publish images
+      - name: Check diff
+        run: git diff --exit-code
+
+  publish:
+    needs:
+      - prepare
+      - test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: corretto
+          java-version: "25"
+
+      - name: Build distribution
+        run: ./gradlew installDist
+
+      - name: Publish snapshot image to GHCR
         uses: littlehorse-enterprises/publish-image@v1
         with:
           image-name: lh-workflow-diffuser
           dockerfile: Dockerfile
-          registry: github,ecr
+          registry: github
           github-token: ${{ secrets.GITHUB_TOKEN }}
           ghcr-root: true
-
-      - name: Check diff
-        run: |
-          git diff HEAD --exit-code || (echo "Uncommitted changes found" && exit 1)
+          tags: |
+            type=raw,value=${{ needs.prepare.outputs.version }},enable=true
+            type=ref,event=branch,enable=${{ github.ref_name == 'main' }}
