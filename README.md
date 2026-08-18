@@ -14,6 +14,16 @@ Part of the [LH StreamSense](https://github.com/littlehorse-enterprises) product
 
 - Java 25
 - Docker (for integration tests and local development)
+- [pre-commit](https://pre-commit.com/)
+
+Install the repository hooks after cloning:
+
+```bash
+pre-commit install
+```
+
+The hooks check file hygiene and shell scripts, validate Conventional Commit messages, and run
+the unit tests, integration tests, and application distribution build before each commit.
 
 ### Build
 
