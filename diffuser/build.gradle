@@ -6,14 +6,28 @@ plugins {
 group = providers.gradleProperty("group").get()
 version = providers.gradleProperty("version").get()
 
+allprojects {
+    group = rootProject.group
+    version = rootProject.version
+
+    repositories {
+        mavenLocal()
+        mavenCentral()
+        maven {
+            name = "Central Portal Snapshots"
+            url = "https://central.sonatype.com/repository/maven-snapshots/"
+        }
+    }
+
+    configurations.configureEach {
+        resolutionStrategy.cacheChangingModulesFor 0, "seconds"
+    }
+}
+
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(25)
     }
-}
-
-repositories {
-    mavenCentral()
 }
 
 dependencies {
@@ -28,7 +42,9 @@ dependencies {
     implementation "io.micrometer:micrometer-registry-prometheus:${micrometerVersion}"
 
     // LittleHorse Client (protobuf models)
-    implementation "io.littlehorse:littlehorse-client:${lhClientVersion}"
+    implementation("io.littlehorse:littlehorse-client:${version}") {
+        changing = true
+    }
 
     // Jackson
     implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
@@ -67,4 +83,18 @@ tasks.register("integrationTest", Test) {
     group = "verification"
     classpath = sourceSets.test.runtimeClasspath
     testClassesDirs = sourceSets.test.output.classesDirs
+}
+
+tasks.register("dockerComposeUp", Exec) {
+    description = "Starts the local Docker Compose environment."
+    group = "application"
+    commandLine "docker", "compose", "up", "-d"
+    environment "LH_VERSION", version
+}
+
+tasks.register("dockerComposeDown", Exec) {
+    description = "Stops the local Docker Compose environment and removes its volumes."
+    group = "application"
+    commandLine "docker", "compose", "down", "-v"
+    environment "LH_VERSION", version
 }

@@ -1,4 +1,5 @@
 name: lh-wf-diffuser
+
 services:
   lh-kafka:
     container_name: lh-kafka
@@ -24,11 +25,9 @@ services:
       KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
       KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
       KAFKA_LOG_RETENTION_CHECK_INTERVAL_MS: 30000
-      # Replace CLUSTER_ID with a unique base64 UUID using "bin/kafka-storage.sh random-uuid"
-      # See https://docs.confluent.io/kafka/operations-tools/kafka-tools.html#kafka-storage-sh
       CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
     healthcheck:
-      test: [ "CMD", "/bin/kafka-topics", "--bootstrap-server=localhost:9092", "--list" ]
+      test: ["CMD", "/bin/kafka-topics", "--bootstrap-server=localhost:9092", "--list"]
       interval: 2s
       timeout: 2s
       retries: 10
@@ -38,7 +37,7 @@ services:
   lh-server:
     container_name: lh-server
     hostname: lh-server
-    image: ghcr.io/littlehorse-enterprises/littlehorse/lh-server:latest
+    image: ghcr.io/littlehorse-enterprises/littlehorse/lh-server:${LH_VERSION}
     environment:
       LHS_KAFKA_BOOTSTRAP_SERVERS: lh-kafka:29092
       LHS_SHOULD_CREATE_TOPICS: "true"
@@ -58,7 +57,7 @@ services:
   lh-dashboard:
     container_name: lh-dashboard
     hostname: lh-dashboard
-    image: ghcr.io/littlehorse-enterprises/littlehorse/lh-dashboard:master
+    image: ghcr.io/littlehorse-enterprises/littlehorse/lh-dashboard:${LH_VERSION}
     environment:
       LHC_API_HOST: lh-server
       LHC_API_PORT: 2023
@@ -99,22 +98,6 @@ services:
       REGISTRY_API_URL: http://localhost:8085/apis/registry/v3
     depends_on:
       - lh-apicurio
-    networks:
-      - wfd-network
-
-  lh-create-topics:
-    container_name: lh-create-topics
-    image: confluentinc/cp-kafka:7.9.0
-    entrypoint: /bin/kafka-topics
-    command:
-      - --bootstrap-server=lh-kafka:29092
-      - --create
-      - --topic=cluster1-wf-diffuser-global-metadata-changelog
-      - --partitions=1
-      - --if-not-exists
-    depends_on:
-      lh-kafka:
-        condition: service_healthy
     networks:
       - wfd-network
 
