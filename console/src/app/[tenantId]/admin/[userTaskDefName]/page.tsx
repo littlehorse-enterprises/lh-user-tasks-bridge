@@ -10,13 +10,15 @@ import ListUserTasks from "../../components/user-task/list";
 export default async function TaskPage({
   params,
 }: {
-  params: { tenantId: string; userTaskDefName: string };
+  params: Promise<{ tenantId: string; userTaskDefName: string }>;
 }) {
-  const adminListUserGroupsResponse = await adminGetUserGroups(params.tenantId);
+  const { tenantId, userTaskDefName } = await params;
 
-  const adminListUserTasksResponse = await adminGetAllTasks(params.tenantId, {
+  const adminListUserGroupsResponse = await adminGetUserGroups(tenantId);
+
+  const adminListUserTasksResponse = await adminGetAllTasks(tenantId, {
     limit: 10,
-    type: params.userTaskDefName,
+    type: userTaskDefName,
   });
 
   return (
@@ -30,7 +32,7 @@ export default async function TaskPage({
             asChild
             className="text-muted-foreground hover:text-foreground h-8 px-2 gap-1"
           >
-            <Link href={`/${params.tenantId}/admin`}>
+            <Link href={`/${tenantId}/admin`}>
               <ArrowLeft className="h-4 w-4" />
               Back
             </Link>
@@ -40,21 +42,19 @@ export default async function TaskPage({
         {/* Breadcrumb Navigation */}
         <nav className="flex items-center text-sm text-muted-foreground">
           <Link
-            href={`/${params.tenantId}/admin`}
+            href={`/${tenantId}/admin`}
             className="hover:text-foreground transition-colors"
           >
             UserTaskDefs
           </Link>
           <ChevronRight className="h-4 w-4 mx-2" />
-          <span className="text-foreground font-medium">
-            {params.userTaskDefName}
-          </span>
+          <span className="text-foreground font-medium">{userTaskDefName}</span>
         </nav>
       </div>
 
       <ListUserTasks
         userGroups={adminListUserGroupsResponse.data?.groups || []}
-        userTaskDefName={params.userTaskDefName}
+        userTaskDefName={userTaskDefName}
         initialData={
           adminListUserTasksResponse.data || {
             userTasks: [],

@@ -1,2 +1,30 @@
 @import "@littlehorse-enterprises/ui-library/index.css";
 @import "tailwindcss";
+
+/*
+ * ui-library 1.1.0 flipped --primary-foreground from black to near-white while
+ * --primary stayed the same light amber, dropping every bg-primary surface
+ * (tabs, badges, buttons, avatar initials, the selected calendar day) to a
+ * ~1.8:1 contrast ratio. Restore the 1.0.2 value until the library ships a
+ * readable pairing.
+ */
+:root,
+.dark {
+  --primary-foreground: oklch(0% 0 0);
+}
+
+/*
+ * ui-library 1.1.0 ships Alert's icon-positioning utilities under malformed
+ * class names (`>:svg:absolute` rather than `[&>svg]:absolute`), so Tailwind
+ * emits no rules for them and the icon stacks above the title instead of
+ * sitting in the gutter. Restore the 1.0.2 layout.
+ */
+[data-slot="alert"] > svg {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+}
+
+[data-slot="alert"] > svg ~ * {
+  padding-left: 1.75rem;
+}

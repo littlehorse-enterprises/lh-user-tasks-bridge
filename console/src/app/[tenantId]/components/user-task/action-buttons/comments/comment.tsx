@@ -11,7 +11,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@littlehorse-enterprises/ui-library/dropdown-menu";
-import { toast } from "@littlehorse-enterprises/ui-library/sonner";
+import { toast } from "sonner";
 import { Textarea } from "@littlehorse-enterprises/ui-library/textarea";
 import {
   AuditEventDTO,

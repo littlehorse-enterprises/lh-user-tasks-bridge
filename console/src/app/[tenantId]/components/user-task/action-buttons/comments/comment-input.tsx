@@ -15,7 +15,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@littlehorse-enterprises/ui-library/dialog";
-import { toast } from "@littlehorse-enterprises/ui-library/sonner";
+import { toast } from "sonner";
 import { Textarea } from "@littlehorse-enterprises/ui-library/textarea";
 import {
   AuditEventDTO,

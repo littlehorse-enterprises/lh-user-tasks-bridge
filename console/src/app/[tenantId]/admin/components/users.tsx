@@ -26,7 +26,7 @@ import {
   FormMessage,
 } from "@littlehorse-enterprises/ui-library/form";
 import { Input } from "@littlehorse-enterprises/ui-library/input";
-import { toast } from "@littlehorse-enterprises/ui-library/sonner";
+import { toast } from "sonner";
 import { Switch } from "@littlehorse-enterprises/ui-library/switch";
 import {
   Table,

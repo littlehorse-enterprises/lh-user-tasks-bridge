@@ -30,7 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@littlehorse-enterprises/ui-library/select";
-import { toast } from "@littlehorse-enterprises/ui-library/sonner";
+import { toast } from "sonner";
 import {
   DetailedUserTaskRunDTO,
   SimpleUserTaskRunDTO,
@@ -333,7 +333,7 @@ export default function CompleteUserTaskButton({
                   });
                 }}
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select a value" />
                 </SelectTrigger>
                 <SelectContent>

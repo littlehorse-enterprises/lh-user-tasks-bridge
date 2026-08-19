@@ -8,11 +8,12 @@ export default async function AdminPage({
   params,
   searchParams,
 }: {
-  params: { tenantId: string };
-  searchParams: { tab?: string };
+  params: Promise<{ tenantId: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }) {
-  const tenantId = params.tenantId;
-  const currentTab = searchParams.tab || "tasks";
+  const { tenantId } = await params;
+  const { tab } = await searchParams;
+  const currentTab = tab || "tasks";
 
   // Fetch all data for both statistics and tabs in parallel
   const [userTaskDefsResult, userGroupsResult, usersResult] = await Promise.all(

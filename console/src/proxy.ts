@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { getRoles } from "./lib/utils";
 import { auth } from "./auth";
 
-export default auth(async (req) => {
+export const proxy = auth(async (req) => {
   const secureCookie = req.nextUrl.protocol === "https:";
   const token = await getToken({
     req,

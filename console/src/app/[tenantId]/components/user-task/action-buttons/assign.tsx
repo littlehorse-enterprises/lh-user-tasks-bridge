@@ -25,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@littlehorse-enterprises/ui-library/select";
-import { toast } from "@littlehorse-enterprises/ui-library/sonner";
+import { toast } from "sonner";
 import {
   IDPGroupDTO,
   IDPUserDTO,
@@ -389,7 +389,7 @@ export default function AssignUserTaskButton({
                 onValueChange={handleUserChange}
                 disabled={isLoading}
               >
-                <SelectTrigger id="user">
+                <SelectTrigger id="user" className="w-full">
                   <SelectValue placeholder="Select user" />
                 </SelectTrigger>
                 <SelectContent>
@@ -421,7 +421,7 @@ export default function AssignUserTaskButton({
                 onValueChange={handleGroupChange}
                 disabled={isLoading}
               >
-                <SelectTrigger id="group">
+                <SelectTrigger id="group" className="w-full">
                   <SelectValue placeholder="Select user group" />
                 </SelectTrigger>
                 <SelectContent>

@@ -21,11 +21,11 @@ import ListClaimableUserTasks from "./components/user-task/list-claimable";
 export default async function Home({
   params,
 }: {
-  params: { tenantId: string };
+  params: Promise<{ tenantId: string }>;
 }) {
-  const userGroupsResult = await getUserGroupsFromIdentityProvider(
-    params.tenantId,
-  );
+  const { tenantId } = await params;
+
+  const userGroupsResult = await getUserGroupsFromIdentityProvider(tenantId);
 
   // Handle error getting user groups
   if (userGroupsResult.error) {
@@ -57,7 +57,7 @@ export default async function Home({
 
   // If no groups are available, show UserTasks only
   if (userGroupsResult.data.groups.length === 0) {
-    const userTasksResult = await getUserTasks(params.tenantId, {
+    const userTasksResult = await getUserTasks(tenantId, {
       limit: 10,
     });
 
@@ -130,10 +130,10 @@ export default async function Home({
         <div className="bg-card border border-border rounded-lg shadow-sm">
           <Tabs defaultValue="my-tasks" className="w-full">
             <div className="border-b border-border px-6 py-4">
-              <TabsList className="bg-muted">
+              <TabsList className="inline-flex! w-auto! bg-muted">
                 <TabsTrigger
                   value="my-tasks"
-                  className="data-[state=active]:bg-background"
+                  className="data-[state=active]:bg-background data-[state=active]:text-foreground dark:data-[state=active]:bg-background dark:data-[state=active]:text-foreground"
                 >
                   My Tasks
                 </TabsTrigger>
@@ -157,14 +157,14 @@ export default async function Home({
   // Get claimable tasks for each user group
   const claimableTasksResults = await Promise.all(
     userGroupsResult.data.groups.map(async (group) => {
-      return await getClaimableTasks(params.tenantId, {
+      return await getClaimableTasks(tenantId, {
         user_group_id: group.id,
         limit: 10,
       });
     }),
   );
 
-  const userTasksResult = await getUserTasks(params.tenantId, {
+  const userTasksResult = await getUserTasks(tenantId, {
     limit: 10,
   });
 
@@ -253,16 +253,16 @@ export default async function Home({
       <div className="bg-card border border-border rounded-lg shadow-sm">
         <Tabs defaultValue="my-tasks" className="w-full">
           <div className="border-b border-border px-6 py-4">
-            <TabsList className="bg-muted">
+            <TabsList className="inline-flex! w-auto! bg-muted">
               <TabsTrigger
                 value="my-tasks"
-                className="data-[state=active]:bg-background"
+                className="data-[state=active]:bg-background data-[state=active]:text-foreground dark:data-[state=active]:bg-background dark:data-[state=active]:text-foreground"
               >
                 My Tasks
               </TabsTrigger>
               <TabsTrigger
                 value="claimable-tasks"
-                className="data-[state=active]:bg-background"
+                className="data-[state=active]:bg-background data-[state=active]:text-foreground dark:data-[state=active]:bg-background dark:data-[state=active]:text-foreground"
               >
                 Available Tasks
               </TabsTrigger>

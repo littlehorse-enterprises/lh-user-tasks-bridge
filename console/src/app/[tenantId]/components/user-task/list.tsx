@@ -326,7 +326,7 @@ export default function ListUserTasks({
                         });
                       }}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -353,7 +353,7 @@ export default function ListUserTasks({
                           });
                         }}
                       >
-                        <SelectTrigger>
+                        <SelectTrigger className="w-full">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -400,7 +400,10 @@ export default function ListUserTasks({
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
             {filteredTasks.map((userTask) => (
               <UserTask
-                key={userTask.id}
+                // userTask.id is only unique within its WfRun — every run of the
+                // same WfSpec produces the same ids — so it must be paired with
+                // wfRunId to key the list.
+                key={`${userTask.wfRunId}/${userTask.id}`}
                 userTask={userTask}
                 admin={!!userTaskDefName}
                 claimable={claimable}

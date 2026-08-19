@@ -5,7 +5,9 @@ ENV PATH=${PATH}:/keycloak/bin
 
 COPY --from=ghcr.io/littlehorse-enterprises/littlehorse/lhctl:latest /usr/local/bin/lhctl /usr/local/bin/lhctl
 
-RUN yum install -y jq unzip python3-pip
+# The base image ships Node 18, below the Node >= 20.9 that Next.js 16 requires.
+RUN yum install -y --allowerasing jq unzip python3-pip nodejs22 \
+    && alternatives --set node /usr/bin/node-22
 RUN yum clean all && rm -rf /var/cache/yum
 RUN python3 -m pip install wheel httpie
 

@@ -47,9 +47,13 @@ export default function ListClaimableUserTasks({
       >
         <div className="flex items-center gap-2 mb-2">
           <span className="font-medium text-sm">Groups:</span>
-          <TabsList>
+          <TabsList className="inline-flex! w-auto!">
             {userGroups.map((userGroup) => (
-              <TabsTrigger key={userGroup.id} value={userGroup.id}>
+              <TabsTrigger
+                key={userGroup.id}
+                value={userGroup.id}
+                className="data-[state=active]:bg-background data-[state=active]:text-foreground dark:data-[state=active]:bg-background dark:data-[state=active]:text-foreground"
+              >
                 {userGroup.name}
               </TabsTrigger>
             ))}

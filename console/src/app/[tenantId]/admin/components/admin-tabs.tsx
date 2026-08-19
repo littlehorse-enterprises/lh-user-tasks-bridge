@@ -46,22 +46,22 @@ export default function AdminTabs({
   return (
     <Tabs value={currentTab} onValueChange={handleTabChange} className="w-full">
       <div className="border-b border-border px-6 py-4">
-        <TabsList className="bg-muted">
+        <TabsList className="inline-flex! w-auto! bg-muted">
           <TabsTrigger
             value="tasks"
-            className="data-[state=active]:bg-background"
+            className="data-[state=active]:bg-background data-[state=active]:text-foreground dark:data-[state=active]:bg-background dark:data-[state=active]:text-foreground"
           >
             UserTaskDefs
           </TabsTrigger>
           <TabsTrigger
             value="users"
-            className="data-[state=active]:bg-background"
+            className="data-[state=active]:bg-background data-[state=active]:text-foreground dark:data-[state=active]:bg-background dark:data-[state=active]:text-foreground"
           >
             Users
           </TabsTrigger>
           <TabsTrigger
             value="groups"
-            className="data-[state=active]:bg-background"
+            className="data-[state=active]:bg-background data-[state=active]:text-foreground dark:data-[state=active]:bg-background dark:data-[state=active]:text-foreground"
           >
             Groups
           </TabsTrigger>

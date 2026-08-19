@@ -18,7 +18,7 @@ import {
   Button,
   buttonVariants,
 } from "@littlehorse-enterprises/ui-library/button";
-import { toast } from "@littlehorse-enterprises/ui-library/sonner";
+import { toast } from "sonner";
 import { SimpleUserTaskRunDTO } from "@littlehorse-enterprises/user-tasks-bridge-api-client";
 import { useParams } from "next/navigation";
 import { useState } from "react";
