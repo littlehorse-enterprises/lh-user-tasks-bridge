@@ -9,12 +9,10 @@ java {
     }
 }
 
-repositories {
-    mavenCentral()
-}
-
 dependencies {
-    implementation "io.littlehorse:littlehorse-client:${lhClientVersion}"
+    implementation("io.littlehorse:littlehorse-client:${version}") {
+        changing = true
+    }
     implementation "org.slf4j:slf4j-api:${slf4jVersion}"
     implementation "org.apache.logging.log4j:log4j-slf4j2-impl:${log4jVersion}"
     implementation "org.apache.commons:commons-lang3:${commonsLangVersion}"

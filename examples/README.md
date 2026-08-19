@@ -13,18 +13,19 @@ Local development environment for the Workflow Diffuser.
 ### 1. Start infrastructure
 
 ```bash
-cd examples
-docker compose up -d
+./gradlew dockerComposeUp
 ```
 
-### 2. Register schemas in Apicurio
+This starts the repository-level Docker Compose environment: LittleHorse, Kafka, Apicurio, and their UIs.
+
+### 2. Provision example resources
 
 ```bash
-./register-schemas.sh
+./examples/setup.sh
 ```
 
-This registers all JSON Schema files from `schemas/` into the Apicurio Registry. You can verify
-at the Apicurio UI: http://localhost:8086
+This idempotently creates the example's Kafka topic and registers all JSON Schema files from
+`examples/schemas/` in Apicurio. You can verify the schemas at http://localhost:8086.
 
 ### 3. Create the `cars` tenant
 
@@ -42,7 +43,6 @@ From the project root:
 
 This registers all example WfSpecs, TaskDefs, ExternalEventDefs, WorkflowEventDefs,
 and UserTaskDefs with the LH Server, then starts task workers so workflows can execute.
-Requires a running LH Server (started by docker compose in step 1).
 
 ### 5. Start the Workflow Diffuser
 
@@ -94,4 +94,12 @@ The `schemas/` directory contains one JSON Schema file per streamlet topic. Each
 using the Apicurio TopicIdStrategy convention: `{topic}-value.json`.
 
 To add schemas for new streamlets, create a new `.json` file in `schemas/` following the naming
-pattern and re-run `./register-schemas.sh`.
+pattern and re-run `./examples/setup.sh`.
+
+## Stop the Environment
+
+From the repository root, stop the shared environment and remove its volumes:
+
+```bash
+./gradlew dockerComposeDown
+```

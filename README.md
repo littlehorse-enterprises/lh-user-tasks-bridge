@@ -42,6 +42,23 @@ the unit tests, integration tests, and application distribution build before eac
 
 By default this builds `littlehorse/lh-workflow-diffuser:latest`. Override with `IMAGE_NAME=...` if needed.
 
+### Local Development Environment
+
+The repository-level Docker Compose environment runs Kafka, LittleHorse, Apicurio, and their UIs.
+Its LittleHorse services use the version from `gradle.properties`.
+
+```bash
+./gradlew dockerComposeUp
+./examples/setup.sh
+```
+
+The setup script provisions the example-specific Kafka topic and Apicurio schemas. Stop the
+environment and remove its volumes with:
+
+```bash
+./gradlew dockerComposeDown
+```
+
 ### Integration Tests
 
 Integration tests use Testcontainers and require Docker:
@@ -103,10 +120,9 @@ export LH_LOGGING_LEVEL_IO_LITTLEHORSE_STREAMSENSE=DEBUG
 
 ## Examples
 
-The [`examples/`](examples/) directory provides a complete local development environment with
-Docker Compose (LH Server, Kafka, Apicurio Registry, dashboards) and a set of
-[LH workflow examples](examples/lh-examples/) that register WfSpecs, TaskDefs, and other
-metadata across two tenants. See the [examples README](examples/README.md) for setup instructions.
+The [`examples/`](examples/) directory contains LH workflow examples and their provisioning script.
+Each example owns its setup for resources such as topics and schemas, while the shared Docker Compose
+environment remains at the repository root. See the [examples README](examples/README.md) for setup instructions.
 
 ## Repo Structure
 
@@ -129,9 +145,11 @@ src/test/resources/
 └── logback-test.xml                   # DEBUG-level logging for tests
 
 examples/
-├── docker-compose.yaml                # Local dev environment (LH Server, Kafka, Apicurio)
+├── setup.sh                           # Provisions example topics and Apicurio schemas
 ├── lh-examples/                       # Gradle subproject: LH workflow examples
 └── schemas/                           # JSON Schema files for Apicurio registration
+
+docker-compose.yml                     # Shared local environment (LH Server, Kafka, Apicurio)
 
 docs/
   requirements/   # Product requirements
