@@ -57,7 +57,7 @@ export async function withErrorHandling<T>(
     // serializable across the React 19 server boundary.
     unstable_rethrow(error);
 
-    console.error("Action error detailed:", JSON.stringify(error, null, 2));
+    console.error("Action error detailed:", error);
 
     // Handle fetch errors from API client
     if (
