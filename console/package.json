@@ -51,7 +51,7 @@
     "prettier": "^3.5.3",
     "tailwind-merge": "^3.3.0",
     "tailwindcss": "^4.1.7",
-    "tsx": "^4.22.3",
+    "tsx": "^4.23.13",
     "typescript": "^5"
   }
 }
