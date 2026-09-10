@@ -24,7 +24,7 @@ importers:
     dependencies:
       '@hookform/resolvers':
         specifier: ^5.0.1
-        version: 5.4.0(react-hook-form@7.76.1(react@19.2.8))
+        version: 5.4.0(react-hook-form@7.87.0(react@19.2.8))
       '@littlehorse-enterprises/ui-library':
         specifier: 1.1.0
         version: 1.1.0(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(storybook@10.5.7(@types/react@19.2.18)(prettier@3.8.3)(react@19.2.8))
@@ -104,8 +104,8 @@ importers:
         specifier: ^19.2.8
         version: 19.2.8(react@19.2.8)
       react-hook-form:
-        specifier: ^7.56.4
-        version: 7.76.1(react@19.2.8)
+        specifier: ^7.87.0
+        version: 7.87.0(react@19.2.8)
       sharp:
         specifier: ^0.35.3
         version: 0.35.3(@types/node@22.19.19)
@@ -2235,8 +2235,8 @@ packages:
     peerDependencies:
       react: ^19.2.8
 
-  react-hook-form@7.76.1:
-    resolution: {integrity: sha512-rYM7tPiWlu3nZchkR/ex7piyzui2vFPyaLnXnI/RnblB/L4qfMmyses8llJVtF1NpE9WBBsJlGtcSZzPCXW1qQ==}
+  react-hook-form@7.87.0:
+    resolution: {integrity: sha512-zhFzWvLxNHH+8839OnZcUxgMZw88ah2jZWDWvKWgF3Tpbnd0vKL+dlcuU3nZVWESZQjd81EW8K+wU+cYfYAc0w==}
     engines: {node: '>=18.0.0'}
     peerDependencies:
       react: ^16.8.0 || ^17 || ^18 || ^19
@@ -2631,10 +2631,10 @@ snapshots:
 
   '@floating-ui/utils@0.2.11': {}
 
-  '@hookform/resolvers@5.4.0(react-hook-form@7.76.1(react@19.2.8))':
+  '@hookform/resolvers@5.4.0(react-hook-form@7.87.0(react@19.2.8))':
     dependencies:
       '@standard-schema/utils': 0.3.0
-      react-hook-form: 7.76.1(react@19.2.8)
+      react-hook-form: 7.87.0(react@19.2.8)
 
   '@img/colour@1.1.0': {}
 
@@ -2763,7 +2763,7 @@ snapshots:
 
   '@littlehorse-enterprises/ui-library@1.1.0(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(storybook@10.5.7(@types/react@19.2.18)(prettier@3.8.3)(react@19.2.8))':
     dependencies:
-      '@hookform/resolvers': 5.4.0(react-hook-form@7.76.1(react@19.2.8))
+      '@hookform/resolvers': 5.4.0(react-hook-form@7.87.0(react@19.2.8))
       class-variance-authority: 0.7.1
       clsx: 2.1.1
       cmdk: 1.1.1(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
@@ -2773,7 +2773,7 @@ snapshots:
       radix-ui: 1.6.7(@types/react-dom@19.2.4(@types/react@19.2.18))(@types/react@19.2.18)(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       react: 19.2.8
       react-dom: 19.2.8(react@19.2.8)
-      react-hook-form: 7.76.1(react@19.2.8)
+      react-hook-form: 7.87.0(react@19.2.8)
       react-resizable-panels: 3.0.6(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       storybook-dark-mode: 5.0.0(react@19.2.8)(storybook@10.5.7(@types/react@19.2.18)(prettier@3.8.3)(react@19.2.8))
       tailwind-merge: 3.6.0
@@ -4398,7 +4398,7 @@ snapshots:
       react: 19.2.8
       scheduler: 0.27.0
 
-  react-hook-form@7.76.1(react@19.2.8):
+  react-hook-form@7.87.0(react@19.2.8):
     dependencies:
       react: 19.2.8
 
