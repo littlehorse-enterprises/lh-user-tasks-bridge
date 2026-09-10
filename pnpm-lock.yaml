@@ -132,8 +132,8 @@ importers:
         specifier: ^19.2.4
         version: 19.2.4(@types/react@19.2.18)
       postcss:
-        specifier: ^8.5.23
-        version: 8.5.23
+        specifier: ^8.5.28
+        version: 8.5.28
       prettier:
         specifier: ^3.5.3
         version: 3.8.3
@@ -2194,6 +2194,10 @@ packages:
     resolution: {integrity: sha512-g50586zr4bZmwFiTlflMu8E0bDTb5I5gertgwAKmsdUlTQIhZtunzUlD1WSzwcVWPoAVpsrA6vlfCD7oXvRwgg==}
     engines: {node: ^10 || ^12 || >=14}
 
+  postcss@8.5.28:
+    resolution: {integrity: sha512-RRuzqDtt5Y9h3quz5hWhK+TPnsmVs6WwSU6LkJMeY4HstUEDuYTG8UJSdawMRzmzAtV+KEoG8N3Qg2qLy5vM/A==}
+    engines: {node: ^10 || ^12 || >=14}
+
   preact-render-to-string@6.5.11:
     resolution: {integrity: sha512-ubnauqoGczeGISiOh6RjX0/cdaF8v/oDXIjO85XALCQjwQP+SB4RDXXtvZ6yTYSjG+PC1QRP2AhPgCEsM2EvUw==}
     peerDependencies:
@@ -3855,7 +3859,7 @@ snapshots:
       '@alloc/quick-lru': 5.2.0
       '@tailwindcss/node': 4.3.0
       '@tailwindcss/oxide': 4.3.0
-      postcss: 8.5.23
+      postcss: 8.5.28
       tailwindcss: 4.3.0
 
   '@tanstack/query-core@5.100.14': {}
@@ -4303,6 +4307,12 @@ snapshots:
   picocolors@1.1.1: {}
 
   postcss@8.5.23:
+    dependencies:
+      nanoid: 3.3.18
+      picocolors: 1.1.1
+      source-map-js: 1.2.1
+
+  postcss@8.5.28:
     dependencies:
       nanoid: 3.3.18
       picocolors: 1.1.1
