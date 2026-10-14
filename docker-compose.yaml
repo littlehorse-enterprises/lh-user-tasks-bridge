@@ -33,7 +33,7 @@ services:
       - "8080:8080" # Dashboard Port
       - "2023:2023" # LittleHorse Port
     environment:
-      - LHC_API_HOST=http://littlehorse
+      - LHC_API_HOST=littlehorse
       - LHC_API_PORT=2023
       - LHC_TENANT_ID=default
       - LHS_LISTENERS=PLAIN:2023

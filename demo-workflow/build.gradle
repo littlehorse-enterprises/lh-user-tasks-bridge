@@ -21,5 +21,10 @@ application {
 }
 
 shadowJar {
+    // Keep all service descriptors for merging, including gRPC's DNS resolver.
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+    filesNotMatching('META-INF/services/**') {
+        duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    }
     mergeServiceFiles()
 }
