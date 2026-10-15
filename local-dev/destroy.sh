@@ -1,3 +1,10 @@
 #!/bin/sh
 
-docker image rm lh-user-tasks-bridge-backend-console littlehorse/lh-user-tasks-bridge-console lh-user-tasks-bridge-backend-littlehorse-configurer lh-user-tasks-bridge-backend-keycloak-configurer lh-user-tasks-bridge-backend-backend littlehorse/lh-user-tasks-bridge-backend
+set -e
+
+SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
+CONTEXT_DIR=$(cd "$SCRIPT_DIR/.." && pwd)
+
+cd "${CONTEXT_DIR}"
+
+exec ./gradlew composeDown "$@"

@@ -1,4 +1,6 @@
 FROM amazoncorretto:21
+ARG LH_VERSION
+LABEL io.littlehorse.version=${LH_VERSION}
 
 RUN mkdir -p /lh/config
 

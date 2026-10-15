@@ -8,7 +8,7 @@
 ## Run project
 
 ```sh
-./gradlew run
+./gradlew demo-workflow:run
 ```
 
 Assign a task to nobody:

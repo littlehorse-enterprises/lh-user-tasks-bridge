@@ -1,4 +1,4 @@
-# LittleHorse User Tasks Bridge Backend
+# LittleHorse User Tasks Bridge
 
 Backend component that serves as a proxy between any OIDC compliant identity provider and LittleHorse Kernel `UserTasks`.
 
@@ -8,13 +8,38 @@ Backend component that serves as a proxy between any OIDC compliant identity pro
 
 The following software packages are needed to be installed:
 
-- [Brew](https://brew.sh/)
-- [Docker](https://www.docker.com/)
-- [Docker Compose](https://docs.docker.com/compose/install/)
-- [Java 21](https://www.oracle.com/mx/java/technologies/downloads/)
+- [Docker](https://www.docker.com/) with Docker Compose and a running Docker daemon
+- [Java 21](https://www.oracle.com/mx/java/technologies/downloads/) (JDK)
+- [Node.js](https://nodejs.org/) 20.9 or later
+- [pnpm](https://pnpm.io/) 10.19.0 (pinned in the root `package.json`)
 
-Run the following command to install pre-commit
-`brew install pre-commit`
+
+| Command                                  | Action |
+|------------------------------------------| --- |
+| `./local-dev/build.sh`                   | Build and check both Java projects, install pnpm dependencies, and build the API client and console |
+| `./local-dev/build-images.sh`            | Build local artifacts and all Compose images |
+| `./local-dev/compose.sh up`              | Build artifacts and images, then start the stack |
+| `./local-dev/compose.sh down`            | Remove the stack's containers, orphaned services, networks, and volumes; keep images |
+| `./local-dev/compose.sh status`          | Show running and exited containers |
+| `./local-dev/build-images-standalone.sh` | Build component images and the standalone image |
+
+Use `-PlittlehorseVersion=<version>` to override the SDK and Docker image
+version for these tasks. The `local-dev` build, run, and destroy scripts delegate
+to the corresponding Gradle tasks and forward arguments.
+
+
+For contributing, also install [pre-commit](https://pre-commit.com/) and run
+`pre-commit install`. On macOS, you can install it with `brew install pre-commit`.
+
+Check the prerequisites from the repository root:
+
+```shell
+java -version
+node --version
+pnpm --version
+docker compose version
+docker info
+```
 
 ### Quick start
 
@@ -33,9 +58,15 @@ in `docker-compose.yaml`. You can run Keycloak, a local LH Kernel and the User T
 ./local-dev/run.sh
 ```
 
-> Stop it with `docker compose down -v`
+> Stop it with `./local-dev/destroy.sh`
 
-If the command above ended successfully, then you should see 4 containers running:
+```shell
+./gradlew composeStatus
+./local-dev/compose.sh logs --tail=100 keycloak-configurer littlehorse-configurer
+curl --fail http://localhost:8089/actuator/health
+```
+
+You should see four long-running services:
 
 - 1 for Keycloak
 - 1 for LittleHorse Standalone (LH Kernel and LH Dashboard)
@@ -249,6 +280,14 @@ If you want to develop the UI locally:
 
 #### Setup
 
+First complete the Docker quick start above so Keycloak, LittleHorse, and the
+backend are available. Stop the containerized console before starting Next.js
+locally, otherwise both processes try to use port 3000:
+
+```shell
+./local-dev/compose.sh stop console
+```
+
 1. Clone this repository:
 
 ```bash
@@ -264,14 +303,15 @@ pre-commit install
 
 3. Create environment configuration:
 
-   Copy `console/.env.sample` as `console/.env.local` and configure with:
+   If `console/.env.local` does not already exist, copy `console/.env.sample` to
+   it. Keep any existing configuration. Configure it with:
 
 ```bash
 # Auth Configuration
 AUTH_SECRET=any-secret-here # Run `npx auth secret` to generate a secret. Read more: https://cli.authjs.dev
 AUTH_KEYCLOAK_ID=user-tasks-bridge-client
 AUTH_KEYCLOAK_SECRET=
-AUTH_KEYCLOAK_ISSUER=http://localhost:8888/realms/default
+AUTH_KEYCLOAK_ISSUER=http://keycloak:8888/realms/default
 
 # User Tasks Bridge Configuration
 LHUT_API_URL=http://localhost:8089
@@ -285,6 +325,7 @@ LHUT_AUTHORITIES=$.realm_access.roles,$.resource_access.*.roles
 
 ```shell
 pnpm install
+pnpm --filter ./api-client build
 ```
 
 ```shell
@@ -330,11 +371,13 @@ This script will:
 docker run --rm \
     -e SSL=enabled \
     -v ./local-dev/ssl:/ssl \
+    -e LHUT_OAUTH_CALLBACK_URL='https://localhost:3443' \
     -e LHUT_OAUTH_ENCRYPT_SECRET='your-secret-here' \
-    -e LHUT_OAUTH_CLIENT_ID='user-tasks-client' \
-    -e LHUT_OAUTH_CLIENT_SECRET=' ' \
-    -e LHUT_OAUTH_ISSUER_URI='http://localhost:8888/realms/default' \
-    -e LHUT_API_URL='http://localhost:8089' \
+    -e LHUT_OAUTH_CLIENT_ID='user-tasks-bridge-client' \
+    -e LHUT_OAUTH_CLIENT_SECRET='any-secret' \
+    -e LHUT_OAUTH_ISSUER_URI='http://keycloak:8888/realms/default' \
+    -e LHUT_API_URL='http://backend:8089' \
+    --network lh-user-tasks-bridge_default \
     -e LHUT_AUTHORITIES='$.realm_access.roles,$.resource_access.*.roles' \
     -p 3000:3000 -p 3443:3443 \
     ghcr.io/littlehorse-enterprises/lh-user-tasks-bridge/lh-user-tasks-bridge-console:latest
@@ -350,16 +393,18 @@ When SSL is enabled, the UI will be available on:
 | Variable               | Description                                                | Required |
 | ---------------------- | ---------------------------------------------------------- | -------- |
 | `SSL`                  | Set to `enabled` to enable SSL                             | Yes      |
-| `AUTH_URL`             | Full URL where the app will be accessible (use HTTPS port) | Yes      |
-| `AUTH_SECRET`          | Random string used to hash tokens                          | Yes      |
-| `AUTH_KEYCLOAK_ID`     | Client ID from Keycloak                                    | Yes      |
-| `AUTH_KEYCLOAK_SECRET` | Client secret from Keycloak                                | Yes      |
-| `AUTH_KEYCLOAK_ISSUER` | Keycloak server URL                                        | Yes      |
+| `LHUT_OAUTH_CALLBACK_URL` | Full URL where the app will be accessible (use HTTPS port) | Yes      |
+| `LHUT_OAUTH_ENCRYPT_SECRET` | Random string used to protect sessions                  | Yes      |
+| `LHUT_OAUTH_CLIENT_ID` | Client ID from Keycloak                                    | Yes      |
+| `LHUT_OAUTH_CLIENT_SECRET` | Client secret from Keycloak                            | Yes      |
+| `LHUT_OAUTH_ISSUER_URI` | Keycloak issuer URL                                       | Yes      |
 | `LHUT_API_URL`         | URL of the UserTasks API                                   | Yes      |
 | `LHUT_AUTHORITIES`     | Paths to extract roles from the token                      | Yes      |
 
 #### Notes
 
+- The container entrypoint translates `LHUT_OAUTH_*` variables to the `AUTH_*`
+  variables used by Next.js. Host development uses `AUTH_*` directly.
 - For production environments, replace the self-signed certificates with proper SSL certificates
 - The self-signed certificate will trigger browser warnings - this is expected for local development
 - Make sure your Keycloak configuration includes the HTTPS URL in the allowed redirect URIs

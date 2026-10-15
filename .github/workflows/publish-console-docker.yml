@@ -51,11 +51,24 @@ jobs:
       - name: Build
         run: pnpm -r run build
 
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: "corretto"
+
+      - name: Read LittleHorse Version
+        run: |
+          LH_VERSION=$(./gradlew -q printLittleHorseVersion --console=plain)
+          echo "LH_VERSION=$LH_VERSION" >> "$GITHUB_ENV"
+
       - name: Publish Image
         uses: littlehorse-enterprises/publish-image@v1
         with:
           image-name: lh-user-tasks-bridge-console
           dockerfile: ./console/Dockerfile
+          build-args: |
+            LH_VERSION=${{ env.LH_VERSION }}
           context: ./console
           github-token: ${{ secrets.GITHUB_TOKEN }}
           tags: |

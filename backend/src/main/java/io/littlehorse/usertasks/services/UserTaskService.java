@@ -24,6 +24,7 @@ import io.littlehorse.usertasks.models.responses.UserTaskRunListDTO;
 import io.littlehorse.usertasks.util.enums.UserTaskFieldType;
 import jakarta.annotation.Nullable;
 import java.util.*;
+import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;

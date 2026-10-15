@@ -1,6 +1,10 @@
-FROM gradle:latest
+ARG LH_VERSION=latest
+FROM ghcr.io/littlehorse-enterprises/littlehorse/lhctl:${LH_VERSION} AS lhctl
 
-COPY --from=ghcr.io/littlehorse-enterprises/littlehorse/lhctl:latest /usr/local/bin/lhctl /usr/local/bin/lhctl
+FROM gradle:latest
+ARG LH_VERSION
+
+COPY --from=lhctl /usr/local/bin/lhctl /usr/local/bin/lhctl
 
 RUN mkdir /lh
 COPY ./ /lh
