@@ -1,9 +1,14 @@
-FROM ghcr.io/littlehorse-enterprises/littlehorse/lh-standalone:latest
+ARG LH_VERSION=latest
+FROM ghcr.io/littlehorse-enterprises/littlehorse/lhctl:${LH_VERSION} AS lhctl
+
+FROM ghcr.io/littlehorse-enterprises/littlehorse/lh-standalone:${LH_VERSION}
+ARG LH_VERSION
+LABEL io.littlehorse.version=${LH_VERSION}
 
 ARG KEYCLOAK_VERSION="26.5.6"
 ENV PATH=${PATH}:/keycloak/bin
 
-COPY --from=ghcr.io/littlehorse-enterprises/littlehorse/lhctl:latest /usr/local/bin/lhctl /usr/local/bin/lhctl
+COPY --from=lhctl /usr/local/bin/lhctl /usr/local/bin/lhctl
 
 # The base image ships Node 18, below the Node >= 20.9 that Next.js 16 requires.
 RUN yum install -y --allowerasing jq unzip python3-pip nodejs22 \

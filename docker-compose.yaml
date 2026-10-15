@@ -23,10 +23,10 @@ services:
       keycloak:
         condition: service_healthy
   littlehorse:
-    image: ghcr.io/littlehorse-enterprises/littlehorse/lh-standalone:latest
+    image: ghcr.io/littlehorse-enterprises/littlehorse/lh-standalone:${LH_VERSION}
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:1822/liveness" ]
-      timeout: 10s
+      timeout: 15s
       retries: 3
       start_period: 10s
     ports:
@@ -36,10 +36,14 @@ services:
       - LHC_API_HOST=littlehorse
       - LHC_API_PORT=2023
       - LHC_TENANT_ID=default
+      - NEXTAUTH_URL=http://localhost:8080
       - LHS_LISTENERS=PLAIN:2023
       - LHS_ADVERTISED_LISTENERS=PLAIN://littlehorse:2023
   littlehorse-configurer:
-    build: ../lh-user-tasks-bridge/demo-workflow
+    build:
+      context: ./demo-workflow
+      args:
+        LH_VERSION: ${LH_VERSION}
     depends_on:
       littlehorse:
         condition: service_healthy
@@ -47,7 +51,10 @@ services:
       - LHC_API_HOST=littlehorse
       - LHC_API_PORT=2023
   backend:
-    build: .
+    build:
+      context: .
+      args:
+        LH_VERSION: ${LH_VERSION}
     healthcheck:
       test: [ "CMD", "curl", "-f", "http://localhost:8089/actuator/health" ]
       timeout: 10s

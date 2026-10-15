@@ -28,7 +28,12 @@ jobs:
           distribution: "corretto"
 
       - name: Test and Build Artifact
-        run: ./gradlew backend:build
+        run: ./gradlew build
+
+      - name: Read LittleHorse Version
+        run: |
+          LH_VERSION=$(./gradlew -q printLittleHorseVersion --console=plain)
+          echo "LH_VERSION=$LH_VERSION" >> "$GITHUB_ENV"
 
       - name: Build and Publish Backend
         id: publish-image
@@ -36,5 +41,7 @@ jobs:
         with:
           image-name: lh-user-tasks-bridge-backend
           dockerfile: Dockerfile
+          build-args: |
+            LH_VERSION=${{ env.LH_VERSION }}
           registry: ecr
           prefix: branch-

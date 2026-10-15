@@ -1,0 +1,151 @@
+plugins {
+    id 'base'
+    id 'org.springframework.boot' version '3.3.9' apply false
+    id 'io.spring.dependency-management' version '1.1.7' apply false
+    id 'com.diffplug.spotless' version '8.4.0' apply false
+    id 'com.gradleup.shadow' version '9.2.2' apply false
+}
+
+allprojects {
+    group = 'io.littlehorse'
+    version = rootProject.version
+}
+
+subprojects {
+    repositories {
+        maven {
+            url = uri('https://central.sonatype.com/repository/maven-snapshots/')
+            mavenContent { snapshotsOnly() }
+            content { includeGroup 'io.littlehorse' }
+        }
+        mavenCentral()
+        mavenLocal()
+    }
+
+    plugins.withId('java') {
+        java {
+            sourceCompatibility = '21'
+            targetCompatibility = '21'
+        }
+    }
+}
+
+tasks.named('build') {
+    dependsOn subprojects.collect { "${it.path}:build" }
+}
+
+tasks.named('clean') {
+    dependsOn subprojects.collect { "${it.path}:clean" }
+}
+
+tasks.register('printLittleHorseVersion') {
+    group = 'help'
+    description = 'Prints the LittleHorse SDK version for scripts and Docker builds.'
+    doLast {
+        println littlehorseVersion
+    }
+}
+
+tasks.register('pnpmInstall', Exec) {
+    group = 'local development'
+    description = 'Installs the workspace Node dependencies.'
+    workingDir rootDir
+    commandLine 'pnpm', 'install'
+}
+
+tasks.register('buildFrontend', Exec) {
+    group = 'local development'
+    description = 'Builds the API client and console with pnpm.'
+    dependsOn 'pnpmInstall'
+    workingDir rootDir
+    commandLine 'pnpm', '-r', 'run', 'build'
+}
+
+tasks.register('buildLocal') {
+    group = 'local development'
+    description = 'Builds and checks the Java projects and builds the frontend.'
+    dependsOn 'build', 'buildFrontend'
+}
+
+def composeCommand = ['docker', 'compose', '--env-file', '.env']
+
+abstract class ComposeTask extends Exec {
+    @org.gradle.api.tasks.options.Option(option = 'compose-arg', description = 'An argument to Docker Compose; repeat for multiple arguments.')
+    void addComposeArgs(List<String> composeArgs) {
+        args(composeArgs)
+    }
+}
+
+tasks.register('compose', ComposeTask) {
+    group = 'docker'
+    description = 'Runs an arbitrary Docker Compose command using --compose-arg options.'
+    workingDir rootDir
+    environment 'LH_VERSION', littlehorseVersion
+    commandLine composeCommand
+}
+
+tasks.register('buildImages', Exec) {
+    group = 'docker'
+    description = 'Builds all local Compose images after building their artifacts.'
+    dependsOn 'buildLocal'
+    workingDir rootDir
+    environment 'LH_VERSION', littlehorseVersion
+    commandLine composeCommand + ['build']
+}
+
+tasks.register('composeUp', Exec) {
+    group = 'docker'
+    description = 'Builds the local images and starts the Compose stack.'
+    dependsOn 'buildImages'
+    workingDir rootDir
+    environment 'LH_VERSION', littlehorseVersion
+    commandLine composeCommand + ['up', '-d', '--no-build']
+}
+
+tasks.register('composeDown', Exec) {
+    group = 'docker'
+    description = 'Removes the Compose containers, orphaned services, networks, and volumes.'
+    workingDir rootDir
+    environment 'LH_VERSION', littlehorseVersion
+    commandLine composeCommand + ['down', '--remove-orphans', '--volumes']
+}
+
+tasks.register('composeStatus', Exec) {
+    group = 'docker'
+    description = 'Shows all local Compose containers, including exited setup containers.'
+    workingDir rootDir
+    environment 'LH_VERSION', littlehorseVersion
+    commandLine composeCommand + ['ps', '-a']
+}
+
+tasks.register('composeConfig', Exec) {
+    group = 'docker'
+    description = 'Validates and prints the resolved Compose configuration.'
+    workingDir rootDir
+    environment 'LH_VERSION', littlehorseVersion
+    commandLine composeCommand + ['config']
+}
+
+[
+    buildBackendImage: [context: '.', image: 'littlehorse/lh-user-tasks-bridge-backend:latest', artifact: ':backend:build'],
+    buildConsoleImage: [context: 'console', image: 'littlehorse/lh-user-tasks-bridge-console:latest', artifact: 'buildFrontend'],
+    buildDemoImage: [context: 'demo-workflow', image: 'littlehorse/lh-user-tasks-bridge-demo-workflow:latest', artifact: ':demo-workflow:build']
+].each { taskName, imageConfig ->
+    tasks.register(taskName, Exec) {
+        group = 'docker'
+        description = "Builds ${imageConfig.image}."
+        dependsOn imageConfig.artifact
+        workingDir rootDir
+        commandLine 'docker', 'build', '--build-arg', "LH_VERSION=${littlehorseVersion}",
+                '-t', imageConfig.image, imageConfig.context
+    }
+}
+
+tasks.register('buildStandaloneImage', Exec) {
+    group = 'docker'
+    description = 'Builds the component images and the all-in-one standalone image.'
+    dependsOn 'buildBackendImage', 'buildConsoleImage', 'buildDemoImage'
+    workingDir rootDir
+    commandLine 'docker', 'build', '--build-arg', "LH_VERSION=${littlehorseVersion}",
+            '-t', 'littlehorse/lh-user-tasks-bridge-standalone:latest', '-f', 'standalone/Dockerfile', '.'
+}

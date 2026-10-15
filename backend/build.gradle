@@ -1,20 +1,8 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.3.9'
-    id 'io.spring.dependency-management' version '1.1.7'
-    id 'com.diffplug.spotless' version '8.4.0'
-}
-
-group = 'io.littlehorse'
-
-java {
-    sourceCompatibility = '21'
-    targetCompatibility = '21'
-}
-
-repositories {
-    mavenCentral()
-    mavenLocal()
+    id 'org.springframework.boot'
+    id 'io.spring.dependency-management'
+    id 'com.diffplug.spotless'
 }
 
 dependencies {
@@ -23,7 +11,7 @@ dependencies {
 
     implementation 'com.c4-soft.springaddons:spring-addons-starter-oidc:8.1.25'
 
-    implementation 'io.littlehorse:littlehorse-client:1.0.1'
+    implementation "io.littlehorse:littlehorse-client:${littlehorseVersion}"
     implementation 'jakarta.validation:jakarta.validation-api:3.1.0-M2'
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.5.0'
     implementation 'org.springframework.boot:spring-boot-starter-web'

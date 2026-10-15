@@ -17,7 +17,7 @@ export LHC_TENANT_ID=default
 ```
 
 ```sh
-./gradlew run
+./gradlew demo-workflow:run
 ```
 
 This registers the workflow and task definition; start a workflow separately
