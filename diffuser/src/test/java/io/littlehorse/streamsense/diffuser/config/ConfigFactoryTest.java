@@ -14,6 +14,8 @@ class ConfigFactoryTest {
 
         assertEquals("cluster1", appConfig.lhClusterId());
         assertEquals(8080, appConfig.server().port());
+        assertFalse(config.getOptionalValue("spring.application.name", String.class).isPresent(),
+                "Diffuser configuration must not load the host application YAML");
         assertNotNull(appConfig.tenants());
     }
 

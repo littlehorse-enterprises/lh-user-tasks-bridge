@@ -1,4 +1,4 @@
-FROM amazoncorretto:25
+FROM amazoncorretto:21
 
 WORKDIR /workflow-diffuser
 RUN mkdir -p /workflow-diffuser/bin

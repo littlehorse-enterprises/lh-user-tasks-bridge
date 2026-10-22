@@ -1,0 +1,15 @@
+# Opt-in development overlay: the existing backend hosts Kafka Streams in the same JVM.
+services:
+  littlehorse:
+    environment:
+      - LHS_CLUSTER_ID=cluster1
+      - KAFKA_ADVERTISED_LISTENERS=INTERNAL://littlehorse:9092
+  backend:
+    environment:
+      - LHBC_DIFFUSER_ENABLED=true
+      - LH_CONFIG_FILES=/lh/config/diffuser.yml
+    volumes:
+      - diffuser-state:/lh/diffuser-state
+
+volumes:
+  diffuser-state:

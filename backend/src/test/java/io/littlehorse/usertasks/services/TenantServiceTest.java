@@ -160,15 +160,16 @@ class TenantServiceTest {
 
         try (MockedStatic<TokenUtil> mockStaticTokenUtil = mockStatic(TokenUtil.class)) {
             when(lhTenantClient.getTenant(any(TenantId.class))).thenReturn(Tenant.getDefaultInstance());
+            var tokenReadFailure = new UnrecognizedPropertyException(
+                    mock(JsonParser.class),
+                    "error message",
+                    mock(JsonLocation.class),
+                    TokenUtil.class,
+                    "some-property",
+                    Collections.emptyList());
             mockStaticTokenUtil
                     .when(() -> TokenUtil.getTokenClaims(anyString()))
-                    .thenThrow(new UnrecognizedPropertyException(
-                            mock(JsonParser.class),
-                            "error message",
-                            mock(JsonLocation.class),
-                            TokenUtil.class,
-                            "some-property",
-                            Collections.emptyList()));
+                    .thenThrow(tokenReadFailure);
 
             ResponseStatusException exception = assertThrows(
                     ResponseStatusException.class, () -> tenantService.isValidTenant(tenantIdToValidate, "wrongToken"));

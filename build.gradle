@@ -31,11 +31,11 @@ subprojects {
 }
 
 tasks.named('build') {
-    dependsOn subprojects.collect { "${it.path}:build" }
+    dependsOn { subprojects.collect { it.tasks.findByName('build') }.findAll { it != null } }
 }
 
 tasks.named('clean') {
-    dependsOn subprojects.collect { "${it.path}:clean" }
+    dependsOn { subprojects.collect { it.tasks.findByName('clean') }.findAll { it != null } }
 }
 
 tasks.register('printLittleHorseVersion') {

@@ -1,0 +1,19 @@
+# Example configuration for the optional embedded Workflow Diffuser.
+# The Kernel's cluster ID and tenant Output Topic recording must match this configuration.
+app:
+  lh-cluster-id: cluster1
+  tenants:
+    - name: default
+      wf-specs:
+        - user-tasks-bridge-demo
+      user-task-defs:
+        - user-tasks-form
+
+kafka:
+  streams:
+    application.id: cluster1-wf-diffuser
+    bootstrap.servers: littlehorse:9092
+    state.dir: /lh/diffuser-state
+
+# Without an Apicurio URL, values are plain JSON. For registry-backed values,
+# configure apicurio.registry.url and the registry authentication properties here.

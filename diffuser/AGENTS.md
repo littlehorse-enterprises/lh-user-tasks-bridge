@@ -1,5 +1,11 @@
 # AGENTS.md - LH Workflow Diffuser (WFD)
 
+## Imported module context
+
+This source now lives in the Business Console repository under `diffuser/`. The combined backend embeds Kafka Streams in its Spring lifecycle and exposes health/metrics through Actuator; the standalone main remains available for development. Diffusion is opt-in through `LHBC_DIFFUSER_ENABLED=true` and `LH_CONFIG_FILES` YAML. See `../docs/diffuser-integration.md` for configuration and the original history import.
+
+Use Java 21 and the repository-root Gradle wrapper. Run `./gradlew build :diffuser:installDist` and `./gradlew :diffuser:integrationTest` from the repository root. The imported code is implemented; the earlier “implementation pending” status below is historical. Current WfRun output uses `columns`; dynamic topic names are `{cluster}_{tenant}_streamlet_{workflow|usertask|externalevent|workflowevent}-{name}`. The standalone defaults resource is `diffuser-defaults.yaml`, and standalone logging is `diffuser-logback.xml`, to avoid collisions with the embedding application. The client version comes from the shared `littlehorseVersion` property, independently of the project release version. These current source facts supersede older examples below.
+
 ## Terminology
 
 - **LH** = LittleHorse
@@ -18,7 +24,7 @@ This enables downstream analytics, cascading workflows, and real-time business i
 
 ## Tech Stack
 
-- **Language:** Java (JDK: 25)
+- **Language:** Java (JDK: 21)
 - **Build:** Gradle
 - **Streaming:** Apache Kafka Streams
 - **Schema Registry:** Apache ApiCurio (JSON format initially)
@@ -27,7 +33,7 @@ This enables downstream analytics, cascading workflows, and real-time business i
 
 ## Project Status
 
-Early stage - repository initialized, requirements and design docs complete, implementation pending.
+Implemented streaming component; business-console analytics and optional Saddle configuration-provider features remain separate roadmap work.
 
 ## Build & Run Commands
 

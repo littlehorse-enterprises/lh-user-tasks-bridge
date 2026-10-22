@@ -16,8 +16,7 @@ import java.util.Enumeration;
  * <ol>
  *   <li>{@code LH_}-prefixed environment variables (ordinal 400, via {@link LhEnvConfigSource})</li>
  *   <li>External YAML files specified in {@code LH_CONFIG_FILES} env var (ordinal 300)</li>
- *   <li>Classpath {@code application.yml} (ordinal 260)</li>
- *   <li>Classpath {@code application.yaml} (ordinal 250)</li>
+ *   <li>Classpath {@code diffuser-defaults.yaml} (ordinal 250)</li>
  *   <li>Default MicroProfile Config sources (system properties, env vars)</li>
  * </ol>
  */
@@ -32,8 +31,7 @@ public class ConfigFactory {
                 .withValidateUnknown(false);
 
         // Add classpath YAML sources
-        addClasspathYaml(builder, "application.yaml", 250);
-        addClasspathYaml(builder, "application.yml", 260);
+        addClasspathYaml(builder, "diffuser-defaults.yaml", 250);
 
         // Add external config files from LH_CONFIG_FILES
         addExternalConfigSources(builder);

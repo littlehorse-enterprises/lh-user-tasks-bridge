@@ -1,48 +1,58 @@
 plugins {
-    id "java"
+    id "java-library"
     id "application"
+    id "io.spring.dependency-management" version "1.1.7"
 }
 
-group = providers.gradleProperty("group").get()
-version = providers.gradleProperty("version").get()
-
-allprojects {
-    group = rootProject.group
-    version = rootProject.version
-
-    repositories {
-        mavenLocal()
-        mavenCentral()
-        maven {
-            name = "Central Portal Snapshots"
-            url = "https://central.sonatype.com/repository/maven-snapshots/"
-        }
+// Keep this module usable both in the console build and through its own wrapper.
+def diffuserProperties = new Properties()
+file("gradle.properties").withInputStream { diffuserProperties.load(it) }
+diffuserProperties.each { key, value ->
+    if (key != "group" && key != "version" && !project.hasProperty(key.toString())) {
+        ext.set(key.toString(), value)
     }
+}
 
-    configurations.configureEach {
-        resolutionStrategy.cacheChangingModulesFor 0, "seconds"
+if (project == rootProject) {
+    group = providers.gradleProperty("group").get()
+    version = providers.gradleProperty("version").get()
+}
+
+repositories {
+    mavenCentral()
+    maven {
+        url = uri("https://central.sonatype.com/repository/maven-snapshots/")
+        mavenContent { snapshotsOnly() }
+        content { includeGroup "io.littlehorse" }
     }
+    mavenLocal()
 }
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(25)
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+dependencyManagement {
+    imports {
+        mavenBom "org.springframework.boot:spring-boot-dependencies:3.3.9"
     }
 }
 
 dependencies {
     // Kafka Streams
-    implementation "org.apache.kafka:kafka-streams:${kafkaVersion}"
+    api "org.apache.kafka:kafka-streams:${kafkaVersion}"
 
     // SmallRye Config
-    implementation "io.smallrye.config:smallrye-config:${smallryeConfigVersion}"
+    api "io.smallrye.config:smallrye-config:${smallryeConfigVersion}"
     implementation "io.smallrye.config:smallrye-config-source-yaml:${smallryeConfigVersion}"
 
     // Metrics
-    implementation "io.micrometer:micrometer-registry-prometheus:${micrometerVersion}"
+    api "io.micrometer:micrometer-registry-prometheus:${micrometerVersion}"
 
     // LittleHorse Client (protobuf models)
-    implementation("io.littlehorse:littlehorse-client:${version}") {
+    implementation("io.littlehorse:littlehorse-client:${littlehorseVersion}") {
         changing = true
     }
 
@@ -66,6 +76,7 @@ dependencies {
 }
 
 application {
+    applicationName = "lh-workflow-diffuser"
     mainClass = "io.littlehorse.streamsense.diffuser.WorkflowDiffuserApp"
 }
 
@@ -89,12 +100,14 @@ tasks.register("dockerComposeUp", Exec) {
     description = "Starts the local Docker Compose environment."
     group = "application"
     commandLine "docker", "compose", "up", "-d"
-    environment "LH_VERSION", version
+    workingDir projectDir
+    environment "LH_VERSION", littlehorseVersion
 }
 
 tasks.register("dockerComposeDown", Exec) {
     description = "Stops the local Docker Compose environment and removes its volumes."
     group = "application"
     commandLine "docker", "compose", "down", "-v"
-    environment "LH_VERSION", version
+    workingDir projectDir
+    environment "LH_VERSION", littlehorseVersion
 }

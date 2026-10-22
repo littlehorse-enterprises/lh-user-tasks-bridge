@@ -1,4 +1,4 @@
 rootProject.name = 'lh-user-tasks-bridge'
 include(
-    'backend', 'demo-workflow'
+    'backend', 'demo-workflow', 'diffuser', 'diffuser:examples:lh-examples'
 )

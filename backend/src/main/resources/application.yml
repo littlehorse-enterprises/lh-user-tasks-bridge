@@ -21,3 +21,7 @@ management:
 springdoc:
   api-docs:
     path: /api-docs
+
+business-console:
+  diffuser:
+    enabled: ${LHBC_DIFFUSER_ENABLED:false}
