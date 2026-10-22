@@ -104,7 +104,7 @@ public class TopologyFactory {
 
         Serde<JsonNode> valueSerde;
         if (apicurioConfig.containsKey("apicurio.registry.url")) {
-            log.debug("Using Apicurio serde with config: {}", apicurioConfig);
+            log.debug("Using Apicurio serde");
             valueSerde = ApicurioJsonNodeSerdeFactory.create(apicurioConfig);
         } else {
             log.debug("Using plain JSON serde (no schema registry configured)");

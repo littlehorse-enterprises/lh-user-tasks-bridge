@@ -1,10 +1,17 @@
-name: pull-request
+name: diffuser pull request
 run-name: Check PR on branch "${{ github.head_ref }}"
 
 on:
   workflow_dispatch:
   pull_request:
+    paths:
+      - "diffuser/**"
+      - ".github/workflows/diffuser-*.yml"
   merge_group:
+
+defaults:
+  run:
+    working-directory: diffuser
 
 permissions:
   contents: read

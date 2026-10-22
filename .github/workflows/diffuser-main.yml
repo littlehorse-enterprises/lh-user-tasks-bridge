@@ -1,4 +1,4 @@
-name: main
+name: diffuser snapshot
 run-name: Publish snapshot on ${{ github.ref_name }}
 
 on:
@@ -7,6 +7,13 @@ on:
     branches:
       - main
       - "[0-9]+.[0-9]+"
+    paths:
+      - "diffuser/**"
+      - ".github/workflows/diffuser-*.yml"
+
+defaults:
+  run:
+    working-directory: diffuser
 
 permissions:
   contents: read
@@ -80,7 +87,8 @@ jobs:
         uses: littlehorse-enterprises/publish-image@v1
         with:
           image-name: lh-workflow-diffuser
-          dockerfile: Dockerfile
+          context: diffuser
+          dockerfile: diffuser/Dockerfile
           registry: github
           github-token: ${{ secrets.GITHUB_TOKEN }}
           ghcr-root: true

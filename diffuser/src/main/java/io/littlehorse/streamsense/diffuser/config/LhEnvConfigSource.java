@@ -1,24 +1,24 @@
 package io.littlehorse.streamsense.diffuser.config;
 
-import org.eclipse.microprofile.config.spi.ConfigSource;
+import io.smallrye.config.EnvConfigSource;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 /**
- * Custom ConfigSource that reads environment variables with the {@code LH_} prefix,
- * strips the prefix, and converts underscores to dots for property name mapping.
+ * Environment overrides restricted to the {@code LH_} namespace, at ordinal 400.
  *
- * <p>Example: {@code LH_KAFKA_STREAMS_BOOTSTRAP_SERVERS=broker:9092}
- * becomes property {@code kafka.streams.bootstrap.servers=broker:9092}</p>
+ * <p>After removing the prefix, SmallRye applies its native environment naming rules.
+ * For example, {@code LH_APP_LH_CLUSTER_ID} overrides {@code app.lh-cluster-id},
+ * {@code LH_APP_TENANTS_0__WF_SPECS} configures {@code app.tenants[0].wf-specs}, and
+ * {@code LH_KAFKA_STREAMS_BOOTSTRAP_SERVERS} overrides {@code kafka.streams.bootstrap.servers}.
+ * Keeping this an {@link EnvConfigSource} also lets config mappings discover indexed
+ * properties and resolve underscores against their declared kebab-case names.</p>
  */
-public class LhEnvConfigSource implements ConfigSource {
+public class LhEnvConfigSource extends EnvConfigSource {
 
     private static final String PREFIX = "LH_";
     private static final int ORDINAL = 400;
-
-    private final Map<String, String> properties;
 
     public LhEnvConfigSource() {
         this(System.getenv());
@@ -26,30 +26,17 @@ public class LhEnvConfigSource implements ConfigSource {
 
     // Visible for testing
     LhEnvConfigSource(Map<String, String> env) {
-        this.properties = mapFromEnv(env);
+        super(withoutPrefix(env), ORDINAL);
     }
 
-    private static Map<String, String> mapFromEnv(Map<String, String> env) {
+    private static Map<String, String> withoutPrefix(Map<String, String> env) {
         Map<String, String> result = new HashMap<>();
-        for (Map.Entry<String, String> entry : env.entrySet()) {
-            String key = entry.getKey();
+        env.forEach((key, value) -> {
             if (key.startsWith(PREFIX)) {
-                String stripped = key.substring(PREFIX.length());
-                String dotted = stripped.toLowerCase().replace('_', '.');
-                result.put(dotted, entry.getValue());
+                result.put(key.substring(PREFIX.length()), value);
             }
-        }
+        });
         return result;
-    }
-
-    @Override
-    public Set<String> getPropertyNames() {
-        return properties.keySet();
-    }
-
-    @Override
-    public String getValue(String propertyName) {
-        return properties.get(propertyName);
     }
 
     @Override

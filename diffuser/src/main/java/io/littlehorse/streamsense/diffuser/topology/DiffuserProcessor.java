@@ -146,7 +146,12 @@ public class DiffuserProcessor implements Processor<String, OutputTopicRecord, S
         if (targetTopic.isEmpty()) return;
 
         Set<String> publicVars = resolvePublicVariables(tenant, variable.getWfSpecId());
-        if (publicVars != null && !publicVars.contains(variable.getId().getName())) {
+        // Metadata propagates asynchronously. Drop unknown events rather than storing
+        // potentially private values; a later event can be accepted once metadata arrives.
+        if (publicVars == null) {
+            return;
+        }
+        if (!publicVars.contains(variable.getId().getName())) {
             log.debug("Variable filtered (not public): name={}, wfSpec={}", variable.getId().getName(), wfSpecName);
             return;
         }

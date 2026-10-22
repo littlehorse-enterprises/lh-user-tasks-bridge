@@ -3,6 +3,7 @@ package io.littlehorse.streamsense.diffuser.config;
 import io.smallrye.config.PropertiesConfigSource;
 import io.smallrye.config.SmallRyeConfig;
 import io.smallrye.config.SmallRyeConfigBuilder;
+import io.smallrye.config.source.yaml.YamlConfigSource;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -94,6 +95,25 @@ class PrefixConfigTest {
         assertEquals("http://host:8085", map.get("apicurio.registry.url"));
         assertEquals("true", map.get("apicurio.registry.auto-register"));
         assertEquals(2, map.size());
+    }
+
+    @Test
+    void higherPriorityQuotedYamlOverridesDottedProperties() {
+        SmallRyeConfig config = new SmallRyeConfigBuilder()
+                .withSources(new PropertiesConfigSource(Map.of(
+                        "kafka.streams.bootstrap.servers", "low-broker:9092",
+                        "kafka.streams.producer.linger.ms", "5"), "low", 100))
+                .withSources(new YamlConfigSource("high-yaml", """
+                        kafka:
+                          streams:
+                            bootstrap.servers: high-broker:9092
+                            producer.linger.ms: 25
+                        """, 300))
+                .build();
+
+        PrefixConfig pc = new PrefixConfig(config, "kafka.streams.");
+        assertEquals("high-broker:9092", pc.get("bootstrap.servers"));
+        assertEquals("25", pc.asProperties().getProperty("producer.linger.ms"));
     }
 
     @Test

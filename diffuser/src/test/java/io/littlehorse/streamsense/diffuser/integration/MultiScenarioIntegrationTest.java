@@ -6,6 +6,7 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.Timestamp;
 import io.littlehorse.sdk.common.proto.*;
 import io.littlehorse.streamsense.diffuser.config.AppConfig;
+import io.littlehorse.streamsense.diffuser.topology.DiffuserProcessor;
 import io.littlehorse.streamsense.diffuser.topology.TopologyFactory;
 import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.admin.NewTopic;
@@ -21,7 +22,11 @@ import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.kafka.streams.KafkaStreams;
 import org.apache.kafka.streams.StreamsConfig;
+import org.apache.kafka.streams.StoreQueryParameters;
 import org.apache.kafka.streams.Topology;
+import org.apache.kafka.streams.state.QueryableStoreTypes;
+import org.apache.kafka.streams.state.ReadOnlyKeyValueStore;
+import org.apache.kafka.streams.state.ValueAndTimestamp;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -637,6 +642,23 @@ class MultiScenarioIntegrationTest {
             String ordersRunId = "orders-" + UUID.randomUUID().toString().replace("-", "");
             String paymentsRunId = "payments-" + UUID.randomUUID().toString().replace("-", "");
             String shippingRunId = "shipping-" + UUID.randomUUID().toString().replace("-", "");
+
+            // Explicitly authorize the variables and wait for the metadata join before execution.
+            ReadOnlyKeyValueStore<String, ValueAndTimestamp<MetadataOutputTopicRecord>> metadataStore =
+                    streams.store(StoreQueryParameters.fromNameAndType(
+                            DiffuserProcessor.GLOBAL_METADATA_STORE, QueryableStoreTypes.timestampedKeyValueStore()));
+            for (Map.Entry<String, String> spec : Map.of(
+                    "orders", "order-id", "payments", "amount", "shipping", "tracking").entrySet()) {
+                Map.Entry<String, MetadataOutputTopicRecord> metadata = wfSpecMetadata(spec.getKey(), 0, 0,
+                        threadVarDef(spec.getValue(), WfRunVariableAccessLevel.PUBLIC_VAR));
+                produceMetadata(producer, metadataTopic("routing"), metadata.getKey(), metadata.getValue());
+                String metadataKey = "routing/" + metadata.getKey();
+                long deadline = System.currentTimeMillis() + 30_000;
+                while (metadataStore.get(metadataKey) == null && System.currentTimeMillis() < deadline) {
+                    Thread.sleep(100);
+                }
+                assertNotNull(metadataStore.get(metadataKey), "WfSpec metadata did not propagate: " + metadataKey);
+            }
 
             // Orders: WfRun + Variable "order-id" = STR
             produceExecution(producer, executionTopic("routing"), ordersRunId,

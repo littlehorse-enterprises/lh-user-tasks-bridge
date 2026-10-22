@@ -1,5 +1,9 @@
 package io.littlehorse.streamsense.diffuser.topology;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.Timestamp;
@@ -14,6 +18,7 @@ import org.apache.kafka.streams.state.KeyValueStore;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
@@ -64,6 +69,98 @@ class TopologyTest {
         if (testDriver != null) {
             testDriver.close();
         }
+    }
+
+    @Test
+    void topologyDebugLogsDoNotExposeApicurioConfigValues() {
+        Logger logger = (Logger) LoggerFactory.getLogger(TopologyFactory.class);
+        Level previousLevel = logger.getLevel();
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+        logger.setLevel(Level.DEBUG);
+        Map<String, Object> config = Map.of(
+                "apicurio.registry.url", "http://registry-log-regression.invalid:8080/apis/registry/v3",
+                "apicurio.registry.auth.client.secret", "authclientsecret-log-regression",
+                "apicurio.registry.authclientsecret", "authclientsecret-legacy-log-regression");
+        try {
+            TopologyFactory.build(buildTestConfig(), "secret-log-test", config);
+
+            List<String> messages = appender.list.stream().map(ILoggingEvent::getFormattedMessage).toList();
+            assertTrue(messages.stream().anyMatch(message -> message.contains("Using Apicurio serde")),
+                    "The Apicurio debug logging path must be exercised");
+            for (Object value : config.values()) {
+                assertTrue(messages.stream().noneMatch(message -> message.contains(value.toString())),
+                        "Topology logs must not include Apicurio configuration values");
+            }
+        } finally {
+            logger.detachAppender(appender);
+            logger.setLevel(previousLevel);
+            appender.stop();
+        }
+    }
+
+    @Test
+    void variablesRequireMetadataAndPrivateValuesNeverReachLaterSnapshots() throws Exception {
+        String wfRunId = "metadata-propagation-run";
+        Timestamp timestamp = ts(1770710673, 0);
+        WfSpecId wfSpecId = WfSpecId.newBuilder().setName("output-topic").build();
+        WfRun.Builder wfRun = WfRun.newBuilder()
+                .setId(WfRunId.newBuilder().setId(wfRunId))
+                .setWfSpecId(wfSpecId)
+                .setStatus(LHStatus.RUNNING)
+                .setStartTime(timestamp);
+        pipeExecution(wfRunId, OutputTopicRecord.newBuilder()
+                .setTimestamp(timestamp).setWfRun(wfRun).build());
+        TestOutputTopic<String, byte[]> output = testDriver.createOutputTopic(
+                "cluster1_default_streamlet_workflow-output-topic",
+                new StringDeserializer(), Serdes.ByteArray().deserializer());
+        assertTrue(MAPPER.readTree(output.readValue()).get("columns").isEmpty());
+
+        // Neither public nor private values can be authorized before metadata arrives.
+        for (String name : List.of("public-var", "secret-var")) {
+            pipeExecution(wfRunId, variableUpdate(wfRunId, wfSpecId, name, "before-metadata", timestamp));
+        }
+        assertTrue(output.isEmpty(), "Unknown metadata must suppress variable emissions");
+        KeyValueStore<String, byte[]> store = testDriver.getKeyValueStore(DiffuserProcessor.WFRUN_STORE);
+        assertTrue(MAPPER.readTree(store.get(TENANT + "/" + wfRunId)).get("columns").isEmpty(),
+                "Unknown variable values must not be persisted");
+
+        pipeOutputTopicWfSpec("output-topic", 0, 0,
+                ThreadVarDef.newBuilder()
+                        .setVarDef(VariableDef.newBuilder().setName("public-var"))
+                        .setAccessLevel(WfRunVariableAccessLevel.PUBLIC_VAR).build(),
+                ThreadVarDef.newBuilder()
+                        .setVarDef(VariableDef.newBuilder().setName("secret-var"))
+                        .setAccessLevel(WfRunVariableAccessLevel.PRIVATE_VAR).build());
+        pipeExecution(wfRunId, variableUpdate(wfRunId, wfSpecId, "secret-var", "after-metadata-secret", timestamp));
+        assertTrue(output.isEmpty(), "Private variable events remain filtered after metadata arrives");
+        pipeExecution(wfRunId, variableUpdate(wfRunId, wfSpecId, "public-var", "authorized-value", timestamp));
+        pipeExecution(wfRunId, OutputTopicRecord.newBuilder().setTimestamp(timestamp)
+                .setWfRun(wfRun.setStatus(LHStatus.COMPLETED).setEndTime(timestamp)).build());
+
+        List<byte[]> snapshots = output.readValuesToList();
+        assertEquals(2, snapshots.size(), "Public updates must resume once metadata becomes available");
+        for (byte[] snapshot : snapshots) {
+            JsonNode columns = MAPPER.readTree(snapshot).get("columns");
+            assertEquals("authorized-value", columns.get("public-var").asText());
+            assertFalse(columns.has("secret-var"), "Later snapshots must never retain private startup values");
+            assertEquals(1, columns.size());
+        }
+        JsonNode storedColumns = MAPPER.readTree(store.get(TENANT + "/" + wfRunId)).get("columns");
+        assertEquals("authorized-value", storedColumns.get("public-var").asText());
+        assertEquals(1, storedColumns.size());
+    }
+
+    private static OutputTopicRecord variableUpdate(String wfRunId, WfSpecId wfSpecId,
+                                                     String name, String value, Timestamp timestamp) {
+        return OutputTopicRecord.newBuilder().setTimestamp(timestamp)
+                .setVariable(Variable.newBuilder()
+                        .setId(VariableId.newBuilder().setWfRunId(WfRunId.newBuilder().setId(wfRunId))
+                                .setName(name).setThreadRunNumber(0))
+                        .setWfSpecId(wfSpecId)
+                        .setValue(VariableValue.newBuilder().setStr(value)))
+                .build();
     }
 
     @Test

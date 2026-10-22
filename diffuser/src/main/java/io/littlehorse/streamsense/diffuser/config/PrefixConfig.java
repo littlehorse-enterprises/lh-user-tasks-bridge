@@ -1,10 +1,13 @@
 package io.littlehorse.streamsense.diffuser.config;
 
+import io.smallrye.config.ConfigValue;
 import io.smallrye.config.SmallRyeConfig;
 
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.function.BinaryOperator;
 
 /**
  * Extracts all properties with a given prefix from {@link SmallRyeConfig},
@@ -19,13 +22,21 @@ public class PrefixConfig {
 
     public PrefixConfig(SmallRyeConfig config, String prefix) {
         this.entries = new HashMap<>();
+        Map<String, ConfigValue> resolved = new HashMap<>();
+        Comparator<ConfigValue> precedence = ConfigValue.CONFIG_SOURCE_COMPARATOR
+                .thenComparing(ConfigValue::getName);
         for (String name : config.getPropertyNames()) {
             if (name.startsWith(prefix)) {
                 String stripped = unquote(name.substring(prefix.length()));
-                config.getOptionalValue(name, String.class)
-                        .ifPresent(value -> entries.put(stripped, value));
+                ConfigValue value = config.getConfigValue(name);
+                if (value.getValue() != null) {
+                    // Quoted YAML keys and dotted environment names can be aliases.
+                    // Preserve source precedence when collapsing them to a Kafka key.
+                    resolved.merge(stripped, value, BinaryOperator.maxBy(precedence));
+                }
             }
         }
+        resolved.forEach((key, value) -> entries.put(key, value.getValue()));
     }
 
     public String get(String key) {

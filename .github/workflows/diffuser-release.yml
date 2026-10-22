@@ -1,10 +1,14 @@
-name: release
+name: diffuser release
 run-name: Release "${{ github.ref_name }}"
 
 on:
   push:
     tags:
-      - "v[0-9]+.[0-9]+.[0-9]+*"
+      - "diffuser-v[0-9]+.[0-9]+.[0-9]+*"
+
+defaults:
+  run:
+    working-directory: diffuser
 
 permissions:
   contents: write
@@ -17,13 +21,17 @@ jobs:
       version: ${{ steps.release.outputs.version }}
       prerelease: ${{ steps.release.outputs.prerelease }}
     steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
       - name: Parse release version
         id: release
         env:
           TAG: ${{ github.ref_name }}
         run: |
-          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
-          if [[ "$TAG" == *-* ]]; then
+          VERSION=${TAG#diffuser-v}
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if [[ "$VERSION" == *-* ]]; then
             echo "prerelease=true" >> "$GITHUB_OUTPUT"
           else
             echo "prerelease=false" >> "$GITHUB_OUTPUT"
@@ -77,7 +85,8 @@ jobs:
         uses: littlehorse-enterprises/publish-image@v1
         with:
           image-name: lh-workflow-diffuser
-          dockerfile: Dockerfile
+          context: diffuser
+          dockerfile: diffuser/Dockerfile
           registry: github
           github-token: ${{ secrets.GITHUB_TOKEN }}
           ghcr-root: true
@@ -99,10 +108,10 @@ jobs:
       - name: Generate changelog
         uses: orhun/git-cliff-action@v4
         with:
-          config: cliff.toml
-          args: --verbose --current
+          config: diffuser/cliff.toml
+          args: --verbose --current --tag-pattern "diffuser-v.*" --include-path "diffuser/**"
         env:
-          OUTPUT: CHANGELOG.md
+          OUTPUT: diffuser/CHANGELOG.md
 
       - name: Create GitHub Release
         env:
