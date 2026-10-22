@@ -1,0 +1,32 @@
+name: pull-request
+run-name: Check PR on branch "${{ github.head_ref }}"
+
+on:
+  workflow_dispatch:
+  pull_request:
+  merge_group:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: corretto
+          java-version: "25"
+
+      - name: Build and unit tests
+        run: ./gradlew build installDist
+
+      - name: Integration tests
+        run: ./gradlew integrationTest
+
+      - name: Check diff
+        run: git diff --exit-code
