@@ -1,0 +1,33 @@
+logging:
+  level:
+    io.littlehorse.streamsense: DEBUG
+
+app:
+  server:
+    port: 8081
+  tenants:
+    - name: default
+      wf-specs:
+        - example-external-event
+        - output-topic
+        - await-wf-event
+        - example-variables
+        - it-request
+      user-task-defs:
+        - approve-it-request
+        - it-request
+      external-event-defs:
+        - name-event
+      workflow-event-defs:
+        - sleep-done
+    - name: cars
+      wf-specs:
+        - example-json
+
+apicurio:
+  registry:
+    url: http://localhost:8085/apis/registry/v3
+
+kafka:
+  streams:
+    session.timeout.ms: 10000
