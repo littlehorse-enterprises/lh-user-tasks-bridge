@@ -1,0 +1,13 @@
+{
+  "type": "object",
+  "properties": {
+    "id": {"type": "string"},
+    "status": {"type": "string"},
+    "columns": {
+      "type": "object",
+      "properties": {}
+    },
+    "createdAt": {"type": "string", "format": "date-time"},
+    "updatedAt": {"type": "string", "format": "date-time"}
+  }
+}

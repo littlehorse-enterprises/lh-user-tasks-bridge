@@ -1,0 +1,126 @@
+name: diffuser release
+run-name: Release "${{ github.ref_name }}"
+
+on:
+  push:
+    tags:
+      - "diffuser-v[0-9]+.[0-9]+.[0-9]+*"
+
+defaults:
+  run:
+    working-directory: diffuser
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.release.outputs.version }}
+      prerelease: ${{ steps.release.outputs.prerelease }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Parse release version
+        id: release
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          VERSION=${TAG#diffuser-v}
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          if [[ "$VERSION" == *-* ]]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+
+  test:
+    needs: prepare
+    runs-on: ubuntu-latest
+    env:
+      ORG_GRADLE_PROJECT_version: ${{ needs.prepare.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: corretto
+          java-version: "25"
+
+      - name: Build and unit tests
+        run: ./gradlew build installDist
+
+      - name: Integration tests
+        run: ./gradlew integrationTest
+
+      - name: Check diff
+        run: git diff --exit-code
+
+  publish:
+    needs:
+      - prepare
+      - test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: corretto
+          java-version: "25"
+
+      - name: Build distribution
+        env:
+          ORG_GRADLE_PROJECT_version: ${{ needs.prepare.outputs.version }}
+        run: ./gradlew installDist
+
+      - name: Publish release image to GHCR
+        uses: littlehorse-enterprises/publish-image@v1
+        with:
+          image-name: lh-workflow-diffuser
+          context: diffuser
+          dockerfile: diffuser/Dockerfile
+          registry: github
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          ghcr-root: true
+          tags: |
+            type=raw,value=latest,enable=${{ needs.prepare.outputs.prerelease == 'false' }}
+            type=raw,value=${{ needs.prepare.outputs.version }},enable=true
+
+  create-release:
+    needs:
+      - prepare
+      - publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Generate changelog
+        uses: orhun/git-cliff-action@v4
+        with:
+          config: diffuser/cliff.toml
+          args: --verbose --current --tag-pattern "diffuser-v.*" --include-path "diffuser/**"
+        env:
+          OUTPUT: diffuser/CHANGELOG.md
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          if [ "$PRERELEASE" = "true" ]; then
+            gh release create "$TAG" -t "$TAG" -F CHANGELOG.md --prerelease
+          else
+            gh release create "$TAG" -t "$TAG" -F CHANGELOG.md
+          fi
