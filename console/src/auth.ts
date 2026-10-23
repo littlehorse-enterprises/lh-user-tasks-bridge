@@ -32,6 +32,7 @@ declare module "next-auth/jwt" {
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [KeycloakProvider],
+  pages: { signIn: "/login" },
 
   callbacks: {
     async jwt({ token, account }) {
