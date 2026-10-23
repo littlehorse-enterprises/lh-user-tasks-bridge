@@ -1,0 +1,10 @@
+{
+  "type": "object",
+  "properties": {
+    "id": {"type": "string"},
+    "wfRunId": {"type": "string"},
+    "content": {},
+    "claimed": {"type": "boolean"},
+    "createdAt": {"type": "string", "format": "date-time"}
+  }
+}

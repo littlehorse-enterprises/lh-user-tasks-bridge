@@ -1,0 +1,38 @@
+app:
+  lh-cluster-id: cluster1
+  server:
+    port: 8080
+#  tenants:
+#    - name: default
+#      wf-specs:
+#        - my-workflow
+#      user-task-defs:
+#        - my-user-task
+#      external-event-defs:
+#        - my-external-event
+#      workflow-event-defs:
+#        - my-workflow-event
+#  eviction:
+#    sweep-interval-seconds: 60           # 1 minute (default)
+#    fallback-retention-seconds: 2592000  # 30 days (default)
+
+kafka:
+  streams:
+    application.id: ${app.lh-cluster-id}-wf-diffuser
+    bootstrap.servers: localhost:9092
+    auto.offset.reset: latest
+    default.key.serde: org.apache.kafka.common.serialization.Serdes$StringSerde
+    ensure.explicit.internal.resource.naming: true
+    num.stream.threads: 2
+
+#apicurio:
+#  registry:
+#    url: http://schema-registry:8081/apis/registry/v3
+#    auth:
+#      service.token.endpoint: https://auth.example.com/token
+#      client.id: my-client
+#      client.secret: my-secret
+
+#logging:
+#  level:
+#    io.littlehorse.streamsense: DEBUG
