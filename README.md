@@ -19,7 +19,7 @@ Install Java 21, Node.js 20.9 or later, pnpm 10.19.0, and Docker with Compose.
 Add `127.0.0.1 keycloak littlehorse` to `/etc/hosts`, then run:
 
 ```sh
-./local-dev/compose.sh up
+./local-dev/run.sh
 ```
 
 Open the console at <http://localhost:3000>. Demo users are `my-user` and
